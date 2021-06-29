@@ -1,0 +1,5 @@
+app/build
+node_modules
+docs/screens
+**/ipfs-map.json
+edge/build

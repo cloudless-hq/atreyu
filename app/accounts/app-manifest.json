@@ -1,0 +1,42 @@
+{
+  "name": "Deno Demo",
+  "short_name": "Deno Demo",
+  "start_url": ".",
+  "display": "minimal-ui",
+  "lang": "en-US",
+  "scope": ".",
+  "background_color": "white",
+  "theme_color": "rgb(255, 62, 0)",
+  "categories": ["books", "education", "medical"],
+  "description": "A demo of deno with svelte and ecmascript modules",
+  "orientation": "portrait",
+  "screenshots" : [
+    {
+      "src": "images/screenshot192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+    "src": "images/screenshot48.png",
+    "sizes": "48x48",
+    "type": "image/png"
+    },
+    {
+      "src": "images/screenshot96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "images/screenshot144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "images/screenshot192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

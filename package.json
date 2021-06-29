@@ -1,0 +1,14 @@
+{
+  "name": "atreyu-deno",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "rollup -c ./rollup.config.js"
+  },
+  "dependencies": {
+    "@rollup/plugin-commonjs": "18.0.0",
+    "rollup": "2.45.2",
+    "@rollup/plugin-node-resolve": "11.2.1",
+    "svelte": "3.37.0",
+    "falcor": "v2.3.2"
+  }
+}

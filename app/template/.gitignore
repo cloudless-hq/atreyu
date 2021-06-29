@@ -1,0 +1,5 @@
+**/node_modules
+**/secrets.js
+**/build
+**.build.js
+**.svelte.js

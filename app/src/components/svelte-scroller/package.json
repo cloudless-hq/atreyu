@@ -1,0 +1,42 @@
+{
+  "name": "@sveltejs/svelte-scroller",
+  "version": "2.2.0",
+  "description": "A <VirtualList> component for Svelte apps",
+  "svelte": "src/VirtualList.html",
+  "module": "index.mjs",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -cw",
+    "prepublishOnly": "npm test",
+    "test": "node test/runner.js",
+    "test:browser": "npm run build && serve test/public",
+    "pretest": "npm run build"
+  },
+  "devDependencies": {
+    "port-authority": "1.0.5",
+    "rollup": "1.27.9",
+    "rollup-plugin-commonjs": "10.1.0",
+    "rollup-plugin-node-resolve": "5.2.0",
+    "rollup-plugin-svelte": "5.1.1",
+    "sirv": "0.4.2",
+    "svelte": "3.16.4",
+    "tap-diff": "0.1.1",
+    "tap-dot": "2.0.0",
+    "tape-modern": "1.1.2"
+  },
+  "repository": "https://github.com/sveltejs/svelte-virtual-list",
+  "author": "Rich Harris",
+  "license": "LIL",
+  "keywords": [
+    "svelte"
+  ],
+  "files": [
+    "src",
+    "index.mjs",
+    "index.js"
+  ],
+  "dependencies": {
+    "npm-run-all": "^4.1.3"
+  }
+}

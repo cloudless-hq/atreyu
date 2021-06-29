@@ -1,0 +1,41 @@
+{
+  "name": "@sveltejs/svelte-virtual-list",
+  "version": "3.0.1",
+  "description": "A <VirtualList> component for Svelte apps",
+  "main": "VirtualList.svelte",
+  "svelte": "VirtualList.svelte",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -cw",
+    "prepublishOnly": "npm test",
+    "test": "node test/runner.js",
+    "test:browser": "npm run build && npx serve test/public",
+    "pretest": "npm run build",
+    "lint": "eslint src/VirtualList.svelte"
+  },
+  "devDependencies": {
+    "eslint": "6.7.2",
+    "eslint-plugin-svelte3": "git+https://github.com/sveltejs/eslint-plugin-svelte3.git",
+    "port-authority": "1.0.5",
+    "rollup": "1.27.9",
+    "rollup-plugin-commonjs": "10.1.0",
+    "rollup-plugin-node-resolve": "5.2.0",
+    "rollup-plugin-svelte": "5.1.1",
+    "sirv": "0.4.2",
+    "svelte": "3.16.4",
+    "tap-diff": "0.1.1",
+    "tap-dot": "2.0.0",
+    "tape-modern": "1.1.2"
+  },
+  "repository": "https://github.com/sveltejs/svelte-virtual-list",
+  "author": "Rich Harris",
+  "license": "LIL",
+  "keywords": [
+    "svelte"
+  ],
+  "files": [
+    "src",
+    "index.mjs",
+    "index.js"
+  ]
+}

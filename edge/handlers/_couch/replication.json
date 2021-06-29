@@ -1,0 +1,19 @@
+{
+  "_id": "prod_get",
+  "source": "https://<auth>@couch-prod.ntr.io/ntr_<orgId>",
+  "target": {
+    "url": "http://couchdb-couchdb:5984/<orgId>",
+    "headers": {
+      "X-Auth-CouchDB-Roles": "_admin",
+      "x-auth-couchdb-token": "<token>",
+      "x-auth-couchdb-username": "<username>"
+    }
+  },
+  "user_ctx": {
+    "name": "_admin",
+    "roles": [
+      "_admin"
+    ]
+  },
+  "owner": "_admin"
+}
