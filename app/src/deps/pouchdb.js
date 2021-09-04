@@ -1,10 +1,11 @@
+// vendored from https://unpkg.com/pouchdb@7.2.2/lib/index-browser.es.js
 import immediate from 'immediate';
-import uuidV4 from 'uuid';
+import { v4 } from 'uuid';
 import Md5 from 'spark-md5';
 import vuvuzela from 'vuvuzela';
 import getArguments from 'argsarray';
 import inherits from 'inherits';
-import EventEmitter from 'events';
+import EE from 'events';
 
 function mangle(key) {
   return '$' + key;
@@ -454,7 +455,7 @@ function hasLocalStorage() {
 
 // Custom nextTick() shim for browsers. In node, this will just be process.nextTick(). We
 
-inherits(Changes, EventEmitter);
+inherits(Changes, EE);
 
 /* istanbul ignore next */
 function attachBrowserEvents(self) {
@@ -466,7 +467,7 @@ function attachBrowserEvents(self) {
 }
 
 function Changes() {
-  EventEmitter.call(this);
+  EE.call(this);
   this._listeners = {};
 
   attachBrowserEvents(this);
@@ -519,7 +520,7 @@ Changes.prototype.removeListener = function (dbName, id) {
   if (!(id in this._listeners)) {
     return;
   }
-  EventEmitter.prototype.removeListener.call(this, dbName,
+  EE.prototype.removeListener.call(this, dbName,
     this._listeners[id]);
   delete this._listeners[id];
 };
@@ -659,9 +660,10 @@ function createError(error, reason) {
     // inherit error properties from our parent error manually
     // so as to allow proper JSON parsing.
     /* jshint ignore:start */
-    for (var p in error) {
-      if (typeof error[p] !== 'function') {
-        this[p] = error[p];
+    var names = Object.getOwnPropertyNames(error);
+    for (var i = 0, len = names.length; i < len; i++) {
+      if (typeof error[names[i]] !== 'function') {
+        this[names[i]] = error[names[i]];
       }
     }
     /* jshint ignore:end */
@@ -794,7 +796,7 @@ function isRemote(db) {
 
 function listenerCount(ee, type) {
   return 'listenerCount' in ee ? ee.listenerCount(type) :
-                                 EventEmitter.listenerCount(ee, type);
+                                 EE.listenerCount(ee, type);
 }
 
 function parseDesignDocFunctionName(s) {
@@ -1023,7 +1025,7 @@ function readAsArrayBuffer(blob, callback) {
 
 // this is not used in the browser
 
-var setImmediateShim = setTimeout;
+var setImmediateShim = self.setImmediate || self.setTimeout;
 var MD5_CHUNK_SIZE = 32768;
 
 function rawToBase64(raw) {
@@ -1098,14 +1100,14 @@ function stringMd5(string) {
 function rev(doc, deterministic_revs) {
   var clonedDoc = clone(doc);
   if (!deterministic_revs) {
-    return uuidV4.v4().replace(/-/g, '').toLowerCase();
+    return v4().replace(/-/g, '').toLowerCase();
   }
 
   delete clonedDoc._rev_tree;
   return stringMd5(JSON.stringify(clonedDoc));
 }
 
-var uuid = uuidV4.v4;
+var uuid = v4; // mimic old import, only v4 is ever used elsewhere
 
 // We fetch all leafs of the revision tree, and sort them based on tree length
 // and whether they were deleted, undeleted documents with the longest revision
@@ -1558,7 +1560,7 @@ function latest(rev, metadata) {
   throw new Error('Unable to resolve latest revision for id ' + metadata.id + ', rev ' + rev);
 }
 
-inherits(Changes$1, EventEmitter);
+inherits(Changes$1, EE);
 
 function tryCatchInChangeListener(self, change, pending, lastSeq) {
   // isolate try/catches to avoid V8 deoptimizations
@@ -1570,7 +1572,7 @@ function tryCatchInChangeListener(self, change, pending, lastSeq) {
 }
 
 function Changes$1(db, opts, callback) {
-  EventEmitter.call(this);
+  EE.call(this);
   var self = this;
   this.db = db;
   opts = opts ? clone(opts) : {};
@@ -1879,10 +1881,10 @@ function attachmentNameError(name) {
   return false;
 }
 
-inherits(AbstractPouchDB, EventEmitter);
+inherits(AbstractPouchDB, EE);
 
 function AbstractPouchDB() {
-  EventEmitter.call(this);
+  EE.call(this);
 
   // re-bind prototyped methods
   for (var p in AbstractPouchDB.prototype) {
@@ -2870,11 +2872,11 @@ PouchDB.preferredAdapters = [];
 
 PouchDB.prefix = '_pouch_';
 
-var eventEmitter = new EventEmitter();
+var eventEmitter = new EE();
 
 function setUpEventEmitter(Pouch) {
-  Object.keys(EventEmitter.prototype).forEach(function (key) {
-    if (typeof EventEmitter.prototype[key] === 'function') {
+  Object.keys(EE.prototype).forEach(function (key) {
+    if (typeof EE.prototype[key] === 'function') {
       Pouch[key] = eventEmitter[key].bind(eventEmitter);
     }
   });
@@ -2988,7 +2990,7 @@ PouchDB.fetch = function (url, opts) {
 };
 
 // managed automatically by set-version.js
-var version = "7.2.1";
+var version = "7.2.2";
 
 // this would just be "return doc[field]", but fields
 // can be "deep" due to dot notation
@@ -9940,9 +9942,9 @@ function replicate(src, target, opts, returnValue, result) {
 
 // We create a basic promise so the caller can cancel the replication possibly
 // before we have actually started listening to changes etc
-inherits(Replication, EventEmitter);
+inherits(Replication, EE);
 function Replication() {
-  EventEmitter.call(this);
+  EE.call(this);
   this.cancelled = false;
   this.state = 'pending';
   var self = this;
@@ -10023,7 +10025,7 @@ function replicateWrapper(src, target, opts, callback) {
   return replicateRet;
 }
 
-inherits(Sync, EventEmitter);
+inherits(Sync, EE);
 function sync(src, target, opts, callback) {
   if (typeof opts === 'function') {
     callback = opts;
@@ -10262,5 +10264,7 @@ PouchDB.plugin(IDBPouch)
   .plugin(HttpPouch$1)
   .plugin(mapreduce)
   .plugin(replication);
+
+// Pull from src because pouchdb-node/pouchdb-browser themselves
 
 export default PouchDB;
