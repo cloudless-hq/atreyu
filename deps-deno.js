@@ -24,7 +24,7 @@ export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/ma
 
 export { parse } from 'https://deno.land/std@0.91.0/flags/mod.ts'
 
-export {default as runDeno} from '/Users/jan/Dev/cloudless/libs/deployctl/src/subcommands/run.ts'
-export { analyzeDeps } from 'https://deno.land/x/deploy@0.4.0/src/subcommands/run.ts'
+export {default as runDeno} from 'https://deno.land/x/deploy@0.4.0/src/subcommands/run.ts'
+// '/Users/jan/Dev/cloudless/libs/deployctl/src/subcommands/run.ts'
+export { analyzeDeps } from 'https://deno.land/x/deploy@0.4.0/src/utils/info.ts'
 // '/Users/jan/Dev/cloudless/libs/deployctl/src/utils/info.ts'
-// 'https://deno.land/x/deploy@0.4.0/src/subcommands/run.ts'
