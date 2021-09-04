@@ -17,7 +17,7 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
     try {
         const oldDoc = await (await fetch(`https://${cloudantDomain}/${dbName}/${_id}`, {headers})).json()
 
-        const _rev = oldDoc && oldDoc._rev ? oldDoc._rev : undefined
+        const _rev = oldDoc?._rev
 
         const dbRes =  await fetch(`https://${cloudantDomain}/${dbName}`, {
             headers
@@ -60,5 +60,4 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
     } catch (err) {
         console.error(err)
     }
-    // console.log(updtRes)
 }
