@@ -2,6 +2,7 @@
 
 in folder root:
 
+- install yarn (version support 1.22.10)
 - yarn install
 - yarn build to build node dependencies for deno
 - remove the if case check process.env.FALCOR_OBSERVABLE_NO_CATCH from app/build/deps/falcor.js
