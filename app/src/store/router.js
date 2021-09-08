@@ -139,7 +139,7 @@ export default function (schema) {
       resetScroll = !a.hasAttribute('noscroll')
     }
 
-    async function upadteRoute () {
+    async function updateRoute () {
       const newState = routerState()
       if (newState._pending?.then) {
         set(newState)
@@ -166,13 +166,13 @@ export default function (schema) {
       }
     }
 
-    upadteRoute()
+    updateRoute()
 
-    window.addEventListener('popstate', upadteRoute)
+    window.addEventListener('popstate', updateRoute)
     window.addEventListener('click', linkClickHandler)
 
     return () => {
-      window.removeEventListener('popstate', upadteRoute)
+      window.removeEventListener('popstate', updateRoute)
       window.removeEventListener('click', linkClickHandler)
     }
   })

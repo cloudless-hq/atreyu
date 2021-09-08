@@ -44,6 +44,18 @@ export default {
     get: {
       tags: [ 'edge' ],
       operationId: '_couch'
+    },
+    put: {
+      tags: [ 'edge' ],
+      operationId: '_couch'
+    },
+    post: {
+      tags: [ 'edge' ],
+      operationId: '_couch'
+    },
+    options: {
+      tags: [ 'edge' ],
+      operationId: '_couch'
     }
   },
   '/cdn-cgi/access*': {

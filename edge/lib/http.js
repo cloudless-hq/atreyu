@@ -1,29 +1,43 @@
-/* global URL, fetch, Response, TransformStream */
+export async function fetchStream (url, reqConf) {
+  const response = await fetch(url, reqConf)
+  if (!response.ok) {
+    return { response }
+  }
+  const reader = response.body.getReader()
 
-export async function fetchAndStream (req, init) {
-  let response = await fetch(req, init)
+  const { readable, writable } = new TransformStream()
+  const writer = writable.getWriter()
 
-  let { readable, writable } = new TransformStream()
-  streamBody(response.body, writable)
-  return new Response(readable, response)
-}
+  const encoder = new TextEncoder()
+  const decoder = new TextDecoder()
 
-async function streamBody (readable, writable) {
-  let reader = readable.getReader()
-  let writer = writable.getWriter()
-
-  // let encoder = new TextEncoder()
-  // await writer.write(encoder.encode(' test '))
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) {
-      break
-    }
-    await writer.write(value)
+  async function write (data) {
+    await writer.write(encoder.encode(data))
   }
 
-  await writer.close()
+  async function processFeed () {
+    while (true) {
+      const { done, value } = await reader.read()
+
+      await writer.write(value) // await ?
+
+      if (done) {
+        if (!readable.locked) {
+         await readable.cancel()
+        }
+
+        await reader.cancel()
+
+        break
+      }
+    }
+  }
+
+  processFeed()
+
+  // to wait for streaming end in calling code: await writer.close()
+  // use response in calling code like this: return new Response(readable, response)
+  return { response, readable, reader, writable, writer, write }
 }
 
 export async function bodyParser ({ event, clone }) {
@@ -91,3 +105,4 @@ export function parseReq (req) {
 // 'Feature-Policy' : 'camera 'none'; geolocation 'none'; microphone 'none''
 
 // TODO: Link: '</http2_push/h2p/test.css>; rel=preload;',
+// todo ensure gzip support!

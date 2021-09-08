@@ -39,6 +39,7 @@ export default async function ({ req, body, response, stats, duration = null }) 
   if (!env.ELASTIC_URL) {
     return
   }
+
   return fetch(env.ELASTIC_URL, {
     method: 'POST',
     headers: new Headers({
@@ -61,4 +62,13 @@ export default async function ({ req, body, response, stats, duration = null }) 
       res
     })
   })
+  // TODO: error logging for elastic logging errors
+  // .then(ress => {
+  //   console.log(ress, env._ELASTIC_AUTH)
+  //   return ress
+  // })
+  // .catch(err => {
+  //   console.log(err)
+  //   return err
+  // })
 }

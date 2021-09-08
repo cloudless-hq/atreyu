@@ -3,6 +3,7 @@
   import Menu from '/atreyu/src/components/menu.svelte'
 
   export let env = 'prod'
+  export let userName = null
 
   // TODO: full support for long running observables to avoid this loop
 	let seq
@@ -17,7 +18,7 @@
 	}
 	doSync()
 
-  const settingsDocId = `system:settings_${env}`
+  const settingsDocId = env === 'dev' ? `system:settings_${env}_${userName}` : `system:settings_${env}`
 
   let versionTooltip = ''
   let updatedNotification

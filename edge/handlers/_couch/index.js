@@ -1,40 +1,76 @@
-// import handleFauxton from './fauxton'
-import { decode } from '../../lib/jwt'
-import { authHeaders } from './helpers'
+import { getEnv } from '../../lib/env.js'
+// import { fetchStream } from '../../lib/http.js'
 
-export async function handler ({ event, req, app }) {
-  // if (req.url.pathname === '/_utils') {
-  //   return new Response('redirect', {
-  //     status: 301,
-  //     headers: { 'Location': 'https://' + req.url.hostname + '/_utils/' }
-  //   })
-  // }
-  // if (req.url.pathname.startsWith('/_utils/')) {
-  //   return finish(handleFauxton({ req, event }))
-  // }
+// TODO: support non cloudant couchdb auth:
+  // import { authHeaders } from './helpers.js'
+  // await authHeaders({ userId }) // req.headers
+
+const { _couchKey, _couchSecret, couchHost } = getEnv(['_couchKey', '_couchSecret', 'couchHost'])
+
+export async function handler ({ event, req, app, body }) {
+  // TODO: use our own fauxton release instead of cloudant one
+    // import handleFauxton from './fauxton'
+    // if (req.url.pathname === '/_utils') {
+    //   return new Response('redirect', {
+    //     status: 301,
+    //     headers: { 'Location': 'https://' + req.url.hostname + '/_utils/' }
+    //   })
+    // }
+    // if (req.url.pathname.startsWith('/_utils/')) {
+    //   return finish(handleFauxton({ req, event }))
+    // }
+
+  const href = couchHost + req.url.pathname.replace('/_couch', '') + req.url.search
+
+  if (!req.url.pathname.includes('/_changes')) {
+    return fetch(href, {
+      method: req.method,
+      body, // req.raw?.body, // (req.method === 'PUT' || req.method === 'POST') ?
+      headers: {
+        ...req.headers,
+        'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+      }
+    })
+  } else {
+    return fetch(href, {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+      }
+    })
+    // const { readable, response } = await fetchStream(href, {
+    //   method: req.method,
+    //   headers: {
+    //     'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`,
+    //     ...req.headers
+    //   }
+    // })
+    // return new Response(readable, response)
+  }
+}
+
+
+// TODO: support cloudflare jwt decoding and cloudflare access features
+  // import { decode } from '../../lib/jwt'
   // if (req.url.pathname === ('/_session') && req.method === 'DELETE') {
   //   return new Response('redirect', {
   //     status: 303,
   //     headers: { 'Location': 'https://' + req.url.hostname + '/cdn-cgi/access/logout' }
   //   })
   // }
-
-  return couchProxy({ url: req.url.href, req, userId: '_admin' })
-}
-
-async function couchProxy ({ url, req, userId }) {
-  // TODO: caching req.headers.if-none-match W/"3-a04c2ef5d805577085597f72e1c5922a"
-  let tokenResult = await decode(req.headers['cf-access-jwt-assertion'])
-  if (tokenResult.valid) {
-    return fetch(url, {
-      method: req.method,
-      body: (req.method === 'PUT' || req.method === 'POST') ? req.raw.body : null,
-      headers: await authHeaders({ userId }) // req.headers
-    })
-  }
-
-  return new Response('Auth Error', {
-    status: 500,
-    headers: {}
-  })
-}
+  // async function couchProxy ({ url, req, userId }) {
+  //   // TODO: caching req.headers.if-none-match W/"3-a04c2ef5d805577085597f72e1c5922a"
+  //   // let tokenResult = await decode(req.headers['cf-access-jwt-assertion'])
+  //   // if (tokenResult.valid) {
+  //     return fetch(url, {
+  //       method: req.method,
+  //       body: (req.method === 'PUT' || req.method === 'POST') ? req.raw.body : null,
+  //       // headers: await authHeaders({ userId }) // req.headers
+  //     })
+  //   // }
+  //   return new Response('Auth Error', {
+  //     status: 500,
+  //     headers: {}
+  //   })
+  // }

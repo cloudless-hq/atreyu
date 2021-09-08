@@ -17,13 +17,14 @@ export default handler => {
         const { parsedBody, body } = await bodyParser({ event })
 
         if (req.url.href.startsWith('http://1')) {
-          console.log(stats,req)
+          console.log(stats, req)
         }
 
         return handler({
           stats,
           req,
           parsedBody,
+          body,
           event,
           wait
         })

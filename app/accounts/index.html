@@ -34,6 +34,7 @@
       if (location.search === '?logout') {
         // todo migrate to http remove header and redirect
         deleteCookie('CF_Authorization')
+
         if (!location.origin.endsWith('localhost')) {
           location.href= `https://igp.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${location.origin}/atreyu/accounts?login`
         }

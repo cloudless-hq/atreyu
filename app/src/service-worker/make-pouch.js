@@ -12,10 +12,13 @@ const admin = false
 export default function ({
   dbName,
   designDocs,
-  cloudantKey,
-  cloudantSecret,
-  cloudantDomain
+  // couchKey, couchSecret, couchHost
 }) {
+
+  // TODO support schema based configuration and direct client couch connection with cors support
+  // couchHost ? `https://${couchKey}:${couchSecret}@${couchHost}` : `${location.origin}`
+  // ${couchRoot ? couchRoot : '/'}$
+
   const pouch = new Pouchdb(dbName)
 
   if (designDocs && designDocs.length > 0) {
@@ -36,10 +39,14 @@ export default function ({
   // function startSync () {
   // TODO: move to application logic or make configurable with different strategies
     // [admin ? 'sync' : 'replicate']
-    const sync = Pouchdb.sync(`https://${cloudantKey}:${cloudantSecret}@${cloudantDomain}/${dbName}`, dbName, {
+
+    const proxyUrl = `${location.origin}/_couch/${dbName}`
+
+    const sync = Pouchdb.sync(proxyUrl, dbName, {
       live: true,
       retry: true,
       heartbeat: 2500
+      // checkpoint: false source target
     })
     .on('denied', err => {
       onsole.error('denied', err)

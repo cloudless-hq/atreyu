@@ -2,6 +2,7 @@ import ipfsHandler from './handlers/ipfs.js'
 import corsHandler from './handlers/cors.js'
 import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
+import { escapeId } from '../../../edge/lib/escape-id.js'
 
 export default function ({
     config,
@@ -26,10 +27,10 @@ export default function ({
 
   const envConfig = config[env] ? config[env] : {}
 
+  const { orgName, userName } = envConfig
+
   const {
-    cloudantKey,
-    cloudantSecret,
-    cloudantDomain,
+    // couchKey, couchSecret, couchHost,
     IPFS_GATEWAY = 'http://127.0.0.1:8080'
   } = {...config, ...envConfig}
 
@@ -37,7 +38,7 @@ export default function ({
   let dbConf
   // TODO: how to handle mutliple or switch to consistently only handle one pouch
   if (typeof dbs === 'function') {
-    dbConf = dbs({ orgName: 'igp', userName: 'jan', appName })
+    dbConf = dbs({ orgName, userName, appName, env, escapeId })
   } else {
     dbConf = dbs
   }
@@ -46,9 +47,7 @@ export default function ({
     pouch = makePouch({
       dbName,
       designDocs,
-      cloudantKey,
-      cloudantSecret,
-      cloudantDomain
+      // couchKey, couchSecret, couchHost
     })
   })
 
@@ -200,7 +199,7 @@ function rewrite (url) {
 }
 
 // startFeed({dbHost: `/_feed`})
-// function startFeed ({dbHost, cloudantSecret, cloudantKey}) {
+// function startFeed ({dbHost, couchSecret, couchKey}) {
 //   const dbName = 'convoi_igp'
 //   const last_seq = 0
 //   const url = `${dbHost}/${dbName}/_changes?feed=eventsource&since=${last_seq}&conflicts=true&style=all_docs&heartbeat=5000&seq_interval=1`

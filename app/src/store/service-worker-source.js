@@ -25,7 +25,7 @@ class ServiceWorkerSource {
 
     if (wake) {
       this._waker = setInterval(() => {
-        this._worker.postMessage(JSON.stringify([-1, 'waki wake']))
+        this._worker.postMessage(JSON.stringify([-1, 'waky waky']))
       }, wake)
     }
   }

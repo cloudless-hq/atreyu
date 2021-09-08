@@ -164,9 +164,14 @@ export async function add ({
 	// 	// Deno.writeTextFileSync(atreyuPath + 'apps/apps/data', JSON.stringify(dashData, null, 2))
 	// 	atreyuFileHashes = await add(atreyuPath) }
 
-	await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
-	await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
-	await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
+  try {
+    await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
+    await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
+    await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
+  } catch (err) {
+    console.error('🛑 Cannot connect to atreyu daemon. Forgot running "ayu start"?\n\n', err)
+    return
+  }
 
 	// console.log(await (await fetch(ipfsApi + `/api/v0/files/write?arg=/apps/${input}/ipfs-map.json&truncate=true&create=true`, {
 	//   method: 'POST',
