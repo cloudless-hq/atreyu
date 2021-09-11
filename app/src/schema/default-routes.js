@@ -22,6 +22,13 @@ export default {
     }
   },
 
+  '/_session': {
+    get: {
+      tags: [ 'edge' ],
+      operationId: '_session'
+    }
+  },
+
   // cypress support
   '/__*': {
     get: {

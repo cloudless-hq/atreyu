@@ -1,0 +1,61 @@
+// we use the deno base config with good old standardjs style instead of prettier
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "createDefaultProgram": true
+      // TODO: enable when svelte compiler supports ts :
+      // tsconfigRootDir: __dirname,
+      // project: ['./tsconfig.json'],
+      // extraFileExtensions: ['.svelte']
+  },
+  "plugins": ["@typescript-eslint", "svelte3"],
+  "extends": [
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "space-before-blocks": ["error", "always"],
+    "keyword-spacing": ["error", { "before": true , "after": true }],
+    "arrow-spacing": ["error", { "before": true, "after": true }],
+    "space-before-function-paren": ["error", "always"],
+    "space-before-function-paren": ["error", {
+        "anonymous": "always",
+        "named": "always",
+        "asyncArrow": "always"
+    }],
+    "indent": ["error", 2],
+    "semi": ["error", "never"],
+    "quotes": ["error", "single", { "allowTemplateLiterals": true }],
+    "@typescript-eslint/array-type": ["error", { "default": "array-simple" }],
+    "@typescript-eslint/ban-ts-comment": ["off"],
+    "@typescript-eslint/explicit-member-accessibility": ["off"],
+    "@typescript-eslint/explicit-module-boundary-types": ["off"],
+    "@typescript-eslint/no-non-null-assertion": ["off"],
+    "@typescript-eslint/no-use-before-define": ["off"],
+    "@typescript-eslint/no-parameter-properties": ["off"],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "@typescript-eslint/ban-ts-ignore": ["off"],
+    "@typescript-eslint/no-empty-function": ["off"],
+    "no-return-await": "error",
+    "require-await": "error",
+    "no-async-promise-executor": "error"
+  },
+  "settings": {
+    "svelte3/typescript": true
+  },
+  "overrides": [
+    {
+      "files": ["*.svelte"],
+      "processor": "svelte3/svelte3"
+    },
+    {
+      "files": ["*.js"],
+      "rules": {
+        "@typescript-eslint/explicit-function-return-type": ["off"]
+      }
+    }
+  ]
+}

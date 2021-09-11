@@ -148,7 +148,7 @@ export default function ({
       return
     }
 
-    const bypassing = bypass.filter(path => {
+    const pathBypassing = bypass.filter(path => {
       if (path.endsWith('*')) {
         if (url.pathname.startsWith(path.replace('*', ''))) {
           return true
@@ -159,8 +159,9 @@ export default function ({
         }
       }
     })
-    if (bypassing.length > 0) {
-      console.log(bypassing, '_bypassing ' + url.pathname)
+
+    if (pathBypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
+      console.info('_bypassing ' + url.href)
       return
     }
 
