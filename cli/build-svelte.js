@@ -1,8 +1,4 @@
-import { join, dirname, basename, compile } from './deps-deno.js'
-
-import {
-  green
-} from './deps-deno.js'
+import { join, dirname, basename, compile, green } from '../deps-deno.js'
 
 // TODO: auto fetch and compile sub imports of svelte components?
 

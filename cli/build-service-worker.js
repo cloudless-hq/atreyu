@@ -1,7 +1,4 @@
-import { join } from './deps-deno.js'
-import {
-    green
-} from './deps-deno.js'
+import { join, green } from '../deps-deno.js'
 
 export default async function () {
     const appFolder = Deno.cwd() + '/app'
@@ -20,7 +17,7 @@ export default async function () {
 
     console.log('  compiling service worker: ' + swPath)
 
-    const atreyuPath = join(Deno.mainModule, '..').replace('file:', '')
+    const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
     // console.log(atreyuPath, swPath)
 
     const emitRes = await Deno.emit(swPath, {

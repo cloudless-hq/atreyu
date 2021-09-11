@@ -8,7 +8,7 @@ import {
     italic,
     red,
     gray
-} from './deps-deno.js'
+} from '../deps-deno.js'
 
 
   // TODO:

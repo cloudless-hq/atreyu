@@ -12,7 +12,7 @@ import {
   red,
   // analyzeDeps,
   globToRegExp
-} from './deps-deno.js'
+} from '../deps-deno.js'
 
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
@@ -22,8 +22,8 @@ import { buildEdge, buildWorkerConfig } from './build-edge.js'
 import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
-import { toFalcorPaths, toWindowPaths } from './app/src/schema/helpers.js'
-import defaultPaths from './app/src/schema/default-routes.js'
+import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
+import defaultPaths from '../app/src/schema/default-routes.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
@@ -88,7 +88,7 @@ if (!cmd || help) {
   cmd = 'help'
 }
 
-const config = await loadConfig(env)
+let config = await loadConfig(env)
 
 // TODO: allow argument relative path for apps different from cwd
 const appName = basename(Deno.cwd())
@@ -156,6 +156,9 @@ switch (cmd) {
         rerun = true
         return
       }
+      config = await loadConfig(env)
+      console.log('here', config)
+
       // TODO: if daemon not running: await startDaemon({ifNotExists: true})
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
@@ -313,7 +316,7 @@ switch (cmd) {
       watch: true,
       inspect: true,
       // env: home + '/.atreyu/dev.env',
-      _: [ join(import.meta.url.replace('file://', ''), '..', '/edge/entry-deno.js') ]
+      _: [ join(import.meta.url.replace('file://', ''), '..', '..', '/edge/entry-deno.js') ]
     })
   break
 

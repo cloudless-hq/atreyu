@@ -1,4 +1,4 @@
-import { join, basename, green, yellow } from './deps-deno.js'
+import { join, basename, green, yellow } from '../deps-deno.js'
 
 // async function ipfsFetch (cmd, data) {
 //  // todo: convert to http

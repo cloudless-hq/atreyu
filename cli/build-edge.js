@@ -1,7 +1,4 @@
-import { join, basename } from './deps-deno.js'
-import {
-    green
-} from './deps-deno.js'
+import { join, basename, green } from '../deps-deno.js'
 
 export function buildWorkerConfig (schema) {
   const workers = {}
@@ -29,7 +26,7 @@ export function buildWorkerConfig (schema) {
           workers[workerName].codePath = join('app', 'workers', operationId)
         }
         if (workers[workerName].routes) {
-          pworkers[workerName].routes.push(path)
+          workers[workerName].routes.push(path)
         } else {
           workers[workerName].routes = [path]
         }

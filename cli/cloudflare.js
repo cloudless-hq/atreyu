@@ -1,4 +1,4 @@
-import { basename, join } from './deps-deno.js'
+import { basename, join } from '../deps-deno.js'
 
 export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config }) {
   if (!config.__cloudflareToken) {
