@@ -7,6 +7,7 @@
   "dependencies": {
     "@rollup/plugin-commonjs": "20.0.0",
     "@rollup/plugin-node-resolve": "13.0.4",
+    "@rollup/plugin-replace": "3.0.0",
     "argsarray": "0.0.1",
     "events": "3.3.0",
     "falcor": "2.3.2",

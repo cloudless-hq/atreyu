@@ -2,22 +2,6 @@
 	import data from '/atreyu/src/store/data.js'
 
   export let env = 'prod'
-  export let userName = null
-
-  // TODO: full support for long running observables to avoid this loop
-	let seq
-  async function doSync () {
-		try {
-      seq = (await $data._sync(seq))?.json?._seq || seq
-    } catch (err) {
-      console.log(err)
-    } finally {
-      doSync()
-    }
-	}
-	doSync()
-
-  const settingsDocId = env === 'dev' ? `system:settings_${env}_${userName}` : `system:settings_${env}`
 
   let versionTooltip = ''
   let updatedNotification
@@ -25,54 +9,89 @@
   let installedHash = ''
   let newHash = null
   let updating = false
+  let settingsDocId
 
   let _updateImmediate = localStorage.getItem('_updateImmediate')
   let _updateCounter = Number(localStorage.getItem('_updateCounter'))
 
-  // the initial update check to auto install updates on fresh load and preload the required data
-  Promise.all([
-    $data._docs[settingsDocId + '$'],
-    $data._hash$
-  ]).then(([settingsDoc, installedHash]) => {
-    if (settingsDoc?.folderHash) {
-      latestHash = settingsDoc.folderHash
 
-      // console.log(latestHash, installedHash)
-      if (latestHash !== installedHash) {
-        if (_updateCounter < 10) {
-          doUpdate() // todo counter with blocker
-        }
+  // TODO: full support for long running observables to avoid this loop
+  let seq
+  async function doSync () {
+    try {
+      seq = (await $data._sync(seq))?.json?._seq || seq
+    } catch (err) {
+      console.log(err)
+    } finally {
+      doSync()
+    }
+  }
+
+  $: {
+    if (!$data._session.userId$?._loading) {
+      if (!$data._session.userId$) {
+        location.href = '/_couch/_session?login&continue=' + encodeURIComponent(location.href)
       } else {
-        localStorage.setItem('_updateCounter', 1)
+        settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
       }
     }
-  })
+  }
+
+  // the initial update check to auto install updates on fresh load and preload the required data
+  async function init () {
+    const userId = await $data._session.userId$
+    if (userId) {
+      doSync()
+
+      settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
+
+      const [settingsDoc, installedHash] = await Promise.all([
+        $data._docs[settingsDocId + '$'],
+        $data._hash$
+      ])
+
+      if (settingsDoc?.folderHash) {
+        latestHash = settingsDoc.folderHash
+
+        if (latestHash !== installedHash) {
+          if (_updateCounter < 10) {
+            doUpdate() // todo counter with blocker
+          }
+        } else {
+          localStorage.setItem('_updateCounter', 1)
+        }
+      }
+    }
+  }
+  init()
 
   // the reactive check to ask for updates and reload while the page is open
   $: {
-    const settingsDoc = $data._docs[settingsDocId + '$']
-    if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {
-      latestHash = settingsDoc.folderHash
-      installedHash = $data._hash$
+    if (settingsDocId) {
+      const settingsDoc = $data._docs[settingsDocId + '$']
+      if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {
+        latestHash = settingsDoc.folderHash
+        installedHash = $data._hash$
 
-      // console.log({latestHash, installedHash, _updateImmediate, _updateCounter, updating})
-      if (latestHash !== installedHash) {
-        newHash = latestHash
-      }
+        // console.log({latestHash, installedHash, _updateImmediate, _updateCounter, updating})
+        if (latestHash !== installedHash) {
+          newHash = latestHash
+        }
 
-      if (newHash) {
-        if (_updateImmediate && _updateCounter < 10 && !updating) {
-          doUpdate(true)
+        if (newHash) {
+          if (_updateImmediate && _updateCounter < 10 && !updating) {
+            doUpdate(true)
+          } else {
+            versionTooltip = `Build: "${settingsDoc.buildName$}"
+  Atreyu  Version: "${settingsDoc.version$}"
+  Installled Hash: "${installedHash.substr(-8)}"
+  Latest     Hash: "${newHash.substr(-8)}"`
+          }
         } else {
           versionTooltip = `Build: "${settingsDoc.buildName$}"
-Atreyu  Version: "${settingsDoc.version$}"
-Installled Hash: "${installedHash.substr(-8)}"
-Latest     Hash: "${newHash.substr(-8)}"`
+  Atreyu Version: "${settingsDoc.version$}"
+  Installed Hash: "${installedHash.substr(-8)}"`
         }
-      } else {
-        versionTooltip = `Build: "${settingsDoc.buildName$}"
-Atreyu Version: "${settingsDoc.version$}"
-Installed Hash: "${installedHash.substr(-8)}"`
       }
     }
   }

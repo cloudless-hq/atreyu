@@ -1,5 +1,7 @@
 import { join, basename, green } from '../deps-deno.js'
 
+const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
+
 export function buildWorkerConfig (schema) {
   const workers = {}
 
@@ -15,8 +17,11 @@ export function buildWorkerConfig (schema) {
           let codePath = join('handlers', operationId + '.js')
 
           try {
-            Deno.statSync(join('./edge', codePath))
+            const testPath = join(atreyuPath, 'edge', codePath)
+            // console.log(testPath)
+            Deno.statSync(testPath)
           } catch (_e) {
+            // console.log(_e)
             // TODO: ts support
             codePath = join('handlers', operationId, 'index.js')
           }
@@ -38,8 +43,6 @@ export function buildWorkerConfig (schema) {
 }
 
 async function compile ({input, appName, workerName, output, buildName}) {
-  const atreyuPath = join(Deno.mainModule, '..').replace('file:', '')
-
   const { files, diagnostics } = await Deno.emit(join(atreyuPath, 'edge', 'entry-cloudflare.js'), {
     bundle: 'module', // classic
     check: false,
@@ -56,7 +59,6 @@ async function compile ({input, appName, workerName, output, buildName}) {
       diagnostics.map(di => console.warn(di))
   }
 
-  console.log(workerName ,output)
   await Promise.all([
       Deno.writeTextFile(output, files['deno:///bundle.js'].replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
       Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map'])
@@ -79,7 +81,7 @@ export async function buildEdge (workers, buildName) {
     if (!workerName.startsWith('_')) {
       compile({input: join(Deno.cwd(), codePath), appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
     } else {
-      const systemHandlers = join(import.meta.url, '../edge/').replace('file:', '')
+      const systemHandlers = join(import.meta.url, '..', '..', 'edge/').replace('file:', '')
       compile({ input: join(systemHandlers, codePath), appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
     }
   })

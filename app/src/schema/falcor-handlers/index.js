@@ -1,8 +1,12 @@
 // TODO: warn Observable handlers cannot be async functions themselves
 // TODO: filter out changes of own set/ call operations
-export const _sync = ({ pouch, userId, Observable }, [ since ]) => {
+function userDb (dbs) {
+  return dbs.entries().next().value?.[1]
+}
+
+export const _sync = ({ dbs, Observable }, [ since ]) => {
   return Observable.create(subscriber => {
-    const changes = pouch.changes({
+    const changes = userDb(dbs).changes({
       since: since || 'now',
       live: true,
       include_docs: true

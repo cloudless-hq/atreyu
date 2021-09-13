@@ -13,6 +13,7 @@
   "extends": [
     "plugin:@typescript-eslint/recommended"
   ],
+  "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
     "space-before-blocks": ["error", "always"],
     "keyword-spacing": ["error", { "before": true , "after": true }],

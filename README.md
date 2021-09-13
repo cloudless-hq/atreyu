@@ -2,15 +2,11 @@
 
 in root of folder:
 
-- install yarn (version support 1.22.10)
+- requirements: yarn (version support 1.22.10), deno (), ipfs go cli ()
 
-- yarn install
+- yarn install && yarn build
 
-- build node dependencies for deno:
-
-  yarn build
-
-- remove the if case check `process.env.FALCOR_OBSERVABLE_NO_CATCH` from app/build/deps/falcor.js
+  install and build node dependencies for deno
 
 - install ayu cli:
 
@@ -19,12 +15,8 @@ in root of folder:
 
 - currently prompts are not enabled automatically by deno install, if you want to be prompted, add the --prompt parameter to the script
 
-  open `which ayu`
-
-- run dev daemon:
-
-  ayu start
+  eg. code `which ayu`
 
 - build and install atreyu to local dev server:
 
-  ayu dev (just kill dev daemon after success message if not working on atreyu internals)
+  ayu dev --start (just kill dev daemon after success message if not working on atreyu internals)

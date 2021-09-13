@@ -28,8 +28,8 @@ export default {
     'test': {
       get: {
         tags: ['falcor'],
-        handler: async ({ pouch }) => {
-          const res = await pouch.get('a:b9c52d21456f74741245739cdc4b1d6d')
+        handler: async ({ dbs }) => {
+          const res = await dbs[0].get('a:b9c52d21456f74741245739cdc4b1d6d')
           return {jsonGraph: { test: res.a} }
         }
       }

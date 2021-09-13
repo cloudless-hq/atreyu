@@ -183,6 +183,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         // prom that returns from our model cache, gets load off falcor internals
 
           lastUpdt.set(pathString, latestTick)
+          // console.log('getting 1', path, pathString)
           prom = adjustedModel.getValue(path)
           .then(val => {
             if (typeof val === 'undefined') {
@@ -190,20 +191,28 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
             } else {
               cacheMap.set(pathString, val)
             }
-
+            // prom._loading = false
             return val
           })
+          .catch(err => {
+            // prom._loading = false
+            return new Promise((_resolve, reject) => reject({
+              message: 'failed falcor get',
+              path,
+              err
+            }))
+          })
+          // new Promise((resolve, reject) => { })
           prom._loading = true // todo unify with $loading?
           prom.toString = () => '' // to render empty stings as placeholders
           cacheMap.set(pathString, prom)
       }
 
-      // undefined means we dont know, _undefined means we know val is undefined
+      // undefined means we dont know the value, _undefined means we know the value is undefined
+      // console.log('about to return', pathString, cacheVal)
       if (typeof cacheVal !== 'undefined') {
         if (cacheVal === _undefined) {
           return undefined
-        } else if (cacheVal._loading) {
-          prom = cacheVal
         } else {
           return cacheVal
         }

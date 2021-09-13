@@ -29,11 +29,11 @@ class WorkerServer {
 
 export default function ({
   schema,
-  pouch
+  dbs
 }) {
   const dataRoutes = toFalcorRoutes(schema)
   const FalcorRouter = makeRouter(dataRoutes)
-  const routerInstance = new FalcorRouter({ pouch }) // TODO: userId
+  const routerInstance = new FalcorRouter({ dbs }) // TODO: userId
 
   // const serverDataSource = falcor({
   //   cache: {},

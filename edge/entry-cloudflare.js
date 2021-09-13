@@ -6,15 +6,15 @@ import { escapeId } from './lib/escape-id.js'
 
 async function getApp () {
   const { appName } = stats.get()
-  const { cloudantDomain, cloudantKey, cloudantSecret, env } =  getEnv(['cloudantDomain', 'cloudantKey', 'cloudantSecret', 'env'])
+  const { couchHost, _couchKey, _couchSecret, env } =  getEnv(['couchHost', '_couchKey', '_couchSecret', 'env'])
   const settingsDocId = 'system:settings_' + env
-  const safeName = escapeId(appName)
+  const safeName = escapeId(env + '.' + appName)
 
-  const url = `https://${cloudantDomain}/${safeName}/${settingsDocId}`
+  const url = `${couchHost}/${safeName}/${settingsDocId}`
 
   const settingsDocRes = (await fetch(url, {
       headers: {
-          Authorization: `Basic ${btoa(cloudantKey + ':' + cloudantSecret)}`
+          Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
       }
   }))
   const settingsDoc = await settingsDocRes.json()

@@ -1,5 +1,6 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
+import replace from '@rollup/plugin-replace'
 
 import fs from 'fs'
 
@@ -17,6 +18,10 @@ export default deps.map((name) =>
       sourcemap: false
     },
     plugins: [
+      replace({
+        preventAssignment: false,
+        values: { 'process.env.FALCOR_OBSERVABLE_NO_CATCH': 'false' } // TODO: fix falcor and remove this
+      }),
       nodeResolve({
         preferBuiltins: false,
         browser: true

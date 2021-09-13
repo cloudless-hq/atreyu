@@ -1,17 +1,35 @@
   // example working : )
   // 'test.pest': { // test if wildcard like path handling works
   //   get: {
-  //     handler: async ({ pouch, titleRanges }) => {
+  //     handler: async ({ dbs, titleRanges }) => {
   //       return [{ path: ['test', 'pest', 'x', 'y'], value: 1 }]
   //     }
   //   }
   // },
   // TODO migrate to box shorthand :  {$atom: somevalue}, {$ref: [1, 'b', 'd'}, {$error: 'error 1 occured'}
 
+function userDb (dbs) {
+  // just get first db at the moment
+  return dbs.entries().next().value?.[1]
+}
+
 export default {
   '_sync': {
     call: {
       operationId: '_sync'
+    }
+  },
+  '_session[{keys:keys}]': {
+    get: {
+      handler: async ({ keys }) => {
+        const _session = await self.session.refresh()
+
+        return {
+          jsonGraph: {
+            _session
+          }
+        }
+      }
     }
   },
   '_hash': {
@@ -49,8 +67,8 @@ export default {
   },
   '_docs.create': {
     call: {
-      handler: async ({ pouch, userId, Observable }, [ docs ]) => {
-        const result = await pouch.bulkDocs(docs)
+      handler: async ({ dbs, userId, Observable }, [ docs ]) => {
+        const result = await userDb(dbs).bulkDocs(docs)
 
         return result.map((doc, i) => {
           return { path: ['_docs', docs[i]._id], value: docs[i] } // { $type: 'atom', value:
@@ -60,8 +78,8 @@ export default {
   },
   '_docs[{keys:ids}]': {
     set: {
-      handler: async ({_docs, pouch, userId}) => {
-        const result = await pouch.bulkDocs(Object.values(_docs).map(doc => doc.value))
+      handler: async ({_docs, dbs, userId}) => {
+        const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(doc => doc.value))
 
         // todo: handle errors
         result.forEach(res => {
@@ -80,8 +98,8 @@ export default {
       }
     },
     get: {
-      handler: async ({ ids, keys, pouch }) => {
-        const pouchRes = await pouch.allDocs({
+      handler: async ({ ids, keys, dbs }) => {
+        const pouchRes = await userDb(dbs).allDocs({
           include_docs: true,
           keys: ids
         })
@@ -122,7 +140,7 @@ export default {
         //     byId: res
         //   }
         // }
-        // const pouchRes = await pouch.allDocs({
+        // const pouchRes = await userDb(dbs).allDocs({
         //     include_docs: true,
         //     keys: ids
         // })

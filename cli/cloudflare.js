@@ -79,7 +79,8 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
 
-    const scriptData = Deno.readTextFileSync(join(Deno.cwd(), codePath.replace('handlers/', 'edge/build/')))
+    const scriptPath = join(Deno.cwd(), codePath.replace('handlers/', 'edge/build/').replace('/index', ''))
+    const scriptData = Deno.readTextFileSync(scriptPath)
 
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
     config['env'] = env

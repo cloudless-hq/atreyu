@@ -4,69 +4,12 @@
     <meta charset="utf-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Web site created using create-snowpack-app" />
-    <!-- <link rel="manifest" href="/app-manifest.json"> -->
-    <title>User Management</title>
+    <meta name="description" content="atreyu account management" />
+    <title>Account Management</title>
     <script>
-      // function setCookie (name, value, days) {
-      //     let d = new Date
-      //     d.setTime(d.getTime() + 24 * 60 * 60 * 1000 * days)
-      //     document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString()
-      // }
-      // function getCookie (name) {
-      //     let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)')
-      //     return v ? v[2] : null
-      // }
-      // function deleteCookie (name) { setCookie(name, '', -1) }
-
-      async function getSession () {
-        const session = await (await fetch('/_session')).json()
-        console.log(session)
+      function devLogin () {
+        location.href = '/_couch/_session?dev_login&' + location.href.split('?')[1]
       }
-
-      getSession()
-
-      async function devLogin () {
-        // const creds = await navigator.credentials.get({password: true, mediation: 'required'})
-        // if (creds?.id) {
-          // if (location.origin.endsWith('localhost')) {
-          //   setCookie('CF_Authorization', 'creds.id', 3)
-          // } else {
-          //   setCookie('AYU_DEV', 'creds.id', 3)
-          // }
-          // location.href= '/'
-      // }
-      }
-
-      if (location.search === '?logout') {
-        // // todo migrate to http remove header and redirect
-        // deleteCookie('CF_Authorization')
-
-        // if (!location.origin.endsWith('localhost')) {
-        //   location.href= `https://igp.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${location.origin}/atreyu/accounts?login`
-        // }
-      } else if (location.search === '?login' && getCookie('CF_Authorization')) {
-        location.href= '/'
-      }
-
-      // if (location.origin.endsWith('localhost')) {
-      //   navigator.credentials.preventSilentAccess()
-      //   navigator.credentials.store((new PasswordCredential({
-      //     id: 'devlocal_admin',
-      //     data: 'sddfsdf',
-      //     password: 'very long and secure admin password',
-      //     name: 'Devlocal Admin',
-      //     iconURL: `${location.origin}/assets/icon.png`
-      //   })))
-
-      //   navigator.credentials.store((new PasswordCredential({
-      //     id: 'devlocal_user',
-      //     data: 'sddfsdf',
-      //     password: 'very long and secure user password',
-      //     name: 'Devlocal User',
-      //     iconURL: `${location.origin}/assets/icon.png`
-      //   })))
-      // }
     </script>
   </head>
   <body>

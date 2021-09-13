@@ -53,6 +53,7 @@ let {
   help,
   name,
   env,
+  start,
   repo,
   bg,
   sveltePath
@@ -138,6 +139,19 @@ async function startDaemon ({ publish }) {
   return ready
 }
 
+async function doStart () {
+  await startDaemon({})
+
+  runDeno({
+    addr: ':80',
+    noCheck: true,
+    watch: true,
+    inspect: true,
+    _: [ join(import.meta.url.replace('file://', ''), '..', '..', '/edge/entry-deno.js') ]
+  })
+}
+
+
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {
   case 'version':
@@ -157,9 +171,8 @@ switch (cmd) {
         return
       }
       config = await loadConfig(env)
-      console.log('here', config)
+      // console.log('here', config)
 
-      // TODO: if daemon not running: await startDaemon({ifNotExists: true})
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
 
@@ -192,6 +205,10 @@ switch (cmd) {
           devBuild()
         }
       }, 500)
+    }
+
+    if (start) {
+      await doStart()
     }
 
     await devBuild()
@@ -305,19 +322,7 @@ switch (cmd) {
 
   case 'start':
     console.log(Deno.version)
-    await startDaemon({})
-
-    // make env file
-    // console.log(config)
-
-    runDeno({
-      addr: ':80',
-      noCheck: true,
-      watch: true,
-      inspect: true,
-      // env: home + '/.atreyu/dev.env',
-      _: [ join(import.meta.url.replace('file://', ''), '..', '..', '/edge/entry-deno.js') ]
-    })
+    doStart()
   break
 
   default:

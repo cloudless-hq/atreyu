@@ -48,7 +48,7 @@ export default async function ({
 
     const files = await recursiveReaddir(inFolder)
 
-    files.map(async file => {
+    const fileCompilers = files.map(async file => {
       if (file.endsWith('.css')) {
       }
 
@@ -119,7 +119,7 @@ export default async function ({
       }
     })
 
-    await Promise.all(files)
+    await Promise.all(fileCompilers)
   }
 
   if (typeof input === 'string') {

@@ -5,14 +5,14 @@ import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../../../edge/lib/escape-id.js'
 
 export default function ({
-    config,
+    clientConfig,
     appName,
-    dbs,
+    dbConf,
     schema
   }) {
 
-  // TODO: parse schema for severs and set env according to origin
   if (schema.servers) {
+    // TODO: parse schema for severs and set env according to origin
     console.warn('currently only dev and prod environments supported')
   }
 
@@ -25,38 +25,76 @@ export default function ({
     env = location.hostname.replace('.' + appName, '')
   }
 
-  const envConfig = config[env] ? config[env] : {}
-
-  const { orgName, userName } = envConfig
+  const envConfig = clientConfig[env] ? clientConfig[env] : {}
 
   const {
-    // couchKey, couchSecret, couchHost,
-    IPFS_GATEWAY = 'http://127.0.0.1:8080'
-  } = {...config, ...envConfig}
+    IPFS_GATEWAY = '/'
+  } = {...clientConfig, ...envConfig}
 
-  let pouch
-  let dbConf
-  // TODO: how to handle mutliple or switch to consistently only handle one pouch
-  if (typeof dbs === 'function') {
-    dbConf = dbs({ orgName, userName, appName, env, escapeId })
-  } else {
-    dbConf = dbs
+  let dbs = new Map()
+  async function initSession (dbs) {
+    self.session = {
+      refresh: async () => {
+        let newSession
+        let reloadClients = false
+
+        try {
+          const sessionRes = await fetch('/_couch/_session', { redirect: 'error' })
+          newSession = await sessionRes.json()
+        } catch (_) {
+          newSession = { userId: null }
+        }
+
+        if (newSession.userId !== self.session.value.userId) {
+          let newDbConf
+          if (typeof dbConf === 'function') {
+            newDbConf = dbConf({ userId: newSession.userId, appName, env, escapeId })
+          } else {
+            newDbConf = dbConf
+          }
+
+          dbs.clear()
+
+          Object.entries(newDbConf).forEach(([dbName, designDocs]) => {
+            dbs.set(dbName, makePouch({
+              dbName,
+              designDocs
+            }))
+          })
+
+          reloadClients = true
+          // console.log('session userid update', newDbConf, dbs, newSession.userId, self.session.value.userId)
+        }
+
+        self.session.value = newSession
+
+        // TODO: logout other windows: if (reloadClients) {
+        //   clientsRes = await clients.matchAll()
+        //   clientsRes.forEach(client => {
+        //     const url = new URL(client.url)
+        //     client.navigate(`${url.origin}/_couch/_session?login&contiue=${encodeURIComponent(client.url)}`)
+        //   })
+        // }
+
+        return newSession
+      },
+      value: {}
+    }
+
+    await self.session.refresh()
   }
 
-  Object.entries(dbConf).forEach(([dbName, designDocs]) => {
-    pouch = makePouch({
-      dbName,
-      designDocs,
-      // couchKey, couchSecret, couchHost
-    })
-  })
+  // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
+  // TODO: clean recreatino of falcor and all session dependent modules
+  initSession(dbs)
 
   console.log('starting service worker...')
 
-  const falcorServer = makeFalcorServer({pouch, schema})
+  const falcorServer = makeFalcorServer({dbs, schema})
 
   self.ayu = {
-    pouch
+    dbs,
+    falcorServer
   }
 
   clients.matchAll().then(res => {
@@ -118,19 +156,21 @@ export default function ({
   let bypass = []
   let corsConf
   Object.entries(schema.paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([method, oper]) => {
-      if (oper.operationId === '_cors') {
+    Object.entries(methods).forEach(([method, { operationId, tags }]) => {
+      if (operationId === '_cors') {
         corsConf = {
           server: path.replace('*', ''),
           mode: 'proxy'
         }
-      } else if (oper.operationId === '_bypass') {
+      } else if (operationId === '_bypass') {
+        bypass.push(path)
+      } else if (tags.includes('edge') && !tags.includes('service-worker')) {
         bypass.push(path)
       }
     })
   })
 
-  // TODO: add navigation preloadoing for interesting routs, also possibly use it for couch syncing by setting header to seq
+  // TODO: add navigation preloadoing for interesting routes, also possibly use it for couch syncing by setting header to seq
   addEventListener('fetch', event => {
     let url = new URL(event.request.url)
 
@@ -148,7 +188,7 @@ export default function ({
       return
     }
 
-    const pathBypassing = bypass.filter(path => {
+    const bypassing = bypass.filter(path => {
       if (path.endsWith('*')) {
         if (url.pathname.startsWith(path.replace('*', ''))) {
           return true
@@ -160,12 +200,12 @@ export default function ({
       }
     })
 
-    if (pathBypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
-      console.info('_bypassing ' + url.href)
+    if (bypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
+      console.info('bypassing: ' + url.href)
       return
     }
 
-    // registration.scope
+    // TODO: support registration.scope and non hash based client side routing
     // if (routes.includes(url.pathname)) {
     //   url.pathname = '/'
     // }
@@ -189,118 +229,5 @@ function rewrite (url) {
   } else {
     url.pathname = url.pathname.replace('/src/deps/', '/build/deps/')
   }
-
-  // if (url.pathname.startsWith('/atreyu')) {
-  //   url.hostname = 'bafzbeihnkfyk5bnexkuvlr6nedykcwweftd4awlfd2jmxwg3rkgcqhjgdu.ipns.localhost'
-  //   url.pathname = url.pathname.replace('/atreyu/', '/')
-  // }
-
-  // console.log('rewritten', url)
   return url
 }
-
-// startFeed({dbHost: `/_feed`})
-// function startFeed ({dbHost, couchSecret, couchKey}) {
-//   const dbName = 'convoi_igp'
-//   const last_seq = 0
-//   const url = `${dbHost}/${dbName}/_changes?feed=eventsource&since=${last_seq}&conflicts=true&style=all_docs&heartbeat=5000&seq_interval=1`
-//   const changes = new EventSource(url, {
-//     withCredentials: true
-//   })
-//   changes.addEventListener('error', err => {
-//     // console.log('changes error:')
-//     // console.log(err)
-//   }, { capture: true, passive: true })
-//   changes.addEventListener('heartbeat', e => {
-//     // console.log(e)
-//     // clients.matchAll().then(clts => {
-//     //   clts.forEach(client => {
-//     //     client.postMessage({
-//     //       heartbeat: true
-//     //     })
-//     //   })
-//     // })
-//   }, { capture: true, passive: true })
-//   // evtSource.addEventListener('ping', e => {
-//   //   const time = JSON.parse(event.data).time
-//   // })
-//   changes.addEventListener('message', e => {
-//     // const change = JSON.parse(e.data)
-//     // if (change.id.startsWith('session_')) {
-//     //   return
-//     // }
-//     // function update ({ newDocs, oldDoc }) {
-//     //   // pouch.lastChangeBatch.invalidated = [
-//     //   //   ['messages', 'aasd', ['active', 'all'], 'length']
-//     //   // ]
-//     //   // changes: [ {rev: "3-62aa0bb8c9b20f8f958f873a7fe3dbf7"}
-//     //   // deleted: true
-//     //   // id: "asd=="
-//     //   // seq: "2914-asd ]
-//     //   return pouch.bulkDocs(newDocs, { new_edits: false }, (err, docRes) => {
-//     //     if (err) {
-//     //       console.error(err)
-//     //     } else {
-//     //       // TODO: sync error handling
-//     //       // pouch.lastChangeBatch.
-//     //       // pouch.lastChangeBatch.jsonGraph.byId[updt[0]._id] = {
-//     //       //   $type: 'atom',
-//     //       //   value: updt[0]._deleted ? undefined : updt[0]
-//     //       // }
-//     //       sync.last_seq = change.seq
-//     //       clients.matchAll().then(clts => {
-//     //         clts.forEach(client => {
-//     //           client.postMessage({
-//     //             changes: [{
-//     //               newDoc: newDocs[0], oldDoc
-//     //             }]
-//     //           })
-//     //         })
-//     //       })
-//     //       pouch.put(sync).then(syncDocRes => {
-//     //         sync._rev = syncDocRes.rev
-//     //       })
-//     //     }
-//     //   })
-//     // }
-//     // pouch.get(change.id, {
-//     //   revs_info: true
-//     //   // open_revs: 'all',
-//     //   // conflicts: true
-//     // }, (err, doc) => {
-//     //   let unsynced = []
-//     //   let synced = []
-//     //   if (err && err.message === 'missing') {
-//     //     if (!change.deleted) {
-//     //       unsynced = change.changes.map(entr => entr.rev)
-//     //     }
-//     //   } else if (doc) {
-//     //     synced = doc._revs_info.map(entr => entr.rev)
-//     //     change.changes.forEach(cha => {
-//     //       if (!synced.includes(cha.rev)) {
-//     //         unsynced.push(cha.rev)
-//     //       }
-//     //     })
-//     //   } else if (err) {
-//     //     console.error(err)
-//     //   }
-//     //   if (unsynced.length > 0) {
-//     //     couch.bulkGet({
-//     //       docs: unsynced.map(rev => ({
-//     //         id: change.id,
-//     //         rev
-//     //       }))
-//     //     })
-//     //     .then(res => {
-//     //       update({
-//     //         newDocs: res.results.flatMap(result => result.docs.map(doc => doc.ok)),
-//     //         oldDoc: doc
-//     //       })
-//     //     })
-//     //     .catch(DocErr => {
-//     //       console.log(DocErr)
-//     //     })
-//     //   }
-//     // })
-//   })
-// }

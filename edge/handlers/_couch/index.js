@@ -1,5 +1,6 @@
 import { getEnv } from '../../lib/env.js'
 // import { fetchStream } from '../../lib/http.js'
+import  {handler as sessionHandler } from './_session.js'
 
 // TODO: support non cloudant couchdb auth:
   // import { authHeaders } from './helpers.js'
@@ -7,7 +8,7 @@ import { getEnv } from '../../lib/env.js'
 
 const { _couchKey, _couchSecret, couchHost } = getEnv(['_couchKey', '_couchSecret', 'couchHost'])
 
-export async function handler ({ event, req, app, body }) {
+export async function handler ({ event, req, stats, app, body }) {
   // TODO: use our own fauxton release instead of cloudant one
     // import handleFauxton from './fauxton'
     // if (req.url.pathname === '/_utils') {
@@ -19,6 +20,10 @@ export async function handler ({ event, req, app, body }) {
     // if (req.url.pathname.startsWith('/_utils/')) {
     //   return finish(handleFauxton({ req, event }))
     // }
+
+  if (req.url.pathname.startsWith('/_couch/_session')) {
+    return sessionHandler({ req, stats })
+  }
 
   const href = couchHost + req.url.pathname.replace('/_couch', '') + req.url.search
 
