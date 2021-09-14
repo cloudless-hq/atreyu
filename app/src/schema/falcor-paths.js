@@ -19,6 +19,15 @@ export default {
       operationId: '_sync'
     }
   },
+
+  '_session.logout': {
+    call: {
+      handler: async () => {
+        await self.session.logout()
+        return []
+      }
+    }
+  },
   '_session[{keys:keys}]': {
     get: {
       handler: async ({ keys }) => {

@@ -8,7 +8,9 @@
     <title>Account Management</title>
     <script>
       function devLogin () {
-        location.href = '/_couch/_session?dev_login&' + location.href.split('?')[1]
+        let searchTxt = location.href.split('?')[1]
+
+        location.href = `/_couch/_session?dev_login${searchTxt ? '&' + searchTxt : ''}`
       }
     </script>
   </head>

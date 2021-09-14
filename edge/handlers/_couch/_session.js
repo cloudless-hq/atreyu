@@ -37,7 +37,7 @@ export async function handler ({ req, stats }) {
         status: 302,
         headers: {
           'Cache-Control': 'must-revalidate',
-          'Location': params.get('continue'),
+          'Location': params.get('continue') || '/',
           'Content-Type': 'application/json'
         }
       })
@@ -52,6 +52,9 @@ export async function handler ({ req, stats }) {
       }
     })
   } else if (req.url.search.startsWith('?dev_login')) {
+    if (env !== 'dev') {
+      return new Response('forbidden', { status: 403 })
+    }
     const params = new URLSearchParams(req.url.search)
     const devJwt = 'dev.' + btoa(JSON.stringify({ email: userId }))
 
@@ -59,17 +62,19 @@ export async function handler ({ req, stats }) {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': params.get('continue'),
+        'Location': params.get('continue') || '/' ,
         'Set-Cookie': `CF_Authorization=${devJwt}; Version=1; Path=/; HttpOnly`,
         'Content-Type': 'application/json'
       }
     })
-  } else if (req.method === 'delete' || req.url.search === '?logout') {
+  } else if (req.url.search.startsWith('?logout')) { // req.method === 'delete' ||
+    const params = new URLSearchParams(req.url.search)
+
     return new Response(JSON.stringify({}), {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': env === 'dev' ? '/' : `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${req.url.origin}`,
+        'Location': env === 'dev' ? `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}` : `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${req.url.origin}`,
         'Set-Cookie': 'CF_Authorization=; Version=1; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly',
         'Content-Type': 'application/json'
       }

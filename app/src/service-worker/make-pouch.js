@@ -71,5 +71,6 @@ export default function ({
     //   // TODO: this leads to replay of all changes since worker started on new clients for running worker
     //   pouch._startSeq = info.update_seq
     // })
+    pouch.ayuSync = sync
   return pouch
 }

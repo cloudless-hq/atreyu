@@ -32,8 +32,26 @@ export default function ({
   } = {...clientConfig, ...envConfig}
 
   let dbs = new Map()
-  async function initSession (dbs) {
+  async function initSession () {
     self.session = {
+      logout: async () => {
+        self.session.value = { userId: null }
+        dbs.forEach(db => {
+          db.ayuSync.cancel()
+          db.close()
+        })
+        dbs.clear()
+        clientsRes = await clients.matchAll()
+        clientsRes.forEach(client => {
+          const url = new URL(client.url)
+          let cont = ''
+
+          if (url.pathname.length > 1 || url.hash) {
+            cont = `&continue=${encodeURIComponent(url.pathname + url.hash)}`
+          }
+          client.navigate(`/_couch/_session?logout${cont}`)
+        })
+      },
       refresh: async () => {
         let newSession
         let reloadClients = false
@@ -53,6 +71,7 @@ export default function ({
             newDbConf = dbConf
           }
 
+          // TODO: diff the dbs and close the unused!!
           dbs.clear()
 
           Object.entries(newDbConf).forEach(([dbName, designDocs]) => {
@@ -68,13 +87,16 @@ export default function ({
 
         self.session.value = newSession
 
-        // TODO: logout other windows: if (reloadClients) {
-        //   clientsRes = await clients.matchAll()
-        //   clientsRes.forEach(client => {
-        //     const url = new URL(client.url)
-        //     client.navigate(`${url.origin}/_couch/_session?login&contiue=${encodeURIComponent(client.url)}`)
-        //   })
-        // }
+        if (reloadClients) {
+          clientsRes = await clients.matchAll()
+          clientsRes.forEach(client => {
+            const url = new URL(client.url)
+            const params = new URLSearchParams(url.search)
+            if (params.get('continue')) {
+              client.navigate(params.get('continue')) // `${url.origin}/_couch/_session?login&continue=${}`
+            }
+          })
+        }
 
         return newSession
       },
@@ -86,7 +108,7 @@ export default function ({
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
   // TODO: clean recreatino of falcor and all session dependent modules
-  initSession(dbs)
+  initSession()
 
   console.log('starting service worker...')
 

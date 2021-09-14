@@ -30,7 +30,13 @@
   $: {
     if (!$data._session.userId$?._loading) {
       if (!$data._session.userId$) {
-        location.href = '/_couch/_session?login&continue=' + encodeURIComponent(location.href)
+        let cont = ''
+
+        if (location.pathname.length > 1 || location.hash) {
+          cont = `&continue=${encodeURIComponent(location.pathname + location.hash)}`
+        }
+
+        location.href = `/_couch/_session?login${cont}`
       } else {
         settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
       }
