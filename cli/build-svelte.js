@@ -99,13 +99,14 @@ export default async function ({
           await Deno.writeTextFile(
             join(outputTarget, subPath) + '.css',
             comp.css.code
-            .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.css.map */')
+              .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.css.map */')
           )
         }
         comp.js.code = comp.js.code
-        .replace('"/svelte/internal"', '"/atreyu/src/deps/svelte-internal.js"')
-        .replace('"/svelte"', '"/atreyu/src/deps/svelte-internal.js"')
-        .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
+          .replace('"/svelte/transition"', '"/atreyu/src/deps/svelte-transition.js"')
+          .replace('"/svelte/internal"', '"/atreyu/src/deps/svelte-internal.js"')
+          .replace('"/svelte"', '"/atreyu/src/deps/svelte-internal.js"')
+          .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([
           Deno.writeTextFile(outputTarget + subPath + '.js', comp.js.code),

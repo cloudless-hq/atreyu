@@ -17,7 +17,7 @@ const orgId = 'igp'
 // }
 // function deleteCookie (name) { setCookie(name, '', -1) }
 
-export async function handler ({ req, stats }) {
+export function handler ({ req, stats }) {
   let jwt
   if (env === 'dev' && !req.headers['cf-access-jwt-assertion'] && req.headers['cookie']) {
     jwt = req.headers['cookie'].split('=')[1]
@@ -43,11 +43,16 @@ export async function handler ({ req, stats }) {
       })
     }
 
+    let Location= '/atreyu/accounts'
+    if (params.get('continue')) {
+      Location += `?continue=${encodeURIComponent(params.get('continue'))}`
+    }
+
     return new Response(JSON.stringify({}), {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': `/atreyu/accounts?continue=${encodeURIComponent(params.get('continue'))}`,
+        Location,
         'Content-Type': 'application/json'
       }
     })

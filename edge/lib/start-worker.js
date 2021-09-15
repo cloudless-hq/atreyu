@@ -27,10 +27,10 @@ export default handler => {
           event,
           wait
         })
-        .then(response => {
-          wait(log({ req, response, stats, body, duration: (Date.now() - fetchStart) }), event)
-          return response
-        })
+          .then(response => {
+            wait(log({ req, response, stats, body, duration: (Date.now() - fetchStart) }), event)
+            return response
+          })
       } catch (ex) {
         wait(sentryLog(ex, event.request), event)
 
