@@ -178,7 +178,7 @@ export default function ({
   let bypass = []
   let corsConf
   Object.entries(schema.paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([method, { operationId, tags }]) => {
+    Object.entries(methods).forEach(([_method, { operationId, tags }]) => {
       if (operationId === '_cors') {
         corsConf = {
           server: path.replace('*', ''),
@@ -186,7 +186,7 @@ export default function ({
         }
       } else if (operationId === '_bypass') {
         bypass.push(path)
-      } else if (tags.includes('edge') && !tags.includes('service-worker')) {
+      } else if (tags?.includes('edge') && !tags?.includes('service-worker')) {
         bypass.push(path)
       }
     })

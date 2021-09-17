@@ -116,7 +116,7 @@ export default function (schema) {
   }
 
   const { subscribe } = readable({}, set => {
-    let keepfocus = false
+    // TODO: let keepfocus = false
     let resetScroll = false
 
     function linkClickHandler (e) {

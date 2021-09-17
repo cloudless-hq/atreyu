@@ -182,9 +182,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
-          lastUpdt.set(pathString, latestTick)
-          // console.log('getting 1', path, pathString)
-          prom = adjustedModel.getValue(path)
+        lastUpdt.set(pathString, latestTick)
+        // console.log('getting 1', path, pathString)
+        prom = adjustedModel.getValue(path)
           .then(val => {
             if (typeof val === 'undefined') {
               cacheMap.set(pathString, _undefined)
@@ -202,10 +202,10 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
               err
             }))
           })
-          // new Promise((resolve, reject) => { })
-          prom._loading = true // todo unify with $loading?
-          prom.toString = () => '' // to render empty stings as placeholders
-          cacheMap.set(pathString, prom)
+        // new Promise((resolve, reject) => { })
+        prom._loading = true // todo unify with $loading?
+        prom.toString = () => '' // to render empty stings as placeholders
+        cacheMap.set(pathString, prom)
       }
 
       // undefined means we dont know the value, _undefined means we know the value is undefined
