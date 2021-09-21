@@ -38,8 +38,16 @@ export default function (schema) {
         if (name) {
           matchedRoutes.push({ spec: router.spec, security, operationId })
           data[name] = {
-            _link: (params) => router.reverse(params),
+            _link: (params) => {
+              Object.entries(params).forEach(([key, val]) => {
+                params[key] = encodeURIComponent(val)
+              })
+              return router.reverse(params)
+            },
             _navigate: (params, { replaceState } = {}) => {
+              Object.entries(params).forEach(([key, val]) => {
+                params[key] = encodeURIComponent(val)
+              })
               const newHref = router.reverse(params)
 
               if (replaceState) {
@@ -77,6 +85,20 @@ export default function (schema) {
         })
       }
     }
+
+    Object.entries(data).forEach(([key, val]) => {
+      if (typeof val === 'string') {
+        data[key] = decodeURIComponent(val)
+      } else if (typeof val === 'object') {
+        Object.entries(data[key]).forEach(([key2, val2]) => {
+          if (typeof val2 === 'string') {
+            data[key][key2] = decodeURIComponent(val2)
+          }
+        })
+      }
+      // console.log(decodeURIComponent(val), val, key, data)
+      //   data[key] = decodeURIComponent(val)
+    })
 
     const allData = {
       search,
