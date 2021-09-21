@@ -40,13 +40,17 @@ export default function (schema) {
           data[name] = {
             _link: (params) => {
               Object.entries(params).forEach(([key, val]) => {
-                params[key] = encodeURIComponent(val)
+                if (typeof val === 'string') {
+                  params[key] = encodeURIComponent(val)
+                }
               })
               return router.reverse(params)
             },
             _navigate: (params, { replaceState } = {}) => {
               Object.entries(params).forEach(([key, val]) => {
-                params[key] = encodeURIComponent(val)
+                if (typeof val === 'string') {
+                  params[key] = encodeURIComponent(val)
+                }
               })
               const newHref = router.reverse(params)
 

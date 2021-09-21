@@ -68,21 +68,29 @@ export function handler ({ req, stats }) {
       headers: {
         'Cache-Control': 'must-revalidate',
         'Location': params.get('continue') || '/' ,
-        'Set-Cookie': `CF_Authorization=${devJwt}; Version=1; Path=/; HttpOnly`,
+        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; HttpOnly`, // Version=1;?
         'Content-Type': 'application/json'
       }
     })
   } else if (req.url.search.startsWith('?logout')) { // req.method === 'delete' ||
     const params = new URLSearchParams(req.url.search)
 
-    return new Response(JSON.stringify({}), {
+    const headers = { 'Cache-Control': 'must-revalidate' }
+
+    if (env === 'dev') {
+      headers['Location'] = `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly'
+    } else if (payload.email) {
+      headers['Location'] = `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+    } else {
+      headers['Location'] = `/atreyu/accounts?login`
+      // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+    }
+
+    return new Response('', {
       status: 302,
-      headers: {
-        'Cache-Control': 'must-revalidate',
-        'Location': env === 'dev' ? `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}` : `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${req.url.origin}`,
-        'Set-Cookie': 'CF_Authorization=; Version=1; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly',
-        'Content-Type': 'application/json'
-      }
+      headers
     })
   }
 

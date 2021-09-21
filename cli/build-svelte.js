@@ -2,12 +2,11 @@ import { join, dirname, basename, compile, green } from '../deps-deno.js'
 
 // import postcss from 'https://deno.land/x/postcss/mod.js'
 // import { tailwindcss } from '../deps-node.build.js'
-
 // 'https://jspm.dev/tailwindcss'
 // TODO: auto fetch and compile sub imports of svelte components?
 // TODO: prefixed imported styles
 
-export async function recursiveReaddir(path) {
+export async function recursiveReaddir (path) {
   const files = []
   const getFiles = async path => {
     for await (const dirEntry of Deno.readDir(path)) {
@@ -17,7 +16,7 @@ export async function recursiveReaddir(path) {
         files.push(join(path, dirEntry.name))
       }
     }
-  };
+  }
   await getFiles(path)
 
   return files
@@ -73,7 +72,7 @@ export default async function ({
             generate: 'dom',
             hydratable: false, // TODO: hydratable support
             format: 'esm',
-            cssHash: ({ hash, css, name, filename }) => {
+            cssHash: ({ _hash, _css, name, _filename }) => {
               name = name.toLowerCase()
               if (compNames[name]) {
                 console.warn('component name seems to be not unique which can lead to stylebleed: ' + name)
@@ -236,4 +235,4 @@ export default async function ({
 //   }
 // }, {
 //   filename: 'App.svelte'
-// });
+// })

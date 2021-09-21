@@ -1,6 +1,6 @@
 import { makeProxy } from '../lib/proxy-object.js'
 import { falcor } from '../deps/falcor.js'
-import { extractFromCache, diffCache } from './helpers.js'
+import { extractFromCache } from './helpers.js'
 import ServiceWorkerSource from './service-worker-source.js'
 
 let _undefined = Symbol('undefined')
@@ -19,7 +19,7 @@ class frameScheduler {
   }
   scheduleWithState (state, action) {
     let id = requestAnimationFrame(() => {
-        action(this, state)
+      action(this, state)
     })
     return {
       dispose: () => {
@@ -98,12 +98,14 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       return y
     }
   })
-  .batch((new frameScheduler()))  // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
-  .treatErrorsAsValues()
+    .batch((new frameScheduler()))  // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
+    .treatErrorsAsValues()
   // TODO: make batch configurable for debugging
   //  errorSelector: function(error) {
   //     error.$expires = -1000 * 60 * 2;
   // }
+
+  // TODO: model.progressively() instead of extract from cache?
 
   const boxedModel = model.boxValues()
 
@@ -241,7 +243,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     if (subscribers.size > 0) {
       const queueOpener = !runQueue.size
 
-      subscribers.forEach(([run, invalidate, subscriptionProxy, id]) => {
+      subscribers.forEach(([run, invalidate, subscriptionProxy, _id]) => {
         // TODO: get affected paths for current change and check with deps[id]
         invalidate()
         runQueue.add([run, subscriptionProxy])
@@ -257,19 +259,19 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     }
   }
   let subscrCounter = 0
-  function subscribe (run, invalidate, ...args) {
+  function subscribe (run, invalidate, ..._args) {
     const id = `${subscribers.size}_${subscrCounter++}`
     const subscriptionProxy = makeAyuProxy(id)
 
-    const doRun = (...args) => {
+    const doRun = (..._args) => {
       // console.log('run', id)
-      return run(...args)
+      return run(..._args)
     }
 
-    const doInvalidate = (...args) => {
+    const doInvalidate = (..._args) => {
       // console.log('invalidate', id)
       if (invalidate) {
-        return invalidate(...args)
+        return invalidate(..._args)
       }
     }
 

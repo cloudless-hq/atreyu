@@ -4,6 +4,15 @@ function userDb (dbs) {
   return dbs.entries().next().value?.[1]
 }
 
+let id
+function schedule (action) {
+  if (id) {
+    clearTimeout(id)
+    id = null
+  }
+  id = setTimeout(action, 0)
+}
+
 export const _sync = ({ dbs, Observable }, [ since ]) => {
   return Observable.create(subscriber => {
     const changes = userDb(dbs).changes({
@@ -15,9 +24,14 @@ export const _sync = ({ dbs, Observable }, [ since ]) => {
         // { "changes": [ { "rev": "2-f0473cbda03b" } ] }
         // console.log('falcor handler', change) // todo: debug realms with client side flags
 
-        subscriber.onNext({ path: ['_seq'], value: {$type: 'atom', value: change.seq} })
-        subscriber.onNext({ path: ['_docs', change.id], value: {$type: 'atom', value: change.doc} })
-        subscriber.onCompleted() // TODO: fix router to forward before complete for long running observable!
+        subscriber.onNext({ path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
+        subscriber.onNext({ path: ['_seq'], value: { $type: 'atom', value: change.seq } })
+        subscriber.onNext({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } })
+        schedule(() => {
+          if (!subscriber.isStopped) {
+            subscriber.onCompleted()
+          }
+        }) // TODO: fix router to forward before complete for long running observable!
       })
       .on('error', err => {
         subscriber.onError({ $type: 'error', value: err })

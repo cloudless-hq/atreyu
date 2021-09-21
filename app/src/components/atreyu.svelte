@@ -23,7 +23,9 @@
     } catch (err) {
       console.log(err)
     } finally {
-      doSync()
+      setTimeout(() => {
+        doSync()
+      }, 100)
     }
   }
 

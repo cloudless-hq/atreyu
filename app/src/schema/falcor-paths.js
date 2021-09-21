@@ -1,12 +1,12 @@
-  // example working : )
-  // 'test.pest': { // test if wildcard like path handling works
-  //   get: {
-  //     handler: async ({ dbs, titleRanges }) => {
-  //       return [{ path: ['test', 'pest', 'x', 'y'], value: 1 }]
-  //     }
-  //   }
-  // },
-  // TODO migrate to box shorthand :  {$atom: somevalue}, {$ref: [1, 'b', 'd'}, {$error: 'error 1 occured'}
+// example working : )
+// 'test.pest': { // test if wildcard like path handling works
+//   get: {
+//     handler: async ({ dbs, titleRanges }) => {
+//       return [{ path: ['test', 'pest', 'x', 'y'], value: 1 }]
+//     }
+//   }
+// },
+// TODO migrate to box shorthand :  {$atom: somevalue}, {$ref: [1, 'b', 'd'}, {$error: 'error 1 occured'}
 
 function userDb (dbs) {
   // just get first db at the moment
@@ -30,7 +30,7 @@ export default {
   },
   '_session[{keys:keys}]': {
     get: {
-      handler: async ({ keys }) => {
+      handler: async ({ _keys }) => {
         const _session = await self.session.refresh()
 
         return {
@@ -76,7 +76,7 @@ export default {
   },
   '_docs.create': {
     call: {
-      handler: async ({ dbs, userId, Observable }, [ docs ]) => {
+      handler: async ({ dbs, _userId, _Observable }, [ docs ]) => {
         const result = await userDb(dbs).bulkDocs(docs)
 
         return result.map((doc, i) => {
@@ -87,7 +87,7 @@ export default {
   },
   '_docs[{keys:ids}]': {
     set: {
-      handler: async ({_docs, dbs, userId}) => {
+      handler: async ({_docs, dbs, _userId}) => {
         const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(doc => doc.value))
 
         // todo: handle errors
@@ -107,7 +107,7 @@ export default {
       }
     },
     get: {
-      handler: async ({ ids, keys, dbs }) => {
+      handler: async ({ ids, _keys, dbs }) => {
         const pouchRes = await userDb(dbs).allDocs({
           include_docs: true,
           keys: ids
