@@ -1,6 +1,11 @@
 import { join, dirname, basename, compile, green } from '../deps-deno.js'
 
+import postcss from 'https://deno.land/x/postcss/mod.js'
+// import { tailwindcss } from '../deps-node.build.js'
+
+// 'https://jspm.dev/tailwindcss'
 // TODO: auto fetch and compile sub imports of svelte components?
+// TODO: prefixed imported styles
 
 export async function recursiveReaddir(path) {
   const files = []
@@ -20,6 +25,7 @@ export async function recursiveReaddir(path) {
 
 export default async function ({
   input = ['app/src/components', 'app/src/pages'],
+  batch,
   output,
   dev = true,
   sveltePath = '/svelte'
@@ -46,7 +52,7 @@ export default async function ({
 
     console.log('  compiling svelte templates for:', inFolder)
 
-    const files = await recursiveReaddir(inFolder)
+    const files = batch ? batch.map(fname => fname.substring(1, fname.length)).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
 
     const fileCompilers = files.map(async file => {
       if (file.endsWith('.css')) {
@@ -64,13 +70,13 @@ export default async function ({
             filename: basename(subPath),
             css: true,
             dev,
-            generate: 'dom', // TODO: ssr and hydratable support
-            hydratable: false,
+            generate: 'dom',
+            hydratable: false, // TODO: hydratable support
             format: 'esm',
             cssHash: ({ hash, css, name, filename }) => {
               name = name.toLowerCase()
               if (compNames[name]) {
-                console.warn('component name seems to be not unique which can lead to stylebleed')
+                console.warn('component name seems to be not unique which can lead to stylebleed: ' + name)
               } else {
                 compNames[name] = true
               }
@@ -78,24 +84,42 @@ export default async function ({
               return `ayu_${name}`
             },
             // immutable
-            // customElement, accessors, tag
             legacy: false,
             preserveComments: dev,
             preserveWhitespace: dev,
             sveltePath
           })
+
+          // comp.ssr = await compile(template, {
+          //   filename: basename(subPath),
+          //   css: true,
+          //   dev,
+          //   generate: 'ssr',
+          //   hydratable: false,
+          //   format: 'esm',
+          //   cssHash: ({ hash, css, name, filename }) => {
+          //     name = name.toLowerCase()
+          //     return `ayu_${name}`
+          //   },
+          //   // immutable
+          //   legacy: false,
+          //   preserveComments: dev,
+          //   preserveWhitespace: dev,
+          //   sveltePath
+          // })
         } catch (compErr) {
           console.log(compErr)
           console.log(file, subPath)
           return
         }
-        // TODO: onwarn: (warning, handler) => {
 
         try {
           await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true })
         } catch (_e) { }
 
         if (comp.css && comp.css.code && comp.css.code.length > 0) {
+          // const result = await postcss([tailwindcss]).process(comp.css)
+
           await Deno.writeTextFile(
             join(outputTarget, subPath) + '.css',
             comp.css.code
@@ -111,8 +135,16 @@ export default async function ({
         await Promise.all([
           Deno.writeTextFile(outputTarget + subPath + '.js', comp.js.code),
           Deno.writeTextFile(outputTarget + subPath + '.js.map', comp.js.map)
+          // Deno.writeTextFile(outputTarget + subPath + '.ssr.js', comp.ssr.js)
+          // ssr: ["js","css","ast","warnings","vars","stats"]
         ])
 
+        if (comp.warnings?.length > 0) {
+          comp.warnings.map(warning => {
+            console.warn(warning.filename)
+            console.warn(warning.toString())
+          })
+        }
         // TODO: console.log(preprocessRes.dependencies)
         watchConf.files[file] = comp.js.map.sources.map(path => path.replace('<file://', '').replace('>', ''))
 

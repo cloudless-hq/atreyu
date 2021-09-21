@@ -32,10 +32,10 @@ export async function handler ({ event, req, app }) {
       req.url.pathname = '/index.html'
       disableCache = true
     } else if (
-        req.url.pathname.startsWith('/atreyu/accounts') ||
-        req.url.pathname.endsWith('/ipfs-map.json') ||
-        req.url.pathname.endsWith('/service-worker.bundle.js')
-      ) {
+      req.url.pathname.startsWith('/atreyu/accounts') ||
+      req.url.pathname.endsWith('/ipfs-map.json') ||
+      req.url.pathname.endsWith('/service-worker.bundle.js')
+    ) {
       disableCache = true
     }
 

@@ -2,8 +2,9 @@ import { readable } from '../deps/svelte.js'
 import { Route, merge } from '../deps/util.js'
 import { urlLogger } from '../lib/url-logger.js'
 
-const components = {}
+// todo: data saver mode respect
 
+const components = {}
 export default function (schema) {
   const routes = []
 
@@ -13,7 +14,7 @@ export default function (schema) {
     }
   })
 
-  function routerState () {
+  function routerState ({ hrefOverride, preload, updateRoute } = {}) {
     const {
       search,
       hash,
@@ -24,7 +25,7 @@ export default function (schema) {
       pathname,
       port,
       protocol
-    } = window.location
+    } = hrefOverride ? new URL(hrefOverride) : window.location
 
     const pathParts = pathname.split('/').filter(pathPart => pathPart !== '')
     const matchedRoutes = []
@@ -37,7 +38,18 @@ export default function (schema) {
         if (name) {
           matchedRoutes.push({ spec: router.spec, security, operationId })
           data[name] = {
-            link: (params) => router.reverse(params),
+            _link: (params) => router.reverse(params),
+            _navigate: (params, { replaceState }) => {
+              const newHref = router.reverse(params)
+
+              if (replaceState) {
+                window.history.replaceState({ location: newHref }, '', newHref)
+              } else {
+                window.history.pushState({ location: newHref }, '', newHref)
+              }
+
+              updateRoute()
+            },
             ...match
           }
         } else {
@@ -79,6 +91,7 @@ export default function (schema) {
       pathParts,
       matchedRoutes,
       _pending: null,
+      _preloading: preload,
       ...data
     }
 
@@ -90,20 +103,19 @@ export default function (schema) {
       allData._page = page
     }
 
+    urlLogger({ missing, method: preload ? 'PRELOAD' : 'GET', url: 'window://' + href, body: allData })
+
     if (page) {
       if (!components[page]) {
         allData._pending = import(`/src/pages/${page}.svelte`).then(component => {
           components[page] = component.default
           allData._component = component.default
           allData._pending = null
-          // console.log(page, component.default)
         })
       } else {
         allData._component = components[page]
       }
     }
-
-    urlLogger({ missing, method: 'GET', url: 'window://' + href, body: allData })
 
     return allData
   }
@@ -115,7 +127,75 @@ export default function (schema) {
     return (node)
   }
 
-  const { subscribe } = readable({}, set => {
+  function getLinks (target) {
+    const as = [...target.querySelectorAll('a')]
+    return as.reduce((agr, a) => {
+      if (a.rel !== 'no-preload' && a.rel !== 'external') {
+        agr.push((new URL(a.href)).href) // normalize href
+      }
+      return agr
+    }, [])
+  }
+
+  const finished = new Set()
+  const primary = new Set()
+  const secondary = new Set()
+  let preloaderInstance
+  const newDiv = document.createElement('div')
+  newDiv.style = 'display: none;'
+  async function doIdle () {
+    let todo
+    let isSecondary = false
+    if (primary.size === 0) {
+      todo = secondary
+      isSecondary = true
+    } else {
+      todo = primary
+    }
+
+    for (const href of todo) {
+      todo.delete(href)
+      if (finished.has(href)) {
+        continue
+      }
+      finished.add(href)
+
+      const preloadRouterState = routerState({ hrefOverride: href, preload: true })
+
+      if (!preloadRouterState._page) {
+        continue
+      }
+
+      const preloadRouterStore = readable({}, set => {
+        set(preloadRouterState)
+        return () => {}
+      })
+
+      if (!components[preloadRouterState._page]) {
+        components[preloadRouterState._page] = (await import(`/src/pages/${preloadRouterState._page}.svelte`)).default
+      }
+
+      preloaderInstance = new components[preloadRouterState._page]({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+      break
+    }
+    if (primary.size > 0 || secondary.size > 0) {
+      setTimeout(() => {
+        window.requestIdleCallback(() => {
+          if (!isSecondary) {
+            getLinks(newDiv).forEach(link => secondary.add(link)) // pagePreloader
+          }
+          preloaderInstance?.$destroy()
+          preloaderInstance = null
+          doIdle()
+        })
+      }, 150)
+    } else {
+      preloaderInstance?.$destroy()
+      preloaderInstance = null
+    }
+  }
+
+  const routerStore = readable({}, set => {
     // TODO: let keepfocus = false
     let resetScroll = false
 
@@ -131,16 +211,21 @@ export default function (schema) {
         return
       }
 
+      if (a.rel === 'replace') {
+        console.log('todo replace state impl...')
+      }
+
       e.preventDefault()
-      window.history.pushState({location: a.href}, '', a.href)
-      const popStateEvent = new PopStateEvent('popstate', {})
-      dispatchEvent(popStateEvent)
+      window.history.pushState({ location: a.href }, '', a.href)
+      // const popStateEvent = new PopStateEvent('popstate', {})
+      // dispatchEvent(popStateEvent)
+      updateRoute()
 
       resetScroll = !a.hasAttribute('noscroll')
     }
 
     async function updateRoute () {
-      const newState = routerState()
+      const newState = routerState({ updateRoute })
       if (newState._pending?.then) {
         set(newState)
         await newState._pending
@@ -160,6 +245,12 @@ export default function (schema) {
       //   // scroll is an element id (from a hash), we need to compute y
       //   scrollTo(0, deep_linked.getBoundingClientRect().top + scrollY)
 
+      window.requestIdleCallback(() => {
+        finished.add(location.href)
+        getLinks(app).forEach(link => primary.add(link))
+        doIdle()
+      })
+
       if (resetScroll) {
         scrollTo(0, 0)
         resetScroll = false
@@ -177,5 +268,5 @@ export default function (schema) {
     }
   })
 
-  return { subscribe }
+  return routerStore
 }

@@ -56,12 +56,12 @@ async function compile ({input, appName, workerName, output, buildName}) {
   })
 
   if (diagnostics.length > 0) {
-      diagnostics.map(di => console.warn(di))
+    diagnostics.map(di => console.warn(di))
   }
 
   await Promise.all([
-      Deno.writeTextFile(output, files['deno:///bundle.js'].replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
-      Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map'])
+    Deno.writeTextFile(output, files['deno:///bundle.js'].replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
+    Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map'])
   ])
 }
 

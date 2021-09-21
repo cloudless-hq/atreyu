@@ -15,6 +15,8 @@
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
+    "eol-last": ["error", "always"],
+    "no-trailing-spaces": "error",
     "space-before-blocks": ["error", "always"],
     "comma-dangle": ["error", "never"],
     "keyword-spacing": ["error", { "before": true , "after": true }],
@@ -25,7 +27,7 @@
         "named": "always",
         "asyncArrow": "always"
     }],
-    "indent": ["error", 2],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
     "semi": ["error", "never"],
     "quotes": ["error", "single", { "allowTemplateLiterals": true }],
     "@typescript-eslint/array-type": ["error", { "default": "array-simple" }],

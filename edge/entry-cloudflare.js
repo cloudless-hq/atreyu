@@ -13,9 +13,9 @@ async function getApp () {
   const url = `${couchHost}/${safeName}/${settingsDocId}`
 
   const settingsDocRes = (await fetch(url, {
-      headers: {
-          Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
-      }
+    headers: {
+      Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+    }
   }))
   const settingsDoc = await settingsDocRes.json()
 

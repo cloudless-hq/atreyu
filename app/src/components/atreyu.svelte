@@ -60,9 +60,9 @@
         latestHash = settingsDoc.folderHash
 
         if (latestHash !== installedHash) {
-          if (_updateCounter < 10) {
-            doUpdate() // todo counter with blocker
-          }
+          // if (_updateCounter < 10) {
+          doUpdate() // todo counter with blocker
+          // }
         } else {
           localStorage.setItem('_updateCounter', 1)
         }
@@ -85,7 +85,7 @@
         }
 
         if (newHash) {
-          if (_updateImmediate && _updateCounter < 10 && !updating) {
+          if (_updateImmediate && !updating) { // _updateCounter < 10 &&
             doUpdate(true)
           } else {
             versionTooltip = `Build: "${settingsDoc.buildName$}"
@@ -222,7 +222,7 @@
                 </p>
 
                 <p class="mt-1 text-sm text-gray-500">
-                {#if !newHash}
+                {#if !newHash && buildColor}
                   <!-- Your update was successful.<br><br> -->
                   <br>
                   Build: <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-gray-100 text-gray-800" style="background-color: rgb({buildColor.r},{buildColor.g},{buildColor.b});">

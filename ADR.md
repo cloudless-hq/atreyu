@@ -21,8 +21,9 @@
 
 # Cors proxy
 
-# not wrangler
+# not wrangler / not terraform
   - support for token based configuration on cloudflare
   - supoort for auto creation of subdomains
   - support for cloudflare access
-  - support for offline local dev system (wrangler uses tunnel to cloudflare for emulating local development)
+  - support for real offline local dev system (wrangler uses tunnel to cloudflare for emulating local development)
+  - automatic dns and cloudflare access integration

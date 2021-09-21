@@ -4,11 +4,9 @@ import {
   faker,
   basename,
   runDeno,
-  yellow,
   italic,
   bold,
   color,
-  background,
   red,
   // analyzeDeps,
   globToRegExp
@@ -27,7 +25,7 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.1.7'
+export const version = '0.2.0'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
@@ -55,7 +53,6 @@ let {
   env,
   start,
   repo,
-  bg,
   sveltePath
 } = parse(Deno.args)
 
@@ -64,6 +61,7 @@ const watchIgnore = ([
   'node_modules/**',
   'yarn.lock',
   '**/*.svelte.js',
+  '**/*.svelte.ssr.js',
   '.gitignore',
   'README.md',
   '**/*.svelte.css',
@@ -120,10 +118,10 @@ async function loadEdgeSchema () {
   return buildWorkerConfig(schema)
 }
 
-async function startDaemon ({ publish }) {
+function startDaemon ({ publish }) {
   const runPath = _[1] || home + '/.atreyu'
   const offline = (online || publish) ? '' : ' --offline'
-  const ready = new Promise((resolve, reject) => {
+  const ready = new Promise((resolve, _reject) => {
     execIpfsStream(
       'daemon --enable-gc=true --migrate=true' + offline,
       runPath,
@@ -156,16 +154,16 @@ async function doStart () {
 switch (cmd) {
   case 'version':
     console.log(version)
-  break
+    break
 
   case 'help':
     printHelp ({ version })
-  break
+    break
 
   case 'dev':
     let locked = false
     let rerun = false
-    async function devBuild () {
+    async function devBuild (batch) {
       if (locked) {
         rerun = true
         return
@@ -179,16 +177,20 @@ switch (cmd) {
       locked = true
       // todo: fix import path in local worker wrapper?
       await Deno.writeTextFile( join(home, '.atreyu', `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
-      const watchConf = await Promise.all([
+
+      const _watchConf = await Promise.all([
         buildSvelte({
           input: _[1],
+          batch,
           output,
           sveltePath
         }),
 
-        buildServiceWorker()
+        buildServiceWorker(batch)
       ])
-      // console.log(watchConf)
+
+      // console.log(_watchConf)
+
       const folderHash = await addIpfs({
         input: _[1],
         repo: repo || home + '/.atreyu',
@@ -213,7 +215,7 @@ switch (cmd) {
 
     await devBuild()
 
-    let debouncer = null
+    // let debouncer = null
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
     const watcher = Deno.watchFs('./', { recursive: true }) //deps
 
@@ -248,17 +250,17 @@ switch (cmd) {
       // const depsChanged = new Set([...deps, ...newDeps]).size
       // if (depsChanged) { deps = newDeps }
     }
-  break
+    break
 
   case 'build':
     console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
     // build:svelte build:edge build:service-worker
-  break
+    break
 
   case 'build:edge':
     console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
     await buildEdge(await loadEdgeSchema(), buildName)
-  break
+    break
 
   case 'build:svelte':
     console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
@@ -267,11 +269,11 @@ switch (cmd) {
       output,
       sveltePath
     })
-  break
+    break
 
   case 'init':
     console.log(await execIpfs('init', _[1] || home + '/.atreyu'))
-  break
+    break
 
   case 'add':
     addIpfs({
@@ -281,7 +283,7 @@ switch (cmd) {
       env,
       config
     })
-  break
+    break
 
   case 'publish':
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
@@ -318,12 +320,12 @@ switch (cmd) {
     cloudflareDeploy({workers: edgeSchema, appName, env, config})
 
     couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
-  break
+    break
 
   case 'start':
     console.log(Deno.version)
     doStart()
-  break
+    break
 
   default:
     console.log(`${red('unknown sub-command')} ${red(cmd)}\n`)
