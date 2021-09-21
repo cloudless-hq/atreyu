@@ -149,6 +149,10 @@ async function doStart () {
   })
 }
 
+if (config.atreyuVersion && version !== config.atreyuVersion) {
+  throw ('please update atryu to version ' + config.atreyuVersion)
+}
+
 
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {

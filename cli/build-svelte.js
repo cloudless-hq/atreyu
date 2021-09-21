@@ -1,6 +1,6 @@
 import { join, dirname, basename, compile, green } from '../deps-deno.js'
 
-import postcss from 'https://deno.land/x/postcss/mod.js'
+// import postcss from 'https://deno.land/x/postcss/mod.js'
 // import { tailwindcss } from '../deps-node.build.js'
 
 // 'https://jspm.dev/tailwindcss'
@@ -127,9 +127,10 @@ export default async function ({
           )
         }
         comp.js.code = comp.js.code
-          .replace('"/svelte/transition"', '"/atreyu/src/deps/svelte-transition.js"')
-          .replace('"/svelte/internal"', '"/atreyu/src/deps/svelte-internal.js"')
-          .replace('"/svelte"', '"/atreyu/src/deps/svelte-internal.js"')
+          .replaceAll(`"/svelte/transition"`, `'/atreyu/src/deps/svelte-transition.js'`)
+          .replaceAll(`"/svelte/internal"`, `'/atreyu/src/deps/svelte-internal.js'`)
+          .replaceAll(`'/svelte'`, `'/atreyu/src/deps/svelte-internal.js'`)
+          .replaceAll(`'svelte'`, `'/atreyu/src/deps/svelte-internal.js'`)
           .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([

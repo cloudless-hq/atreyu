@@ -39,7 +39,7 @@ export default function (schema) {
           matchedRoutes.push({ spec: router.spec, security, operationId })
           data[name] = {
             _link: (params) => router.reverse(params),
-            _navigate: (params, { replaceState }) => {
+            _navigate: (params, { replaceState } = {}) => {
               const newHref = router.reverse(params)
 
               if (replaceState) {
@@ -245,11 +245,13 @@ export default function (schema) {
       //   // scroll is an element id (from a hash), we need to compute y
       //   scrollTo(0, deep_linked.getBoundingClientRect().top + scrollY)
 
-      window.requestIdleCallback(() => {
-        finished.add(location.href)
-        getLinks(app).forEach(link => primary.add(link))
-        doIdle()
-      })
+      setTimeout(() => {
+        window.requestIdleCallback(() => {
+          finished.add(location.href)
+          getLinks(app).forEach(link => primary.add(link))
+          doIdle()
+        })
+      }, 150)
 
       if (resetScroll) {
         scrollTo(0, 0)
