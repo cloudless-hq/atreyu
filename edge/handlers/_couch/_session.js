@@ -19,8 +19,10 @@ function getCookie (name, cookieString) {
 
 export function handler ({ req, stats }) {
   let jwt
-  if (env === 'dev' && !req.headers['cf-access-jwt-assertion'] && req.headers['cookie']) {
-    jwt = getCookie('CF_Authorization', req.headers['cookie'])
+
+  const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
+  if (env === 'dev' && !req.headers['cf-access-jwt-assertion'] && authCookie) {
+    jwt = authCookie
   } else {
     jwt = req.headers['cf-access-jwt-assertion']
   }
@@ -30,7 +32,7 @@ export function handler ({ req, stats }) {
     payload = JSON.parse(atob(jwt.split('.')[1]))
   }
 
-  if (!payload.email) {
+  if (!payload.email && payload.common_name) {
     payload.email = payload.common_name + '@' + orgId
   }
 
@@ -72,7 +74,7 @@ export function handler ({ req, stats }) {
       headers: {
         'Cache-Control': 'must-revalidate',
         'Location': params.get('continue') || '/' ,
-        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; HttpOnly`, // Version=1;?
+        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; HttpOnly;`, // Version=1;?
         'Content-Type': 'application/json'
       }
     })
@@ -83,7 +85,7 @@ export function handler ({ req, stats }) {
 
     if (env === 'dev') {
       headers['Location'] = `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
-      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly'
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {
       headers['Location'] = `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
