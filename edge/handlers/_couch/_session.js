@@ -5,22 +5,22 @@ import { getEnv } from '../../lib/env.js'
 const { env, userId } = getEnv([ 'env', 'userId'])
 const orgId = 'igp'
 
-// TODO: dont crash on unexpected cookies:
 // function setCookie (name, value, days) {
 //     let d = new Date
 //     d.setTime(d.getTime() + 24 * 60 * 60 * 1000 * days)
 //     document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString()
 // }
-// function getCookie (name) {
-//     let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)')
-//     return v ? v[2] : null
-// }
 // function deleteCookie (name) { setCookie(name, '', -1) }
+
+function getCookie (name, cookieString) {
+  let v = cookieString.match('(^|;) ?' + name + '=([^;]*)(;|$)')
+  return v ? v[2] : null
+}
 
 export function handler ({ req, stats }) {
   let jwt
   if (env === 'dev' && !req.headers['cf-access-jwt-assertion'] && req.headers['cookie']) {
-    jwt = req.headers['cookie'].split('=')[1]
+    jwt = getCookie('CF_Authorization', req.headers['cookie'])
   } else {
     jwt = req.headers['cf-access-jwt-assertion']
   }
@@ -28,6 +28,10 @@ export function handler ({ req, stats }) {
   let payload = {}
   if (jwt) {
     payload = JSON.parse(atob(jwt.split('.')[1]))
+  }
+
+  if (!payload.email) {
+    payload.email = payload.common_name + '@' + orgId
   }
 
   if (req.url.search.startsWith('?login')) {
