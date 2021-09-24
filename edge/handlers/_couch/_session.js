@@ -12,7 +12,7 @@ const orgId = 'igp'
 // }
 // function deleteCookie (name) { setCookie(name, '', -1) }
 
-function getCookie (name, cookieString) {
+function getCookie (name, cookieString = '') {
   let v = cookieString.match('(^|;) ?' + name + '=([^;]*)(;|$)')
   return v ? v[2] : null
 }

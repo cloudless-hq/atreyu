@@ -126,10 +126,9 @@ export default async function ({
           )
         }
         comp.js.code = comp.js.code
-          .replaceAll(`"/svelte/transition"`, `'/atreyu/src/deps/svelte-transition.js'`)
-          .replaceAll(`"/svelte/internal"`, `'/atreyu/src/deps/svelte-internal.js'`)
-          .replaceAll(`'/svelte'`, `'/atreyu/src/deps/svelte-internal.js'`)
-          .replaceAll(`'svelte'`, `'/atreyu/src/deps/svelte-internal.js'`)
+          .replaceAll(/[",']svelte\/transition[",']/ig, `'/atreyu/src/deps/svelte-transition.js'`)
+          .replaceAll(/[",']\/svelte\/internal[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)
+          .replaceAll(/[",']\/?svelte[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)
           .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([
