@@ -5,11 +5,11 @@ import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../../../edge/lib/escape-id.js'
 
 export default function ({
-    clientConfig,
-    appName,
-    dbConf,
-    schema
-  }) {
+  clientConfig,
+  appName,
+  dbConf,
+  schema
+}) {
 
   if (schema.servers) {
     // TODO: parse schema for severs and set env according to origin
@@ -140,19 +140,19 @@ export default function ({
     }
 
     clientPorts[conId].sub = falcorServer.execute(data)
-    .subscribe(
-      result => {
-        clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, value: result }))
-      },
-      error => {
-        clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, error }))
-      },
-      async done => {
-        await clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, done: true }))
+      .subscribe(
+        result => {
+          clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, value: result }))
+        },
+        error => {
+          clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, error }))
+        },
+        async _done => {
+          await clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, done: true }))
 
-        delete clientPorts[conId]
-      }
-    )
+          delete clientPorts[conId]
+        }
+      )
 
     const clientIds = (await clients.matchAll()).map(client => client.id)
     Object.entries(clientPorts).forEach(([cId, value]) => {
@@ -248,6 +248,9 @@ function rewrite (url) {
 
   if (url.pathname.endsWith('.svelte')) {
     url.pathname = url.pathname.replace('src', 'build') + '.js'
+  } else if (url.pathname === '/svelte/store') {
+    url.pathname = '/atreyu/build/deps/svelte-store.js'
+    return url
   } else {
     url.pathname = url.pathname.replace('/src/deps/', '/build/deps/')
   }

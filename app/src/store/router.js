@@ -1,4 +1,4 @@
-import { readable } from '../deps/svelte.js'
+import { readable } from '../deps/svelte-store.js'
 import { Route, merge } from '../deps/util.js'
 import { urlLogger } from '../lib/url-logger.js'
 
