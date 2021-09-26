@@ -1,10 +1,3 @@
-  // '/(#/)(:page)': {
-  //   get: {
-  //     tags: [ 'window' ]
-  //   },
-  //   operationId: 'pages/{page}.svelte'
-  // },
-
-  export default  {
-    '/(#/):_page(/*_)': {}
-  }
+export default  {
+  '/(#/):_page(/:_subPage)(/*_)': {}
+}

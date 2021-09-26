@@ -23,9 +23,9 @@ export async function recursiveReaddir (path) {
 }
 
 export default async function ({
-  input = ['app/src/components', 'app/src/pages'],
+  input = [ 'app/src' ],
   batch,
-  output,
+  // output,
   dev = true,
   sveltePath = '/svelte'
 }) {
@@ -41,7 +41,7 @@ export default async function ({
       inFolder = inFolder.substring(0, inFolder.length - 1)
     }
 
-    const outputTarget = output ? join(inFolder, '..', '..', 'build', basename(inFolder)) : join(inFolder, '..', '..', 'build', basename(inFolder))
+    const outputTarget = join(inFolder, '..', 'build') // output ? join(inFolder, '..', '..', 'build', basename(inFolder))
 
     try {
       Deno.statSync(inFolder)
@@ -61,10 +61,15 @@ export default async function ({
         // TODO: handle css files with auto js wrapper on import file.css
         let subPath = file.replace(inFolder, '')
 
-        const template = await Deno.readTextFile(file)
+        try {
+          Deno.statSync(file)
+        } catch (_e) {
+          return
+        }
 
         let comp
         try {
+          const template = await Deno.readTextFile(file)
           comp = await compile(template, {
             filename: basename(subPath),
             css: true,

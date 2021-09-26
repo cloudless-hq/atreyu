@@ -25,7 +25,7 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.0'
+export const version = '0.2.1'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
@@ -150,9 +150,9 @@ async function doStart () {
 }
 
 if (config.atreyuVersion && version !== config.atreyuVersion) {
-  throw ('please update atryu to version ' + config.atreyuVersion)
+  console.error('please update atryu to version ' + config.atreyuVersion)
+  Deno.exit()
 }
-
 
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {

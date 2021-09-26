@@ -2,7 +2,7 @@ import { readable } from '../deps/svelte-store.js'
 import { Route, merge } from '../deps/util.js'
 import { urlLogger } from '../lib/url-logger.js'
 
-// todo: data saver mode respect
+// TODO: data saver mode respect for preloader
 
 const components = {}
 export default function (schema) {
@@ -31,12 +31,16 @@ export default function (schema) {
     const matchedRoutes = []
     const data = {}
 
+    // TODO: reuse existing match data from previous routes
     routes.forEach(({ router, name, security, operationId }) => {
       const match = router.match(pathname + search + hash)
 
       if (match) {
+        matchedRoutes.push({ spec: router.spec, security, operationId })
+        // console.log(router)
+        // todo: sort by AST specificity
+
         if (name) {
-          matchedRoutes.push({ spec: router.spec, security, operationId })
           data[name] = {
             _link: (params) => {
               Object.entries(params).forEach(([key, val]) => {
@@ -65,7 +69,6 @@ export default function (schema) {
             ...match
           }
         } else {
-          matchedRoutes.push({ spec: router.spec, security, operationId })
           merge(data, match)
         }
       }
@@ -100,8 +103,6 @@ export default function (schema) {
           }
         })
       }
-      // console.log(decodeURIComponent(val), val, key, data)
-      //   data[key] = decodeURIComponent(val)
     })
 
     const allData = {
@@ -117,27 +118,46 @@ export default function (schema) {
       pathParts,
       matchedRoutes,
       _pending: null,
+      _error: null,
+      _errorComponent: null,
       _preloading: preload,
       ...data
     }
 
     let page
-    if (allData._page) {
-      page = allData._page
-    } else if (matchedRoutes[0]?.operationId) {
+
+    if (matchedRoutes[0]?.operationId) {
       page = matchedRoutes[0].operationId
       allData._page = page
+    } else if (allData._page) {
+      if (allData._subPage) {
+        page = `${allData._page}/${allData._subPage}`
+      } else {
+        page = allData._page
+      }
     }
 
     urlLogger({ missing, method: preload ? 'PRELOAD' : 'GET', url: 'window://' + href, body: allData })
 
     if (page) {
       if (!components[page]) {
-        allData._pending = import(`/src/pages/${page}.svelte`).then(component => {
-          components[page] = component.default
-          allData._component = component.default
-          allData._pending = null
-        })
+        allData._pending = import(`/src/pages/${page}.svelte`)
+          .then(comp => {
+            components[page] = comp.default
+            allData._component = comp.default
+            allData._error = null
+            allData._pending = null
+            return comp.default
+          })
+          .catch(err => {
+            allData._error = err
+            if (!allData._errorComponent) {
+              return import(`/src/pages/_error.svelte`)
+                .then(errComp => {
+                  allData._errorComponent = errComp.default
+                })
+            }
+          })
       } else {
         allData._component = components[page]
       }
@@ -156,8 +176,12 @@ export default function (schema) {
   function getLinks (target) {
     const as = [...target.querySelectorAll('a')]
     return as.reduce((agr, a) => {
-      if (a.rel !== 'no-preload' && a.rel !== 'external') {
-        agr.push((new URL(a.href)).href) // normalize href
+      if (a.rel !== 'no-preload' && a.rel !== 'external' && !a.href.startsWith('javascript:')) {
+        try {
+          agr.push((new URL(a.href)).href) // normalize href
+        } catch (err) {
+          console.error(a.href, err)
+        }
       }
       return agr
     }, [])
@@ -197,11 +221,8 @@ export default function (schema) {
         return () => {}
       })
 
-      if (!components[preloadRouterState._page]) {
-        components[preloadRouterState._page] = (await import(`/src/pages/${preloadRouterState._page}.svelte`)).default
-      }
-
-      preloaderInstance = new components[preloadRouterState._page]({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+      const comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
+      preloaderInstance = new comp({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
       break
     }
     if (primary.size > 0 || secondary.size > 0) {
@@ -241,6 +262,10 @@ export default function (schema) {
         console.log('todo replace state impl...')
       }
 
+      if (a.href.startsWith('javascript:')) {
+        return
+      }
+
       e.preventDefault()
       window.history.pushState({ location: a.href }, '', a.href)
       // const popStateEvent = new PopStateEvent('popstate', {})
@@ -251,7 +276,9 @@ export default function (schema) {
     }
 
     async function updateRoute () {
+      // TODO: is async slightly slower & percievable?
       const newState = routerState({ updateRoute })
+
       if (newState._pending?.then) {
         set(newState)
         await newState._pending
