@@ -16,7 +16,14 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       method,
       body: (body && typeof body !== 'string') ? JSON.stringify(body) : body
     })
-    const json = await res.json()
+    const resText = await res.text()
+    let json = {}
+    try {
+      json = JSON.parse(resText)
+    } catch (err) {
+      console.error(err, resText)
+    }
+
     if (json.result_info && json.result_info.total_pages > 1) {
       console.warn(path + ': ATTENTION, only one resource page per cloudflare api supported currently, please restrict the cf token to only the resources used by this project to avoid errors and tighten security. if this is not suffiecient raise an issue on github.')
     }
