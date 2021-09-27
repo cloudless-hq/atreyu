@@ -1,6 +1,6 @@
 <script>
 	import data from '/atreyu/src/store/data.js'
-
+ // TODO silent options
   export let env = 'prod'
 
   let versionTooltip = ''
@@ -11,6 +11,7 @@
   let updating = false
   let settingsDocId
 
+  let _silent = localStorage.getItem('_silent')
   let _updateImmediate = localStorage.getItem('_updateImmediate')
   let _updateCounter = Number(localStorage.getItem('_updateCounter'))
 
@@ -63,7 +64,7 @@
 
         if (latestHash !== installedHash) {
           // if (_updateCounter < 10) {
-          doUpdate() // todo counter with blocker
+          doUpdate({}) // todo counter with blocker
           // }
         } else {
           localStorage.setItem('_updateCounter', 1)
@@ -88,7 +89,7 @@
 
         if (newHash) {
           if (_updateImmediate && !updating) { // _updateCounter < 10 &&
-            doUpdate(true)
+            doUpdate({auto:true})
           } else {
             versionTooltip = `Build: "${settingsDoc.buildName$}"
   Atreyu  Version: "${settingsDoc.version$}"
@@ -121,10 +122,13 @@
     localStorage.removeItem('_updating')
   }
 
-  async function doUpdate (dontAsk) {
+  async function doUpdate ({ auto, silent }) {
     localStorage.setItem('_updateCounter', _updateCounter + 1)
+    if (silent) {
+      localStorage.setItem('_silent', true)
+    }
 
-    if (dontAsk) {
+    if (auto) {
       localStorage.setItem('_updateImmediate', true)
     }
     localStorage.setItem('_updating', true)
@@ -172,11 +176,14 @@
                 Please make sure your work is saved and update.
               </p>
               <div class="mt-3 flex space-x-7">
-                <button on:click={() => doUpdate(false)} class="bg-white rounded-md text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <button on:click={() => doUpdate({auto: false})} class="bg-white rounded-md text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                   Update
                 </button>
-                <button on:click={() => doUpdate(true)} class="bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <button on:click={() => doUpdate({auto: true})} class="bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                   Don't ask again
+                </button>
+                <button on:click={() => doUpdate({auto: true, silent: true})} class="bg-white rounded-md text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  Silent
                 </button>
               </div>
             </div>
@@ -196,7 +203,7 @@
   </div>
 {/if}
 
-{#if updated}
+{#if updated && !_silent}
   {#await $data._docs[settingsDocId].buildColor$ then buildColor}
     <div bind:this={updatedNotification} aria-live="assertive" class="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start">
       <div class="w-full flex flex-col items-center space-y-4 sm:items-end">

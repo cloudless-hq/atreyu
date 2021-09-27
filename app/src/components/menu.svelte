@@ -11,7 +11,10 @@
   function mouseUp (e) {
     if (e.path.includes(menuNode)) {
       if (!originalClick) {
-        e.target.click()
+        e.target.dispatchEvent(new Event('mousedown', {
+          bubbles: true,
+          cancelable: true
+        }))
       }
 
       open = false

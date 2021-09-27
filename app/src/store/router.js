@@ -5,7 +5,7 @@ import { urlLogger } from '../lib/url-logger.js'
 // TODO: data saver mode respect for preloader
 
 const components = {}
-export default function (schema) {
+export default function (schema, { preloadDisabled, _preloadDefault }) {
   const routes = []
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
@@ -220,9 +220,12 @@ export default function (schema) {
         set(preloadRouterState)
         return () => {}
       })
-
-      const comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
-      preloaderInstance = new comp({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+      try {
+        const comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
+        preloaderInstance = new comp({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+      } catch (err) {
+        console.error('could not preload the component for: ' + href, err)
+      }
       break
     }
     if (primary.size > 0 || secondary.size > 0) {
@@ -246,32 +249,35 @@ export default function (schema) {
     // TODO: let keepfocus = false
     let resetScroll = false
 
-    function linkClickHandler (e) {
+    function preventer (e) {
       // TODO keepfocus handling
       const a = findNode(e.target)
-
       if (!a) {
-        return
+        return {}
       }
-
       if (a.rel === 'external') {
-        return
+        return {}
       }
-
       if (a.rel === 'replace') {
         console.log('todo replace state impl...')
       }
-
       if (a.href.startsWith('javascript:')) {
+        return {}
+      }
+      e.preventDefault()
+      e.stopPropagation()
+      return { prevented: true, a }
+    }
+
+    function linkClickHandler (e) {
+      const {prevented, a} = preventer(e)
+      if (!prevented) {
         return
       }
-
-      e.preventDefault()
       window.history.pushState({ location: a.href }, '', a.href)
       // const popStateEvent = new PopStateEvent('popstate', {})
       // dispatchEvent(popStateEvent)
       updateRoute()
-
       resetScroll = !a.hasAttribute('noscroll')
     }
 
@@ -298,13 +304,15 @@ export default function (schema) {
       //   // scroll is an element id (from a hash), we need to compute y
       //   scrollTo(0, deep_linked.getBoundingClientRect().top + scrollY)
 
-      setTimeout(() => {
-        window.requestIdleCallback(() => {
-          finished.add(location.href)
-          getLinks(app).forEach(link => primary.add(link))
-          doIdle()
-        })
-      }, 150)
+      if (!preloadDisabled) {
+        setTimeout(() => {
+          window.requestIdleCallback(() => {
+            finished.add(location.href)
+            getLinks(app).forEach(link => primary.add(link))
+            doIdle()
+          })
+        }, 150)
+      }
 
       if (resetScroll) {
         scrollTo(0, 0)
@@ -315,11 +323,13 @@ export default function (schema) {
     updateRoute()
 
     window.addEventListener('popstate', updateRoute)
-    window.addEventListener('click', linkClickHandler)
+    window.addEventListener('mousedown', linkClickHandler)
+    window.addEventListener('click', preventer)
 
     return () => {
       window.removeEventListener('popstate', updateRoute)
-      window.removeEventListener('click', linkClickHandler)
+      window.removeEventListener('mousedown', linkClickHandler)
+      window.addEventListener('click', preventer)
     }
   })
 
