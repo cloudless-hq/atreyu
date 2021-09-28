@@ -25,7 +25,7 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.1'
+export const version = '0.2.2'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
