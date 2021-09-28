@@ -71,7 +71,7 @@ export default async function ({
         try {
           const template = await Deno.readTextFile(file)
           comp = await compile(template, {
-            filename: basename(subPath),
+            filename: basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath),
             css: true,
             dev,
             generate: 'dom',
