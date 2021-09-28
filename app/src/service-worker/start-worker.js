@@ -139,6 +139,9 @@ export default function ({
       clientPorts[conId] = { client: e.source }
     }
 
+    if (dbs.size < 1) {
+      console.warn('FIXME: wait for finished session init and intited dbs')
+    }
     clientPorts[conId].sub = falcorServer.execute(data)
       .subscribe(
         result => {

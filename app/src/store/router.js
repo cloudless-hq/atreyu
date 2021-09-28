@@ -5,7 +5,7 @@ import { urlLogger } from '../lib/url-logger.js'
 // TODO: data saver mode respect for preloader
 
 const components = {}
-export default function (schema, { preloadDisabled, _preloadDefault }) {
+export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
   const routes = []
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
