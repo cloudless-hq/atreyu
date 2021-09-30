@@ -25,6 +25,7 @@ export async function recursiveReaddir (path) {
 export default async function ({
   input = [ 'app/src' ],
   batch,
+  clean,
   // output,
   dev = true,
   sveltePath = '/svelte'
@@ -42,6 +43,13 @@ export default async function ({
     }
 
     const outputTarget = join(inFolder, '..', 'build') // output ? join(inFolder, '..', '..', 'build', basename(inFolder))
+
+    try {
+      if (clean) {
+        console.log('remove', outputTarget)
+        await Deno.remove(outputTarget, { recursive: true })
+      }
+    } catch (_e) {}
 
     try {
       Deno.statSync(inFolder)

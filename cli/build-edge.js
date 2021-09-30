@@ -65,11 +65,13 @@ async function compile ({input, appName, workerName, output, buildName}) {
   ])
 }
 
-export async function buildEdge (workers, buildName) {
-  const projectFolder = Deno.cwd()
+export function buildEdge (workers, buildName) {
+  // const projectFolder = Deno.cwd()
   const appName = basename(Deno.cwd())
   const buildPath = join(Deno.cwd(), 'edge/build')
   try {
+    console.log('remove', buildPath)
+    // await Deno.remove(buildPath, { recursive: true })
     Deno.mkdirSync(buildPath, { recursive: true })
   } catch (_e) { }
 

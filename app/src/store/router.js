@@ -220,11 +220,12 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
         set(preloadRouterState)
         return () => {}
       })
+      let comp
       try {
-        const comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
+        comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
         preloaderInstance = new comp({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
       } catch (err) {
-        console.error('could not preload the component for: ' + href, err)
+        console.error('could not preload the component for: ' + href, err, comp)
       }
       break
     }

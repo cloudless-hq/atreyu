@@ -167,7 +167,7 @@ switch (cmd) {
   case 'dev':
     let locked = false
     let rerun = false
-    async function devBuild (batch) {
+    async function devBuild ({batch, clean} = {}) {
       if (locked) {
         rerun = true
         return
@@ -186,6 +186,7 @@ switch (cmd) {
         buildSvelte({
           input: _[1],
           batch,
+          clean,
           output,
           sveltePath
         }),
@@ -217,7 +218,7 @@ switch (cmd) {
       await doStart()
     }
 
-    await devBuild()
+    await devBuild({clean: true})
 
     // let debouncer = null
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
@@ -229,7 +230,7 @@ switch (cmd) {
       changes.clear()
       console.clear()
       console.info('changed', batch)
-      devBuild(batch)
+      devBuild({batch})
     }
 
     let timer
