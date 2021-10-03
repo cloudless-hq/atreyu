@@ -38,14 +38,12 @@
 
 <div bind:this={buttonNode} on:mousedown={toggle}>
   <slot name="menu-button" {open}>
-
   </slot>
 </div>
 
 <!-- {#if open} -->
 <div bind:this={menuNode} >
   <slot name="menu" {open}>
-
   </slot>
 </div>
 <!-- {/if} -->

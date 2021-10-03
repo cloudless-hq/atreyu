@@ -22,10 +22,11 @@ import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
+import { execStream } from './exec.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.2'
+export const version = '0.2.3'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
@@ -39,6 +40,13 @@ function rollBuildMeta () {
 }
 rollBuildMeta()
 
+let nodePackage = {}
+try {
+  const pck = await Deno.readTextFile('package.json')
+  if (pck) {
+    nodePackage = JSON.parse(pck)
+  }
+} catch (_err) {}
 
 const buildTime = Date.now()
 
@@ -83,8 +91,13 @@ if (!env) {
   }
 }
 
-if (!cmd || help) {
+if (help) {
   cmd = 'help'
+}
+
+if (!cmd) {
+  cmd = 'dev'
+  start = true
 }
 
 let config = await loadConfig(env)
@@ -193,6 +206,11 @@ switch (cmd) {
 
         buildServiceWorker(batch)
       ])
+
+      if (clean && nodePackage?.scripts.build) {
+        console.log('  🧶 running yarn build...')
+        await execStream({ cmd: ['yarn', 'build'] })
+      }
 
       // console.log(_watchConf)
 

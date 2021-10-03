@@ -1,5 +1,5 @@
 import { join, basename, green, yellow } from '../deps-deno.js'
-
+import { execStream, exec } from './exec.js'
 // async function ipfsFetch (cmd, data) {
 //  // todo: convert to http
 // }
@@ -25,54 +25,11 @@ import { join, basename, green, yellow } from '../deps-deno.js'
 // }
 
 export async function execIpfsStream (cmd, repo, getData) {
-	const proc = Deno.run({
-		cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')],
-		stdout: 'piped',
-		stderr: 'piped'
-	})
-
-	proc.status().then(async ({ code }) => {
-		console.log('finish')
-		if (code !== 0) {
-			const rawError = await proc.stderrOutput()
-			const errorString = new TextDecoder().decode(rawError)
-			console.error(errorString)
-		}
-	})
-
-	for await (const buffer of Deno.iter(proc.stdout)) {
-		const str = new TextDecoder().decode(buffer)
-
-		if (getData) {
-			getData(str)
-		} else {
-			console.log(str)
-		}
-	}
-
-	proc.close()
+  execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData })
 }
 
 export async function execIpfs (cmd, repo) {
-	const proc = Deno.run({
-		cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')],
-		stdout: 'piped',
-		stderr: 'piped'
-	})
-
-	const { code } = await proc.status()
-
-	if (code !== 0) {
-		const rawError = await proc.stderrOutput()
-		const errorString = new TextDecoder().decode(rawError)
-		console.error('ipfs proc error: ', errorString, cmd)
-	}
-
-	const rawOutput = await proc.output()
-	const outStr = new TextDecoder().decode(rawOutput)
-	proc.close()
-
-	return outStr
+  return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')])
 }
 
 export async function add ({

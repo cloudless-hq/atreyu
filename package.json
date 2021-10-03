@@ -1,6 +1,6 @@
 {
   "name": "atreyu-deno",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "scripts": {
     "build": "rollup -c ./rollup.config.js",
     "lint": "npx eslint '**/*.{js,svelte,ts}'"
@@ -20,6 +20,7 @@
     "falcor-observable": "1.3.0",
     "falcor-router": "0.8.3",
     "immediate": "3.3.0",
+    "eslint-plugin-functional": "3.7.2",
     "lodash": "4.17.21",
     "rollup": "2.56.3",
     "rollup-plugin-node-polyfills": "0.2.1",

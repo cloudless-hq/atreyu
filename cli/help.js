@@ -23,6 +23,9 @@ export function printHelp ({ version }) {
 atreyu - cutting edge web applications
 
 Usage:
+  ${green('ayu')}
+    Shorthand for ayu dev --start (see below)
+
   ${green('ayu')} ${yellow('init')}
     initialize atreyu. This creates a fresh 'offline' ipfs repo
     for storing and locally serving all static and compiled files.
@@ -48,8 +51,10 @@ Usage:
     Options:
     --watch
       Watches for changes
+    --start
+      automatically start the local daemon in the background
     --bg
-      start daemon in background
+      start daemon in background and exit
 
   ${green('ayu')} ${yellow('svelte')}         ${
     gray(
@@ -83,11 +88,13 @@ Usage:
     Publish the current build to the ipfs pinning service configured.
 
   ${green('ayu')} ${yellow('start')}        ${gray('-- eg: ayu start --bg')}
-    Start offline ipfs server for development.
+    Start ipfs server for development. Defaults to offline mode with no ipfs connections and disabled p2p features.
     Options:
       <path>
       path to ipfs repo to start the daemon for
       Optional, defaults to 'ipfs' in current folder
+      --online
+      start in with ipfs in onine mode, necesary to pin to remote pinning services for publishing
       --bg
       start in background, you can stop the server with ayu stop later,
       this is helpfull, when you constantly run ayu dev without watch mode

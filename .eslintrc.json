@@ -9,19 +9,21 @@
       // project: ['./tsconfig.json'],
       // extraFileExtensions: ['.svelte']
   },
-  "plugins": ["@typescript-eslint", "svelte3"],
+  "plugins": ["@typescript-eslint", "svelte3", "functional"],
   "extends": [
     "plugin:@typescript-eslint/recommended"
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
+    "functional/no-class": "error",
+    "functional/no-this-expression": "error",
+    "no-invalid-this": "error",
     "eol-last": ["error", "always"],
     "no-trailing-spaces": "error",
     "space-before-blocks": ["error", "always"],
     "comma-dangle": ["error", "never"],
     "keyword-spacing": ["error", { "before": true , "after": true }],
     "arrow-spacing": ["error", { "before": true, "after": true }],
-    "space-before-function-paren": ["error", "always"],
     "space-before-function-paren": ["error", {
         "anonymous": "always",
         "named": "always",
