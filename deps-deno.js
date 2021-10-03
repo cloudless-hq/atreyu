@@ -17,7 +17,8 @@ export {
 export { globToRegExp } from 'https://deno.land/std@0.100.0/path/glob.ts'
 
 export {
-  compile
+  compile,
+  preprocess
 } from 'https://ga.jspm.io/npm:svelte@3.42.5/compiler.mjs'
 
 export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/master/mod.ts'

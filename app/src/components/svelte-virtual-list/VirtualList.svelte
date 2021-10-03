@@ -9,7 +9,7 @@
   export let itemHeight = undefined
   export let perPage = 0
   export let scrollKey = 'all'
-  export let reverse = false
+  // export let reverse = false
   export let start = 0
   export let end = perPage
 
@@ -80,7 +80,7 @@
 
   $: if (mounted) handleViewchange(scrollKey)
 
-  function handleViewchange (scrollKey) {    
+  function handleViewchange (scrollKey) {
     if (typeof scrollTops[scrollKey] === 'undefined') {
       scrollTops[scrollKey] = 0
       viewport.scrollTo(0, 0)

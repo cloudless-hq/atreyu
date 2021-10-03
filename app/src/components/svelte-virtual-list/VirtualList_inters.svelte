@@ -6,8 +6,8 @@
 	export let height = '100%';
 	export let itemHeight = undefined;
 	export let perPage = 0
-	export let scrollKey = 'all'
-	export let reverse = false
+	// export let scrollKey = 'all'
+	// export let reverse = false
 
 	// read-only, but visible to consumers via bind:start
 	export let start = 0;

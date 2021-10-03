@@ -1,4 +1,4 @@
-import { join, dirname, basename, compile, green } from '../deps-deno.js'
+import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
 
 // import postcss from 'https://deno.land/x/postcss/mod.js'
 // import { tailwindcss } from '../deps-node.build.js'
@@ -31,6 +31,7 @@ export default async function ({
   sveltePath = '/svelte'
 }) {
   const compNames = {}
+  const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
   const watchConf = {
     pattern: '**/*.svelte',
@@ -78,8 +79,71 @@ export default async function ({
         let comp
         try {
           const template = await Deno.readTextFile(file)
-          comp = await compile(template, {
-            filename: basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath),
+          const filename = basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath)
+          const filePath = '/' + file // '/src' + subPath // /Users/jan/Dev/igp/convoi.cx
+          const { code, dependencies } = await preprocess(template, {
+            // style: () => {}
+            // markup: ({ content }) => {
+            //   // const s = new MagicString(content, { filename })
+            //   // s.overwrite(pos, pos + 3, 'bar', { storeName: true })
+            //   return {
+            //     code: content
+            //     // map: s.generateMap()
+            //     dependencies: []
+            //   }
+            script: async ({ content, attributes, filename }) => {
+              if (attributes.lang === 'ts') {
+                // console.log({ content, attributes, filename })
+                console.log(filePath)
+                const { files, diagnostics } = await Deno.emit(filePath + '.ts', {
+                  sources: {
+                    [filePath + '.ts']: content // .replaceAll('.svelte', '.svelte.ts')
+                  },
+                  // bundle: 'module', // module  or classic
+                  check: false,
+
+                  compilerOptions: {
+                    checkJs: false,
+                    removeComments: true,
+                    // allowUnreachableCode: true,
+                    suppressImplicitAnyIndexErrors: true
+                  },
+                  importMapPath: atreyuPath + '/atreyu',
+                  importMap: {
+                    imports: {
+                      '/atreyu/': './app/',
+                      'svelte': './app/src/deps/svelte-internal.js'
+                    }
+                  }
+                })
+                // diagnostics
+                // console.log({ files })
+                // console.log(files[`file:///${filename}.ts.js`], )
+
+                // let svelteImports = ''
+                console.log(diagnostics)
+                // diagnostics.forEach((diag) => {
+                //   const { fileName } = diag
+                //   // console.log(diag)
+                //   if (fileName.endsWith('.svelte')) {
+                //     // svelteImports += `import '${fileName.replace('file://', '')}'\n`
+                //   }
+                // })
+
+                return {
+                  code: files[`file://${filePath}.ts.js`], // svelteImports + // .replaceAll('.svelte.ts', '.svelte')
+                  map: files[`file://${filePath}.ts.js.map`]
+                }
+              }
+            }
+          }, {
+            filename
+          })
+
+          // console.log(dependencies)
+
+          comp = await compile(code, {
+            filename,
             css: true,
             dev,
             generate: 'dom',

@@ -5,7 +5,7 @@
 	import flash from './change-flash.js'
 
 	export let todo
-	export let toggle
+	// export let toggle
 
 	let div
 
