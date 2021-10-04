@@ -48,7 +48,7 @@ export default async function () {
   watchConf.files[swPath] = JSON.parse(files['deno:///bundle.js.map']).sources.map(path => path.replace('<file://', '').replace('>', ''))
 
   console.log( `  ${green('compiled:')} ${appFolder}/service-worker.bundle.js`)
-  console.log(`  ${stats.map(stat => stat.join(': ')).join(', ')}`)
+  console.log(`    ${stats.map(stat => stat.join(': ')).join(', ')}`)
 
   return watchConf
 }
