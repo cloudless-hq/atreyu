@@ -1,4 +1,4 @@
-import { Observable } from '../deps/falcor.js'
+import { Observable } from '/atreyu/src/deps/falcor.js'
 
 class ServiceWorkerSource {
   constructor ({ wake }) {

@@ -14,7 +14,7 @@ import {
 
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
-import buildSvelte from './build-svelte.js'
+import buildSvelte from './build-svelte.ts'
 import buildServiceWorker from './build-service-worker.js'
 import { buildEdge, buildWorkerConfig } from './build-edge.js'
 import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
@@ -26,7 +26,7 @@ import { execStream } from './exec.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.4'
+export const version = '0.2.5'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
@@ -69,6 +69,7 @@ const watchIgnore = ([
   'node_modules/**',
   'yarn.lock',
   '**/*.svelte.js',
+  '**/build/**',
   '**/*.svelte.ssr.js',
   '.gitignore',
   'README.md',

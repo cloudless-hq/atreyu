@@ -8,7 +8,7 @@ You need to have the following tools installed on your machine:
 
 - [Node.js](https://nodejs.org/) (>=16). We recommend using a version manager like [nvm](https://github.com/nvm-sh/nvm)
 - [Yarn](https://yarnpkg.com/) (>=1.22.10).
-- [Deno](https://deno.land/).
+- [Deno](https://deno.land/) (1.14.2)
 - [IPFS Cli](https://ipfs.io/). Installation instructions are [here](https://docs.ipfs.io/install/command-line/).
 
 After following each installation steps, check if everything is working:

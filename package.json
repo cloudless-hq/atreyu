@@ -1,6 +1,6 @@
 {
   "name": "atreyu-deno",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "scripts": {
     "build": "rollup -c ./rollup.config.js",
     "lint": "npx eslint '**/*.{js,svelte,ts}'"
@@ -8,10 +8,10 @@
   "dependencies": {
     "@rollup/plugin-commonjs": "20.0.0",
     "@rollup/plugin-json": "4.1.0",
-    "@rollup/plugin-node-resolve": "13.0.4",
+    "@rollup/plugin-node-resolve": "13.0.5",
     "@rollup/plugin-replace": "3.0.0",
-    "@typescript-eslint/eslint-plugin": "4.31.1",
-    "@typescript-eslint/parser": "4.31.1",
+    "@typescript-eslint/eslint-plugin": "4.33.0",
+    "@typescript-eslint/parser": "4.33.0",
     "argsarray": "0.0.1",
     "eslint": "7.32.0",
     "eslint-plugin-svelte3": "3.2.1",
@@ -22,7 +22,7 @@
     "immediate": "3.3.0",
     "eslint-plugin-functional": "3.7.2",
     "lodash": "4.17.21",
-    "rollup": "2.56.3",
+    "rollup": "2.58.0",
     "rollup-plugin-node-polyfills": "0.2.1",
     "route-parser": "0.0.5",
     "spark-md5": "3.0.2",

@@ -1,5 +1,5 @@
 import { makeProxy } from '../lib/proxy-object.js'
-import { falcor } from '../deps/falcor.js'
+import { falcor } from '/atreyu/src/deps/falcor.js'
 import { extractFromCache } from './helpers.js'
 import ServiceWorkerSource from './service-worker-source.js'
 

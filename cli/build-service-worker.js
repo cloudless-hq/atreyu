@@ -26,7 +26,7 @@ export default async function () {
     compilerOptions: {
       removeComments: true
     },
-    importMapPath: atreyuPath + '/atreyu',
+    importMapPath: atreyuPath + '/imports.json',
     importMap: {
       imports: {
         '/atreyu/': './app/'
