@@ -56,6 +56,11 @@ export default function ({
         let newSession
         let reloadClients = false
 
+        let initDone
+        dbs._pendingInit = new Promise(resolve => {
+          initDone = resolve
+        })
+
         try {
           const sessionRes = await fetch('/_couch/_session', { redirect: 'error' })
           newSession = await sessionRes.json()
@@ -98,6 +103,7 @@ export default function ({
           })
         }
 
+        initDone?.()
         return newSession
       },
       value: {}
@@ -140,7 +146,7 @@ export default function ({
     }
 
     if (dbs.size < 1) {
-      console.warn('FIXME: wait for finished session init and intited dbs')
+      await dbs._pendingInit
     }
     clientPorts[conId].sub = falcorServer.execute(data)
       .subscribe(
