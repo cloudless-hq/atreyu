@@ -25,7 +25,7 @@ export default async function ({
   sveltePath = '/svelte'
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   const compNames: {[key: string]: boolean} = {}
-  let tailwindComponents: string[] = []
+  let postcssComponents: string[] = []
   let deps = {}
 
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
@@ -85,14 +85,14 @@ export default async function ({
 
           const { code } = await preprocess(template, {
             style: async ({ content, attributes, filename }) => {
-              if (attributes.lang === 'tailwind'){
+              if (attributes.lang === 'postcss'){
                 if (!attributes.global) {
-                  console.error('🛑 Error: Svelte Tailwind supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
+                  console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
                   return {code: ''}
                 }
-                const path = join(Deno.cwd(), outputTarget, subPath + '.tailwind.css').replace('/src/', '/build/')
+                const path = join(Deno.cwd(), outputTarget, subPath + '.postcss.css').replace('/src/', '/build/')
                 await Deno.writeTextFile(path, content)
-                tailwindComponents.push(path)
+                postcssComponents.push(path)
                 return {code: ''}
               }
             },
@@ -186,7 +186,7 @@ export default async function ({
         }
 
         if (comp.css && comp.css.code && comp.css.code.length > 0) {
-          // const result = await postcss([tailwindcss]).process(comp.css)
+          // const result = await postcss([postcsscss]).process(comp.css)
 
           await Deno.writeTextFile(
             join(outputTarget, subPath) + '.css',
@@ -237,12 +237,12 @@ export default async function ({
     await Promise.all(input.map(inp => compileFolder(inp)))
   }
 
-  if (tailwindComponents.length > 0 && clean) {
+  if (postcssComponents.length > 0 && clean) {
     let twContent = ''
-    tailwindComponents.forEach(twC => {
+    postcssComponents.forEach(twC => {
       twContent += `@import ".${twC.split('/build')[1]}";\n`
     })
-    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/tailwind-components.css'), twContent)
+    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/postcss-components.css'), twContent)
   }
 
   return watchConf
@@ -285,7 +285,7 @@ export default async function ({
 // postcss_import@0.1.4
 // purgecss
 // const result = await postcss([autoprefixer]).process(css);
-// import { tailwindcss } from '../deps-node.build.js'
-// 'https://jspm.dev/tailwindcss'
+// import { postcsscss } from '../deps-node.build.js'
+// 'https://jspm.dev/postcsscss'
 // TODO: auto fetch and compile sub imports of svelte components?
 // TODO: prefixed imported styles
