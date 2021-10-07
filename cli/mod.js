@@ -26,7 +26,7 @@ import { execStream } from './exec.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.6'
+export const version = '0.2.7'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
