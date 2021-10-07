@@ -25,6 +25,9 @@ export default async function ({
   sveltePath = '/svelte'
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   const compNames: {[key: string]: boolean} = {}
+  let tailwindComponents: string[] = []
+  let deps = {}
+
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
   const watchConf: { pattern: string, files: { [key: string]: string[] } } = {
@@ -41,7 +44,7 @@ export default async function ({
 
     try {
       if (clean) {
-        console.log('remove', outputTarget)
+        console.log('  🐘 removing:', outputTarget)
         await Deno.remove(outputTarget, { recursive: true })
       }
     } catch (_e) {}
@@ -52,7 +55,7 @@ export default async function ({
       return
     }
 
-    console.log('  compiling svelte templates for:', inFolder)
+    console.log('  compiling svelte templates:', join(inFolder, '/'))
 
     const files = batch ? batch.map(fname => fname.substring(1, fname.length)).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
 
@@ -80,18 +83,26 @@ export default async function ({
           const template = await Deno.readTextFile(file)
           const filename = basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath)
 
-          const { code, dependencies } = await preprocess(template, {
-            // markup: ({ content }) => {
-            //   const s = new MagicString(content, { filename })
-            //   s.overwrite(pos, pos + 3, 'bar', { storeName: true }) map: s.generateMap()
-
+          const { code } = await preprocess(template, {
+            style: async ({ content, attributes, filename }) => {
+              if (attributes.lang === 'tailwind'){
+                if (!attributes.global) {
+                  console.error('🛑 Error: Svelte Tailwind supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
+                  return {code: ''}
+                }
+                const path = join(Deno.cwd(), outputTarget, subPath + '.tailwind.css').replace('/src/', '/build/')
+                await Deno.writeTextFile(path, content)
+                tailwindComponents.push(path)
+                return {code: ''}
+              }
+            },
             script: async ({ content, attributes }: {content: string, attributes: {lang: string}, filename: string}) => {
               if (attributes.lang === 'ts') {
                 const tsFilePath = outputTarget + subPath + '.ts'
                 const fileUri = `file://${join(Deno.cwd(), tsFilePath)}`
                 await Deno.writeTextFile(tsFilePath, content)
 
-                const { files, diagnostics } = await Deno.emit(fileUri, {
+                const { files, diagnostics, stats  } = await Deno.emit(fileUri, {
                   // bundle: 'module', // module  or classic
                   check: false,
                   compilerOptions: {
@@ -114,19 +125,28 @@ export default async function ({
                   }
                 })
 
-                const deps = Object.keys(files)
-                // const tsDeps = deps.filter(file => file.endsWith('.ts'))
+                const allDeps = Object.keys(files)
+                const tsDeps = allDeps.filter(file => file.endsWith('.ts.js'))
+                tsDeps.forEach(async tsDep => {
+                  if (!tsDep.endsWith(tsFilePath + '.js')) {
+                    await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), files[tsDep])
+                  }
+                })
 
                 if (diagnostics.length > 0) {
                   console.log(Deno.formatDiagnostics(diagnostics))
                 }
+                const dependencies = allDeps
+                  .filter(file => file.endsWith('.ts.js') && !file.endsWith(tsFilePath + '.js'))
+                  .map(file => file.replace('/src/', '/build/').replace('file://', ''))
+
+                deps[subPath] = { files: dependencies, stats }
+                deps[subPath].stats[1][1] = dependencies.length + 1
 
                 return {
                   code: files[`${fileUri}.js`],
                   map: files[`${fileUri}.js.map`],
-                  dependencies: deps
-                    .filter(file => !file.endsWith('.map') && !file.endsWith('.js.js'))
-                    .map(file => file.replace('file://', ''))
+                  dependencies
                 }
               }
             }
@@ -197,7 +217,14 @@ export default async function ({
         // TODO: console.log(preprocessRes.dependencies)
         watchConf.files[file] = comp.js.map.sources.map((path: string) => path.replace('<file://', '').replace('>', ''))
 
-        console.log(`  ${green('compiled:')} ` + outputTarget + subPath + '.js(.map)')
+        console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js(.map)')
+
+        deps[subPath]?.files.forEach((compDep, i) => {
+          console.log(`    ├─ ${compDep.replace(Deno.cwd(), '')}`)
+          if (deps[subPath]?.files.length === i + 1) {
+            console.log(`    └─ ${deps[subPath]?.stats.map(stat => stat.join(': ')).join(', ')}`)
+          }
+        })
       }
     })
 
@@ -208,6 +235,14 @@ export default async function ({
     await compileFolder(input)
   } else {
     await Promise.all(input.map(inp => compileFolder(inp)))
+  }
+
+  if (tailwindComponents.length > 0 && clean) {
+    let twContent = ''
+    tailwindComponents.forEach(twC => {
+      twContent += `@import ".${twC.split('/build')[1]}";\n`
+    })
+    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/tailwind-components.css'), twContent)
   }
 
   return watchConf
@@ -242,50 +277,9 @@ export default async function ({
 //     filename?: string
 //   }
 // )
-// const svelte = require('svelte/compiler');
-// const MagicString = require('magic-string');
-// const { code } = await svelte.preprocess(source, {
-//   markup: ({ content, filename }) => {
-//     const pos = content.indexOf('foo');
-//     if(pos < 0) {
-//       return { code: content }
-//     }
-//     const s = new MagicString(content, { filename })
-//     s.overwrite(pos, pos + 3, 'bar', { storeName: true })
-//     return {
-//       code: s.toString(),
-//       map: s.generateMap()
-//     }
-//   }
-// }, {
-//   filename: 'App.svelte'
-// });
-// const svelte = require('svelte/compiler');
-// const sass = require('node-sass');
-// const { dirname } = require('path');
-// const { code, dependencies } = await svelte.preprocess(source, {
-//   style: async ({ content, attributes, filename }) => {
-//     // only process <style lang="sass">
-//     if (attributes.lang !== 'sass') return;
-//     const { css, stats } = await new Promise((resolve, reject) => sass.render({
-//       file: filename,
-//       data: content,
-//       includePaths: [
-//         dirname(filename),
-//       ],
-//     }, (err, result) => {
-//       if (err) reject(err);
-//       else resolve(result);
-//     }))
-//     return {
-//       code: css.toString(),
-//       dependencies: stats.includedFiles
-//     };
-//   }
-// }, {
-//   filename: 'App.svelte'
-// })
 
+// const MagicString = require('magic-string')
+// const s = new MagicString(content, { filename }) s.overwrite(pos, pos + 3, 'bar', { storeName: true }) map: s.generateMap()
 // import postcss from "https://deno.land/x/postcss/mod.js";
 // import autoprefixer from "https://deno.land/x/postcss_autoprefixer/mod.js";
 // postcss_import@0.1.4

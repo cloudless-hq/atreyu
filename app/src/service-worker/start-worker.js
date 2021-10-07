@@ -255,7 +255,7 @@ function rewrite (url) {
     return url
   }
 
-  if (url.pathname.endsWith('.svelte')) {
+  if (url.pathname.endsWith('.svelte') || url.pathname.endsWith('.ts')) {
     url.pathname = url.pathname.replace('src', 'build') + '.js'
   } else if (url.pathname === '/svelte/store') {
     url.pathname = '/atreyu/build/deps/svelte-store.js'

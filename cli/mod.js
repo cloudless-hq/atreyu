@@ -16,7 +16,7 @@ import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
 import buildSvelte from './build-svelte.ts'
 import buildServiceWorker from './build-service-worker.js'
-import { buildEdge, buildWorkerConfig } from './build-edge.js'
+import { buildEdge, buildWorkerConfig } from './build-edge.ts'
 import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
@@ -26,7 +26,7 @@ import { execStream } from './exec.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.5'
+export const version = '0.2.6'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})

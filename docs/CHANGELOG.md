@@ -1,3 +1,8 @@
+## v0.2.6
+  - recursive ts dependencies in svelte components
+  - tailwind support in svelte components
+  - logging improvements for build system
+
 ## v0.2.5
   - typescript support for svelte compiler
 

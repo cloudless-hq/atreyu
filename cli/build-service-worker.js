@@ -1,8 +1,9 @@
 import { join, green } from '../deps-deno.js'
 
 export default async function () {
+  const fileName = `/service-worker.js`
   const appFolder = Deno.cwd() + '/app'
-  const swPath = `${appFolder}/service-worker.js`
+  const swPath = `${appFolder}/${fileName}`
 
   const watchConf = {
     pattern: null,
@@ -15,7 +16,7 @@ export default async function () {
     return // console.warn('cannot open ' + swPath)
   }
 
-  console.log('  compiling service worker: ' + swPath)
+  console.log('  compiling service worker: ' + 'app' + fileName)
 
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
   // console.log(atreyuPath, swPath)
@@ -47,8 +48,8 @@ export default async function () {
 
   watchConf.files[swPath] = JSON.parse(files['deno:///bundle.js.map']).sources.map(path => path.replace('<file://', '').replace('>', ''))
 
-  console.log( `  ${green('compiled:')} ${appFolder}/service-worker.bundle.js`)
-  console.log(`    ${stats.map(stat => stat.join(': ')).join(', ')}`)
+  console.log(`  ${green('emitted:')} app/service-worker.bundle.js`)
+  console.log(`    └─ ${stats.map(stat => stat.join(': ')).join(', ')}`)
 
   return watchConf
 }

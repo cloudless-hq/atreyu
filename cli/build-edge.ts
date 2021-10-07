@@ -71,7 +71,7 @@ export function buildEdge (workers, buildName) {
   const buildPath = join(Deno.cwd(), 'edge/build')
   try {
     console.log('remove', buildPath)
-    // await Deno.remove(buildPath, { recursive: true })
+    Deno.removeSync(buildPath, { recursive: true })
     Deno.mkdirSync(buildPath, { recursive: true })
   } catch (_e) { }
 
