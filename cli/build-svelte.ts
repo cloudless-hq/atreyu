@@ -1,5 +1,5 @@
 import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
-
+import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
 export async function recursiveReaddir (path: string) {
   const files: string[] = []
   const getFiles = async (path: string) => {
@@ -60,23 +60,37 @@ export default async function ({
     const files = batch ? batch.map(fname => fname.substring(1, fname.length)).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
 
     const fileCompilers = files.map(async file => {
+      let subPath = file.replace(inFolder, '')
+      try {
+        Deno.statSync(file)
+      } catch (_e) {
+        return
+      }
+      try {
+        await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true })
+      } catch (_e) { }
+
+
       if (file.endsWith('.css')) {
 
       }
 
+      if (file.endsWith('.ts')) {
+        const { metafile } = await esbuild.build({
+          entryPoints: [file],
+          sourcemap: 'external',
+          // splitting: true,
+          treeShaking: false,
+          metafile: true,
+          // keepNames: true,
+          outfile: outputTarget + subPath + '.js',
+        })
+        // console.log(metafile)
+        // //# sourceMappingURL=make-product-type.ts.js.map
+      }
+
       if (file.endsWith('.svelte')) {
         // TODO: handle css files with auto js wrapper on import file.css
-        let subPath = file.replace(inFolder, '')
-
-        try {
-          Deno.statSync(file)
-        } catch (_e) {
-          return
-        }
-
-        try {
-          await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true })
-        } catch (_e) { }
 
         let comp
         try {
@@ -98,55 +112,59 @@ export default async function ({
             },
             script: async ({ content, attributes }: {content: string, attributes: {lang: string}, filename: string}) => {
               if (attributes.lang === 'ts') {
-                const tsFilePath = outputTarget + subPath + '.ts'
-                const fileUri = `file://${join(Deno.cwd(), tsFilePath)}`
-                await Deno.writeTextFile(tsFilePath, content)
+                // const tsFilePath = outputTarget + subPath + '.ts'
+                // const fileUri = `file://${join(Deno.cwd(), tsFilePath)}`
+                // await Deno.writeTextFile(tsFilePath, content)
 
-                const { files, diagnostics, stats  } = await Deno.emit(fileUri, {
-                  // bundle: 'module', // module  or classic
-                  check: false,
-                  compilerOptions: {
-                    checkJs: false,
-                    removeComments: true,
-                    allowUnreachableCode: true,
-                    suppressImplicitAnyIndexErrors: true,
-                    // baseUrl: './app/src', paths: { '/atreyu/': ['./app/'] }
-                  },
-                  importMapPath: atreyuPath + '/imports.json',
-                  importMap: {
-                    imports: {
-                      '/atreyu/src/deps/': './app/build/deps/',
-                      '/atreyu/': './app/',
-                      '/src/': join(Deno.cwd(), 'app', 'src/'),
-                      '/schema/': join(Deno.cwd(), 'app', 'schema/'),
-                      'svelte': './app/src/deps/svelte-internal.js',
-                      'svelte/internal': './app/src/deps/svelte-internal.js'
-                    }
-                  }
-                })
+                const {code, map, warnings} = await esbuild.transform(content, { loader: 'ts', sourcemap: true, treeShaking: false })
+                // console.log(esbuildO)
+                // await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), esbuildO)
 
-                const allDeps = Object.keys(files)
-                const tsDeps = allDeps.filter(file => file.endsWith('.ts.js'))
-                tsDeps.forEach(async tsDep => {
-                  if (!tsDep.endsWith(tsFilePath + '.js')) {
-                    await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), files[tsDep])
-                  }
-                })
+                // const { files, diagnostics, stats  } = await Deno.emit(fileUri, {
+                //   // bundle: 'module', // module  or classic
+                //   check: false,
+                //   compilerOptions: {
+                //     checkJs: false,
+                //     removeComments: true,
+                //     allowUnreachableCode: true,
+                //     suppressImplicitAnyIndexErrors: true,
+                //     // baseUrl: './app/src', paths: { '/atreyu/': ['./app/'] }
+                //   },
+                //   importMapPath: atreyuPath + '/imports.json',
+                //   importMap: {
+                //     imports: {
+                //       '/atreyu/src/deps/': './app/build/deps/',
+                //       '/atreyu/': './app/',
+                //       '/src/': join(Deno.cwd(), 'app', 'src/'),
+                //       '/schema/': join(Deno.cwd(), 'app', 'schema/'),
+                //       'svelte': './app/src/deps/svelte-internal.js',
+                //       'svelte/internal': './app/src/deps/svelte-internal.js'
+                //     }
+                //   }
+                // })
 
-                if (diagnostics.length > 0) {
-                  console.log(Deno.formatDiagnostics(diagnostics))
+                // const allDeps = Object.keys(files)
+                // const tsDeps = allDeps.filter(file => file.endsWith('.ts.js'))
+                // await Promise.all(tsDeps.map(async tsDep => {
+                //   if (!tsDep.endsWith(tsFilePath + '.js')) {
+                //     // await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), files[tsDep])
+                //   }
+                // }))
+
+                if (warnings.length > 0) {
+                  warnings.forEach(console.warn)
                 }
-                const dependencies = allDeps
-                  .filter(file => file.endsWith('.ts.js') && !file.endsWith(tsFilePath + '.js'))
-                  .map(file => file.replace('/src/', '/build/').replace('file://', ''))
+                // const dependencies = allDeps
+                //   .filter(file => file.endsWith('.ts.js') && !file.endsWith(tsFilePath + '.js'))
+                //   .map(file => file.replace('/src/', '/build/').replace('file://', ''))
 
-                deps[subPath] = { files: dependencies, stats }
-                deps[subPath].stats[1][1] = dependencies.length + 1
+                // deps[subPath] = { files: dependencies, stats }
+                // deps[subPath].stats[1][1] = dependencies.length + 1
 
                 return {
-                  code: files[`${fileUri}.js`],
-                  map: files[`${fileUri}.js.map`],
-                  dependencies
+                  code, // files[`${fileUri}.js`],
+                  map, // files[`${fileUri}.js.map`],
+                  // dependencies
                 }
               }
             }
@@ -187,7 +205,6 @@ export default async function ({
 
         if (comp.css && comp.css.code && comp.css.code.length > 0) {
           // const result = await postcss([postcsscss]).process(comp.css)
-
           await Deno.writeTextFile(
             join(outputTarget, subPath) + '.css',
             comp.css.code
@@ -228,7 +245,7 @@ export default async function ({
       }
     })
 
-    await Promise.all(fileCompilers)
+    return await Promise.all(fileCompilers)
   }
 
   if (typeof input === 'string') {

@@ -45,7 +45,7 @@ This step installs the atreyu cli "ayu" on your system, which is  a standard [De
 Run:
 
 ```bash
-deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,`which deno`,yarn,rollup --no-check --prompt --unstable -n ayu -f ./cli/mod.js
+deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR","$HOME"/Library/Caches/esbuild/bin  --allow-run=ipfs,`which deno`,yarn,rollup,"$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.13.3 --no-check --prompt --unstable -n ayu -f ./cli/mod.js
 ```
 
 If everything is green, you should have `ayu` available on your terminal.

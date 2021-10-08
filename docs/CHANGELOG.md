@@ -1,3 +1,6 @@
+## v0.2.8
+  - new esbuild typescript build
+
 ## v0.2.6
   - recursive ts dependencies in svelte components
   - tailwind support in svelte components
