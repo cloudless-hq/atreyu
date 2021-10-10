@@ -87,7 +87,7 @@ export default {
   },
   '_docs[{keys:ids}]': {
     set: {
-      handler: async ({_docs, dbs, _userId}) => {
+      handler: async ({ _docs, dbs, _userId }) => {
         const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(doc => doc.value))
 
         // todo: handle errors
@@ -125,7 +125,9 @@ export default {
 
               _docs[row.key] = { $type: 'atom', value: row.doc }
 
-              if (row.doc.types?.length === 1) {
+              if (row.doc.type) {
+                _docs[row.key].$schema = { $ref: row.doc.type }
+              } else if (row.doc.types?.length === 1) {
                 _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
               } else if (row.doc.types?.length > 1) {
                 _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => {$ref: type.profile}) }

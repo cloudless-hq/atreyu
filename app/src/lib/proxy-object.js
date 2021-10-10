@@ -76,9 +76,9 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
 
           return objProxy(path, arr, rev)
         } else if (cleanKey === 'forEach') {
-          console.error('direct forEach call not implemented yet for proxy object')
+          console.error('direct forEach call not allowed. please post your use case to get support.')
         } else if (cleanKey === 'map') {
-          console.error('direct map call not implemented yet for proxy object')
+          console.error('direct map call not allowed. please post your use case to get support.')
           console.log(args, target, subObj)
         }
 
@@ -106,7 +106,7 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
         if (cleanKey === 'map') {
           return fun => {
             if (typeof obj[_start] === 'undefined') {
-              console.error('map is not allowed on virtual unbounded arrays, you need to use slice first.')
+              console.error('map is not allowed on virtual unbounded arrays, you need to use slice first. Please read about non ataomic falcor arrays before you use this!')
               return []
             }
             for (let i = 0; i < obj.length; i++) {
@@ -124,7 +124,7 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
           if (!isNaN(cleanKey)) {
             cleanKey = cleanKey + obj[_start]
           } else if (cleanKey !== 'length') {
-            console.error('unexpected slice access, please raise github issue with usecase')
+            console.error('unexpected slice access, please raise github issue with your usecase')
           }
         }
 

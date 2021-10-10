@@ -18,6 +18,8 @@
       }
 
       open = false
+    } else if (!e.path.includes(buttonNode)) {
+      open = false
     }
     originalClick = false
   }
@@ -26,11 +28,11 @@
     if (open) {
       if (e.path.includes(menuNode)) {
         originalClick = true
+        open = false
       } else if (!e.path.includes(buttonNode)) {
         open = false
       }
     }
-    // todo on select item use mouseup not mousedown!
   }
 </script>
 
@@ -41,9 +43,9 @@
   </slot>
 </div>
 
-<!-- {#if open} -->
 <div bind:this={menuNode} >
-  <slot name="menu" {open}>
-  </slot>
+  {#if open}
+    <slot name="menu" {open}>
+    </slot>
+  {/if}
 </div>
-<!-- {/if} -->
