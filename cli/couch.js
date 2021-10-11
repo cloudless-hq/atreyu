@@ -1,18 +1,18 @@
 import { escapeId } from '../edge/lib/escape-id.js'
 
 export async function couchUpdt ({folderHash, buildColor, config, name, version, buildName, buildTime, appName, env}) {
-  // console.log({folderHash, config, name})
-  console.log('  🛋  pushing new hash to app db...')
   const { couchHost, __couchAdminKey, __couchAdminSecret, couchKey, userId } = config
+
+  if (!couchHost) {
+    return
+  }
+  console.log('  🛋  pushing new hash to app db...')
+
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
 
   const dbName = env === 'dev' ? escapeId(env + '_' + userId + '.' + appName) : escapeId(env + '.' + appName)
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
-
-  if (!couchHost) {
-    return
-  }
 
   try {
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()

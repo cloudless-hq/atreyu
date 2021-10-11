@@ -168,9 +168,11 @@ switch (cmd) {
   case 'version':
     console.log(version)
     break
-
   case 'help':
     printHelp ({ version })
+    break
+  case 'init':
+    console.log(await execIpfs('init', _[1] || home + '/.atreyu'))
     break
 
   case 'dev':
@@ -241,39 +243,6 @@ switch (cmd) {
     // if (depsChanged) { deps = newDeps }
     break
 
-  case 'build':
-    console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-    // build:svelte build:edge build:service-worker
-    break
-
-  case 'build:edge':
-    console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-    await buildEdge(await loadEdgeSchema(), buildName)
-    break
-
-  case 'build:svelte':
-    console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-    buildSvelte({
-      input: _[1],
-      output,
-      sveltePath
-    })
-    break
-
-  case 'init':
-    console.log(await execIpfs('init', _[1] || home + '/.atreyu'))
-    break
-
-  case 'add':
-    addIpfs({
-      input: _[1],
-      repo: repo || home + '/.atreyu',
-      name,
-      env,
-      config
-    })
-    break
-
   case 'publish':
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
     const edgeSchema = await loadEdgeSchema()
@@ -287,18 +256,26 @@ switch (cmd) {
       buildSvelte({
         input: _[1],
         output,
+        clean: true,
         dev: false,
         sveltePath
       }),
 
-      buildServiceWorker()
+      buildServiceWorker({clean: true})
     ])
+
+    const runs = Object.entries(runConf).map(([command, globs]) => (async () => {
+      console.log(`  ▶️  running ${command}...`)
+      await exec(command.split(' '))
+    })())
+    await Promise.all(runs)
 
     // TODO: warn and skip ipfs publishing on allready running offline node
     const pubFolderHash = await addIpfs({
       input: _[1],
       repo: repo || home + '/.atreyu',
       name,
+      clean: true,
       env,
       config,
       publish: true
@@ -310,7 +287,6 @@ switch (cmd) {
 
     await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
     Deno.exit(1)
-    break
 
   case 'start':
     console.log(Deno.version)
@@ -322,3 +298,29 @@ switch (cmd) {
 
     printHelp({ version })
 }
+
+// case 'build':
+//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
+//   // build:svelte build:edge build:service-worker
+//   break
+// case 'build:edge':
+//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
+//   await buildEdge(await loadEdgeSchema(), buildName)
+//   break
+// case 'build:svelte':
+//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
+//   buildSvelte({
+//     input: _[1],
+//     output,
+//     sveltePath
+//   })
+//   break
+// case 'add':
+//   addIpfs({
+//     input: _[1],
+//     repo: repo || home + '/.atreyu',
+//     name,
+//     env,
+//     config
+//   })
+//   break

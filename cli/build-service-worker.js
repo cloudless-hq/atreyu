@@ -1,6 +1,6 @@
 import { join, green } from '../deps-deno.js'
 
-export default async function ({ batch, buildRes, clean }) {
+export default async function ({ batch, buildRes, clean } = {}) {
   const fileName = `service-worker.js`
   const appFolder = join(Deno.cwd(), 'app')
   const swPath = join(appFolder, fileName)
@@ -10,22 +10,22 @@ export default async function ({ batch, buildRes, clean }) {
     files: {}
   }
 
-  const deps = buildRes[1]?.files[projectPath]?.deps
+  const deps = buildRes?.[1]?.files[projectPath]?.deps
   if (!clean && deps && !batch.some(elem => deps.includes(elem))) {
-    if (buildRes[1]?.files[projectPath]?.newEmits) {
+    if (buildRes?.[1]?.files[projectPath]?.newEmits) {
       buildRes[1].files[projectPath].newEmits = []
     }
 
-    return buildRes[1] || newBuildRes
+    return buildRes?.[1] || newBuildRes
   }
 
   try {
     Deno.statSync(swPath)
   } catch (_e) {
-    if (buildRes[1]?.files[projectPath]?.newEmits) {
+    if (buildRes?.[1]?.files[projectPath]?.newEmits) {
       buildRes[1].files[projectPath].newEmits = []
     }
-    return buildRes[1] || newBuildRes
+    return buildRes?.[1] || newBuildRes
   }
 
   console.log('  compiling service worker: ' + projectPath)
