@@ -2,7 +2,7 @@
   let open
   let buttonNode
   let menuNode
-  let originalClick = false
+  // let originalClick = false
 
   function toggle (e) {
     open = !open
@@ -10,24 +10,25 @@
 
   function mouseUp (e) {
     if (e.path.includes(menuNode)) {
-      if (!originalClick) {
-        e.target.dispatchEvent(new Event('mousedown', {
+      // if (!originalClick) {
+        e.target.dispatchEvent(new MouseEvent('mousedown', {
           bubbles: true,
+          button: 0,
           cancelable: true
         }))
-      }
+      // }
 
       open = false
     } else if (!e.path.includes(buttonNode)) {
       open = false
     }
-    originalClick = false
+    // originalClick = false
   }
 
   function mouseDown (e) {
     if (open) {
       if (e.path.includes(menuNode)) {
-        originalClick = true
+        // originalClick = true
         open = false
       } else if (!e.path.includes(buttonNode)) {
         open = false

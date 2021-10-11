@@ -15,6 +15,7 @@
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
+    "space-infix-ops": "error",
     "functional/no-class": "error",
     "functional/no-this-expression": "error",
     "no-invalid-this": "error",

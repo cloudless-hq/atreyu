@@ -1,4 +1,5 @@
 import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
+import { exec } from './exec.js'
 import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
 export async function recursiveReaddir (path: string) {
   const files: string[] = []
@@ -20,6 +21,7 @@ export default async function ({
   input = [ 'app/src' ],
   batch,
   clean,
+  // buildRes,
   // output,
   dev = true,
   sveltePath = '/svelte'
@@ -30,8 +32,7 @@ export default async function ({
 
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
-  const watchConf: { pattern: string, files: { [key: string]: string[] } } = {
-    pattern: '**/*.svelte',
+  const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = {
     files: {}
   }
 
@@ -61,6 +62,7 @@ export default async function ({
 
     const fileCompilers = files.map(async file => {
       let subPath = file.replace(inFolder, '')
+      const newEmits = []
       try {
         Deno.statSync(file)
       } catch (_e) {
@@ -87,12 +89,15 @@ export default async function ({
         })
         // console.log(metafile)
         // //# sourceMappingURL=make-product-type.ts.js.map
+        newEmits.push(outputTarget + subPath + '.js')
+        newEmits.push(outputTarget + subPath + '.js.map')
       }
 
       if (file.endsWith('.svelte')) {
         // TODO: handle css files with auto js wrapper on import file.css
 
         let comp
+        // let forceGlobal
         try {
           const template = await Deno.readTextFile(file)
           const filename = basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath)
@@ -100,14 +105,25 @@ export default async function ({
           const { code } = await preprocess(template, {
             style: async ({ content, attributes, filename }) => {
               if (attributes.lang === 'postcss'){
-                if (!attributes.global) {
-                  console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
-                  return {code: ''}
+                // if (!attributes.global) {
+                //   console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
+                //   return {code: ''}
+                // }
+                const basePath = join(Deno.cwd(), outputTarget, subPath).replace('/src/', '/build/')
+                const inPath = basePath + '.postcss.css'
+                const outPath = basePath + '.css'
+                await Deno.writeTextFile(inPath, content)
+                postcssComponents.push(inPath)
+                let final = ''
+                let sourcemap
+                if (!attributes.global ) { // !clean ||
+                  await exec(['npx', 'rollup', '-c', '-i', inPath, '-o', outPath])
+                  final = await Deno.readTextFile(outPath)
+                  sourcemap = await Deno.readTextFile(outPath + '.map')
+                } else {
+                  newEmits.push(inPath)
                 }
-                const path = join(Deno.cwd(), outputTarget, subPath + '.postcss.css').replace('/src/', '/build/')
-                await Deno.writeTextFile(path, content)
-                postcssComponents.push(path)
-                return {code: ''}
+                return { code: final, map: sourcemap }
               }
             },
             script: async ({ content, attributes }: {content: string, attributes: {lang: string}, filename: string}) => {
@@ -225,6 +241,9 @@ export default async function ({
           // ssr: ["js","css","ast","warnings","vars","stats"]
         ])
 
+        newEmits.push(outputTarget + subPath + '.js')
+        newEmits.push(outputTarget + subPath + '.js.map')
+
         if (comp.warnings?.length > 0) {
           comp.warnings.map((warning: {filename: string, toString: CallableFunction}) => {
             console.warn(warning.filename)
@@ -232,7 +251,11 @@ export default async function ({
           })
         }
         // TODO: console.log(preprocessRes.dependencies)
-        watchConf.files[file] = comp.js.map.sources.map((path: string) => path.replace('<file://', '').replace('>', ''))
+        newBuildRes.files[file] = {
+          emits: [outputTarget + subPath + '.js', outputTarget + subPath + '.js.map'],
+          newEmits,
+          deps: comp.js.map.sources.map((path: string) => path.replace('<file://', '').replace('>', ''))
+        }
 
         console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js(.map)')
 
@@ -259,10 +282,10 @@ export default async function ({
     postcssComponents.forEach(twC => {
       twContent += `@import ".${twC.split('/build')[1]}";\n`
     })
-    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/postcss-components.css'), twContent)
+    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/components.postcss.css'), twContent)
   }
 
-  return watchConf
+  return newBuildRes
 }
 
 // TODO: components/

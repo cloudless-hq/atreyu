@@ -44,7 +44,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   if (accounts.length > 1) {
     console.warn('cannot handle more than one cloudflare account per token, using first account only')
   }
-  console.log('  🔓 granted access for cloudflare account: ' + accounts[0].name)
+  console.log('  🔓 granted access for cloudflare: ' + accounts[0].name)
 
   const cloudflareAccountId = accounts[0].id
 
@@ -75,6 +75,8 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     req(`zones/${cloudflareZoneId}/workers/routes`),
     req(`zones/${cloudflareZoneId}/dns_records`)
   ])
+
+  console.log('  🔎 checked existing workers, domains, namespaces and routes.')
 
   const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__${env}__`
 
@@ -127,7 +129,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       randomBoundary += Math.floor(Math.random() * 16).toString(16)
     }
 
-    await req(`accounts/${cloudflareAccountId}/workers/scripts/${cfWorkerName}?include_subdomain_availability=true`, {
+    const res = await req(`accounts/${cloudflareAccountId}/workers/scripts/${cfWorkerName}?include_subdomain_availability=true`, {
       method: 'PUT',
 
       body: `------AtreyuFormBoundary${randomBoundary}
@@ -144,8 +146,15 @@ ${scriptData}
 
       ctype: `multipart/form-data; boundary=----AtreyuFormBoundary${randomBoundary}`
     })
+
+    if (res.size) {
+      console.log('  ✅ created worker: ' + cfWorkerName)
+    } else {
+      console.log('  ❌ failed creating worker: ' + cfWorkerName, res)
+    }
   })
 
+  console.log(`  starting deployment of ${workerCreations.length} workers...`)
   await Promise.all(workerCreations)
 
   const pathDeletions = []
@@ -159,7 +168,12 @@ ${scriptData}
     }
   })
 
+  console.log(`  deleting ${pathDeletions.length} old paths...`)
   await Promise.all(pathDeletions)
+  if (pathDeletions.length) {
+    console.log(`  ✅ deleted ${pathDeletions.length} old paths.`)
+  }
+
 
   const dnsAdditions = new Set()
   Object.entries(toSetRoutes).forEach(async ([pattern, workerName], i) => {
@@ -181,6 +195,7 @@ ${scriptData}
       .catch(err => console.log(err))
   })
 
+  console.log(`  adding ${dnsAdditions.size} dns entries...`)
   await Promise.all(([...dnsAdditions]).map(dnsEntry => {
     const newDns = {
       name: dnsEntry,
@@ -202,4 +217,5 @@ ${scriptData}
   // https://api.cloudflare.com/client/v4/accounts/{}/workers/scripts/{}/subdomain {enabled: true}
   // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFKFoZFDfvh DNS only
   // dnslink with gateway, ipfs worker gateway, ipfs worker
+  console.log('  🏁 finished cloudflare deployment')
 }

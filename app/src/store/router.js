@@ -271,6 +271,10 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     }
 
     function linkClickHandler (e) {
+      // only catch left clicks
+      if (e.button !== 0) {
+        return
+      }
       const {prevented, a} = preventer(e)
       if (!prevented) {
         return

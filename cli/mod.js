@@ -8,8 +8,7 @@ import {
   bold,
   color,
   red,
-  // analyzeDeps,
-  globToRegExp
+  // analyzeDeps
 } from '../deps-deno.js'
 
 import { printHelp } from './help.js'
@@ -22,11 +21,14 @@ import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { execStream } from './exec.js'
+import { exec } from './exec.js'
+import { watch } from './watcher.ts'
+import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.2.9'
+export const version = '0.3.0'
+const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
 // color("foo", {r: 255, g: 0, b: 255})
@@ -39,14 +41,6 @@ function rollBuildMeta () {
   buildNameColoured = bold(italic(color(buildName, buildColor)))
 }
 rollBuildMeta()
-
-let nodePackage = {}
-try {
-  const pck = await Deno.readTextFile('package.json')
-  if (pck) {
-    nodePackage = JSON.parse(pck)
-  }
-} catch (_err) {}
 
 const buildTime = Date.now()
 
@@ -64,8 +58,9 @@ let {
   sveltePath
 } = parse(Deno.args)
 
-const watchIgnore = ([
+const ignore = [
   '/.git/**',
+  '**/**.build.css',
   'node_modules/**',
   'yarn.lock',
   '**/*.svelte.js',
@@ -78,7 +73,7 @@ const watchIgnore = ([
   '**/*.map',
   '**/ipfs-map.json',
   '**/*.bundle.js'
-]).map(glob => globToRegExp(glob))
+]
 
 let cmd = _[0]
 const home = Deno.env.get('HOME')
@@ -101,7 +96,7 @@ if (!cmd) {
   start = true
 }
 
-let config = await loadConfig(env)
+let {config = {}, runConf = {}} = await loadConfig(env)
 
 // TODO: allow argument relative path for apps different from cwd
 const appName = basename(Deno.cwd())
@@ -164,7 +159,7 @@ async function doStart () {
 }
 
 if (config.atreyuVersion && version !== config.atreyuVersion) {
-  console.error('please update atryu to version ' + config.atreyuVersion)
+  console.error('please update atreyu to version ' + config.atreyuVersion)
   Deno.exit()
 }
 
@@ -179,101 +174,71 @@ switch (cmd) {
     break
 
   case 'dev':
-    let locked = false
-    let rerun = false
-    async function devBuild ({batch, clean} = {}) {
-      if (locked) {
-        rerun = true
-        return
-      }
-      config = await loadConfig(env)
-      // console.log('here', config)
+    let buildRes = []
+    async function devBuild ({ batch, clean } = {}) {
+      const newConf = await loadConfig(env)
+      config = newConf?.config || {}
+      runConf = newConf?.runConf || {}
 
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-
-      locked = true
       // todo: fix import path in local worker wrapper?
       await Deno.writeTextFile( join(home, '.atreyu', `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
 
-      const _watchConf = await Promise.all([
+      buildRes = await Promise.all([
         buildSvelte({
           input: _[1],
+          buildRes,
           batch,
           clean,
           output,
           sveltePath
         }),
 
-        buildServiceWorker(batch)
+        buildServiceWorker({
+          batch,
+          buildRes,
+          clean
+        })
       ])
 
-      if (clean && nodePackage?.scripts.build) {
-        console.log('  🧶 running yarn build...')
-        await execStream({ cmd: ['yarn', 'build'] })
-      }
+      const buildEmits = buildRes.flatMap( ({ files }) => Object.values(files).flatMap(({ newEmits }) => newEmits ) )
 
-      // console.log(_watchConf)
+      const runs = Object.entries(runConf).map(([command, globs]) => (async () => {
+        const regx = globs.map(glob => globToRegExp(glob))
+        const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
+        if (clean || matchArray(buildEmits) || matchArray(batch)) {
+          console.log(`  ▶️  running ${command}...`)
+          await exec(command.split(' '))
+        }
+      })())
+      await Promise.all(runs)
 
       const folderHash = await addIpfs({
         input: _[1],
         repo: repo || home + '/.atreyu',
+        clean,
+        batch,
+        buildEmits,
         name,
         env,
         config
       })
-      await couchUpdt({folderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
-
-      setTimeout(() => {
-        locked = false
-        if (rerun) {
-          rerun = false
-          devBuild()
-        }
-      }, 500)
+      await couchUpdt({ folderHash, buildColor, config, name, version, buildName, buildTime, appName, env })
     }
 
     if (start) {
       await doStart()
     }
 
-    await devBuild({clean: true})
+    await devBuild({ clean: true })
 
-    // let debouncer = null
+    await watch({ watchPath: './', ignore, handler: devBuild })
+
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
-    const watcher = Deno.watchFs('./', { recursive: true }) //deps
-
-    const changes = new Set()
-    function handleChanges () {
-      const batch = [...changes]
-      changes.clear()
-      console.clear()
-      console.info('changed', batch)
-      devBuild({batch})
-    }
-
-    let timer
-    for await (const event of watcher) {
-      const paths = event.paths.map(change => change.replace(Deno.cwd(), '')).filter(path => {
-        return !watchIgnore.find(regx => regx.test(path))
-      })
-
-      if (paths.length > 0) {
-        paths.forEach(path => changes.add(path))
-        if (timer) {
-          clearTimeout(timer)
-        }
-
-        timer = setTimeout(() => {
-          timer = null
-          handleChanges()
-        }, 20)
-      }
-
-      // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )
-      // const depsChanged = new Set([...deps, ...newDeps]).size
-      // if (depsChanged) { deps = newDeps }
-    }
+    // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )
+    // const depsChanged = new Set([...deps, ...newDeps]).size
+    // if (depsChanged) { deps = newDeps }
     break
 
   case 'build':
@@ -341,9 +306,10 @@ switch (cmd) {
 
     await buildEdge(edgeSchema, buildName)
 
-    cloudflareDeploy({workers: edgeSchema, appName, env, config})
+    await cloudflareDeploy({workers: edgeSchema, appName, env, config})
 
-    couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
+    await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
+    Deno.exit(1)
     break
 
   case 'start':

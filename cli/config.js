@@ -1,7 +1,10 @@
 export async function loadConfig (env) {
   let conf = {}
+  let confFile
   try {
-    conf = { ...(await import(Deno.cwd() + '/ayu.config.js')).default }
+    confFile = await import(Deno.cwd() + '/ayu.config.js')
+
+    conf = { ...confFile?.default }
   } catch (_err) { }
   // console.log('pre conf', conf)
 
@@ -17,8 +20,11 @@ export async function loadConfig (env) {
   }
 
   return {
-    ...conf,
-    ...envConf,
-    env
+    config: {
+      ...conf,
+      ...envConf,
+      env
+    },
+    runConf: confFile?.runConf
   }
-  }
+}

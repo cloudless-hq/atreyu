@@ -35,6 +35,9 @@ export async function execIpfs (cmd, repo) {
 export async function add ({
 	input = 'app',
 	repo,
+  clean,
+  batch,
+  buildEmits,
 	publish,
 	env,
 	config = {}
@@ -53,15 +56,21 @@ export async function add ({
 		return execIpfs(cmd, repo)
 	}
 
-	const version = (await ipfs(`version`)).replace('\n', '').replace('ipfs version ', '').split('.').map(x => Number(x))
-	if (version[1] < 8) {
-		console.log(`  ${yellow(' warning: ipfs version must be at least 0.8, found:')}`, version)
-	}
+  if (clean) {
+    const version = (await ipfs(`version`)).replace('\n', '').replace('ipfs version ', '').split('.').map(x => Number(x))
+    if (version[1] < 8) {
+      console.log(`  ${yellow(' warning: ipfs version must be at least 0.8, found:')}`, version)
+    }
+  }
 
-	async function add (fName) {
-		const rootHash = (await ipfs(`add -Q --wrap-with-directory=false -r --chunker=rabin --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=package.json ${fName}`)).replace("\n", "")
+	async function doAdd (fName) {
+    if (fName.endsWith('/')) {
+      const rootHash = (await ipfs(`add -Q --wrap-with-directory=false -r --chunker=rabin --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=package.json ${fName}`)).replace("\n", "")
+      return ls(rootHash)
+    } else {
+      return (await ipfs(`add -Q --wrap-with-directory=false --chunker=rabin --pin=false ${fName}`)).replace("\n", "")
+    }
 		// --cid-version=1
-		return ls(rootHash)
 	}
 
 	async function ls (rootHash) {
@@ -100,8 +109,20 @@ export async function add ({
 		return
 	}
 
-	console.log('  adding folder to ipfs: ' + input)
-	let listMap = await add(input + '/')
+  let listMap
+  let watchRes = {}
+  if (clean) {
+    console.log('  adding folder to ipfs: ' + input)
+    listMap = await doAdd(input + '/')
+  } else {
+    console.log(`  adding ${batch.length + buildEmits.length} new files to ipfs...`)
+    const changedFiles = [...batch, ...buildEmits]
+    const watchUpdt = changedFiles.map(file => doAdd(join('./', file)))
+    const watchHashes = await Promise.all(watchUpdt)
+    changedFiles.forEach((f, i) => {
+      watchRes[f] = watchHashes[i]
+    })
+  }
 
 	// if ayu is run from local filesystem add atreyu to the ipfs
 	// deployment because it is probably a dev or custom version not available in through http
@@ -119,15 +140,20 @@ export async function add ({
 	// 	//     }
 	// 	//   }) }
 	// 	// Deno.writeTextFileSync(atreyuPath + 'apps/apps/data', JSON.stringify(dashData, null, 2))
-	// 	atreyuFileHashes = await add(atreyuPath) }
+	// 	atreyuFileHashes = await doAdd(atreyuPath) }
 
-  try {
-    await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
-    await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
-    await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
-  } catch (err) {
-    console.error('🛑 Cannot connect to atreyu daemon. Forgot running "ayu start"?\n\n', err)
-    return
+  if (clean) {
+    try {
+      await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
+      await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
+      await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
+    } catch (err) {
+      console.error('🛑 Cannot connect to atreyu daemon. Forgot running "ayu start"?\n\n', err)
+      return
+    }
+  } else {
+    await Promise.all(Object.entries(watchRes).map(([file]) => ipfs(`files rm ${join('/', 'apps', pinName, file.replace('app', ''))}`)))
+    await Promise.all(Object.entries(watchRes).map(([file, hash]) => ipfs(`files cp /ipfs/${hash} ${join('/', 'apps', pinName, file.replace('app', ''))}`)))
   }
 
 	// console.log(await (await fetch(ipfsApi + `/api/v0/files/write?arg=/apps/${input}/ipfs-map.json&truncate=true&create=true`, {
@@ -138,7 +164,7 @@ export async function add ({
 	// })).text())
 
 	// TODO: add isntalling init atreyu
-	if (pinName !== 'atreyu' + '_' + env) {
+	if (clean && pinName !== 'atreyu' + '_' + env) {
 		await ipfs(`files cp /apps/atreyu_${env} /apps/${pinName}/atreyu`)
 	}
 
@@ -146,10 +172,10 @@ export async function add ({
 	listMap = await ls(preHash)
 	Deno.writeTextFileSync(input + '/ipfs-map.json', JSON.stringify(listMap, null, 2))
 
-	const mapRes = await add(input + '/ipfs-map.json')
+	const mapRes = await doAdd(input + '/ipfs-map.json')
 
 	await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'})
-	await ipfs(`files cp /ipfs/${mapRes['']} /apps/${pinName}/ipfs-map.json`)
+	await ipfs(`files cp /ipfs/${mapRes} /apps/${pinName}/ipfs-map.json`)
 
 	// const appFolders= await (await fetch(ipfsApi + `/api/v0/files/ls?arg=/apps/&long=true`, {method: 'POST'})).json()
 	// appFolders.Entries.find(({Name}) => Name === name).Hash
@@ -218,7 +244,7 @@ export async function add ({
 			await ipfs(`pin remote add --service=pinata --name=${pinName} ${folderHash}`)
 		}
 		// TODO check pinning status!
-		console.log(green(`  ✅ installed ${name} `))
+		console.log(green(`  ✅ added ${name} `))
 		// http://${keys.atreyu}.ipns.pinata.cloud${port == 80 ? '' : ':' + port}`))
 	} else {
 		// await Promise.all([
@@ -228,7 +254,7 @@ export async function add ({
 		//   // ipfs(`name publish --lifetime=2000h --key=${name} ${folderHash} --quieter --resolve=false --allow-offline`)
 		// ])
 
-		console.log(green(`  ✅ installed ${name}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
+		console.log(green(`  ✅ added ${name}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
 	}
 
 	return folderHash
