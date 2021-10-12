@@ -1,3 +1,3 @@
 export const runConf = {
-  'yarn build': [ 'app/src/deps/**']
+  'yarn build': { globs: [ 'app/src/deps/**'] }
 }

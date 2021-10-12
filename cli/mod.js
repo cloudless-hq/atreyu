@@ -27,7 +27,7 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.3.0'
+export const version = '0.3.1'
 const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -180,7 +180,7 @@ switch (cmd) {
     async function devBuild ({ batch, clean } = {}) {
       const newConf = await loadConfig(env)
       config = newConf?.config || {}
-      runConf = newConf?.runConf || {}
+      runConf = newConf?.runConf || {emits: [], globs: []}
 
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
@@ -204,14 +204,17 @@ switch (cmd) {
         })
       ])
 
-      const buildEmits = buildRes.flatMap( ({ files }) => Object.values(files).flatMap(({ newEmits }) => newEmits ) )
+      let buildEmits = buildRes.flatMap( ({ files }) => Object.values(files).flatMap(({ newEmits }) => newEmits ) )
 
-      const runs = Object.entries(runConf).map(([command, globs]) => (async () => {
+      const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
         const regx = globs.map(glob => globToRegExp(glob))
         const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
         if (clean || matchArray(buildEmits) || matchArray(batch)) {
           console.log(`  ▶️  running ${command}...`)
           await exec(command.split(' '))
+          if (emits) {
+            buildEmits = buildEmits.concat(emits)
+          }
         }
       })())
       await Promise.all(runs)
@@ -264,7 +267,7 @@ switch (cmd) {
       buildServiceWorker({clean: true})
     ])
 
-    const runs = Object.entries(runConf).map(([command, globs]) => (async () => {
+    const runs = Object.entries(runConf).map(([command, { globs }]) => (async () => {
       console.log(`  ▶️  running ${command}...`)
       await exec(command.split(' '))
     })())
