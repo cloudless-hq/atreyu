@@ -109,9 +109,10 @@ export default async function ({
                 //   console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
                 //   return {code: ''}
                 // }
-                const basePath = join(Deno.cwd(), outputTarget, subPath).replace('/src/', '/build/')
-                const inPath = basePath + '.postcss.css'
-                const outPath = basePath + '.css'
+                const basePath = join(outputTarget, subPath).replace('/src/', '/build/')
+                const absBasePath = join(Deno.cwd(), basePath)
+                const inPath = absBasePath + '.postcss.css'
+                const outPath = absBasePath + '.css'
                 await Deno.writeTextFile(inPath, content)
                 postcssComponents.push(inPath)
                 let final = ''
@@ -121,7 +122,7 @@ export default async function ({
                   final = await Deno.readTextFile(outPath)
                   sourcemap = await Deno.readTextFile(outPath + '.map')
                 } else {
-                  newEmits.push(inPath)
+                  newEmits.push(basePath + '.postcss.css')
                 }
                 return { code: final, map: sourcemap }
               }
