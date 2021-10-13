@@ -7,7 +7,6 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   }
 
   async function req (path, { method, body, ctype } = {}) {
-
     const res = await fetch(`https://api.cloudflare.com/client/v4/${path}`, {
       headers: {
         'Authorization': `Bearer ${config.__cloudflareToken}`,
@@ -77,6 +76,13 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   ])
 
   console.log('  🔎 checked existing workers, domains, namespaces and routes.')
+
+  const dnsAdditions = new Set()
+  if (curDns.find(entry => entry.name === domain)) {
+    console.log('  using existin dns entry')
+  } else {
+    dnsAdditions.add(domain)
+  }
 
   const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__${env}__`
 
@@ -174,17 +180,8 @@ ${scriptData}
     console.log(`  ✅ deleted ${pathDeletions.length} old paths.`)
   }
 
-
-  const dnsAdditions = new Set()
   Object.entries(toSetRoutes).forEach(async ([pattern, workerName], i) => {
     const patternConfig = { pattern, script: workerName }
-
-    const dnsName = pattern.replace('*', '').split('/')[0]
-    if (curDns.filter(entry => entry.name === pattern.replace('*', '') || entry.name ===  pattern.split('/')[0]).length > 0) {
-      console.log('  using existin dns entry')
-    } else {
-      dnsAdditions.add(dnsName)
-    }
 
     req(`zones/${cloudflareZoneId}/workers/routes`, {
       method: 'POST',
@@ -196,7 +193,7 @@ ${scriptData}
   })
 
   console.log(`  adding ${dnsAdditions.size} dns entries...`)
-  await Promise.all(([...dnsAdditions]).map(dnsEntry => {
+  await Promise.all(([...dnsAdditions]).map(async dnsEntry => {
     const newDns = {
       name: dnsEntry,
       type: 'AAAA',
@@ -206,7 +203,7 @@ ${scriptData}
     }
     console.log('  adding dns entry for: ' + dnsEntry)
 
-    req(`zones/${cloudflareZoneId}/dns_records`, {
+    await req(`zones/${cloudflareZoneId}/dns_records`, {
       method: 'POST',
       body: JSON.stringify(newDns)
     })

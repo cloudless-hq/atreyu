@@ -133,7 +133,7 @@ export default {
                 _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => {$ref: type.profile}) }
               }
             } else {
-              console.error(row)
+              console.warn(row)
             }
           } else {
             console.error(row)

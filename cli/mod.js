@@ -180,7 +180,7 @@ switch (cmd) {
     async function devBuild ({ batch, clean } = {}) {
       const newConf = await loadConfig(env)
       config = newConf?.config || {}
-      runConf = newConf?.runConf || {emits: [], globs: []}
+      runConf = newConf?.runConf || {}
 
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
