@@ -107,6 +107,7 @@ startWorker(async arg => {
     } )
   })
 
+  // console.log(handlers)
   let workerName
   const method = req.method.toLowerCase()
   if (handlers[method]) {

@@ -1,4 +1,3 @@
-/* global Response  */
 import { reqHandler } from 'atreyu/edge'
 
 import templates from './templates'
