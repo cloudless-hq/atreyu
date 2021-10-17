@@ -1,6 +1,6 @@
 <script>
 	import data from '/atreyu/src/store/data.js'
-  // TODO silent options
+
   export let env = 'prod'
 
   let versionTooltip = ''
@@ -13,7 +13,7 @@
 
   let _silent = localStorage.getItem('_silent')
   let _updateImmediate = localStorage.getItem('_updateImmediate')
-  let _updateCounter = Number(localStorage.getItem('_updateCounter'))
+  let _updating = localStorage.getItem('_updating')
 
 
   // TODO: full support for long running observables to avoid this loop
@@ -62,12 +62,8 @@
       if (settingsDoc?.folderHash) {
         latestHash = settingsDoc.folderHash
 
-        if (latestHash !== installedHash) {
-          // if (_updateCounter < 10) {
-          doUpdate({}) // todo counter with blocker
-          // }
-        } else {
-          localStorage.setItem('_updateCounter', 1)
+        if ((latestHash && installedHash) && latestHash !== installedHash) {
+          doUpdate({})
         }
       }
     }
@@ -82,14 +78,13 @@
         latestHash = settingsDoc.folderHash
         installedHash = $data._hash$
 
-        // console.log({latestHash, installedHash, _updateImmediate, _updateCounter, updating})
-        if (latestHash !== installedHash) {
+        if ((latestHash && installedHash) && latestHash !== installedHash) {
           newHash = latestHash
         }
 
         if (newHash) {
-          if (_updateImmediate && !updating) { // _updateCounter < 10 &&
-            doUpdate({auto:true})
+          if (_updateImmediate && !updating) {
+            doUpdate({ auto:true })
           } else {
             versionTooltip = `Build: "${settingsDoc.buildName$}"
   Atreyu  Version: "${settingsDoc.version$}"
@@ -114,7 +109,7 @@
     }
   }
 
-  if (localStorage.getItem('_updating')) {
+  if (_updating) {
     updated = true
   }
   function closeUpdated () {
@@ -123,7 +118,6 @@
   }
 
   async function doUpdate ({ auto, silent }) {
-    localStorage.setItem('_updateCounter', _updateCounter + 1)
     if (silent) {
       localStorage.setItem('_silent', true)
     }
@@ -131,17 +125,25 @@
     if (auto) {
       localStorage.setItem('_updateImmediate', true)
     }
-    localStorage.setItem('_updating', true)
+    if (_updating === newHash) {
+      newHash = null
+    }
+    if (!newHash) {
+      return
+    }
+    localStorage.setItem('_updating', newHash)
     updated = false
     updating = true
     const cache = await caches.open('ipfs')
     await cache.delete('/ipfs-map.json')
     await data.falcor.setValue(['_updating'], updating) // todo promise mode for set and call
 
-    await (await navigator.serviceWorker.getRegistration()).update()
-    setTimeout(() => {
-      location.reload()
-    }, 300)
+    // if service worker new...
+    // await (await navigator.serviceWorker.getRegistration()).update()
+
+    // setTimeout(() => {
+    location.reload()
+    // }, 0)
   }
 
   // Updated notification with expansion to show changes and changed files, version numbers etc.

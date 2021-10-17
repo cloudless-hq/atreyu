@@ -1,8 +1,3 @@
 - https://eslint.org/docs/developer-guide/shareable-configs
-- double reload bug
-- infinite loop
 - compiler recover on random state
 - use first time tw class in watch
-- value upsert for docs
-- ipfs igonres respect eg. /apps/atreyu_dev/docs
-- "rm", "/apps/atreyu_dev/edge/entry-deno.js" does not exist error

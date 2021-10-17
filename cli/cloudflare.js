@@ -1,6 +1,6 @@
 import { basename, join } from '../deps-deno.js'
 
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config }) {
+export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath }) {
   if (!config.__cloudflareToken) {
     console.error('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -94,7 +94,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
 
-    const scriptPath = join(Deno.cwd(), codePath.replace('handlers/', 'edge/build/').replace('/index', ''))
+    const scriptPath = codePath.replace(atreyuPath, projectPath).replace('/handlers/', '/build/').replace('/index', '')
     const scriptData = Deno.readTextFileSync(scriptPath)
 
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
@@ -109,10 +109,10 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
           }
         } else if (key === 'kv_namespaces') {
           return value.map(namespace => ({
-              name: namespace,
-              type: 'kv_namespace',
-              namespace_id: curNamespaces.find(curNs => curNs.title === namespace).id
-            }))
+            name: namespace,
+            type: 'kv_namespace',
+            namespace_id: curNamespaces.find(curNs => curNs.title === namespace).id
+          }))
         } else {
           return {
             name: key,

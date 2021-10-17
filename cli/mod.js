@@ -31,18 +31,16 @@ export const version = '0.3.1'
 const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
-// color("foo", {r: 255, g: 0, b: 255})
-// background(str: string, color: number | Rgb)
+let buildTime = Date.now()
 let buildNameColoured = ''
 
 function rollBuildMeta () {
   buildName = faker.company.bs()
   buildColor = {r: Math.floor(Math.random() * 255), g: Math.floor(Math.random() * 255), b: Math.floor(Math.random() * 255)}
   buildNameColoured = bold(italic(color(buildName, buildColor)))
+  buildTime = Date.now()
 }
 rollBuildMeta()
-
-const buildTime = Date.now()
 
 // TODO: warn or autofix if no service or edge worker to use custom sevlte library eg. --sveltePath=https://cdn.skypack.dev/svelte@v3.35.0
 
@@ -76,7 +74,13 @@ const ignore = [
 ]
 
 let cmd = _[0]
+
 const home = Deno.env.get('HOME')
+const homeConfPath = home + '/.atreyu'
+const projectPath = Deno.cwd()
+const appName = basename(projectPath)
+const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
+// alternative: (import.meta.url.replace('file://', ''), '..', '..')
 
 // TODO: handle servers from schema for env
 if (!env) {
@@ -99,14 +103,13 @@ if (!cmd) {
 let {config = {}, runConf = {}} = await loadConfig(env)
 
 // TODO: allow argument relative path for apps different from cwd
-const appName = basename(Deno.cwd())
 
 // TODO: unify with other schema loader which allows also schema.js
 async function loadEdgeSchema () {
   // TODO: support implicit endpoints folder routs
   let schema
   try {
-    schema = (await import(Deno.cwd() + '/app/schema/index.js')).schema
+    schema = (await import(projectPath + '/app/schema/index.js')).schema
     if (typeof schema === 'function') {
       schema = schema({ defaultPaths, toFalcorPaths, toWindowPaths })
     }
@@ -128,7 +131,7 @@ async function loadEdgeSchema () {
 }
 
 function startDaemon ({ publish }) {
-  const runPath = _[1] || home + '/.atreyu'
+  const runPath = _[1] || homeConfPath
   const offline = (online || publish) ? '' : ' --offline'
   const ready = new Promise((resolve, _reject) => {
     execIpfsStream(
@@ -154,7 +157,7 @@ async function doStart () {
     noCheck: true,
     watch: true,
     inspect: true,
-    _: [ join(import.meta.url.replace('file://', ''), '..', '..', '/edge/entry-deno.js') ]
+    _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
   })
 }
 
@@ -172,7 +175,7 @@ switch (cmd) {
     printHelp ({ version })
     break
   case 'init':
-    console.log(await execIpfs('init', _[1] || home + '/.atreyu'))
+    console.log(await execIpfs('init', _[1] || homeConfPath))
     break
 
   case 'dev':
@@ -185,7 +188,7 @@ switch (cmd) {
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
       // todo: fix import path in local worker wrapper?
-      await Deno.writeTextFile( join(home, '.atreyu', `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
+      await Deno.writeTextFile( join(homeConfPath, `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
 
       buildRes = await Promise.all([
         buildSvelte({
@@ -221,7 +224,7 @@ switch (cmd) {
 
       const folderHash = await addIpfs({
         input: _[1],
-        repo: repo || home + '/.atreyu',
+        repo: repo || homeConfPath,
         clean,
         batch,
         buildEmits,
@@ -276,7 +279,7 @@ switch (cmd) {
     // TODO: warn and skip ipfs publishing on allready running offline node
     const pubFolderHash = await addIpfs({
       input: _[1],
-      repo: repo || home + '/.atreyu',
+      repo: repo || homeConfPath,
       name,
       clean: true,
       env,
@@ -286,7 +289,7 @@ switch (cmd) {
 
     await buildEdge(edgeSchema, buildName)
 
-    await cloudflareDeploy({workers: edgeSchema, appName, env, config})
+    await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath})
 
     await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
     Deno.exit(1)
@@ -321,7 +324,7 @@ switch (cmd) {
 // case 'add':
 //   addIpfs({
 //     input: _[1],
-//     repo: repo || home + '/.atreyu',
+//     repo: repo || homeConfPath,
 //     name,
 //     env,
 //     config

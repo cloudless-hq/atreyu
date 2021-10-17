@@ -63,12 +63,13 @@ export async function add ({
     }
   }
 
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=package.json `
 	async function doAdd (fName) {
     if (fName.endsWith('/')) {
-      const rootHash = (await ipfs(`add -Q --wrap-with-directory=false -r --chunker=rabin --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=package.json ${fName}`)).replace("\n", "")
+      const rootHash = (await ipfs(addCommand + fName)).replace("\n", "")
       return ls(rootHash)
     } else {
-      return (await ipfs(`add -Q --wrap-with-directory=false --chunker=rabin --pin=false ${fName}`)).replace("\n", "")
+      return (await ipfs(addCommand + fName)).replace("\n", "")
     }
 		// --cid-version=1
 	}
@@ -115,13 +116,20 @@ export async function add ({
     console.log('  adding folder to ipfs: ' + input)
     listMap = await doAdd(input + '/')
   } else {
-    console.log(`  adding ${batch.length + buildEmits.length} new files to ipfs...`)
-    const changedFiles = [...batch, ...buildEmits]
-    const watchUpdt = changedFiles.map(file => doAdd(join('./', file)))
-    const watchHashes = await Promise.all(watchUpdt)
-    changedFiles.forEach((f, i) => {
-      watchRes[f] = watchHashes[i]
-    })
+    const changedFiles = ([...batch, ...buildEmits])
+      .map(file => join('./', file))
+      .filter(file => file.startsWith(input))
+
+    if (changedFiles.length > 0) {
+      console.log(`  adding ${changedFiles.length} new files to ipfs...`)
+      const watchUpdt = changedFiles
+        .map(file => doAdd(file))
+
+      const watchHashes = await Promise.all(watchUpdt)
+      changedFiles.forEach((f, i) => {
+        watchRes[f] = watchHashes[i]
+      })
+    }
   }
 
 	// if ayu is run from local filesystem add atreyu to the ipfs

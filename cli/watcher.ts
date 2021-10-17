@@ -55,7 +55,7 @@ export async function watch ({ watchPath, ignore, handler }: {watchPath: string,
       timer = setTimeout(() => {
         timer = null
         handleChanges()
-      }, 20)
+      }, 50)
     }
   }
 }

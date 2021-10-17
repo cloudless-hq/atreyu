@@ -13,23 +13,25 @@ export function buildWorkerConfig (schema) {
           workers[workerName] = {}
         }
 
+        let base = []
+        let filenames = []
+
         if (workerName.startsWith('_')) {
-          let codePath = join('handlers', operationId + '.js')
-
-          try {
-            const testPath = join(atreyuPath, 'edge', codePath)
-            // console.log(testPath)
-            Deno.statSync(testPath)
-          } catch (_e) {
-            // console.log(_e)
-            // TODO: ts support
-            codePath = join('handlers', operationId, 'index.js')
-          }
-
-          workers[workerName].codePath = codePath
+          base = [atreyuPath, 'edge']
+          filenames = [`handlers/${operationId}.js`,  `handlers/${operationId}/index.js`]
         } else {
-          workers[workerName].codePath = join('app', 'workers', operationId)
+          base = [Deno.cwd(), 'edge', 'handlers'] // configs[appKey].appPath,
+          filenames = [operationId]
         }
+        let codePath = join(...base, filenames[0])
+        try {
+          Deno.statSync(codePath)
+        } catch (_e) {
+          codePath = join(...base, filenames[1])
+        }
+
+        workers[workerName].codePath = codePath
+
         if (workers[workerName].routes) {
           workers[workerName].routes.push(path)
         } else {
@@ -79,10 +81,9 @@ export function buildEdge (workers, buildName) {
     console.log('  building worker: ', workerName, codePath)
 
     if (!workerName.startsWith('_')) {
-      compile({input: join(Deno.cwd(), codePath), appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
+      compile({input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
     } else {
-      const systemHandlers = join(import.meta.url, '..', '..', 'edge/').replace('file:', '')
-      compile({ input: join(systemHandlers, codePath), appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
+      compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
     }
   })
 

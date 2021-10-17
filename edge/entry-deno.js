@@ -107,7 +107,6 @@ startWorker(async arg => {
     } )
   })
 
-  // console.log(handlers)
   let workerName
   const method = req.method.toLowerCase()
   if (handlers[method]) {
@@ -128,7 +127,7 @@ startWorker(async arg => {
 
   // TODO: stat page for worker status
 
-  if (workerName && workerName.startsWith('_')) {
+  if (workerName) {
     if (!configs[appKey]) {
       configs[appKey] = JSON.parse(await Deno.readTextFileSync(Deno.env.get('HOME') + `/.atreyu/${appKey}.json`))
       // env?
@@ -140,23 +139,31 @@ startWorker(async arg => {
     if (!workers[workerName]) {
       console.log('importing worker script: ' + workerName)
 
-      let codePath = join(import.meta.url.replace('file://', ''), '..', `handlers/${workerName}.js`)
+      let base = []
+      let filenames = []
+      if (workerName.startsWith('_')) {
+        base = [import.meta.url.replace('file://', ''), '..']
+        filenames = [`handlers/${workerName}.js`,  `handlers/${workerName}/index.js`]
+      } else {
+        base = [configs[appKey].appPath, 'edge', 'handlers']
+        filenames = [workerName]
+      }
+      // console.log(base, filenames[0])
+      let codePath = join(...base, filenames[0])
       try {
+        // console.log(codePath)
         Deno.statSync(codePath)
       } catch (_e) {
         // TODO: ts support
-        codePath = join(import.meta.url.replace('file://', ''), '..', `handlers/${workerName}/index.js`)
+        codePath = join(...base, filenames[1])
       }
-      workers[workerName] = (await import(codePath)) // `./handlers/${workerName}.js`
+      // console.log(codePath)
+      workers[workerName] = (await import(codePath))
     }
 
-    //  else if () {
-    //   await configs[appKey]
-    // }
-    // console.log('setting config env' + appKey)
     return workers[workerName].handler(arg)
   } else {
     console.log(`${req.method} ${req.url}`)
-    return new Response('No path matches found in schema' + appKey, { status: 400,  headers: { server: 'atreyu',  'content-type': 'text/plain'} })
+    return new Response('No matches found in schema: ' + appKey, { status: 400,  headers: { server: 'atreyu',  'content-type': 'text/plain'} })
   }
 })
