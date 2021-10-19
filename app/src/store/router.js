@@ -187,13 +187,28 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     }, [])
   }
 
+  function awaitIdle (cb) {
+    setTimeout(() => {
+      window.requestIdleCallback(IdleDeadline => {
+        const remainingTime = IdleDeadline.timeRemaining()
+        if (remainingTime > 40) {
+          const startTime = Date.now()
+          cb(startTime + remainingTime)
+        } else {
+          setTimeout(() => {
+            awaitIdle(cb)
+          }, 150)
+        }
+      })}, 100)
+  }
+
   const finished = new Set()
   const primary = new Set()
   const secondary = new Set()
   let preloaderInstance
   const newDiv = document.createElement('div')
   newDiv.style = 'display: none;'
-  async function doIdle () {
+  function doIdleWork (endTime) {
     let todo
     let isSecondary = false
     if (primary.size === 0) {
@@ -204,42 +219,48 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     }
 
     for (const href of todo) {
-      todo.delete(href)
       if (finished.has(href)) {
+        todo.delete(href)
         continue
       }
-      finished.add(href)
 
       const preloadRouterState = routerState({ hrefOverride: href, preload: true })
 
       if (!preloadRouterState._page) {
+        finished.add(href)
+        todo.delete(href)
         continue
       }
+      console.log('start', endTime - Date.now())
+      if ((endTime > Date.now() + 20) && !preloadRouterState._pending?.then) {
+        finished.add(href)
+        todo.delete(href)
 
-      const preloadRouterStore = readable({}, set => {
-        set(preloadRouterState)
-        return () => {}
-      })
-      let comp
-      try {
-        comp = preloadRouterState._pending?.then ? await preloadRouterState._pending : preloadRouterState._component
-        preloaderInstance = new comp({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
-      } catch (err) {
-        console.error('could not preload the component for: ' + href, err, comp)
-      }
-      break
-    }
-    if (primary.size > 0 || secondary.size > 0) {
-      setTimeout(() => {
-        window.requestIdleCallback(() => {
-          if (!isSecondary) {
-            getLinks(newDiv).forEach(link => secondary.add(link)) // pagePreloader
-          }
-          preloaderInstance?.$destroy()
-          preloaderInstance = null
-          doIdle()
+        const preloadRouterStore = readable({}, set => {
+          set(preloadRouterState)
+          return () => {}
         })
-      }, 150)
+
+        try {
+          preloaderInstance = new preloadRouterState._component({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+        } catch (err) {
+          console.error('could not preload the component for: ' + href, err, preloadRouterState._component)
+        }
+        break
+      }
+    }
+    console.log('instance', endTime - Date.now())
+
+    if (primary.size > 0 || secondary.size > 0) {
+      awaitIdle(endTime => {
+        if (!isSecondary) {
+          getLinks(newDiv).forEach(link => secondary.add(link)) // pagePreloader
+        }
+        preloaderInstance?.$destroy()
+        preloaderInstance = null
+        console.log('destroyed', endTime - Date.now())
+        doIdleWork(endTime)
+      })
     } else {
       preloaderInstance?.$destroy()
       preloaderInstance = null
@@ -310,13 +331,11 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
       //   scrollTo(0, deep_linked.getBoundingClientRect().top + scrollY)
 
       if (!preloadDisabled) {
-        setTimeout(() => {
-          window.requestIdleCallback(() => {
-            finished.add(location.href)
-            getLinks(app).forEach(link => primary.add(link))
-            doIdle()
-          })
-        }, 150)
+        awaitIdle(endTime => {
+          finished.add(location.href)
+          getLinks(app).forEach(link => primary.add(link))
+          doIdleWork(endTime)
+        })
       }
 
       if (resetScroll) {

@@ -113,7 +113,7 @@ export async function add ({
   let listMap
   let watchRes = {}
   if (clean) {
-    console.log('  adding folder to ipfs: ' + input)
+    console.log('  ➕ adding folder to ipfs: ' + input)
     listMap = await doAdd(input + '/')
   } else {
     const changedFiles = ([...batch, ...buildEmits])
@@ -121,7 +121,7 @@ export async function add ({
       .filter(file => file.startsWith(input))
 
     if (changedFiles.length > 0) {
-      console.log(`  adding ${changedFiles.length} new files to ipfs...`)
+      console.log(`  ➕ adding ${changedFiles.length} new files to ipfs...`)
       const watchUpdt = changedFiles
         .map(file => doAdd(file))
 

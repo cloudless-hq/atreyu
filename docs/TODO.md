@@ -1,3 +1,4 @@
 - https://eslint.org/docs/developer-guide/shareable-configs
 - compiler recover on random state
 - use first time tw class in watch
+- new svlte file ipfs crash
