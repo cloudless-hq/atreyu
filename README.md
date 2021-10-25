@@ -41,21 +41,19 @@ yarn build
 #### 4. Install `ayu` CLI.
 
 This step installs the atreyu cli "ayu" on your system, which is  a standard [Deno script](https://deno.land/manual/tools/script_installer).
+Deno is a proper sandbox unlike nodejs, so its best to always add permissions explicitly, however you can also omit most these settings and use --allow-all.
+please keep in mind that the ESBUILD_BINARY_PATH (the one that includes esbuild-darwin-arm6) permission is currently hard coded, so you need to run this once with prompt and check your actual binary location and architecture.
 
 Run:
 
 ```bash
-deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR","$HOME"/Library/Caches/esbuild/bin  --allow-run=ipfs,`which deno`,yarn,rollup,"$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.13.3 --no-check --prompt --unstable -n ayu -f ./cli/mod.js
+deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,npx,`which deno`,yarn --no-check --prompt --unstable -n ayu -f ./cli/mod.js
+
+
+after initial exacution add the allow run path for the esbuild binary for example "$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.13.3
 ```
 
-If everything is green, you should have `ayu` available on your terminal.
-
-```bash
-which ayu # prints the path for the binary
-ayu # prints the help text
-```
-
-PS: Prompts are not enabled automatically by `deno install` because of a current deno install bug, if you want to be prompted, add the `--prompt` parameter to beginning of the script.
+Permission Prompts are not enabled automatically by `deno install` because of a current deno install bug, you need to add the `--prompt` parameter to beginning of the script manually...
 
 eg. to edit the deno sccript in vscode:
 ```bash
@@ -69,6 +67,15 @@ add --promt:
 -exec deno run --allow-read <...lots of other things...>
 +exec deno run --prompt --allow-read <...lots of other things...>
 ```
+
+If everything is green, you should have `ayu` available on your terminal.
+
+```bash
+which ayu # prints the path for the binary
+cat `which ayu` # is helpful to check the currently installed parameters
+ayu info # prints the help text
+```
+
 
 #### 5. Initialize the atreyu repo including the ipfs repo and configuration setup in your home folder:
 
