@@ -1,50 +1,52 @@
 export async function execStream ({ cmd, getData }) {
   const proc = Deno.run({
-		cmd,
-		stdout: 'piped',
-		stderr: 'piped'
-	})
+    cmd,
+    stdout: 'piped',
+    stderr: 'piped'
+  })
 
-	proc.status().then(async ({ code }) => {
-		// console.log('finish')
-		if (code !== 0) {
-			const rawError = await proc.stderrOutput()
-			const errorString = new TextDecoder().decode(rawError)
-			console.error(errorString)
-		}
-	})
+  proc.status().then(async ({ code }) => {
+    // console.log('finish')
+    if (code !== 0) {
+      const rawError = await proc.stderrOutput()
+      const errorString = new TextDecoder().decode(rawError)
+      console.error(errorString)
+    }
+  })
 
-	for await (const buffer of Deno.iter(proc.stdout)) {
-		const str = new TextDecoder().decode(buffer)
+  for await (const buffer of Deno.iter(proc.stdout)) {
+    const str = new TextDecoder().decode(buffer)
 
-		if (getData) {
-			getData(str)
-		} else {
-			console.log(str)
-		}
-	}
+    if (getData) {
+      getData(str)
+    } else {
+      console.log(str)
+    }
+  }
 
-	await proc.close()
+  await proc.close()
 }
 
-export async function exec (cmd) {
+export async function exec (cmd, silent) {
   const proc = Deno.run({
-		cmd,
-		stdout: 'piped',
-		stderr: 'piped'
-	})
+    cmd,
+    stdout: 'piped',
+    stderr: 'piped'
+  })
 
-	const { code } = await proc.status()
+  const { code } = await proc.status()
 
-	if (code !== 0) {
-		const rawError = await proc.stderrOutput()
-		const errorString = new TextDecoder().decode(rawError)
-		console.error('exec error: ', errorString, cmd)
-	}
+  if (code !== 0) {
+    const rawError = await proc.stderrOutput()
+    const errorString = new TextDecoder().decode(rawError)
+    if (!silent) {
+      console.error('exec error: ', errorString, cmd)
+    }
+  }
 
-	const rawOutput = await proc.output()
-	const outStr = new TextDecoder().decode(rawOutput)
-	proc.close()
+  const rawOutput = await proc.output()
+  const outStr = new TextDecoder().decode(rawOutput)
+  proc.close()
 
-	return outStr
+  return outStr
 }
