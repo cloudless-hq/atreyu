@@ -245,7 +245,7 @@ switch (cmd) {
     if (!once) {
       await watch({ watchPath: './', ignore, handler: devBuild })
     } else {
-      Deno.exit(1)
+      Deno.exit(0)
     }
 
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
