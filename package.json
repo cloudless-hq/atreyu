@@ -1,6 +1,6 @@
 {
   "name": "atreyu-deno",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "scripts": {
     "build": "rollup -c ./rollup.config.js",
     "lint": "npx eslint '**/*.{js,svelte,ts}'"
