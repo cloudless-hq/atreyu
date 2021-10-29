@@ -49,7 +49,7 @@ export function handler ({ req, stats }) {
       })
     }
 
-    let Location= '/atreyu/accounts'
+    let Location = '/atreyu/accounts'
     if (params.get('continue')) {
       Location += `?continue=${encodeURIComponent(params.get('continue'))}`
     }

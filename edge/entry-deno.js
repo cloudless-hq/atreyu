@@ -1,19 +1,20 @@
-import { getEnv, setEnv } from './lib/env.js'
+import { setEnv } from './lib/env.js'
 import { join } from '../deps-deno.js'
 import startWorker from './lib/start-worker.js'
 import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
-import defaultPaths from  '../app/src/schema/default-routes.js'
+import defaultPaths from '../app/src/schema/default-routes.js'
 
 // TODO: use config and args from cli
 const ipfsGateway = 'http://127.0.0.1:8080'
 const ipfsApi = 'http://127.0.0.1:5001'
-
+const homeDir = Deno.env.get('HOME')
+const codespace = Deno.env.get('CODESPACE_NAME')
+const repoName = Deno.env.get('RepositoryName')
 
 // bindings = bindingsFile.bindings.reduce((agr, ent) => {
 //   agr[ent.name] = ent.text
 //   return agr
 // }, {})
-
 // if (!caches || !caches.default) {
 //   var caches = {
 //     default: {
@@ -23,26 +24,27 @@ const ipfsApi = 'http://127.0.0.1:5001'
 
 let apps
 async function getApps () {
-  apps = (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', {method: 'POST'})).json()).Entries
+  apps = (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
 }
 
 const workers = {}
 const configs = {}
-const schemas= {}
+const schemas = {}
 startWorker(async arg => {
   const {
-    stats,
-    req,
-    parsedBody,
-    event,
-    wait
+    req
+    // stats,
+    // parsedBody,
+    // event,
+    // wait
   } = arg
 
   if (req.url.hostname === 'localhost') {
     req.url.hostname = 'atreyu.localhost'
   }
 
-  const appName = req.url.hostname.replace('.localhost', '')
+  const appName = codespace && req.url.hostname.startsWith(codespace + '-80.') ? repoName : req.url.hostname.replace('.localhost', '')
+
   const appKey = appName + '_dev'
 
   // todo : cacheing strategy
@@ -56,7 +58,7 @@ startWorker(async arg => {
     // app = apps.find(app => app.Name === appKey)
     // arg.app = app // TODO find generic solution for local and cf
     // if (!app) {
-      return new Response('App not found ' + appKey, { status: 400,  headers: { server: 'atreyu',  'content-type': 'text/plain'} })
+    return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
     // }
   }
 
@@ -129,7 +131,7 @@ startWorker(async arg => {
 
   if (workerName) {
     if (!configs[appKey]) {
-      configs[appKey] = JSON.parse(await Deno.readTextFileSync(Deno.env.get('HOME') + `/.atreyu/${appKey}.json`))
+      configs[appKey] = JSON.parse(await Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
       // env?
     }
 
@@ -143,7 +145,7 @@ startWorker(async arg => {
       let filenames = []
       if (workerName.startsWith('_')) {
         base = [import.meta.url.replace('file://', ''), '..']
-        filenames = [`handlers/${workerName}.js`,  `handlers/${workerName}/index.js`]
+        filenames = [`handlers/${workerName}.js`, `handlers/${workerName}/index.js`]
       } else {
         base = [configs[appKey].appPath, 'edge', 'handlers']
         filenames = [workerName]
@@ -164,6 +166,6 @@ startWorker(async arg => {
     return workers[workerName].handler(arg)
   } else {
     console.log(`${req.method} ${req.url}`)
-    return new Response('No matches found in schema: ' + appKey, { status: 400,  headers: { server: 'atreyu',  'content-type': 'text/plain'} })
+    return new Response('No matches found in schema: ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain'} })
   }
 })
