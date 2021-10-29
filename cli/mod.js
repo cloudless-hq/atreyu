@@ -7,7 +7,7 @@ import {
   italic,
   bold,
   color,
-  red,
+  red
   // analyzeDeps
 } from '../deps-deno.js'
 
@@ -27,8 +27,8 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.3.3'
-const denoVersion = '1.14.2'
+export const version = '0.3.4'
+// const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
 let buildTime = Date.now()
@@ -49,6 +49,7 @@ let {
   output,
   online,
   help,
+  once,
   name,
   env,
   start,
@@ -57,7 +58,7 @@ let {
 } = parse(Deno.args)
 
 const ignore = [
-  '/.git/**',
+  '**/.git/**',
   '**/**.build.css',
   'node_modules/**',
   'yarn.lock',
@@ -241,7 +242,11 @@ switch (cmd) {
 
     await devBuild({ clean: true })
 
-    await watch({ watchPath: './', ignore, handler: devBuild })
+    if (!once) {
+      await watch({ watchPath: './', ignore, handler: devBuild })
+    } else {
+      Deno.exit(1)
+    }
 
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
     // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )

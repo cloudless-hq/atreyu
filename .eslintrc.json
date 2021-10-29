@@ -15,6 +15,7 @@
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
+    "no-multi-spaces": "error",
     "no-tabs": "error",
     "curly": "error",
     "no-restricted-imports": ["error", {
