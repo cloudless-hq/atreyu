@@ -231,7 +231,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
         todo.delete(href)
         continue
       }
-      console.log('start', endTime - Date.now())
+      // console.log('start', endTime - Date.now())
       if ((endTime > Date.now() + 20) && !preloadRouterState._pending?.then) {
         finished.add(href)
         todo.delete(href)
@@ -249,7 +249,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
         break
       }
     }
-    console.log('instance', endTime - Date.now())
+    // console.log('instance', endTime - Date.now())
 
     if (primary.size > 0 || secondary.size > 0) {
       awaitIdle(endTime => {
@@ -258,7 +258,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
         }
         preloaderInstance?.$destroy()
         preloaderInstance = null
-        console.log('destroyed', endTime - Date.now())
+        // console.log('destroyed', endTime - Date.now())
         doIdleWork(endTime)
       })
     } else {

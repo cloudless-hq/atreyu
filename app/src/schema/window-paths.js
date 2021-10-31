@@ -1,3 +1,3 @@
-export default  {
+export default {
   '/(#/):_page(/:_subPage)(/*_)': {}
 }

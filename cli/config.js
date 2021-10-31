@@ -6,7 +6,9 @@ export async function loadConfig (env) {
     confFile
 
     conf = { appPath: Deno.cwd(), ...confFile?.default }
-  } catch (_err) { }
+  } catch (err) {
+    console.warn(err)
+  }
   // console.log('pre conf', conf)
 
   let envConf = {}

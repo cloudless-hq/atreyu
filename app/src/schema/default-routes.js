@@ -23,8 +23,8 @@ export default {
     }
   },
 
-  // cypress support
-  '/__*': {
+  // codespace support
+  '/signin*': {
     get: {
       operationId: '_bypass'
     }

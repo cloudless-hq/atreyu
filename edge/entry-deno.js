@@ -39,11 +39,7 @@ startWorker(async arg => {
     // wait
   } = arg
 
-  if (req.url.hostname === 'localhost') {
-    req.url.hostname = 'atreyu.localhost'
-  }
-
-  const appName = codespace && req.url.hostname.startsWith(codespace + '-80.') ? repoName : req.url.hostname.replace('.localhost', '')
+  const appName = codespace ? repoName : req.url.hostname.replace('.localhost', '')
 
   const appKey = appName + '_dev'
 

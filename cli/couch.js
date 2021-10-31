@@ -6,7 +6,6 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
   if (!couchHost) {
     return
   }
-  console.log('  🛋  pushing new hash to app db...')
 
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
 
@@ -14,6 +13,7 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
+  console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}...`)
   try {
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
     // if (oldDoc?._rev) {
@@ -22,25 +22,25 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
     const _rev = oldDoc?._rev
 
     const dbRes =  await fetch(`${couchHost}/${dbName}`, {
-        headers
+      headers
     })
 
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
       await fetch(`${couchHost}/${dbName}?partitioned=false`, {
-          headers,
-          method: 'PUT'
+        headers,
+        method: 'PUT'
       })
 
       await fetch(`${couchHost}/${dbName}/_security`, {
         headers,
         method: 'PUT',
         body: JSON.stringify({
-          "cloudant": {
-            "nobody": [],
+          'cloudant': {
+            'nobody': [],
             [couchKey]: [
-                "_reader",
-                "_writer"
+              '_reader',
+              '_writer'
             ]
           }
         })
