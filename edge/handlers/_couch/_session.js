@@ -116,6 +116,7 @@ export function handler ({ req, stats }) {
 
   return new Response(JSON.stringify({
     userId: payload.email || null,
+    env,
     // roles: [],
     // email,
     country: req.headers['cf-ipcountry'],

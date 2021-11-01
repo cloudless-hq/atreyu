@@ -5,7 +5,7 @@ import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../../../edge/lib/escape-id.js'
 
 export default function ({
-  clientConfig,
+  // clientConfig,
   appName,
   dbConf,
   schema
@@ -16,20 +16,8 @@ export default function ({
     console.warn('currently only dev and prod environments supported')
   }
 
-  let env
-  if (location.hostname.endsWith('localhost')) {
-    env = 'dev'
-  } else if (location.hostname === appName) {
-    env = 'prod'
-  } else {
-    env = location.hostname.replace('.' + appName, '')
-  }
 
-  const envConfig = clientConfig[env] ? clientConfig[env] : {}
-
-  const {
-    IPFS_GATEWAY = '/'
-  } = {...clientConfig, ...envConfig}
+  const IPFS_GATEWAY = '/'
 
   let dbs = new Map()
   async function initSession () {
@@ -71,7 +59,7 @@ export default function ({
         if (newSession.userId !== self.session.value.userId) {
           let newDbConf
           if (typeof dbConf === 'function') {
-            newDbConf = dbConf({ userId: newSession.userId, appName, env, escapeId })
+            newDbConf = dbConf({ userId: newSession.userId, appName, env: newSession.env, escapeId })
           } else {
             newDbConf = dbConf
           }
