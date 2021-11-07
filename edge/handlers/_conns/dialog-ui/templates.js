@@ -1,5 +1,4 @@
 import { JSONPath } from 'jsonpath-plus'
-import templates from './tdocs'
 
 function repl (tpl, json) {
   return tpl.replace(/{(.*?)}/g, (_, path) => {
@@ -7,11 +6,7 @@ function repl (tpl, json) {
   })
 }
 
-export default async ({ templateName, context = {}, profile = {}, payload = {}, res = {} }) => {
-  if (!templates[templateName]) {
-    return
-  }
-
+export default ({ template, context = {}, profile = {}, payload = {}, res = {} }) => {
   function expand (elems, item) {
     elems.forEach(elem => {
       if (elem.postback) {
@@ -26,7 +21,7 @@ export default async ({ templateName, context = {}, profile = {}, payload = {}, 
     })
   }
 
-  const ts = JSON.parse(JSON.stringify(templates[templateName])) // todo: use docs and caching with clone !!
+  const ts = JSON.parse(JSON.stringify(template)) // todo: use docs and caching with clone !!
 
   ts.forEach(t => {
     if (t.text) {

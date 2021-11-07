@@ -1,12 +1,12 @@
 import startWorker from './lib/start-worker.js'
 import stats from './lib/stats.js'
 import { handler } from '$handler.js'
-import { getEnv } from './lib/env.js'
+import { getEnv } from '$env.js'
 import { escapeId } from './lib/escape-id.js'
 
 async function getApp () {
   const { appName } = stats.get()
-  const { couchHost, _couchKey, _couchSecret, env } =  getEnv(['couchHost', '_couchKey', '_couchSecret', 'env'])
+  const { couchHost, _couchKey, _couchSecret, env } = getEnv(['couchHost', '_couchKey', '_couchSecret', 'env'])
   if (!couchHost || !_couchKey || !_couchSecret) {
     console.error('no couch configuraiton found for app settings.')
     return

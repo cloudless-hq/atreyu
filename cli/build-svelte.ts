@@ -104,7 +104,7 @@ export default async function ({
 
           const { code } = await preprocess(template, {
             style: async ({ content, attributes, filename }) => {
-              if (attributes.lang === 'postcss'){
+              if (attributes.lang === 'postcss') {
                 // if (!attributes.global) {
                 //   console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
                 //   return {code: ''}

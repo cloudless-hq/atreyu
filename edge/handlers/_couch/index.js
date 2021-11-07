@@ -1,6 +1,6 @@
-import { getEnv } from '../../lib/env.js'
+import { getEnv } from '$env.js'
 // import { fetchStream } from '../../lib/http.js'
-import  {handler as sessionHandler } from './_session.js'
+import {handler as sessionHandler } from './_session.js'
 
 // TODO: support non cloudant couchdb auth:
 // import { authHeaders } from './helpers.js'

@@ -1,6 +1,7 @@
 import templates from './templates'
 import fulfillments from './fulfillments'
 import toFacebook from './facebook_out'
+// import intrans from 'transformer/dialog-ui/dialogflow_in.js'
 
 reqHandler(async ({ parsedBody = {}, event, req }) => {
   let response = {}
@@ -23,9 +24,9 @@ reqHandler(async ({ parsedBody = {}, event, req }) => {
         templateName = action,
         followupEvent,
         outputContext,
-        profileUpdate,
-        end_interaction,
-        session_entity_types
+        profileUpdate
+        // end_interaction,
+        // session_entity_types
       } = await fulfillments[action]({ context, queryText, raw, event, slots, profile, confidence, parentAction, payload })
 
       response.outputContext = outputContext
@@ -46,7 +47,6 @@ reqHandler(async ({ parsedBody = {}, event, req }) => {
     response = { fulfillmentMessages }
   }
 
-  response.source = 'dialog-ui'
   const newResponse = new Response(JSON.stringify(response), {
     status: 200,
     statusText: 'OK',

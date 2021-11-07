@@ -1,4 +1,3 @@
-import { setEnv } from './lib/env.js'
 import { join } from '../deps-deno.js'
 import startWorker from './lib/start-worker.js'
 import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
@@ -127,36 +126,35 @@ startWorker(async arg => {
 
   if (workerName) {
     if (!configs[appKey]) {
-      configs[appKey] = JSON.parse(await Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
-      // env?
+      configs[appKey] = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
     }
 
     // todo: how to handle this reliably and less ugly?
-    setEnv(configs[appKey])
+    // setEnv(configs[appKey])
 
     if (!workers[workerName]) {
       console.log('importing worker script: ' + workerName)
-
+      Deno.env.set('appKey', appKey)
       let base = []
       let filenames = []
       if (workerName.startsWith('_')) {
-        base = [import.meta.url.replace('file://', ''), '..']
-        filenames = [`handlers/${workerName}.js`, `handlers/${workerName}/index.js`]
+        base = [configs[appKey].appPath, 'edge', 'build'] // [import.meta.url.replace('file://', ''), '..' ]
+        filenames = [`${workerName}.js`] // `build or handlers/${workerName}/index.js`
       } else {
-        base = [configs[appKey].appPath, 'edge', 'handlers']
+        base = [configs[appKey].appPath, 'edge', 'build']
         filenames = [workerName]
       }
-      // console.log(base, filenames[0])
+
       let codePath = join(...base, filenames[0])
-      try {
-        // console.log(codePath)
-        Deno.statSync(codePath)
-      } catch (_e) {
-        // TODO: ts support
-        codePath = join(...base, filenames[1])
-      }
+      // try {
+      //   // console.log(codePath)
+      //   Deno.statSync(codePath)
+      // } catch (_e) {
+      //   // TODO: ts support
+      //   codePath = join(...base, filenames[1])
+      // }
       // console.log(codePath)
-      workers[workerName] = (await import(codePath))
+      workers[workerName] = (await import(codePath.replace('.js', '.d.js')))
     }
 
     return workers[workerName].handler(arg)

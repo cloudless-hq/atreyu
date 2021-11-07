@@ -1,8 +1,8 @@
 // import { authHeaders } from '../couchdb/helpers'
 // import maybeSetupUser from './setup'
-import { getEnv } from '../../lib/env.js'
+import { getEnv } from '$env.js'
 
-const { env, userId } = getEnv([ 'env', 'userId'])
+const { userId, env } = getEnv(['userId', 'env'])
 const orgId = 'igp'
 
 // function setCookie (name, value, days) {

@@ -1,14 +1,15 @@
 import { join, basename, green } from '../deps-deno.js'
+// import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
-export function buildWorkerConfig (schema) {
+export function buildWorkerConfig (schema: any) {
   const workers = {}
 
   Object.entries(schema.paths).forEach(([path, conf]) => {
     Object.entries(conf).forEach(([_method, { tags, operationId }]) => {
       if (tags?.includes('edge')) {
-        let workerName = operationId.replace('.js', '').replaceAll('/', '__')
+        const workerName = operationId.replace('.js', '').replaceAll('/', '__')
         if (!workers[workerName]) {
           workers[workerName] = {}
         }
@@ -18,7 +19,7 @@ export function buildWorkerConfig (schema) {
 
         if (workerName.startsWith('_')) {
           base = [atreyuPath, 'edge']
-          filenames = [`handlers/${operationId}.js`,  `handlers/${operationId}/index.js`]
+          filenames = [`handlers/${operationId}.js`, `handlers/${operationId}/index.js`]
         } else {
           base = [Deno.cwd(), 'edge', 'handlers'] // configs[appKey].appPath,
           filenames = [operationId]
@@ -50,12 +51,36 @@ async function compile ({input, appName, workerName, output, buildName}) {
     check: false,
     importMapPath: atreyuPath + '/atreyu',
     importMap: {
-      "imports": {
-        "/atreyu/": "./app/atreyu/",
-        "$handler.js": input
+      'imports': {
+        '/atreyu/': './app/src/',
+        '$handler.js': input,
+        '$env.js': './edge/lib/env.js'
       }
     }
   })
+
+  const denoRes = await Deno.emit(input, {
+    bundle: 'module',
+    check: false,
+    importMapPath: atreyuPath + '/atreyu',
+    importMap: {
+      'imports': {
+        '/atreyu/': './app/src/',
+        '$env.js': './edge/lib/env-local.js'
+      }
+    }
+  })
+
+  // const { metafile } =
+  // await esbuild.build({
+  //   entryPoints: [input],
+  //   sourcemap: 'external',
+  //   bundle: true,
+  //   minify: false,
+  //   treeShaking: false,
+  //   metafile: true,
+  //   outfile: output.replace('.js', '.d.js')
+  // })
 
   if (diagnostics.length > 0) {
     diagnostics.map(di => console.warn(di))
@@ -63,7 +88,10 @@ async function compile ({input, appName, workerName, output, buildName}) {
 
   await Promise.all([
     Deno.writeTextFile(output, files['deno:///bundle.js'].replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
-    Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map'])
+    Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map']),
+
+    Deno.writeTextFile(output.replace('.js', '.d.js'), denoRes.files['deno:///bundle.js'] + `\n\n//# sourceMappingURL=./${workerName}.d.js.map`),
+    Deno.writeTextFile(output.replace('.js', '.d.js') + '.map', denoRes.files['deno:///bundle.js.map'])
   ])
 }
 

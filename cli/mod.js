@@ -27,12 +27,14 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.3.9'
+export const version = '0.4.0'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
 let buildTime = Date.now()
 let buildNameColoured = ''
+
+let edgeSchema
 
 function rollBuildMeta () {
   buildName = faker.company.bs()
@@ -163,7 +165,7 @@ async function doStart () {
 }
 
 if (config.atreyuVersion && version !== config.atreyuVersion) {
-  console.error('please update atreyu to version ' + config.atreyuVersion)
+  console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${version}`)
   Deno.exit()
 }
 
@@ -180,6 +182,8 @@ switch (cmd) {
     break
 
   case 'dev':
+    edgeSchema = await loadEdgeSchema()
+
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
       const newConf = await loadConfig(env)
@@ -205,14 +209,18 @@ switch (cmd) {
           batch,
           buildRes,
           clean
-        })
+        }),
+
+        buildEdge(edgeSchema, buildName)
       ])
 
-      let buildEmits = buildRes.flatMap( ({ files }) => Object.values(files).flatMap(({ newEmits }) => newEmits ) )
+      let buildEmits = buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] )
 
       const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
         const regx = globs.map(glob => globToRegExp(glob))
+
         const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
+
         if (clean || matchArray(buildEmits) || matchArray(batch)) {
           console.log(`  ▶️  running ${command}...`)
           await exec(command.split(' '))
@@ -221,6 +229,7 @@ switch (cmd) {
           }
         }
       })())
+
       await Promise.all(runs)
 
       const folderHash = await addIpfs({
@@ -256,7 +265,7 @@ switch (cmd) {
 
   case 'publish':
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
-    const edgeSchema = await loadEdgeSchema()
+    edgeSchema = await loadEdgeSchema()
 
     // todo skip on allready running ask if autorestart in online mode
     // await startDaemon({ publish: true })
