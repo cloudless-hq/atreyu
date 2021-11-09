@@ -102,6 +102,10 @@ export function buildEdge (workers, buildName) {
   try {
     console.log('  removing edge/build')
     Deno.removeSync(buildPath, { recursive: true })
+  } catch (_e) { }
+
+  try {
+    console.log('  creating edge/build')
     Deno.mkdirSync(buildPath, { recursive: true })
   } catch (_e) { }
 
