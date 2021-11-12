@@ -7,7 +7,7 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 const ipfsGateway = 'http://127.0.0.1:8080'
 const ipfsApi = 'http://127.0.0.1:5001'
 const homeDir = Deno.env.get('HOME')
-const codespace = Deno.env.get('CODESPACE_NAME')
+// const codespace = Deno.env.get('CODESPACE_NAME')
 const repoName = Deno.env.get('RepositoryName')
 
 // bindings = bindingsFile.bindings.reduce((agr, ent) => {
@@ -38,7 +38,9 @@ startWorker(async arg => {
     // wait
   } = arg
 
-  const appName = codespace ? repoName : req.url.hostname.replace('.localhost', '')
+  const localhostMatch = req.url.hostname.split('.localhost')
+
+  const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName
 
   const appKey = appName + '_dev'
 

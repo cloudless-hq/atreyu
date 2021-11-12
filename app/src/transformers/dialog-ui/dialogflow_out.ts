@@ -1,5 +1,13 @@
-export default (res) => {
-  return res
+export default ({
+  outputContext,
+  followupEvent,
+  messages
+}) => {
+  return {
+    outputContext,
+    followupEvent,
+    fulfillmentMessages: messages
+  }
 }
 
 

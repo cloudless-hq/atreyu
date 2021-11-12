@@ -103,7 +103,7 @@ if (!cmd) {
   start = true
 }
 
-let {config = {}, runConf = {}} = await loadConfig(env)
+let {config = {}, runConf = {}} = await loadConfig(env, appName)
 
 // TODO: allow argument relative path for apps different from cwd
 
@@ -186,7 +186,7 @@ switch (cmd) {
 
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
-      const newConf = await loadConfig(env)
+      const newConf = await loadConfig(env, appName)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 

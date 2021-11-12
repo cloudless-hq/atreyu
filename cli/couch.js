@@ -1,4 +1,4 @@
-import { escapeId } from '../edge/lib/escape-id.js'
+import { escapeId } from '../app/src/lib/escape-id.js'
 
 export async function couchUpdt ({folderHash, buildColor, config, name, version, buildName, buildTime, appName, env}) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, couchKey, userId } = config

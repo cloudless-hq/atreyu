@@ -2,7 +2,7 @@ import ipfsHandler from './handlers/ipfs.js'
 import corsHandler from './handlers/cors.js'
 import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
-import { escapeId } from '../../../edge/lib/escape-id.js'
+import { escapeId } from '../lib/escape-id.js'
 
 export default function ({
   // clientConfig,

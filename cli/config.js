@@ -1,5 +1,5 @@
-export async function loadConfig (env) {
-  let conf = {}
+export async function loadConfig (env, appName) {
+  let conf = { }
   let confFile
   try {
     confFile = await import(Deno.cwd() + '/ayu.config.js')
@@ -26,6 +26,7 @@ export async function loadConfig (env) {
     config: {
       ...conf,
       ...envConf,
+      appName,
       env
     },
     runConf: confFile?.runConf

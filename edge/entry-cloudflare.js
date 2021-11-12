@@ -2,7 +2,7 @@ import startWorker from './lib/start-worker.js'
 import stats from './lib/stats.js'
 import { handler } from '$handler.js'
 import { getEnv } from '$env.js'
-import { escapeId } from './lib/escape-id.js'
+import { escapeId } from '../app/src/lib/escape-id.js'
 
 async function getApp () {
   const { appName } = stats.get()

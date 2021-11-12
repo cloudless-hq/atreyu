@@ -1,12 +1,12 @@
 export default (parsedBody = {}) : {
   sessionId: string,
+  responseId: string,
   queryText: string,
   action: string,
-  context: any,
   parentAction: string,
-  params: Record<string, string | number | boolean>,
+  context: Record<string, string | number | boolean>,
   fulfillmentText: string,
-  fulfillmentMessages: any[],
+  messages: any[],
   allRequiredParamsPresent: boolean,
   outputContexts: any[],
   intentId: string,
@@ -15,12 +15,11 @@ export default (parsedBody = {}) : {
   raw: any
 } => {
   const {
-    // responseId,
     session: sessionId,
-    context = {},
+    responseId,
     queryResult: {
       queryText, // 'Kleidung nach Styles'
-      action: parentAction, // '_clothes_by_styles'
+      action, // '_clothes_by_styles'
       parameters: params, // 'gender': '','budget': '','style': ''
       fulfillmentText, // '_ask_gender', _ask_budget
       fulfillmentMessages: origFulfillmentMessages = [],
@@ -33,31 +32,35 @@ export default (parsedBody = {}) : {
     }
   } = parsedBody
 
-  const fulfillmentMessages = origFulfillmentMessages.map((message: any) => ({ text: message?.text?.text, raw: message }))
-  let action = parentAction
-  if (fulfillmentMessages[0]?.text?.[0]?.startsWith?.('_')) {
+  const messages = origFulfillmentMessages.map((message: any) => ({ text: message?.text?.text, raw: message }))
+
+  let subAction
+  if (messages[0]?.text?.[0]?.startsWith?.('_')) {
     // allow dialogUI to handle slot filling, by interpreting fulfillment Text that start with _ as action
-    action = fulfillmentMessages[0].text[0].substr(1)
+    subAction = messages[0].text[0].substr(1)
   }
-  // console.log(action, parentAction, fulfillmentMessages)
+  if (!action) {
+    action = subAction
+  }
 
   let toChange
   if (queryText && queryText.startsWith('__change__')) {
     toChange = queryText.split('__change__')[1].split('__')
   }
 
+  // console.log(parsedBody)
   return {
+    responseId,
     sessionId,
     queryText,
     action,
-    parentAction,
-    params,
+    subAction,
+    context: { ...params },
     fulfillmentText,
-    fulfillmentMessages,
+    messages,
     allRequiredParamsPresent,
     outputContexts,
     intentId,
-    context,
     intentName,
     toChange,
     raw: parsedBody
