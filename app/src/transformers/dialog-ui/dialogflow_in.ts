@@ -14,7 +14,7 @@ export default (parsedBody = {}) : {
   toChange: string[],
   raw: any
 } => {
-  const {
+  let {
     session: sessionId,
     responseId,
     queryResult: {

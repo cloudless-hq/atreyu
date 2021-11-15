@@ -27,6 +27,9 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
       protocol
     } = hrefOverride ? new URL(hrefOverride) : window.location
 
+    // , ...(new URLSearchParams(hash.split().replaceAll('?', '&')).entries())
+    const params = Object.fromEntries([...(new URLSearchParams(search.replaceAll('?', '&')).entries())])
+
     const pathParts = pathname.split('/').filter(pathPart => pathPart !== '')
     const matchedRoutes = []
     const data = {}
@@ -40,23 +43,55 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
         // console.log(router)
         // todo: sort by AST specificity
 
+        if (matchedRoutes.length === 1) {
+          data['match'] = {
+            _link: (newParams) => {
+              Object.entries(newParams).forEach(([key, val]) => {
+                if (typeof val === 'string') {
+                  newParams[key] = encodeURIComponent(val)
+                }
+              })
+              return router.reverse(newParams)
+            },
+            _navigate: (newParams, { replaceState } = {}) => {
+              Object.entries(newParams).forEach(([key, val]) => {
+                if (typeof val === 'string') {
+                  newParams[key] = encodeURIComponent(val)
+                }
+              })
+
+              const newHref = router.reverse(newParams)
+
+              if (replaceState) {
+                window.history.replaceState({ location: newHref }, '', newHref)
+              } else {
+                window.history.pushState({ location: newHref }, '', newHref)
+              }
+
+              updateRoute()
+            },
+            ...match
+          }
+        }
+
         if (name) {
           data[name] = {
-            _link: (params) => {
-              Object.entries(params).forEach(([key, val]) => {
+            _link: (newParams) => {
+              Object.entries(newParams).forEach(([key, val]) => {
                 if (typeof val === 'string') {
-                  params[key] = encodeURIComponent(val)
+                  newParams[key] = encodeURIComponent(val)
                 }
               })
-              return router.reverse(params)
+              return router.reverse(newParams)
             },
-            _navigate: (params, { replaceState } = {}) => {
-              Object.entries(params).forEach(([key, val]) => {
+            _navigate: (newParams, { replaceState } = {}) => {
+              Object.entries(newParams).forEach(([key, val]) => {
                 if (typeof val === 'string') {
-                  params[key] = encodeURIComponent(val)
+                  newParams[key] = encodeURIComponent(val)
                 }
               })
-              const newHref = router.reverse(params)
+
+              const newHref = router.reverse(newParams)
 
               if (replaceState) {
                 window.history.replaceState({ location: newHref }, '', newHref)
@@ -106,7 +141,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     })
 
     const allData = {
-      search,
+      params,
       hash,
       host,
       hostname,
@@ -115,8 +150,10 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
       path: pathname,
       port,
       protocol,
+
       pathParts,
       matchedRoutes,
+
       _pending: null,
       _error: null,
       _errorComponent: null,
