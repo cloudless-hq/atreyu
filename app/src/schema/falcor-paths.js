@@ -215,12 +215,12 @@ export default {
     },
     get: {
       handler: async ({ ids, _keys, dbs }) => {
-        const pouchRes = await userDb(dbs).allDocs({
+        const pouchRes = await userDb(dbs)?.allDocs({
           include_docs: true,
           conflicts: true,
           keys: ids
-        })
-        // console.log(ids, pouchRes)
+        }) || {rows:[]}
+
         const missingIds = []
         const _docs = {}
 
