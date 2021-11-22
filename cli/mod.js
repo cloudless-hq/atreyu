@@ -54,6 +54,7 @@ let {
   once,
   name,
   env,
+  port = '80',
   start,
   repo,
   sveltePath
@@ -156,7 +157,7 @@ async function doStart () {
   await startDaemon({})
 
   runDeno({
-    addr: ':80',
+    addr: ':' + port,
     noCheck: true,
     watch: true,
     inspect: true,
