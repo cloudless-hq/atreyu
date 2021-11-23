@@ -57,7 +57,8 @@ let {
   port = '80',
   start,
   repo,
-  sveltePath
+  sveltePath,
+  verbose
 } = parse(Deno.args)
 
 const ignore = [
@@ -104,7 +105,7 @@ if (!cmd) {
   start = true
 }
 
-let {config = {}, runConf = {}} = await loadConfig(env, appName)
+let { config = {}, runConf = {} } = await loadConfig(env, appName)
 
 // TODO: allow argument relative path for apps different from cwd
 
@@ -113,7 +114,10 @@ async function loadEdgeSchema () {
   // TODO: support implicit endpoints folder routs
   let schema
   try {
-    schema = (await import(projectPath + '/app/schema/index.js')).schema
+    schema = (await Promise.any([
+      import(projectPath + `/app/schema/index.js`),
+      import(projectPath + `/app/schema.js`)
+    ])).schema
     if (typeof schema === 'function') {
       schema = schema({ defaultPaths, toFalcorPaths, toWindowPaths })
     }
@@ -142,9 +146,16 @@ function startDaemon ({ publish }) {
       'daemon --enable-gc=true --migrate=true' + offline,
       runPath,
       data => {
-        console.log('ipfs: ' + data) // TODO: indent/ standard logging formatting library...
+        if (verbose) {
+          console.log('  ipfs: ' + data)
+        }
 
+        if (data.startsWith('Initializing daemon...')) {
+          const [_, ipfs, repo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
+          console.log('  ' + Object.entries({ ipfs, repo, ateryu: version }).map(en => en.join(': ')).join(', '))
+        }
         if (data.includes('Daemon is ready')) {
+          console.log('  ✅ Started ipfs daemon')
           resolve()
         }
       }

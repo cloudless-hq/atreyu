@@ -2,3 +2,8 @@
 - compiler recover on random state
 - use first time tw class in watch
 - new svlte file ipfs crash
+- compile direct to ipfs
+- fs based base router
+- feed/ updater without db or serviceworker
+- standard paths for edge functions without schema config
+- cloudflare r3 object store instead of pinata pinning mode
