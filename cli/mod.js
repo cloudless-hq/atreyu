@@ -27,7 +27,7 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.4.5'
+export const version = '0.4.6'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -296,7 +296,7 @@ switch (cmd) {
       buildServiceWorker({clean: true})
     ])
 
-    const runs = Object.entries(runConf).map(([command, { globs }]) => (async () => {
+    const runs = Object.entries(runConf).map(([command]) => (async () => { // unused? , { globs }
       console.log(`  ▶️  running ${command}...`)
       await exec(command.split(' '))
     })())

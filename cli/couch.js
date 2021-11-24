@@ -1,6 +1,6 @@
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-export async function couchUpdt ({folderHash, buildColor, config, name, version, buildName, buildTime, appName, env}) {
+export async function couchUpdt ({folderHash, buildColor, config, _name, version, buildName, buildTime, appName, env}) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, couchKey, userId } = config
 
   if (!couchHost) {
@@ -21,7 +21,7 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
     // }
     const _rev = oldDoc?._rev
 
-    const dbRes =  await fetch(`${couchHost}/${dbName}`, {
+    const dbRes = await fetch(`${couchHost}/${dbName}`, {
       headers
     })
 
