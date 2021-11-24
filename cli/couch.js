@@ -13,7 +13,7 @@ export async function couchUpdt ({folderHash, buildColor, config, name, version,
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
-  console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}...`)
+  console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
   try {
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
     // if (oldDoc?._rev) {

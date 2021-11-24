@@ -117,48 +117,36 @@ export default function ({
     res.forEach(client => client.postMessage(JSON.stringify({ hello: 'joe' })))
   })
 
-  const clientPorts = {}
   addEventListener('message', async e => {
     const data = JSON.parse(e.data)
-    const clientId = e.source.id
+    // const clientId = e.source.id
+    // const clientIds = (await clients.matchAll()).map(client => client.id)
+
     const reqId = data[0]
+
     if (reqId === -1) {
       // hello message and heartbeat
       return
     }
 
-    const conId = clientId + reqId
-
-    if (!clientPorts[conId]) {
-      clientPorts[conId] = { client: e.source }
-    }
-
     if (dbs.size < 1) {
       await dbs._pendingInit
     }
-    clientPorts[conId].sub = falcorServer.execute(data)
+
+    const exec = falcorServer.execute(data)
       .subscribe(
         result => {
-          clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, value: result }))
+          e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {
-          clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, error }))
+          e.source.postMessage(JSON.stringify({ id: reqId, error }))
         },
         async _done => {
-          await clientPorts[conId].client.postMessage(JSON.stringify({ id: reqId, done: true }))
-
-          delete clientPorts[conId]
+          await e.source.postMessage(JSON.stringify({ id: reqId, done: true }))
+          exec.unsubscribe()
+          exec.dispose()
         }
       )
-
-    const clientIds = (await clients.matchAll()).map(client => client.id)
-    Object.entries(clientPorts).forEach(([cId, value]) => {
-      if (!clientIds.includes(value.client.id)) {
-        value.sub.unsubscribe()
-        value.sub.dispose() // necesary ?
-        delete clientPorts[cId]
-      }
-    })
   })
 
   addEventListener('install', _event => {

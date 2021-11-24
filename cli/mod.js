@@ -27,7 +27,7 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.4.4'
+export const version = '0.4.5'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -264,7 +264,7 @@ switch (cmd) {
     await devBuild({ clean: true })
 
     if (!once) {
-      await watch({ watchPath: './', ignore, handler: devBuild })
+      await watch({ watchPath: projectPath, ignore, handler: devBuild })
     } else {
       Deno.exit(0)
     }

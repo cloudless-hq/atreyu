@@ -17,7 +17,7 @@ export async function watch ({ watchPath, ignore, handler }: {watchPath: string,
 
     locked = true
 
-    await handler({batch})
+    await handler({ batch })
 
     setTimeout(async () => {
       if (rerun) {

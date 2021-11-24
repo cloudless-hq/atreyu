@@ -42,7 +42,7 @@ class ServiceWorkerSource {
     return this._getResponse(['call', callPath, args, pathSuffixes, paths])
   }
 
-  // Creates an observable stream that will send a request
+  // Creates an observable stream that will send a request
   // to a Model server, and retrieve the response.
   // The request and response are correlated using a unique
   // identifier which the client sends with the request and

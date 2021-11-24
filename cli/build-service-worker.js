@@ -28,7 +28,7 @@ export default async function ({ batch, buildRes, clean } = {}) {
     return buildRes?.[1] || newBuildRes
   }
 
-  console.log('  compiling service worker: ' + projectPath)
+  console.log('  building service-worker: ' + projectPath)
 
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 

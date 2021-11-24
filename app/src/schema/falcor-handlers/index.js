@@ -4,16 +4,16 @@ function userDb (dbs) {
   return dbs.entries().next().value?.[1]
 }
 
-let id
-function schedule (action) {
-  if (id) {
-    clearTimeout(id)
-    id = null
-  }
-  id = setTimeout(action, 0)
-}
-
 export const _sync = ({ dbs, Observable }, [ since ]) => {
+  let id
+  function schedule (action) {
+    if (id) {
+      clearTimeout(id)
+      id = null
+    }
+    id = setTimeout(action, 0)
+  }
+
   return Observable.create(subscriber => {
     const changes = userDb(dbs).changes({
       since: since || 'now',

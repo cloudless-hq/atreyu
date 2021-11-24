@@ -45,7 +45,7 @@ export default async function ({
 
     try {
       if (clean) {
-        console.log('  🐘 removing:', outputTarget)
+        console.log('  🐘 recreating:', outputTarget)
         await Deno.remove(outputTarget, { recursive: true })
       }
     } catch (_e) {}

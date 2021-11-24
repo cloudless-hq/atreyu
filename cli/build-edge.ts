@@ -99,18 +99,16 @@ export function buildEdge (workers, buildName) {
   // const projectFolder = Deno.cwd()
   const appName = basename(Deno.cwd())
   const buildPath = join(Deno.cwd(), 'edge/build')
+  console.log('  🐘 recreating: edge/build')
   try {
-    console.log('  removing edge/build')
     Deno.removeSync(buildPath, { recursive: true })
   } catch (_e) { }
-
   try {
-    console.log('  creating edge/build')
     Deno.mkdirSync(buildPath, { recursive: true })
   } catch (_e) { }
 
   Object.entries(workers).forEach(([workerName, { codePath }]) => {
-    console.log('  building worker: ', workerName, codePath)
+    console.log(`  building edge-worker: ${codePath.replace(atreyuPath, '/atreyu')}`)
 
     if (!workerName.startsWith('_')) {
       compile({input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName})

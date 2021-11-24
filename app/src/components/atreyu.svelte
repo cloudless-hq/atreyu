@@ -3,7 +3,7 @@
 
   export let env = 'prod'
 
-  let versionTooltip = ''
+  // let versionTooltip = ''
   let updatedNotification
   let latestHash = ''
   let installedHash = ''
@@ -14,7 +14,6 @@
   let _silent = localStorage.getItem('_silent')
   let _updateImmediate = localStorage.getItem('_updateImmediate')
   let _updating = localStorage.getItem('_updating')
-
 
   // TODO: full support for long running observables to avoid this loop
   let seq
@@ -41,10 +40,38 @@
 
         location.href = `/_couch/_session?login${cont}`
       } else {
+        // the reactive check to ask for updates and reload while the page is open
         settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
+
+        const settingsDoc = $data._docs[settingsDocId + '$']
+
+        if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {
+          latestHash = settingsDoc.folderHash
+          installedHash = $data._hash$
+        }
+        if (latestHash && installedHash && latestHash !== installedHash) {
+          newHash = latestHash
+
+          if (_updateImmediate && !updating) {
+            doUpdate({ auto: true })
+          }
+        }
       }
     }
   }
+
+  // else {
+  // versionTooltip = `Build: "${settingsDoc.buildName$}"
+  // Atreyu  Version: "${settingsDoc.version$}"
+  // Installled Hash: "${installedHash.substr(-8)}"
+  // Latest     Hash: "${newHash.substr(-8)}"`
+  //     }
+  //   } else {
+  // versionTooltip = `Build: "${settingsDoc.buildName$}"
+  // Atreyu Version: "${settingsDoc.version$}"
+  // Installed Hash: "${installedHash.substr(-8)}"`
+  //   }
+  // }
 
   // the initial update check to auto install updates on fresh load and preload the required data
   async function init () {
@@ -70,42 +97,12 @@
   }
   init()
 
-  // the reactive check to ask for updates and reload while the page is open
-  $: {
-    if (settingsDocId) {
-      const settingsDoc = $data._docs[settingsDocId + '$']
-      if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {
-        latestHash = settingsDoc.folderHash
-        installedHash = $data._hash$
-
-        if ((latestHash && installedHash) && latestHash !== installedHash) {
-          newHash = latestHash
-        }
-
-        if (newHash) {
-          if (_updateImmediate && !updating) {
-            doUpdate({ auto:true })
-          } else {
-            versionTooltip = `Build: "${settingsDoc.buildName$}"
-  Atreyu  Version: "${settingsDoc.version$}"
-  Installled Hash: "${installedHash.substr(-8)}"
-  Latest     Hash: "${newHash.substr(-8)}"`
-          }
-        } else {
-          versionTooltip = `Build: "${settingsDoc.buildName$}"
-  Atreyu Version: "${settingsDoc.version$}"
-  Installed Hash: "${installedHash.substr(-8)}"`
-        }
-      }
-    }
-  }
-
   let updated
   function closeUpdateNotification (e) {
     if (updated) {
       if (!e.path.includes(updatedNotification)) {
-          closeUpdated()
-        }
+        closeUpdated()
+      }
     }
   }
 

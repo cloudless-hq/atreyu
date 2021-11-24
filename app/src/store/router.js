@@ -370,7 +370,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
       if (!preloadDisabled) {
         awaitIdle(endTime => {
           finished.add(location.href)
-          getLinks(app).forEach(link => primary.add(link))
+          getLinks(document.querySelector('#app')).forEach(link => primary.add(link))
           doIdleWork(endTime)
         })
       }
