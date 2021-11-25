@@ -27,7 +27,7 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.4.6'
+export const version = '0.4.8'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -178,7 +178,7 @@ async function doStart () {
 
 if (config.atreyuVersion && version !== config.atreyuVersion) {
   console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${version}`)
-  Deno.exit()
+  Deno.exit(-1)
 }
 
 // TODO: eject, create, check deno and ayu version updates/ compat.
