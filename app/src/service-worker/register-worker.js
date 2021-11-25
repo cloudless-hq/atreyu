@@ -24,13 +24,16 @@ export default async function registerWorker (workerPath, loaded) {
     })
 
     console.log('ServiceWorker registred')
-console.log('FIXME: on slow network this fires before the worker takes requests!')
-    navigator.serviceWorker.addEventListener('controllerchange', async e => {
-      // console.log(e)
-      await navigator.serviceWorker.ready
-      console.log('ServiceWorker ready')
-      loaded(reg)
-    })
+
+    navigator.serviceWorker.addEventListener('message', async e => {
+      if (e.data === '{"worker":"active"}') {
+        await navigator.serviceWorker.ready
+        console.log('ServiceWorker ready')
+        loaded(reg)
+      }
+    }, { once: true })
+
+    // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
   } else {
     await navigator.serviceWorker.ready
     console.log('ServiceWorker ready')

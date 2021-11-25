@@ -149,13 +149,16 @@ export default function ({
       )
   })
 
-  addEventListener('install', _event => {
+  addEventListener('install', () => {
     skipWaiting()
     console.log('worker installing, skipping waiting')
   })
 
-  addEventListener('activate', async (event) => {
+  addEventListener('activate', event => {
     event.waitUntil(clients.claim().then(() => {
+      clients.matchAll().then(res => {
+        res.forEach(client => client.postMessage(JSON.stringify({ worker: 'active' })))
+      })
       console.log('worker activating, claiming clients')
     }))
   })
