@@ -10,7 +10,7 @@ const ipfsGateway = IPFS_GATEWAY || 'http://127.0.0.1:8080'
 let ipfsMaps = {}
 const kvs = getKvStore('ipfs')
 
-export async function handler ({ event, req, app }) {
+export async function handler ({ req, app }) {
   let url = ''
   let ipfsPath
   let revalidate = false
@@ -65,7 +65,7 @@ export async function handler ({ event, req, app }) {
 
     revalidate = true
     ipfsPath = `/ipfs/${app.Hash}${req.url.pathname}`
-    url = ipfsGateway + ipfsPath   // `/ipfs/${reqHash}`
+    url = ipfsGateway + ipfsPath // `/ipfs/${reqHash}`
   }
 
   let response

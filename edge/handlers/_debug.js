@@ -1,5 +1,5 @@
-export async function handler ({ event, req, app, stats }) {
-  const newResponse = new Response(JSON.stringify(stats.get()), {
+export function handler ({ stats, app }) {
+  const newResponse = new Response(JSON.stringify({ stats: stats.get(), app }), {
     status: 200,
     statusText: 'OK',
     headers: {

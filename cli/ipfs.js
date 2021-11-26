@@ -161,6 +161,8 @@ export async function add ({
   if (clean) {
     try {
       await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
+    } catch (_) {}
+    try {
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
       await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
     } catch (err) {
