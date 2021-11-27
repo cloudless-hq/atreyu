@@ -192,7 +192,10 @@ export async function add ({
 
   const mapRes = await doAdd(input + '/ipfs-map.json')
 
-  await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'})
+  try {
+    await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'})
+  } catch (_) {}
+
   await ipfs(`files cp /ipfs/${mapRes} /apps/${pinName}/ipfs-map.json`)
 
   // const appFolders= await (await fetch(ipfsApi + `/api/v0/files/ls?arg=/apps/&long=true`, {method: 'POST'})).json()

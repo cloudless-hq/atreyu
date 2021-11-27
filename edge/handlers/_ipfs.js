@@ -38,12 +38,17 @@ export async function handler ({ req, app }) {
     ) {
       disableCache = true
     }
-
     if (!ipfsMaps[app.Hash]) {
       const ipfsMapPath = '/ipfs/' + app.Hash + '/ipfs-map.json'
       ipfsMaps[app.Hash] = await kvs.get(ipfsMapPath, {type: 'json'})
+
       if (!ipfsMaps[app.Hash]) {
-        ipfsMaps[app.Hash] = await (await fetch(ipfsGateway + ipfsMapPath, {headers: { 'user-agent': 'atreyu edge worker' } })).json()
+        try {
+          ipfsMaps[app.Hash] = await (await fetch(ipfsGateway + ipfsMapPath, {headers: { 'user-agent': 'atreyu edge worker' } })).json()
+        } catch (e) {
+          console.log(e)
+        }
+
         if (ipfsMaps[app.Hash]) {
           wait(kvs.put(ipfsMapPath, JSON.stringify(ipfsMaps[app.Hash])))
         }
@@ -53,13 +58,13 @@ export async function handler ({ req, app }) {
 
     const existingHash = req.headers['if-none-match']?.replaceAll('"', '').replace('W/', '')
 
-    if (!ipfsMap[req.url.pathname]) {
+    if (!ipfsMap[req.url.pathname] && !req.url.pathname.endsWith('/ipfs-map.json')) {
       return (new Response(null, { status: 404, statusText: 'Not Found'}))
     }
 
     if (ipfsMap[req.url.pathname] === existingHash) {
       return (new Response(null, { status: 304, statusText: 'Not Modified' }))
-    } else {
+    } else if (!req.url.pathname.endsWith('/ipfs-map.json')) {
       reqHash = ipfsMap[req.url.pathname]
     }
 
