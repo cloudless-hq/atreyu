@@ -62,10 +62,12 @@ export async function handler ({ req, app }) {
       return (new Response(null, { status: 404, statusText: 'Not Found'}))
     }
 
-    if (ipfsMap[req.url.pathname] === existingHash) {
-      return (new Response(null, { status: 304, statusText: 'Not Modified' }))
-    } else if (!req.url.pathname.endsWith('/ipfs-map.json')) {
-      reqHash = ipfsMap[req.url.pathname]
+    if (!req.url.pathname.endsWith('/ipfs-map.json')) {
+      if (ipfsMap[req.url.pathname] === existingHash) {
+        return (new Response(null, { status: 304, statusText: 'Not Modified' }))
+      } else {
+        reqHash = ipfsMap[req.url.pathname]
+      }
     }
 
     revalidate = true
