@@ -18,8 +18,10 @@ class ServiceWorkerSource {
         setTimeout(() => {
           Object.values(this._inflight).forEach(stale => stale('service worker restarted while waiting...'))
         }, 800)
-      } else {
+      } else if (typeof this._inflight[id] === 'function') {
         this._inflight[id](error, value, done)
+      } else {
+        console.log(e.data)
       }
     }
 

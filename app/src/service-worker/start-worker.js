@@ -113,14 +113,41 @@ export default function ({
     falcorServer
   }
 
+  let knownClients = []
   clients.matchAll().then(res => {
+    knownClients = res
+    // send clients hello message on startup to know pending requests need to be restarted
     res.forEach(client => client.postMessage(JSON.stringify({ hello: 'joe' })))
   })
 
+  const pending = {}
+  function purgeClients () {
+    clients.matchAll().then(res => {
+      knownClients.forEach(client => {
+        if (!res.find(el => el.id === client.id)) {
+          console.log(client.id, 'disappeared')
+          if (pending[client.id]) {
+            Object.entries(pending[client.id]).forEach(([reqId, exec]) => {
+              exec?.unsubscribe()
+              exec?.dispose()
+              delete pending[client.id][reqId]
+            })
+
+            delete pending[client.id]
+          }
+        }
+      })
+
+      knownClients = res
+    })
+  }
+  setInterval(purgeClients, 2500)
   addEventListener('message', async e => {
     const data = JSON.parse(e.data)
-    // const clientId = e.source.id
-    // const clientIds = (await clients.matchAll()).map(client => client.id)
+    const clientId = e.source.id
+    if (!pending[clientId]) {
+      pending[clientId] = {}
+    }
 
     const reqId = data[0]
 
@@ -143,10 +170,12 @@ export default function ({
         },
         async _done => {
           await e.source.postMessage(JSON.stringify({ id: reqId, done: true }))
-          exec.unsubscribe()
-          exec.dispose()
+          exec?.unsubscribe()
+          exec?.dispose()
+          delete pending[clientId][reqId]
         }
       )
+    pending[clientId][reqId] = exec
   })
 
   addEventListener('install', () => {

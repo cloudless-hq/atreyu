@@ -90,9 +90,15 @@ export async function handler ({ req, app }) {
   }
 
   let headers
+  let contentType
+  if (req.url.pathname.endsWith('.js')) {
+    contentType = 'application/javascript'
+  } else if (req.url.pathname.endsWith('.json')) {
+    contentType = 'application/json'
+  }
   if (disableCache) {
     headers = new Headers({
-      'content-type': response.headers.get('content-type'),
+      'content-type': contentType || response.headers.get('content-type'),
       'content-length': response.headers.get('content-length'),
       'etag': `"${reqHash}"`,
       'cache-control': 'public, must-revalidate, max-age=0',
@@ -103,7 +109,7 @@ export async function handler ({ req, app }) {
     })
   } else if (revalidate) {
     headers = new Headers({
-      'content-type': response.headers.get('content-type'),
+      'content-type': contentType || response.headers.get('content-type'),
       'content-length': response.headers.get('content-length'),
       'etag': `"${reqHash}"`,
       'cache-control': 'public, must-revalidate, max-age=' + (env === 'prod' ? 3 * 60 * 60 : 4), // prod 3h, other 4s
@@ -115,7 +121,7 @@ export async function handler ({ req, app }) {
   } else {
     headers = new Headers({
       'etag': `"${reqHash}"`,
-      'content-type': response.headers.get('content-type'),
+      'content-type': contentType || response.headers.get('content-type'),
       'cache-control': 'public, max-age=29030400, immutable, private=Set-Cookie',
       'content-length': response.headers.get('content-length'),
       'last-modified': response.headers.get('last-modified'),

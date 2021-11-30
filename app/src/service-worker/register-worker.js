@@ -1,9 +1,4 @@
 export default async function registerWorker (workerPath, loaded) {
-  // if (navigator.serviceWorker.controller && navigator.serviceWorker.controller.state === 'activated') {
-  //   // todo: unify with getRegistrations logic
-  //   return loaded()
-  // }
-
   const regs = await navigator.serviceWorker.getRegistrations()
 
   if (regs.length !== 1) {
@@ -13,7 +8,10 @@ export default async function registerWorker (workerPath, loaded) {
   if (navigator.serviceWorker.controller && navigator.serviceWorker.controller.state) {
     if (!navigator.serviceWorker.controller.state === 'activated') {
       console.warn('worker is ' + navigator.serviceWorker.controller.state)
-      // return
+    } else {
+      // todo: unify with getRegistrations logic
+      // move to top?
+      // return loaded() ?
     }
   }
 
@@ -30,6 +28,8 @@ export default async function registerWorker (workerPath, loaded) {
         await navigator.serviceWorker.ready
         console.log('ServiceWorker ready')
         loaded(reg)
+      } else {
+        console.log(e.data)
       }
     }, { once: true })
 
