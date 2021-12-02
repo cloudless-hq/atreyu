@@ -8,7 +8,7 @@ import Pouchdb from '../../build/deps/pouchdb.js'
 // PouchDB.plugin(debugPlugin)
 // PouchDB.debug.enable('*')
 
-export default function ({
+export default async function ({
   dbName,
   designDocs
 }) {
@@ -20,12 +20,17 @@ export default function ({
   const pouch = new Pouchdb(dbName)
 
   if (designDocs && designDocs.length > 0) {
-    pouch.bulkDocs(designDocs)
-      .catch(err => {
-        if (err.name !== 'conflict') {
-          console.log(err)
-        }
-      })
+    try {
+      await pouch.bulkDocs(designDocs)
+    } catch (err) {
+      // TODO: overwrite or merge updates?
+      // if (err.name !== 'conflict') {
+      console.log(err)
+      // }
+    }
+
+    // .catch(err => {
+    // })
     // .finally(() => {
     //   startSync()
     // })

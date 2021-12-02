@@ -20,22 +20,12 @@ export default {
     }
   },
 
-  '_session.logout': {
-    call: {
-      handler: async () => {
-        await self.session.logout()
-        return []
-      }
-    }
-  },
   '_session[{keys:keys}]': {
     get: {
-      handler: async ({ _keys }) => {
-        const _session = await self.session.refresh()
-
+      handler: ({ _keys }) => {
         return {
           jsonGraph: {
-            _session
+            _session: self.session.value
           }
         }
       }
@@ -78,7 +68,6 @@ export default {
     get: {
       handler: async ({ dbs }) => {
         const pouchRes = await userDb(dbs).info()
-        console.log(pouchRes.update_seq)
         return { path: ['_changes', 'length'], value: pouchRes.update_seq }
       }
     }
@@ -86,7 +75,7 @@ export default {
   '_changes': {
     get: {
       handler: async ({ ids, _keys, dbs }) => {
-        const pouchRes = await userDb(dbs).allDocs({
+        const _pouchRes = await userDb(dbs).allDocs({
           include_docs: true,
           conflicts: true,
           keys: ids
@@ -98,7 +87,7 @@ export default {
     call: {
       handler: async ({ dbs, _userId, _Observable }, [ docs ]) => {
         const result = await userDb(dbs).bulkDocs(docs.map(doc => {
-          doc.changes = [{ userId: session.value.userId, action: 'created',  date: Date.now() }]
+          doc.changes = [{ userId: session.value.userId, action: 'created', date: Date.now() }]
           return doc
         }))
 
@@ -187,11 +176,11 @@ export default {
             value.changes = []
           }
           if (value.deleted) {
-            value.changes.push({ userId: session.value.userId, action: 'deleted',  date: Date.now() })
+            value.changes.push({ userId: session.value.userId, action: 'deleted', date: Date.now() })
           } else if (!value._rev) {
-            value.changes.push({ userId: session.value.userId, action: 'created',  date: Date.now() })
+            value.changes.push({ userId: session.value.userId, action: 'created', date: Date.now() })
           } else {
-            value.changes.push({ userId: session.value.userId, action: 'updated',  date: Date.now() })
+            value.changes.push({ userId: session.value.userId, action: 'updated', date: Date.now() })
           }
 
           return value
@@ -206,7 +195,7 @@ export default {
           }
         })
 
-        return  {
+        return {
           jsonGraph: {
             _docs
           }

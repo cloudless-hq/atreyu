@@ -1,6 +1,5 @@
 <script>
 	import data from '/atreyu/src/store/data.js'
-
   export let env = 'prod'
 
   // let versionTooltip = ''
@@ -31,18 +30,9 @@
 
   $: {
     if (!$data._session.userId$?._loading) {
-      if (!$data._session.userId$) {
-        let cont = ''
-
-        if (location.pathname.length > 1 || location.hash) {
-          cont = `&continue=${encodeURIComponent(location.pathname + location.hash)}`
-        }
-
-        location.href = `/_couch/_session?login${cont}`
-      } else {
+      if ($data._session.userId$) {
         // the reactive check to ask for updates and reload while the page is open
         settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
-
         const settingsDoc = $data._docs[settingsDocId + '$']
 
         if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {

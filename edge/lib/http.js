@@ -1,3 +1,23 @@
+// const msg = new TextEncoder().encode("data: hello\r\n")
+//   let timerId: number | undefined
+//   const body = new ReadableStream({
+//     start(controller) {
+//       timerId = setInterval(() => {
+//         controller.enqueue(msg)
+//       }, 1000)
+//     },
+//     cancel() {
+//       if (typeof timerId === "number") {
+//         clearInterval(timerId)
+//       }
+//     },
+//   });
+//   return new Response(body, {
+//     headers: {
+//       "Content-Type": "text/event-stream"
+//     }
+//   })
+
 export async function fetchStream (url, reqConf) {
   const response = await fetch(url, reqConf)
   if (!response.ok) {
@@ -23,7 +43,7 @@ export async function fetchStream (url, reqConf) {
 
       if (done) {
         if (!readable.locked) {
-         await readable.cancel()
+          await readable.cancel()
         }
 
         await reader.cancel()

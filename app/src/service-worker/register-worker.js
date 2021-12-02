@@ -26,7 +26,7 @@ export default async function registerWorker (workerPath, loaded) {
     navigator.serviceWorker.addEventListener('message', async e => {
       if (e.data === '{"worker":"active"}') {
         await navigator.serviceWorker.ready
-        console.log('ServiceWorker ready')
+        console.log('ServiceWorker ready after activate')
         loaded(reg)
       } else {
         console.log(e.data)
@@ -36,7 +36,7 @@ export default async function registerWorker (workerPath, loaded) {
     // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
   } else {
     await navigator.serviceWorker.ready
-    console.log('ServiceWorker ready')
+    console.log('ServiceWorker ready, allready installed')
     loaded(regs[0])
   }
 }

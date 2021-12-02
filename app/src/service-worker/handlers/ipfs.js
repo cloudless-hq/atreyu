@@ -5,10 +5,10 @@ let inFlight
 let cache = caches.open('ipfs').then(openedCache => cache = openedCache)
 
 // TODO: make all offline avail. after finished initial page, cleanup unused ipfs hashes
-export default async function ({ url, origUrl, event, ipfsGateway}) {
+export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
   let contentTypeOverride = null
   const path = url.pathname
-  let loggedOut = false
+  // let loggedOut = false
   // const pathParts = path.split('/')
   // const fileName = pathParts[pathParts.length - 1]
 
@@ -45,13 +45,13 @@ export default async function ({ url, origUrl, event, ipfsGateway}) {
           console.log('map get error: ', e)
         }
 
-        if (ipfsMapResponse?.redirected) {
-          ipfsMapResponse = null
-          loggedOut = true
-          return
-        }
+        // if (ipfsMapResponse?.redirected) {
+        //   ipfsMapResponse = null
+        //   loggedOut = true
+        //   return
+        // }
 
-        if (ipfsMapResponse?.ok && !loggedOut) {
+        if (ipfsMapResponse?.ok) { // && !loggedOut
           cache.put(manifestName, ipfsMapResponse.clone())
         } else {
           ipfsMapResponse = await cache.match(manifestName)
@@ -69,9 +69,9 @@ export default async function ({ url, origUrl, event, ipfsGateway}) {
     }
   }
 
-  if (loggedOut) {
-    return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
-  }
+  // if (loggedOut) {
+  //   return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
+  // }
 
   const hash = ipfsMap[path]
 
@@ -101,9 +101,9 @@ export default async function ({ url, origUrl, event, ipfsGateway}) {
       headers: {'via': 'atreyu serviceworker'}
     })
 
-    if (response?.redirected) {
-      return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
-    }
+    // if (response?.redirected) {
+    //   return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
+    // }
 
     // FIXME: this is necessary until ipfs gateway get capable of custom content type hanling, they currently think 'xxx.svelte.js' is a text file, but js file type is necessray for js modules...
 
