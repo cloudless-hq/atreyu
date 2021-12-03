@@ -102,7 +102,7 @@ export default function ({
             if (url.pathname.length > 1 || url.hash || url.search > 0) {
               cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
             }
-            client.navigate(`/_couch/_session?logout${cont}`)
+            client.navigate(`/_couch/_session?login${cont}`)
           }
         })
       }

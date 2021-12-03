@@ -19,7 +19,7 @@
     "no-multi-spaces": "error",
     "no-tabs": "error",
     "curly": "error",
-    "no-restricted-imports": ["error", {
+    "no-restricted-imports": ["warn", {
       "patterns": ["../..*"]
     }],
     "space-infix-ops": "error",
