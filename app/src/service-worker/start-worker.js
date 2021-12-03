@@ -81,9 +81,11 @@ export default function ({
 
         if (newSession.userId && !self.session.loaded) {
           redirectOtherClients = 'continue'
-        } else {
-          redirectOtherClients = 'logout'
         }
+      }
+
+      if (!newSession.userId ) {
+        redirectOtherClients = 'logout'
       }
 
       self.session.value = newSession
@@ -102,7 +104,9 @@ export default function ({
             if (url.pathname.length > 1 || url.hash || url.search > 0) {
               cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
             }
-            client.navigate(`/_couch/_session?login${cont}`)
+            if (!url.pathname.startsWith('/atreyu/accounts')) {
+              client.navigate(`/_couch/_session?login${cont}`)
+            }
           }
         })
       }
