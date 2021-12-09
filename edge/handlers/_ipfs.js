@@ -11,6 +11,9 @@ let ipfsMaps = {}
 const kvs = getKvStore('ipfs')
 
 export async function handler ({ req, app }) {
+  // TODO: header Server-Timing: miss, db;dur=53, app;dur=47.2
+  // Cache-Status: CacheName; param; param=value; param..., CacheName2; param; param...
+  // https://httptoolkit.tech/blog/status-targeted-caching-headers/
   let url = ''
   let ipfsPath
   let revalidate = false
@@ -82,7 +85,8 @@ export async function handler ({ req, app }) {
       headers: {
         'content-type': 'application/json',
         'content-length': bodyText.length,
-        'x-edge-cache-status': 'HIT'
+        // 'x-edge-cache-status': 'HIT'
+        'cache-status': 'ipfs-edge; hit'
       }
     })
   } else {
@@ -105,7 +109,8 @@ export async function handler ({ req, app }) {
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
       // 'x-env': env,
-      'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
     })
   } else if (revalidate) {
     headers = new Headers({
@@ -116,7 +121,8 @@ export async function handler ({ req, app }) {
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
       // 'x-env': env,
-      'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
     })
   } else {
     headers = new Headers({
@@ -128,7 +134,8 @@ export async function handler ({ req, app }) {
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
       // 'x-env': env,
-      'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
+      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
     })
   }
 

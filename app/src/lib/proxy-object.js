@@ -40,7 +40,10 @@ function clean (name, endRegex) {
     cleanKey = name
   }
 
-  cleanKey = !isNaN(Number(cleanKey)) ? Number(cleanKey) : cleanKey
+  if (cleanKey !== '') { // THANK you js for wasting half my day. apparently Number('') is 0
+    const maybeNumber = Number(cleanKey)
+    cleanKey = !isNaN(maybeNumber) ? maybeNumber : cleanKey
+  }
 
   return { isPathEnd, cleanKey, delim }
 }

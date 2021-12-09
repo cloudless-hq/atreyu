@@ -9,11 +9,11 @@ const obsConf = {
 
 const loadedKeys = new Set()
 
-export default function (node, { key, frames = 2, contentSelector, selector }) {
+export default function (node, { key, frames = 2, _contentSelector, _selector }) {
   // TODO: selector and await loading support
   // console.log('hide')
 
-  const mutationObserver = new MutationObserver(mutations => {
+  const mutationObserver = new MutationObserver(_mutations => {
     // mutations.forEach(_mut => filter only specific selectors here )
     // console.log('mutation', mutations)
     stableFrames = 0
@@ -61,8 +61,8 @@ export default function (node, { key, frames = 2, contentSelector, selector }) {
 
     destroy () {
       if (scheduler) {
-          cancelAnimationFrame(scheduler)
-          scheduler = null
+        cancelAnimationFrame(scheduler)
+        scheduler = null
       }
       mutationObserver.disconnect()
     }

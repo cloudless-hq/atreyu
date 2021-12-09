@@ -8,7 +8,7 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
 
   const kvs = getKvStore(ns)
 
-  let response = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer' })  // todo: streams are faster for non binaries
+  let response = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer' }) // todo: streams are faster for non binaries
 
   if (response?.value) {
     response = new Response(response.value, response.metadata)
@@ -17,18 +17,18 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
 
     if (response.status === 200) {
       const resHeaders = Object.fromEntries(response.headers.entries())
-      resHeaders['x-edge-cache-status'] = 'HIT'
+      resHeaders['cache-status'] = 'edge; hit'
 
       wait(
-          (async () => {
-            await kvs.put(cacheKey, await response.clone().arrayBuffer(), {
-              metadata: {
-                status: response.status,
-                statusText: response.statusText,
-                headers: resHeaders
-              }
-            })
-          })()
+        (async () => {
+          await kvs.put(cacheKey, await response.clone().arrayBuffer(), {
+            metadata: {
+              status: response.status,
+              statusText: response.statusText,
+              headers: resHeaders
+            }
+          })
+        })()
       )
     }
   }

@@ -28,7 +28,14 @@ export default handler => {
           wait
         })
           .then(response => {
-            wait(log({ req, response, stats, body, duration: (Date.now() - fetchStart) }), event)
+            const duration = (Date.now() - fetchStart)
+            wait(log({ req, response, stats, body, duration }), event)
+            try {
+              // FIXME: cloudant requests have immutable headers?
+              response.headers.set('server-timing', 'edge;dur=' + duration)
+            } catch (_e) {
+              // console.log('header immutable', response, req.url.href)
+            }
             return response
           })
       } catch (ex) {

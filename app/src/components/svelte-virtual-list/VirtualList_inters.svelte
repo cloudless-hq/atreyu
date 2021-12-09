@@ -38,7 +38,7 @@
 		const nextVisible = []
 		for (let i = start; i < Math.min(end, items.length); i++) {
 			const item = items[i]
-			nextVisible.push({ index: i + start, data: item, key: item._id$._loading ? (i + start) + '_' + Math.floor(Math.random() * 1000000000) : item._id$ })
+			nextVisible.push({ index: i + start, data: item, key: item._id$loading ? (i + start) + '_' + Math.floor(Math.random() * 1000000000) : item._id$ })
 		}
 		visible = nextVisible
 	}

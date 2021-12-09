@@ -229,7 +229,8 @@ export default async function ({
           )
         }
         comp.js.code = comp.js.code
-          .replaceAll(/[",']svelte\/transition[",']/ig, `'/atreyu/src/deps/svelte-transition.js'`)
+          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/atreyu/src/deps/svelte-animate.js'`)
+          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/atreyu/src/deps/svelte-transition.js'`)
           .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)
           .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/atreyu/src/deps/svelte-store.js'`)
           .replaceAll(/[",']\/?svelte[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)

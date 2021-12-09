@@ -30,6 +30,7 @@ export function handler ({ _event, req, stats, _app, body }) {
   if (!req.url.pathname.includes('/_changes')) {
     return fetch(href, {
       method: req.method,
+      redirect: 'error',
       body, // req.raw?.body, // (req.method === 'PUT' || req.method === 'POST') ?
       headers: {
         ...req.headers,
@@ -39,6 +40,7 @@ export function handler ({ _event, req, stats, _app, body }) {
   } else {
     return fetch(href, {
       method: req.method,
+      redirect: 'error',
       headers: {
         ...req.headers,
         'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
@@ -54,7 +56,6 @@ export function handler ({ _event, req, stats, _app, body }) {
     // return new Response(readable, response)
   }
 }
-
 
 // TODO: support cloudflare jwt decoding and cloudflare access features
 // import { decode } from '../../lib/jwt'

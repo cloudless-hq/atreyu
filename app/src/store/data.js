@@ -5,6 +5,8 @@ import ServiceWorkerSource from './service-worker-source.js'
 
 let _undefined = Symbol('undefined')
 
+/* eslint-disable functional/no-this-expression, functional/no-class */
+// Implemented like this for compatibilty with practices in falcor
 class frameScheduler {
   schedule (action) {
     let id = requestAnimationFrame(action)
@@ -31,6 +33,7 @@ class frameScheduler {
     }
   }
 }
+/* eslint-enable functional/no-this-expression, functional/no-class */
 
 
 function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess }) {
@@ -98,7 +101,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       return y
     }
   })
-    .batch((new frameScheduler()))  // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
+    .batch((new frameScheduler())) // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
     .treatErrorsAsValues()
   // TODO: make batch configurable for debugging
   //  errorSelector: function(error) {
@@ -116,6 +119,20 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   let ticker = null
   const deps = {}
 
+  const delims = [
+    '$', '$value', // $ is shorthand for $value
+    '$not', // shorthand to be able to do if (x.a$not) instead of if (!x.a$ && !x.a$loading)
+    '$loading',
+    '$promise',
+
+    // TODO:
+    // FIXME: Also expose these as store init functions and allow importing a deep store instead of always the data root!
+    // this allows skipping rerender without fixing the diff checking of svelte
+    '$$', // dereference
+    '$$unbox', // deref and unbox
+    '$$unbatch', // etc. // deref and unbatch
+
+    '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type' ]
   const makeAyuProxy = id => makeProxy({
     id,
     from: () => {},
@@ -134,7 +151,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
 
       let boxKey = ''
 
-      if (delim && delim !== '$' && delim !== '$value') {
+      if (delim && !delims.includes(delim)) {
         boxKey = delim
       }
 
@@ -146,8 +163,6 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
 
       deps[id].add(pathString)
-
-      // move all system keys to proxy?
 
       let adjustedModel
       if (boxKey !== '') {
@@ -185,7 +200,6 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         // prom that returns from our model cache, gets load off falcor internals
 
         lastUpdt.set(pathString, latestTick)
-        // console.log('getting 1', path, pathString)
         prom = adjustedModel.getValue(path)
           .then(val => {
             if (typeof val === 'undefined') {
@@ -193,34 +207,59 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
             } else {
               cacheMap.set(pathString, val)
             }
-            // prom._loading = false
+            // loading = false
             return val
           })
           .catch(err => {
-            // prom._loading = false
+            // loading = false
             return new Promise((_resolve, reject) => reject({
               message: 'failed falcor get',
               path,
               err
             }))
           })
-        // new Promise((resolve, reject) => { })
-        prom._loading = true // todo unify with $loading?
-        prom.toString = () => '' // to render empty stings as placeholders
+        // loading = true
+        // prom.toString = () => ''
         cacheMap.set(pathString, prom)
       }
 
-      // undefined means we dont know the value, _undefined means we know the value is undefined
-      // console.log('about to return', pathString, cacheVal)
+      let loading = true
+      let isPendingPromise = false
+      let value
+
+      // undefined means we don't know the value, _undefined means we know the value is undefined
       if (typeof cacheVal !== 'undefined') {
         if (cacheVal === _undefined) {
-          return undefined
+          loading = false
+          value = undefined
         } else {
-          return cacheVal
+          value = cacheVal
+          if (typeof value.then === 'function') {
+            isPendingPromise = true
+          } else {
+            loading = false
+          }
         }
       }
 
-      return prom
+      if (delim === '$promise') {
+        if (prom) {
+          // console.log(1, prom)
+          return prom
+        } else if (isPendingPromise) {
+          // console.log(2, value)
+          return value
+        } else {
+          // console.log(3, value)
+          return Promise.resolve(value)
+        }
+      } else if (delim === '$loading') {
+        return loading
+      } else if (delim === '$not') {
+        return loading ? { toString: () => {''} } : !value
+      } else {
+        return loading ? '' : value
+      }
     },
 
     set: (path, newValue, _delim, _id) => {
@@ -233,7 +272,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     call: (path, args, _delim, _id) => {
       return model.call(path, args)
     },
-    delims: ['$', '$value', '$error', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type', '$loading']
+    delims
   })
 
   const runQueue = new Set()

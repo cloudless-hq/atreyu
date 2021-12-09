@@ -5,7 +5,7 @@ import { getUserData } from './helpers'
 
 const dbHost = 'https://couch.cloudless.one'
 
-export default async function ({ req, event, stats, finish }) {
+export default function ({ req, _event, stats, finish }) {
   const { email, userId, superU, org } = getUserData(req)
 
   if (req.url.pathname.startsWith('/api/user_' + userId)) {

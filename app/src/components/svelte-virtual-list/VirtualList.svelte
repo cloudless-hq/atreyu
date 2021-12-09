@@ -49,7 +49,7 @@
   // const keys = {}
 
   $: visible = items.slice(start, end).map((data, i) => {
-    const loading = data._id$._loading
+    const loading = data._id$loading
     const globalIndex = i + start
     let id = ''
 

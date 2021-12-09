@@ -20,7 +20,7 @@ export default async function ({ req, event }) {
         'Content-Length': response.headers.get('Content-Length'),
         'date': response.headers.get('date'),
         'last-modified': response.headers.get('last-modified'),
-        'worker-cache-status': 'HIT'
+        'cache-status': 'edge; hit'
       })
 
       const init = {

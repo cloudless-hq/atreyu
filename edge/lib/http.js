@@ -29,7 +29,7 @@ export async function fetchStream (url, reqConf) {
   const writer = writable.getWriter()
 
   const encoder = new TextEncoder()
-  const decoder = new TextDecoder()
+  // const decoder = new TextDecoder()
 
   async function write (data) {
     await writer.write(encoder.encode(data))

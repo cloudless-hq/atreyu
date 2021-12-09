@@ -3,8 +3,8 @@ const devCache= {}
 const devKV = {
   // TODO: NOT implemented yet clone array buffer etc. for later use devCache[key] = { value, metadata }
   put: async (key, value, metadata = {}) => {},
-  get: async (key) => devCache[key] ? devCache[key].value : null,
-  getWithMetadata: async (key) => devCache[key] ? devCache[key] : { value: null, metadata: null }
+  get: (key) => devCache[key] ? devCache[key].value : null,
+  getWithMetadata: (key) => devCache[key] ? devCache[key] : { value: null, metadata: null }
 }
 
 export function getKvStore (name) {

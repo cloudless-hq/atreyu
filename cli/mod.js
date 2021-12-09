@@ -13,9 +13,9 @@ import {
 
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
-import buildSvelte from './build-svelte.ts'
-import buildServiceWorker from './build-service-worker.js'
-import { buildEdge, buildWorkerConfig } from './build-edge.ts'
+import buildSvelte from './svelte.ts'
+import buildServiceWorker from './service-worker.js'
+import { buildEdge, buildWorkerConfig } from './edge.ts'
 import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
@@ -27,7 +27,7 @@ import { globToRegExp } from '../deps-deno.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
-export const version = '0.5.4'
+export const version = '0.5.6'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -152,7 +152,7 @@ function startDaemon ({ publish }) {
 
         if (data.startsWith('Initializing daemon...')) {
           const [_, ipfs, repo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
-          console.log('  ' + Object.entries({ ipfs, repo, ateryu: version }).map(en => en.join(': ')).join(', '))
+          console.log('  ' + Object.entries({ ipfs, repo, atreyu: version }).map(en => en.join(': ')).join(', '))
         }
         if (data.includes('Daemon is ready')) {
           console.log('  ✅ Started ipfs daemon')

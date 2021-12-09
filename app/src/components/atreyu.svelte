@@ -29,13 +29,13 @@
   }
 
   $: {
-    if (!$data._session.userId$?._loading) {
+    if ($data._session.userId$) {
       if ($data._session.userId$) {
         // the reactive check to ask for updates and reload while the page is open
         settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
         const settingsDoc = $data._docs[settingsDocId + '$']
 
-        if (settingsDoc && !settingsDoc?._loading && !$data._hash$?._loading) {
+        if (settingsDoc && !$data._hash$loading) {
           latestHash = settingsDoc.folderHash
           installedHash = $data._hash$
         }
@@ -65,15 +65,15 @@
 
   // the initial update check to auto install updates on fresh load and preload the required data
   async function init () {
-    const userId = await $data._session.userId$
+    const userId = await $data._session.userId$promise
     if (userId) {
       doSync()
 
       settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
       const [settingsDoc, installedHash] = await Promise.all([
-        $data._docs[settingsDocId + '$'],
-        $data._hash$
+        $data._docs[settingsDocId + '$promise'],
+        $data._hash$promise
       ])
 
       if (settingsDoc?.folderHash) {
@@ -190,7 +190,7 @@
 {/if}
 
 {#if updated && !_silent}
-  {#await $data._docs[settingsDocId].buildColor$ then buildColor}
+  {#await $data._docs[settingsDocId].buildColor$promise then buildColor}
     <div bind:this={updatedNotification} aria-live="assertive" class="ayu-update-notification">
       <div class="wrapper1">
         <div class="wrapper2">

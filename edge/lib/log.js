@@ -1,4 +1,5 @@
 import { getEnv } from './env.js'
+// eslint-disable-next-line
 import { urlLogger } from '../../app/src/lib/url-logger.js'
 // TODO: sentry support for exceptions https://github.com/bustle/cf-sentry/blob/master/sentry.js
 let env

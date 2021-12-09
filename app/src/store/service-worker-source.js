@@ -1,5 +1,6 @@
 import { Observable } from '/atreyu/src/deps/falcor.js'
 
+/* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {
   constructor ({ wake }) {
     this._inflight = {}
@@ -72,5 +73,6 @@ class ServiceWorkerSource {
     })
   }
 }
+/* eslint-enable functional/no-this-expression, functional/no-class */
 
 export default ServiceWorkerSource
