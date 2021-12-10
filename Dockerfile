@@ -37,8 +37,8 @@ RUN npm install -g yarn
 # RUN unzip v${AYU_VERSION}.zip
 # RUN rm -f v${AYU_VERSION}.zip
 # RUN mv atreyu-${AYU_VERSION} atreyu
-RUN pwd
-RUN ls .
+# RUN pwd
+# RUN ls .
 COPY . atreyu/
 
 RUN mkdir -p /root/.cache/esbuild /root/.cache/deno

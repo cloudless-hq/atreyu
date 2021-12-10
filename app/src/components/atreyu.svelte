@@ -30,21 +30,19 @@
 
   $: {
     if ($data._session.userId$) {
-      if ($data._session.userId$) {
-        // the reactive check to ask for updates and reload while the page is open
-        settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
-        const settingsDoc = $data._docs[settingsDocId + '$']
+      // the reactive check to ask for updates and reload while the page is open
+      settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
+      const settingsDoc = $data._docs[settingsDocId + '$']
 
-        if (settingsDoc && !$data._hash$loading) {
-          latestHash = settingsDoc.folderHash
-          installedHash = $data._hash$
-        }
-        if (latestHash && installedHash && latestHash !== installedHash) {
-          newHash = latestHash
+      if (settingsDoc && !$data._hash$loading) {
+        latestHash = settingsDoc.folderHash
+        installedHash = $data._hash$
+      }
+      if (latestHash && installedHash && latestHash !== installedHash) {
+        newHash = latestHash
 
-          if (_updateImmediate && !updating) {
-            doUpdate({ auto: true })
-          }
+        if (_updateImmediate && !updating) {
+          doUpdate({ auto: true })
         }
       }
     }
@@ -190,7 +188,7 @@
 {/if}
 
 {#if updated && !_silent}
-  {#await $data._docs[settingsDocId].buildColor$promise then buildColor}
+  {#if $data._docs[settingsDocId].buildColor$}
     <div bind:this={updatedNotification} aria-live="assertive" class="ayu-update-notification">
       <div class="wrapper1">
         <div class="wrapper2">
@@ -209,9 +207,9 @@
                 </p>
 
                 <p class="subtitle">
-                {#if !newHash && buildColor}
+                {#if !newHash && $data._docs[settingsDocId].buildColor$}
                   <br>
-                  Build: <span class="build-badge" style="background-color: rgb({buildColor.r},{buildColor.g},{buildColor.b});">
+                  Build: <span class="build-badge" style="background-color: rgb({$data._docs[settingsDocId].buildColor$.r},{$data._docs[settingsDocId].buildColor$.g},{$data._docs[settingsDocId].buildColor$.b});">
                     {$data._docs[settingsDocId].buildName$}
                   </span><br>
 
@@ -235,5 +233,5 @@
         </div>
       </div>
     </div>
-  {/await}
+  {/if}
 {/if}

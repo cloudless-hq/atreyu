@@ -25,7 +25,7 @@ export const _sync = ({ dbs, Observable }, [ since ]) => {
         // console.log('falcor handler', change) // todo: debug realms with client side flags
 
         // TODO: generic and better invalidation strategy
-        subscriber.onNext({ path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
+        // subscriber.onNext({ path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
         subscriber.onNext({ path: ['_seq'], value: { $type: 'atom', value: change.seq } })
         subscriber.onNext({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } })
         schedule(() => {
