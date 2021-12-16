@@ -1,4 +1,5 @@
 export {
   writable,
-  readable
+  readable,
+  get
 } from 'svelte/store'

@@ -24,7 +24,7 @@ export async function watch ({ watchPath, ignore, handler }: {watchPath: string,
         rerun = false
         const qBatch = [...queued]
         queued.clear()
-        await handler({batch: qBatch})
+        await handler({ batch: qBatch })
       }
       locked = false
     }, 500)

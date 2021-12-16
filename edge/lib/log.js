@@ -2,11 +2,11 @@ import { getEnv } from './env.js'
 // eslint-disable-next-line
 import { urlLogger } from '../../app/src/lib/url-logger.js'
 // TODO: sentry support for exceptions https://github.com/bustle/cf-sentry/blob/master/sentry.js
-let env
+let envConf
 
 export default async function ({ req, body, response, stats, duration = null }) {
-  if (!env) {
-    env = getEnv(['_ELASTIC_AUTH', 'ELASTIC_URL'])
+  if (!envConf) {
+    envConf = getEnv(['_ELASTIC_AUTH', 'ELASTIC_URL', 'env'])
   }
 
   let res
@@ -35,16 +35,18 @@ export default async function ({ req, body, response, stats, duration = null }) 
     wokerName = headers['server']
   }
 
-  urlLogger({method: req.method, scope: wokerName || 'edge-worker', url: req.url.href, duration})
+  if (envConf.env === 'dev') {
+    urlLogger({method: req.method, scope: wokerName || 'edge-worker', url: req.url.href, duration})
+  }
 
-  if (!env.ELASTIC_URL) {
+  if (!envConf.ELASTIC_URL) {
     return
   }
 
-  return fetch(env.ELASTIC_URL, {
+  return fetch(envConf.ELASTIC_URL, {
     method: 'POST',
     headers: new Headers({
-      'Authorization': 'Basic ' + btoa(env._ELASTIC_AUTH),
+      'Authorization': 'Basic ' + btoa(envConf._ELASTIC_AUTH),
       'Content-Type': 'application/json'
     }),
     body: JSON.stringify({
@@ -65,7 +67,7 @@ export default async function ({ req, body, response, stats, duration = null }) 
   })
   // TODO: error logging for elastic logging errors
   // .then(ress => {
-  //   console.log(ress, env._ELASTIC_AUTH)
+  //   console.log(ress, envConf._ELASTIC_AUTH)
   //   return ress
   // })
   // .catch(err => {

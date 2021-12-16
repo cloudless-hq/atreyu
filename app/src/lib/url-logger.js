@@ -1,18 +1,22 @@
-export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsConf, body, duration, res }) {
-  let badgeColor = 'grey'
+export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsConf, body, duration, res, richConsole = true }) {
+  let badgeColor = ''
 
-  if (cached) {
-    badgeColor = '#099009'
-  } else if (cached === false) {
-    badgeColor = 'orange'
-  }
+  if (richConsole) {
+    badgeColor = 'grey'
 
-  if (method === 'POST' || method === 'SET' ) {
-    badgeColor = 'rgb(170, 90, 217)'
-  } else if (method === 'PUT') {
-    badgeColor = 'rgb(174, 12, 226)'
-  } else if (method === 'CALL') {
-    badgeColor = 'rgb(236 124 248)'
+    if (cached) {
+      badgeColor = '#099009'
+    } else if (cached === false) {
+      badgeColor = 'orange'
+    }
+
+    if (method === 'POST' || method === 'SET' ) {
+      badgeColor = 'rgb(170, 90, 217)'
+    } else if (method === 'PUT') {
+      badgeColor = 'rgb(174, 12, 226)'
+    } else if (method === 'CALL') {
+      badgeColor = 'rgb(236 124 248)'
+    }
   }
 
   // TODO: move format url her : if (location) {
@@ -33,14 +37,19 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
 
   let edgeWorker = scope?.endsWith('edge-worker')
 
-  console.groupCollapsed(
-    `${(scope && edgeWorker) ? scope + ': ' : ''}%c${missing ? 'missing' : ''}%c${missing ? ' ' : ''}%c${method}%c %c ${displayUrl}`,
-    `background-color:red;border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px`,
-    'color:grey',
-    `background-color:${badgeColor};border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px`,
-    'color:grey',
-    'color:grey'
-  )
+  /* eslint-disable no-console */
+  if (richConsole) {
+    console.groupCollapsed(
+      `${(scope && edgeWorker) ? scope + ': ' : ''}%c${missing ? 'missing' : ''}%c${missing ? ' ' : ''}%c${method}%c %c ${displayUrl}`,
+      richConsole && missing ? `background-color:red;border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px` : '',
+      richConsole ? 'color:grey' : '',
+      richConsole ? `background-color:${badgeColor};border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px` : '',
+      richConsole ? 'color:grey' : '',
+      richConsole ? 'color:grey' : ''
+    )
+  } else {
+    console.log(`${(scope && edgeWorker) ? scope + ': ' : ''} ${missing ? 'missing' : ''} ${missing ? ' ' : ''} ${method}    ${displayUrl}`)
+  }
 
   if (!edgeWorker && scope) {
     console.info(scope)
@@ -67,5 +76,9 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
   if (body) {
     console.info(body)
   }
-  console.groupEnd()
+
+  if (richConsole) {
+    console.groupEnd()
+  }
+  /* eslint-enable no-console */
 }

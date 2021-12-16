@@ -100,10 +100,14 @@ export default async function ({
         // let forceGlobal
         try {
           const template = await Deno.readTextFile(file)
-          const filename = basename(subPath) === 'index.svelte' ? basename(join(subPath, '..')) : basename(subPath)
+
+          const parent = join(subPath, '..')
+          const grandParent = join(subPath, '..', '..')
+          const origFilename = basename(subPath)
+          const filename = origFilename === 'index.svelte' ? basename(grandParent) + '/' + basename(parent) : basename(parent) + '/' + origFilename
 
           const { code } = await preprocess(template, {
-            style: async ({ content, attributes, filename }) => {
+            style: async ({ content, attributes }) => { // { , filename }
               if (attributes.lang === 'postcss') {
                 // if (!attributes.global) {
                 //   console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
@@ -197,9 +201,9 @@ export default async function ({
             hydratable: false,
             format: 'esm',
             cssHash: ({ name }: {hash: string, css: string, name: string, filename: string}) => {
-              name = name.toLowerCase()
+              name = filename.toLowerCase().replace('.svelte', '').replace('/', '_')
               if (compNames[name]) {
-                console.warn('component name seems to be not unique which can lead to stylebleed: ' + name)
+                console.warn('  ⚠️ component name seems to be not unique which can lead to stylebleed: ' + name)
               } else {
                 compNames[name] = true
               }

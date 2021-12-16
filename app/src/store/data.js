@@ -40,7 +40,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   let changeHandler
   // let invalidationHandler
   if (typeof source === 'undefined') {
-    source = new ServiceWorkerSource({wake: 60_000})
+    source = new ServiceWorkerSource({ wake: 20_000 })
   }
   const model = falcor({
     source: source || undefined,
@@ -50,12 +50,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     // _useServerPaths: true,
     cache,
     scheduler: frameScheduler, // this is the internal scheduler, default to immediate
-    beforeInvalidate: paths => {
-      console.log('before invalidate', paths)
-      // if (invalidationHandler) {
-      //   invalidationHandler(paths)
-      // }
-    },
+    // beforeInvalidate: paths => {
+    //   console.log('before invalidate does not work', paths)
+    //   // if (invalidationHandler) {
+    //   //   invalidationHandler(paths)
+    //   // }
+    // },
     onChange: () => {
       if (changeHandler) {
         changeHandler()
@@ -119,6 +119,8 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   let ticker = null
   const deps = {}
 
+  // TODO subscribe feature eg. $ { a.b + a.c }
+  // TODO: skip double update in svelte subscriptions
   const delims = [
     '$', '$value', // $ is shorthand for $value
     '$not', // shorthand to be able to do if (x.a$not) instead of if (!x.a$ && !x.a$loading)
@@ -133,13 +135,16 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     '$$unbatch', // etc. // deref and unbatch
 
     '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type' ]
-  const makeAyuProxy = id => makeProxy({
+  const makeAyuProxy = (id, subModel) => makeProxy({
     id,
     from: () => {},
     get: (path, subVal, delim, id) => {
+      path = subModel ? [...subModel.getPath(), ...path] : path
+
       if (onAccess) {
         onAccess(path)
       }
+
       const name = path[path.length - 1]
 
       if (name === 'length') {
@@ -159,17 +164,19 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       // TODO make dep path prefix configurable for performance vs memory optimization
 
       if (!deps[id]) {
-        deps[id] = new Set()
+        deps[id] = new Map()
       }
 
-      deps[id].add(pathString)
+      if (!deps[id].has(pathString)) {
+        deps[id].set(pathString, { path })
+      }
 
       let adjustedModel
       if (boxKey !== '') {
-        adjustedModel = boxedModel
+        adjustedModel = subModel ? subModel.boxValues() : boxedModel
         path = path.concat(boxKey)
       } else {
-        adjustedModel = model
+        adjustedModel = subModel || model
       }
 
       const falcorCacheVal = extractFromCache(adjustedModel._root.cache, path)
@@ -234,7 +241,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
           value = undefined
         } else {
           value = cacheVal
-          if (typeof value.then === 'function') {
+          if (typeof value?.then === 'function') {
             isPendingPromise = true
           } else {
             loading = false
@@ -263,29 +270,45 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     },
 
     set: (path, newValue, _delim, _id) => {
-      model.setValue(path, newValue)
+      (subModel || model).setValue(path, newValue)
         .then(() => {})
 
       return true
     },
 
     call: (path, args, _delim, _id) => {
-      return model.call(path, args)
+      return (subModel || model).call(path, args)
     },
     delims
   })
 
   const runQueue = new Set()
   const subscribers = new Set()
-  function update () {
+  function update (_changes) {
     // console.log('svelte store subscribers updating')
     if (subscribers.size > 0) {
       const queueOpener = !runQueue.size
 
-      subscribers.forEach(([run, invalidate, subscriptionProxy, _id]) => {
-        // TODO: get affected paths for current change and check with deps[id]
-        invalidate()
-        runQueue.add([run, subscriptionProxy])
+      subscribers.forEach(([run, invalidate, subscriptionProxy, id]) => {
+        let changed = false
+        if (!deps[id]) {
+          changed = true
+        } else {
+          for (const [pathString, { lastVer, path }] of deps[id]) {
+            const newVer = model.getVersion(path) // FIXME: path inside atom object are all -1 instead of atom parent value
+
+            if (newVer === -1 || !lastVer || lastVer !== newVer) {
+              deps[id].set(pathString, { path, lastVer: newVer })
+              changed = true
+              // break ? how expensive is this vs store code subscriptions executions in svelte?
+            }
+          }
+        }
+
+        if (changed) {
+          invalidate()
+          runQueue.add([run, subscriptionProxy])
+        }
       })
 
       if (queueOpener) {
@@ -298,9 +321,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     }
   }
   let subscrCounter = 0
-  function subscribe (run, invalidate, ..._args) {
+  function subscribe (run, invalidate, subModel) {
     const id = `${subscribers.size}_${subscrCounter++}`
-    const subscriptionProxy = makeAyuProxy(id)
+    const subscriptionProxy = makeAyuProxy(id, subModel)
 
     const doRun = (..._args) => {
       // console.log('run', id)
@@ -328,8 +351,8 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     }
   }
 
-  changeHandler = () => {
-    update()
+  changeHandler = changes => {
+    update(changes)
   }
   // const cache = model.getCache()
   // const changes = {}
@@ -360,12 +383,24 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   //  })
 
   return {
-    subscribe,
-    set: () => {
-      // console.log('svelte store set')
+    deref: paths => {
+      return paths.map(path => {
+        const subModel = model.deref({ '$__path': path })
+
+        return {
+          subscribe: (run, invalidate) => {
+            return subscribe(run, invalidate, subModel)
+          },
+          set: () => {},
+          falcor: subModel
+        }
+      })
     },
+
+    subscribe,
+    set: () => {},
     falcor: model,
-    proxy: makeAyuProxy('_direct'),
+    // proxy: makeAyuProxy('_direct'), avoid debugging proxy creation, just use a manual subscription instead
     deps
   }
 }

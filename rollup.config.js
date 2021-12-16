@@ -22,7 +22,13 @@ export default [...deps.map((name) =>
     plugins: [
       replace({
         preventAssignment: false,
-        values: { 'process.env.FALCOR_OBSERVABLE_NO_CATCH': 'false' } // TODO: fix falcor and remove this
+        // include: ['**/deps/falcor.js'],
+        delimiters: ['', ''],
+        values: {
+          'process.env.FALCOR_OBSERVABLE_NO_CATCH': 'false',
+          'setImmediate(throwError, e);': 'setTimeout(() => { throwError(e); }, 0);'
+          // 'setImmediate': '((cb, arg) => { setTimeout(() => { cb(arg) }, 0) })'
+        } // TODO: fix falcor and remove this
       }),
       nodeResolve({
         preferBuiltins: false,

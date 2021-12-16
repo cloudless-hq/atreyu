@@ -5,6 +5,12 @@ import { urlLogger } from '../lib/url-logger.js'
 // TODO: data saver mode respect for preloader
 
 const components = {}
+
+// Safari does not support idleCallback
+const onIdle = window.requestIdleCallback || function (cb) {
+  cb({ timeRemaining: function () { return 41 } })
+}
+
 export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
   const routes = []
 
@@ -226,17 +232,17 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
 
   function awaitIdle (cb) {
     setTimeout(() => {
-      window.requestIdleCallback(IdleDeadline => {
+      onIdle(IdleDeadline => {
         const remainingTime = IdleDeadline.timeRemaining()
-        if (remainingTime > 40) {
+        if (remainingTime > 48) {
           const startTime = Date.now()
           cb(startTime + remainingTime)
         } else {
           setTimeout(() => {
             awaitIdle(cb)
-          }, 150)
+          }, 100)
         }
-      })}, 100)
+      })}, 70)
   }
 
   const finished = new Set()
@@ -245,7 +251,7 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
   let preloaderInstance
   const newDiv = document.createElement('div')
   newDiv.style = 'display: none;'
-  function doIdleWork (endTime) {
+  async function doIdleWork (endTime) {
     let todo
     let isSecondary = false
     if (primary.size === 0) {
@@ -256,20 +262,28 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     }
 
     for (const href of todo) {
+      // console.log(href)
       if (finished.has(href)) {
         todo.delete(href)
         continue
       }
 
       const preloadRouterState = routerState({ hrefOverride: href, preload: true })
+      // console.log(preloadRouterState, finished, primary, secondary)
 
-      if (!preloadRouterState._page) {
+      // console.log(preloadRouterState, preloadRouterState._error, preloadRouterState._pending?.then, !!preloadRouterState._pending?.then)
+      if (preloadRouterState._pending?.then) {
+        await preloadRouterState._pending
+      }
+
+      if (!preloadRouterState._page || preloadRouterState._error) {
         finished.add(href)
         todo.delete(href)
+        // console.log(finished, todo)
         continue
       }
       // console.log('start', endTime - Date.now())
-      if ((endTime > Date.now() + 20) && !preloadRouterState._pending?.then) {
+      if ((endTime > Date.now() + 20)) {
         finished.add(href)
         todo.delete(href)
 
