@@ -46,7 +46,7 @@ RUN mkdir -p /root/.cache/esbuild /root/.cache/deno
 RUN deno install \
 --allow-hrtime \
 --allow-read \
---allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH,XDG_CACHE_HOME,CODESPACE_NAME,GITHUB_USER,__CLOUDFLARETOKEN,__IPFSPINNINGJWT,_ELASTIC_AUTH,_COUCHKEY,_COUCHSECRET,__COUCHADMINKEY,__COUCHADMINSECRET \
+--allow-env=DENO_DIR,_DIALOGFLOWCONFIG,HOME,ESBUILD_BINARY_PATH,XDG_CACHE_HOME,CODESPACE_NAME,GITHUB_USER,__CLOUDFLARETOKEN,__IPFSPINNINGJWT,_ELASTIC_AUTH,_COUCHKEY,_COUCHSECRET,__COUCHADMINKEY,__COUCHADMINSECRET \
 --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org,deno.land,c3b0b243-4f69-4cb1-9ece-1b0561a67cee-bluemix.cloudant.com \
 --allow-write=/tmp,"$HOME"/.atreyu,./,"$DENO_DIR",/root/.cache/deno,/root/.cache/esbuild \
 --allow-run=ipfs,npx,`command -v deno`,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.13.3 \
