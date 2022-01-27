@@ -8,7 +8,10 @@ export async function loadConfig (env, appName) {
 
     conf = { appPath: Deno.cwd(), ...confFile?.default }
   } catch (err) {
-    console.warn('  ⚠️ No ayu.config.js found, using defaults')
+    console.error({err, message: 'error loading config'})
+    // if (err not found) {
+    //   console.warn('  ⚠️ No ayu.config.js found, using defaults')
+    // }
     conf = { appPath: Deno.cwd() }
   }
   // console.log('pre conf', conf)
