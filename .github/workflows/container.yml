@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  AYU_VERSION: 0.5.12
+  AYU_VERSION: 0.5.14
 
 jobs:
   build-and-push-image:
