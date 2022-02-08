@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - "master"
-    paths:
-      - Dockerfile
-      - .github/workflows/container.yml
+    # paths:
+    #   - Dockerfile
+    #   - .github/workflows/container.yml
 
 env:
   REGISTRY: ghcr.io
