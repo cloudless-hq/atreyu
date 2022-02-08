@@ -87,7 +87,7 @@ async function compile ({input, appName, workerName, output, buildName}) {
   }
 
   await Promise.all([
-    Deno.writeTextFile(output, files['deno:///bundle.js'].replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
+    Deno.writeTextFile(output, files['deno:///bundle.js'].replace('window.atob(', 'atob(').replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
     Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map']),
 
     Deno.writeTextFile(output.replace('.js', '.d.js'), denoRes.files['deno:///bundle.js'] + `\n\n//# sourceMappingURL=./${workerName}.d.js.map`),
