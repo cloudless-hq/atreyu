@@ -70,7 +70,7 @@ function updatedCache (res) {
       proms.push(cache.match(cacheKey).then(cacheRes => {
         if (!cacheRes) {
           console.log('new: /' + cacheSrc)
-          return fetch('/' + cacheSrc, { redirect: 'error' }).then(freshRes => {
+          return fetch('/' + cacheSrc, { redirect: 'manual' }).then(freshRes => {
             return cache.put(cacheKey, freshRes)
             .then(() => {
               console.log('installed update: /' + cacheSrc)
@@ -93,7 +93,7 @@ function updatedCache (res) {
 // TODO: transition to IPFS https://ipfs.io/api/v0/ls?arg=/ipns/ipfs.io/&headers=true&resolve-type=true&size=true
 function checkUpdt () {
   let clone
-  fetch('/manifest.json', { redirect: 'error' }).then(res => {
+  fetch('/manifest.json', { redirect: 'manual' }).then(res => {
     clone = res.clone()
     return res.json()
   })
@@ -159,7 +159,7 @@ export async function fileHandler ({ key, event, url }) {
     return cached
   }
 
-  const res = await fetch(url.href.replace('files/', ''), { redirect: 'error' })
+  const res = await fetch(url.href.replace('files/', ''), { redirect: 'manual' })
 
   if (res.status === 200) {
     event.waitUntil(cache.put(key, res.clone()))

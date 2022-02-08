@@ -215,7 +215,7 @@
 
                   System Version: {$data._docs[settingsDocId].version$}<br>
                   Hash: {installedHash.substr(-8)}<br>
-                {:else}Please try clering your browser cache and reloading the page, if this does not resolve the issue, contact support. We are sorry for inconvencience!{/if}
+                {:else}Please try clearing your browser cache and reload the page. If this does not resolve the issue, contact support. We are sorry for inconvenience!{/if}
                 </p>
 
                 <div class="btns">

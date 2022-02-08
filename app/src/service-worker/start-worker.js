@@ -56,7 +56,7 @@ export default function ({
 
       let newSession
       try {
-        newSession = await (await fetch('/_couch/_session', { redirect: 'error' })).json()
+        newSession = await (await fetch('/_couch/_session', { redirect: 'manual' })).json()
       } catch (_) {
         newSession = { userId: null }
       }

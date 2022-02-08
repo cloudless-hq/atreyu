@@ -30,7 +30,7 @@ export function handler ({ _event, req, stats, _app, body }) {
   if (!req.url.pathname.includes('/_changes')) {
     return fetch(href, {
       method: req.method,
-      redirect: 'error',
+      redirect: 'manual',
       body, // req.raw?.body, // (req.method === 'PUT' || req.method === 'POST') ?
       headers: {
         ...req.headers,
@@ -40,7 +40,7 @@ export function handler ({ _event, req, stats, _app, body }) {
   } else {
     return fetch(href, {
       method: req.method,
-      redirect: 'error',
+      redirect: 'manual',
       headers: {
         ...req.headers,
         'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
