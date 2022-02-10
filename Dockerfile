@@ -28,7 +28,7 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 ENV DENO_DIR=${DENO_INSTALL}/.cache/deno
 
 # node 16 (https://github.com/nodesource/distributions/blob/master/README.md#deb)
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sh
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g yarn
 
