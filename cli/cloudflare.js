@@ -2,7 +2,7 @@ import { basename, join } from '../deps-deno.js'
 
 export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath }) {
   if (!config.__cloudflareToken) {
-    console.error('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
+    console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
   }
 

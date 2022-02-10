@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const version = '0.5.15'
+export const version = '0.5.16'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -319,7 +319,7 @@ switch (cmd) {
     await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath})
 
     await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
-    Deno.exit(1)
+    Deno.exit(0)
 
   case 'start':
     console.log(Deno.version)
