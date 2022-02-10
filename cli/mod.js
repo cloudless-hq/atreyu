@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const version = '0.5.17'
+export const version = '0.5.18'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
