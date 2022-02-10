@@ -9,7 +9,7 @@ export async function couchUpdt ({folderHash, buildColor, config, _name, version
 
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
 
-  const dbName = env === 'dev' ? escapeId(env + '_' + userId + '.' + appName) : escapeId(env + '.' + appName)
+  const dbName = env === 'dev' ? escapeId(env + '_' + userId + '.' + appName) : env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 

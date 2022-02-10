@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - "master"
-    # paths:
-    #   - Dockerfile
-    #   - .github/workflows/container.yml
+    paths:
+      - Dockerfile
+      - .github/workflows/container.yml
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  AYU_VERSION: 0.5.14
+  AYU_VERSION: 0.5.15
 
 jobs:
   build-and-push-image:

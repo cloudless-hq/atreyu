@@ -13,9 +13,9 @@ async function getApp () {
   }
 
   const settingsDocId = 'system:settings_' + env
-  const safeName = escapeId(env + '.' + appName)
+  const safeDbName = env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
 
-  const url = `${couchHost}/${safeName}/${settingsDocId}`
+  const url = `${couchHost}/${safeDbName}/${settingsDocId}`
 
   const settingsDocRes = (await fetch(url, {
     headers: {
@@ -30,11 +30,11 @@ async function getApp () {
 
   app.Hash = settingsDoc.folderHash
   app.name = appName
-  app.safeName = safeName
+  app.safeDbName = safeDbName
   app.env = env
 }
 
-const app = { name: null, Hash: null, safeName: null, env: null }
+const app = { name: null, Hash: null, safeDbName: null, env: null }
 
 startWorker(async arg => {
   if (!app.Hash) {
