@@ -28,7 +28,7 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 ENV DENO_DIR=${DENO_INSTALL}/.cache/deno
 
 # node 16 (https://github.com/nodesource/distributions/blob/master/README.md#deb)
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g yarn
 
@@ -39,7 +39,7 @@ RUN npm install -g yarn
 # RUN mv atreyu-${AYU_VERSION} atreyu
 # RUN pwd
 # RUN ls .
-COPY . atreyu/
+COPY . /root/atreyu
 
 RUN mkdir -p /root/.cache/esbuild /root/.cache/deno
 
@@ -72,7 +72,7 @@ RUN ipfs --version
 RUN PLAYWRIGHT_BROWSERS_PATH=/root/pw-browsers npx playwright install-deps && PLAYWRIGHT_BROWSERS_PATH=/root/pw-browsers npx playwright install
 
 # initialize the atreyu ipfs repo
-RUN ayu init
+RUN cd /root/atreyu && ayu init
 # install the atreyu runtime framework into the repo
 RUN cd /root/atreyu && ayu --once
 RUN cd /root/atreyu && ayu start --online & ayu publish
