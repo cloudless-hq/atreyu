@@ -75,4 +75,4 @@ RUN PLAYWRIGHT_BROWSERS_PATH=/root/pw-browsers npx playwright install-deps && PL
 RUN cd /root/atreyu && ayu init
 # install the atreyu runtime framework into the repo
 RUN cd /root/atreyu && ayu --once
-RUN cd /root/atreyu && ayu start --online & ayu publish
+RUN cd /root/atreyu && ayu publish --start --online

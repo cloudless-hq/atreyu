@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const version = '0.5.21'
+export const version = '0.5.22'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -281,8 +281,9 @@ switch (cmd) {
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
     edgeSchema = await loadEdgeSchema()
 
-    // todo skip on allready running ask if autorestart in online mode
-    // await startDaemon({ publish: true })
+    if (start) {
+      await doStart()
+    }
 
     Deno.writeTextFileSync( join(home, '.atreyu', `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
 
