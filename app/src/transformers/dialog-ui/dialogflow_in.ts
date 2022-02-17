@@ -19,7 +19,7 @@ export default (parsedBody = {}) : {
     responseId,
     queryResult: {
       queryText, // 'Kleidung nach Styles'
-      action, // '_clothes_by_styles'
+      action, // 'clothes_by_styles'
       parameters: params, // 'gender': '','budget': '','style': ''
       fulfillmentText, // '_ask_gender', _ask_budget
       fulfillmentMessages: origFulfillmentMessages = [],

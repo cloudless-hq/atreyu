@@ -2,6 +2,19 @@
 	import data from '/atreyu/src/store/data.js'
   export let env = 'prod'
 
+  let seq
+  export let doSync = async (dataProxy) => {
+    try {
+      seq = (await dataProxy._sync(seq))?.json?._seq || seq
+    } catch (err) {
+      console.log(err)
+    } finally {
+      setTimeout(() => {
+        doSync(dataProxy)
+      }, 100)
+    }
+  }
+
   // let versionTooltip = ''
   let updatedNotification
   let latestHash = ''
@@ -15,18 +28,6 @@
   let _updating = localStorage.getItem('_updating')
 
   // TODO: full support for long running observables to avoid this loop
-  let seq
-  async function doSync () {
-    try {
-      seq = (await $data._sync(seq))?.json?._seq || seq
-    } catch (err) {
-      console.log(err)
-    } finally {
-      setTimeout(() => {
-        doSync()
-      }, 100)
-    }
-  }
 
   $: {
     if ($data._session.userId$) {
@@ -65,7 +66,7 @@
   async function init () {
     const userId = await $data._session.userId$promise
     if (userId) {
-      doSync()
+      doSync($data, data.falcor)
 
       settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 

@@ -139,6 +139,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     id,
     from: () => {},
     get: (path, subVal, delim, id) => {
+      if (!path[path.length - 1]) {
+        path.pop()
+      }
       path = subModel ? [...subModel.getPath(), ...path] : path
 
       if (onAccess) {

@@ -48,10 +48,10 @@ export default async function ({
   const sync = Pouchdb.sync(proxyUrl, dbName, {
     live: true,
     retry: true,
-    heartbeat: 2500,
-    filter: doc => {
-      return !doc._id.startsWith('_design/client')
-    }
+    heartbeat: 2500
+    // filter: doc => {
+    //   return !doc._id.startsWith('_design/client')
+    // }
     // checkpoint: false source target
   })
     .on('denied', err => {

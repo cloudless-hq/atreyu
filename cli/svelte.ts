@@ -263,7 +263,7 @@ export default async function ({
           deps: comp.js.map.sources.map((path: string) => path.replace('<file://', '').replace('>', ''))
         }
 
-        console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js(.map)')
+        console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js')
 
         deps[subPath]?.files.forEach((compDep, i) => {
           console.log(`    ├─ ${compDep.replace(Deno.cwd(), '')}`)
