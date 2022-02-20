@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const version = '0.5.24'
+export const ayuVersion = '0.5.26'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -53,6 +53,7 @@ let {
   online,
   help,
   once,
+  version,
   name,
   env,
   port = '80',
@@ -100,6 +101,9 @@ if (!env) {
 
 if (help) {
   cmd = 'help'
+}
+if (version) {
+  cmd = 'version'
 }
 
 if (!cmd) {
@@ -154,7 +158,7 @@ function startDaemon ({ publish }) {
 
         if (data.startsWith('Initializing daemon...')) {
           const [_, ipfs, repo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
-          console.log('  ' + Object.entries({ ipfs, repo, atreyu: version }).map(en => en.join(': ')).join(', '))
+          console.log('  ' + Object.entries({ ipfs, repo, atreyu: ayuVersion }).map(en => en.join(': ')).join(', '))
         }
         if (data.includes('Daemon is ready')) {
           console.log('  ✅ Started ipfs daemon')
@@ -178,18 +182,18 @@ async function doStart () {
   })
 }
 
-if (config.atreyuVersion && version !== config.atreyuVersion) {
-  console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${version}`)
+if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
+  console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}`)
   Deno.exit(-1)
 }
 
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {
   case 'version':
-    console.log(version)
+    console.log(ayuVersion)
     break
   case 'help':
-    printHelp ({ version })
+    printHelp ({ ayuVersion })
     break
   case 'init':
     console.log(await execIpfs('init', _[1] || homeConfPath))
@@ -256,7 +260,7 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ folderHash, buildColor, config, name, version, buildName, buildTime, appName, env })
+      await couchUpdt({ folderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env })
     }
 
     if (start) {
@@ -318,9 +322,9 @@ switch (cmd) {
 
     await buildEdge(edgeSchema, buildName)
 
-    await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath})
+    await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath, folderHash: pubFolderHash})
 
-    await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version, buildName, buildTime, appName, env})
+    await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
     Deno.exit(0)
 
   case 'start':
@@ -331,7 +335,7 @@ switch (cmd) {
   default:
     console.log(`${red('unknown sub-command')} ${red(cmd)}\n`)
 
-    printHelp({ version })
+    printHelp({ ayuVersion })
 }
 
 // case 'build':

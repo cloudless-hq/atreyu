@@ -4,41 +4,40 @@ import { handler } from '$handler.js'
 import { getEnv } from '$env.js'
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-async function getApp () {
+async function getAppData () {
+  const appData = {}
   const { appName } = stats.get()
-  const { couchHost, _couchKey, _couchSecret, env } = getEnv(['couchHost', '_couchKey', '_couchSecret', 'env'])
-  if (!couchHost || !_couchKey || !_couchSecret) {
-    console.error('no couch configuraiton found for app settings.')
-    return
+  const { couchHost, _couchKey, _couchSecret, env, folderHash } = getEnv(['couchHost', '_couchKey', '_couchSecret', 'env', 'folderHash'])
+
+  if (couchHost && _couchKey && _couchSecret) {
+    const settingsDocId = 'system:settings_' + env
+    const safeDbName = env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
+
+    const url = `${couchHost}/${safeDbName}/${settingsDocId}`
+
+    const settingsDocRes = (await fetch(url, {
+      headers: {
+        Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+      }
+    }))
+    const settingsDoc = await settingsDocRes.json()
+
+    appData.safeDbName = safeDbName
+    appData.Hash = settingsDoc.folderHash
+  } else {
+    appData.Hash = folderHash
   }
 
-  const settingsDocId = 'system:settings_' + env
-  const safeDbName = env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
+  appData.name = appName
+  appData.env = env
 
-  const url = `${couchHost}/${safeDbName}/${settingsDocId}`
-
-  const settingsDocRes = (await fetch(url, {
-    headers: {
-      Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
-    }
-  }))
-  const settingsDoc = await settingsDocRes.json()
-
-  if (!settingsDoc.folderHash) {
-    console.error('no release hash found in app settings')
-  }
-
-  app.Hash = settingsDoc.folderHash
-  app.name = appName
-  app.safeDbName = safeDbName
-  app.env = env
+  return appData
 }
 
-const app = { name: null, Hash: null, safeDbName: null, env: null }
-
+const app = {}
 startWorker(async arg => {
   if (!app.Hash) {
-    await getApp()
+    app = await getAppData()
   }
 
   arg.app = app

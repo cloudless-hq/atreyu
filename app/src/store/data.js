@@ -183,7 +183,13 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
 
       const falcorCacheVal = extractFromCache(adjustedModel._root.cache, path)
-      const cacheVal = typeof falcorCacheVal !== 'undefined' ? falcorCacheVal : cacheMap.get(pathString)
+      let cacheVal
+      let existingProm
+      if (typeof falcorCacheVal !== 'undefined') {
+        cacheVal = falcorCacheVal
+      } else {
+        [ cacheVal, existingProm ] = cacheMap.get(pathString) || []
+      }
 
       // TODO: properly respect invalidation and expiries
       if (!ticker) {
@@ -204,18 +210,18 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         })
       }
 
-      let prom
+      let newProm
       if (latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
         lastUpdt.set(pathString, latestTick)
-        prom = adjustedModel.getValue(path)
+        newProm = adjustedModel.getValue(path)
           .then(val => {
             if (typeof val === 'undefined') {
-              cacheMap.set(pathString, _undefined)
+              cacheMap.set(pathString, [_undefined])
             } else {
-              cacheMap.set(pathString, val)
+              cacheMap.set(pathString, [val])
             }
             // loading = false
             return val
@@ -229,46 +235,37 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
             }))
           })
         // loading = true
-        // prom.toString = () => ''
-        cacheMap.set(pathString, prom)
+        cacheMap.set(pathString, [cacheVal, newProm])
       }
 
-      let loading = true
-      let isPendingPromise = false
+      let loadingFirstValue = true
       let value
 
       // undefined means we don't know the value, _undefined means we know the value is undefined
       if (typeof cacheVal !== 'undefined') {
         if (cacheVal === _undefined) {
-          loading = false
           value = undefined
+          loadingFirstValue = false
         } else {
           value = cacheVal
-          if (typeof value?.then === 'function') {
-            isPendingPromise = true
-          } else {
-            loading = false
-          }
+          loadingFirstValue = false
         }
       }
 
       if (delim === '$promise') {
-        if (prom) {
-          // console.log(1, prom)
-          return prom
-        } else if (isPendingPromise) {
-          // console.log(2, value)
-          return value
+        if (newProm) {
+          return newProm
+        } else if (existingProm) {
+          return existingProm
         } else {
-          // console.log(3, value)
           return Promise.resolve(value)
         }
       } else if (delim === '$loading') {
-        return loading
+        return loadingFirstValue
       } else if (delim === '$not') {
-        return loading ? { toString: () => {''} } : !value
+        return loadingFirstValue ? { toString: () => {''} } : !value
       } else {
-        return loading ? '' : value
+        return loadingFirstValue ? '' : value
       }
     },
 
@@ -323,6 +320,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
     }
   }
+
   let subscrCounter = 0
   function subscribe (run, invalidate, subModel) {
     const id = `${subscribers.size}_${subscrCounter++}`

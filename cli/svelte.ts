@@ -1,6 +1,6 @@
 import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
 import { exec } from './exec.js'
-import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
+import { build, transform } from '../deps-deno.js'
 export async function recursiveReaddir (path: string) {
   const files: string[] = []
   const getFiles = async (path: string) => {
@@ -78,7 +78,7 @@ export default async function ({
       }
 
       if (file.endsWith('.ts')) {
-        const { metafile } = await esbuild.build({
+        const { metafile } = await build({
           entryPoints: [file],
           sourcemap: 'external',
           // splitting: true,
@@ -137,7 +137,7 @@ export default async function ({
                 // const fileUri = `file://${join(Deno.cwd(), tsFilePath)}`
                 // await Deno.writeTextFile(tsFilePath, content)
 
-                const {code, map, warnings} = await esbuild.transform(content, { loader: 'ts', sourcemap: true, treeShaking: false })
+                const {code, map, warnings} = await transform(content, { loader: 'ts', sourcemap: true, treeShaking: false })
                 // console.log(esbuildO)
                 // await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), esbuildO)
 

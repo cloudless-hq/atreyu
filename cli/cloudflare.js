@@ -1,6 +1,6 @@
 import { basename, join } from '../deps-deno.js'
 
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath }) {
+export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, folderHash }) {
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -35,7 +35,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     return json.result
   }
 
-  const [accounts, zones]= await Promise.all([
+  const [accounts, zones] = await Promise.all([
     req('accounts'),
     req('zones')
   ])
@@ -66,7 +66,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     console.warn('no zone found for project folder, using the default zone for the cf token. to disable this behaviour use --no-fallback-zone')
   }
 
-  const [curWorkers, curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
+  const [_curWorkers, _curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
     req(`accounts/${cloudflareAccountId}/workers/scripts`),
     req(`accounts/${cloudflareAccountId}/workers/subdomain`),
     req(`accounts/${cloudflareAccountId}/storage/kv/namespaces`),
@@ -99,6 +99,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
     config['env'] = env
+    config['folderHash'] = folderHash
     const bindings = Object.entries(config).flatMap(([key, value]) => {
       if (!key.startsWith('__')) {
         if (key.startsWith('_')) {

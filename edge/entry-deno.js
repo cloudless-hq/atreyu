@@ -7,7 +7,6 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 const ipfsGateway = 'http://127.0.0.1:8080'
 const ipfsApi = 'http://127.0.0.1:5001'
 const homeDir = Deno.env.get('HOME')
-// const codespace = Deno.env.get('CODESPACE_NAME')
 const repoName = Deno.env.get('RepositoryName')
 
 // bindings = bindingsFile.bindings.reduce((agr, ent) => {
@@ -21,14 +20,14 @@ const repoName = Deno.env.get('RepositoryName')
 //   }
 // }
 
-let apps
 async function getApps () {
-  apps = (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
+  return (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
 }
 
 const workers = {}
 const configs = {}
 const schemas = {}
+let apps = []
 startWorker(async arg => {
   const {
     req
@@ -41,26 +40,18 @@ startWorker(async arg => {
   const localhostMatch = req.url.hostname.split('.localhost')
 
   const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName
-
   const appKey = appName + '_dev'
 
-  // todo : cacheing strategy
-  await getApps()
+  apps = (await getApps()) || []
 
   let app = apps.find(app => app.Name === appKey)
   arg.app = app // TODO find generic solution for local and cf
 
   if (!app) {
-    // await getApps()
-    // app = apps.find(app => app.Name === appKey)
-    // arg.app = app // TODO find generic solution for local and cf
-    // if (!app) {
     return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
-    // }
   }
 
-  // todo invalidate on hash update
-  if (!schemas[appKey]) {
+  if (!schemas[appKey] || schemas[appKey].hash !== app.Hash) {
     try {
       const schema = (await Promise.any([
         import(ipfsGateway + `/ipfs/${app.Hash}/schema/index.js`),
@@ -68,27 +59,31 @@ startWorker(async arg => {
       ])).schema
 
       if (typeof schema === 'function') {
-        schemas[appKey] = schema({ defaultPaths, toFalcorPaths, toWindowPaths })
+        schemas[appKey] = { data: schema({ defaultPaths, toFalcorPaths, toWindowPaths }), hash: app.Hash }
       } else {
-        schemas[appKey] = schema
+        schemas[appKey] = { data: schema, hash: app.Hash }
       }
     } catch (e) {
       console.warn(` ⚠️ could not load schema for ${appKey}, falling back to default`)
-      schemas[appKey] = { // TODO: make generic fallback for cloudflare and local
-        paths: {
-          '/*': {
-            get: {
-              tags: [ 'edge' ],
-              operationId: '_ipfs'
+      // TODO: make generic fallback for cloudflare and local
+      schemas[appKey] = {
+        data: {
+          paths: {
+            '/*': {
+              get: {
+                tags: [ 'edge' ],
+                operationId: '_ipfs'
+              }
             }
           }
-        }
+        },
+        hash: app.Hash
       }
     }
   }
 
   const handlers = {}
-  Object.entries(schemas[appKey].paths).forEach(([path, value]) => {
+  Object.entries(schemas[appKey].data.paths).forEach(([path, value]) => {
     Object.entries(value).forEach(([method, {operationId, tags, handler}]) => {
       if (tags?.includes('edge')) {
         if (!handlers[method]) {
@@ -134,8 +129,8 @@ startWorker(async arg => {
     // todo: how to handle this reliably and less ugly?
     // setEnv(configs[appKey])
 
-    if (!workers[workerName]) {
-      console.log('importing worker script: ' + workerName)
+    if (!workers[workerName] || workers[workerName].hash !== app.Hash) {
+      console.log('reloading worker script: ' + workerName)
       Deno.env.set('appKey', appKey)
       let base = []
       let filenames = []
@@ -155,11 +150,11 @@ startWorker(async arg => {
       //   // TODO: ts support
       //   codePath = join(...base, filenames[1])
       // }
-      // console.log(codePath)
-      workers[workerName] = (await import(codePath.replace('.js', '.d.js')))
+
+      workers[workerName] = { code: (await import(codePath.replace('.js', '.d.js') + `?${app.Hash}`)), hash: app.Hash }
     }
 
-    return workers[workerName].handler(arg)
+    return workers[workerName].code.handler(arg)
   } else {
     console.log(`${req.method} ${req.url}`)
     return new Response('No matches found in schema: ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain'} })

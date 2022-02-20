@@ -46,7 +46,11 @@ export default async function ({ batch, buildRes, clean } = {}) {
     }
   })
 
-  const { files, diagnostics, stats } = emitRes
+  const { files, diagnostics, _stats, ignoredOptions } = emitRes
+
+  if (ignoredOptions) {
+    console.warn('ignored deno emit opts:', ignoredOptions)
+  }
 
   if (diagnostics.length > 0) {
     diagnostics.map(di => console.warn(di))
@@ -69,9 +73,8 @@ export default async function ({ batch, buildRes, clean } = {}) {
     deps: JSON.parse(files['deno:///bundle.js.map']).sources.map(path => path.replace('file://', '').replace(Deno.cwd(), ''))
   }
 
-
   console.log(`  ${green('emitted:')} app/service-worker.bundle.js`)
-  console.log(`    └─ ${stats.map(stat => stat.join(': ')).join(', ')}`)
+  // console.log(`    └─ ${emitRes}`) // .map(stat => stat.join(': ')).join(', ') currently always empty
 
   return newBuildRes
 }
