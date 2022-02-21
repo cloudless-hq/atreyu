@@ -34,7 +34,7 @@ async function getAppData () {
   return appData
 }
 
-const app = {}
+let app = {}
 startWorker(async arg => {
   if (!app.Hash) {
     app = await getAppData()

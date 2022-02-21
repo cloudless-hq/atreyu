@@ -1,5 +1,3 @@
-import { basename, join } from '../deps-deno.js'
-
 export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, folderHash }) {
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
@@ -53,7 +51,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     if (env === 'prod') {
       domain = appName
     } else {
-      domain= `${env}.${appName}`
+      domain = `${env}.${appName}`
     }
   }
 
@@ -65,6 +63,93 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   if (!cloudflareZoneId) {
     console.warn('no zone found for project folder, using the default zone for the cf token. to disable this behaviour use --no-fallback-zone')
   }
+
+  // TODO: support schedules req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/${env}/schedules`)
+
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/bindings
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs?expand=scripts
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production?expand=routes
+  // accounts/{}/workers/durable_objects/namespaces
+  // {
+  //   "result": {
+  //     "id": "convoi__cx__wh___ipfs",
+  //     "default_environment": {
+  //       "environment": "production",
+  //       "created_on": "2021-11-28T23:25:57.962688Z",
+  //       "modified_on": "2022-02-21T00:47:50.940228Z",
+  //       "script": {
+  //         "id": "convoi__cx__wh___ipfs",
+  //         "etag": "1344d41e4748563781b1de743430066a3b3eebea3ec7bda90d505bb25b7c02d1",
+  //         "handlers": [
+  //           "fetch"
+  //         ],
+  //         "modified_on": "2022-02-21T00:47:50.940228Z",
+  //         "created_on": "2021-08-18T09:05:37.747247Z",
+  //         "usage_model": "unbound"
+  //       }
+  //     },
+  //     "created_on": "2021-11-28T23:25:57.962688Z",
+  //     "modified_on": "2022-02-21T00:47:50.940228Z",
+  //     "usage_model": "",
+  //     "environments": [
+  //       {
+  //         "environment": "production",
+  //         "created_on": "2021-11-28T23:25:57.962688Z",
+  //         "modified_on": "2022-02-21T00:47:50.940228Z"
+  //       }
+  //     ]
+  //   },
+  //   "success": true,
+  //   "errors": [],
+  //   "messages": []
+  // }
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs
+  // {
+  //   "result": {
+  //     "id": "convoi__cx__wh___ipfs",
+  //     "default_environment": {
+  //       "environment": "production",
+  //       "created_on": "2021-11-28T23:25:57.962688Z",
+  //       "modified_on": "2022-02-21T00:47:50.940228Z",
+  //       "script": {
+  //         "id": "convoi__cx__wh___ipfs",
+  //         "etag": "1344d41e4748563781b1de743430066a3b3eebea3ec7bda90d505bb25b7c02d1",
+  //         "handlers": [
+  //           "fetch"
+  //         ],
+  //         "modified_on": "2022-02-21T00:47:50.940228Z",
+  //         "created_on": "2021-08-18T09:05:37.747247Z",
+  //         "usage_model": "unbound"
+  //       }
+  //     },
+  //     "created_on": "2021-11-28T23:25:57.962688Z",
+  //     "modified_on": "2022-02-21T00:47:50.940228Z",
+  //     "usage_model": "",
+  //     "environments": [
+  //       {
+  //         "environment": "production",
+  //         "created_on": "2021-11-28T23:25:57.962688Z",
+  //         "modified_on": "2022-02-21T00:47:50.940228Z"
+  //       }
+  //     ]
+  //   },
+  //   "success": true,
+  //   "errors": [],
+  //   "messages": []
+  // }
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/routes
+  // {
+  //   "result": [
+  //     {
+  //       "id": "536656de99844ed5b448c95cc163055e",
+  //       "pattern": "wh.convoi.cx/*"
+  //     }
+  //   ],
+  //   "success": true,
+  //   "errors": [],
+  //   "messages": []
+  // }
+  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/content
 
   const [_curWorkers, _curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
     req(`accounts/${cloudflareAccountId}/workers/scripts`),
@@ -215,5 +300,5 @@ ${scriptData}
   // https://api.cloudflare.com/client/v4/accounts/{}/workers/scripts/{}/subdomain {enabled: true}
   // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFKFoZFDfvh DNS only
   // dnslink with gateway, ipfs worker gateway, ipfs worker
-  console.log('  🏁 finished cloudflare deployment')
+  console.log('  🏁 finished cloudflare deployment ' + folderHash)
 }

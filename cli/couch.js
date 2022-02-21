@@ -3,7 +3,7 @@ import { escapeId } from '../app/src/lib/escape-id.js'
 export async function couchUpdt ({folderHash, buildColor, config, _name, version, buildName, buildTime, appName, env}) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, couchKey, userId } = config
 
-  if (!couchHost) {
+  if (!couchHost || !__couchAdminKey) {
     return
   }
 
@@ -64,7 +64,7 @@ export async function couchUpdt ({folderHash, buildColor, config, _name, version
     if (!updtRes?.ok) {
       console.error('  🛑 Unexpected update result...', updtRes)
     } else {
-      console.log('  🏁 app db update finished')
+      console.log('  🏁 app db update finished ' + folderHash)
     }
   } catch (err) {
     console.log('  🛑 Error updating app db version...', err)

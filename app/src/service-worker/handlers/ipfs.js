@@ -107,31 +107,33 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
 
     // FIXME: this is necessary until ipfs gateway get capable of custom content type hanling, they currently think 'xxx.svelte.js' is a text file, but js file type is necessray for js modules...
 
-    const headers = new Headers({
-      'content-type': contentTypeOverride ? contentTypeOverride : response.headers.get('content-type'),
-      'server': 'AtreyuServiceWorker',
-      'content-length': response.headers.get('content-length'),
-      'date': response.headers.get('date'),
-      'etag': `"${hash}"`,
-      'cache-control': 'public, must-revalidate, max-age=2',
-      'x-ipfs-path': '/ipfs/' + hash,
-      date: response.headers.get('date'),
-      'cache-status': 'sw; miss'
-    })
+    if (response?.ok) {
+      const headers = new Headers({
+        'content-type': contentTypeOverride ? contentTypeOverride : response.headers.get('content-type'),
+        'server': 'AtreyuServiceWorker',
+        'content-length': response.headers.get('content-length'),
+        'date': response.headers.get('date'),
+        'etag': `"${hash}"`,
+        'cache-control': 'public, must-revalidate, max-age=2',
+        'x-ipfs-path': '/ipfs/' + hash,
+        date: response.headers.get('date'),
+        'cache-status': 'sw; miss'
+      })
 
-    response = new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    })
+      response = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers
+      })
 
-    // const etag = response.headers.get('etag').replace(/"/g, '')
-    // if (etag !== hash) {
-    //   console.warn('ipfs hash inconsistency for ' + path + ' ' + etag + ' ' + hash)
-    // }
-    const clone = response.clone()
-    clone.headers.set('cache-status', 'sw; hit; stored')
-    cache.put(hash, clone)
+      // const etag = response.headers.get('etag').replace(/"/g, '')
+      // if (etag !== hash) {
+      //   console.warn('ipfs hash inconsistency for ' + path + ' ' + etag + ' ' + hash)
+      // }
+      const clone = response.clone()
+      clone.headers.set('cache-status', 'sw; hit; stored')
+      cache.put(hash, clone)
+    }
 
     return response
   }

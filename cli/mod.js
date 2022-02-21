@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.5.26'
+export const ayuVersion = '0.5.27'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -158,7 +158,7 @@ function startDaemon ({ publish }) {
 
         if (data.startsWith('Initializing daemon...')) {
           const [_, ipfs, repo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
-          console.log('  ' + Object.entries({ ipfs, repo, atreyu: ayuVersion }).map(en => en.join(': ')).join(', '))
+          console.log('  ' + Object.entries({ ipfs, repo, atreyu: ayuVersion, ...Deno.version }).map(en => en.join(': ')).join(', '))
         }
         if (data.includes('Daemon is ready')) {
           console.log('  ✅ Started ipfs daemon')
