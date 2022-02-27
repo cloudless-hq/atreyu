@@ -28,7 +28,8 @@ async function getAppData () {
     appData.Hash = folderHash
   }
 
-  appData.name = appName
+  appData.name = appName // TODO: deprecate this key
+  appData.appName = appName
   appData.env = env
 
   return appData

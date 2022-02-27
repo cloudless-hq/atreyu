@@ -17,7 +17,7 @@ function getCookie (name, cookieString = '') {
   return v ? v[2] : null
 }
 
-export function handler ({ req, stats }) {
+export function handler ({ req, stats, app }) {
   let jwt
 
   const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
@@ -117,6 +117,7 @@ export function handler ({ req, stats }) {
   return new Response(JSON.stringify({
     userId: payload.email || null,
     env,
+    appName: app.appName,
     // roles: [],
     // email,
     country: req.headers['cf-ipcountry'],

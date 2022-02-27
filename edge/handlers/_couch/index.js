@@ -8,7 +8,7 @@ import {handler as sessionHandler } from './_session.js'
 
 const { _couchKey, _couchSecret, couchHost } = getEnv(['_couchKey', '_couchSecret', 'couchHost'])
 
-export function handler ({ _event, req, stats, _app, body }) {
+export function handler ({ req, stats, app, body }) {
   // TODO: use our own fauxton release instead of cloudant one
   // import handleFauxton from './fauxton'
   // if (req.url.pathname === '/_utils') {
@@ -22,7 +22,7 @@ export function handler ({ _event, req, stats, _app, body }) {
   // }
 
   if (req.url.pathname.startsWith('/_couch/_session')) {
-    return sessionHandler({ req, stats })
+    return sessionHandler({ req, stats, app })
   }
 
   const href = couchHost + req.url.pathname.replace('/_couch', '') + req.url.search

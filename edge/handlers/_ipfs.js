@@ -93,6 +93,10 @@ export async function handler ({ req, app }) {
     response = await cachedReq(url, 'ipfs', {cacheKey: reqHash})
   }
 
+  if (!response.ok) {
+    disableCache = true
+  }
+
   let headers
   let contentType
   if (req.url.pathname.endsWith('.js')) {

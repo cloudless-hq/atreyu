@@ -1,7 +1,7 @@
 import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
-import { exec } from './exec.js'
-import { build, transform } from '../deps-deno.js'
-export async function recursiveReaddir (path: string) {
+import { build, transform, WindiProcessor, HTMLParser, CSSParser } from '../deps-deno.js'
+
+async function recursiveReaddir (path: string) {
   const files: string[] = []
   const getFiles = async (path: string) => {
     for await (const dirEntry of Deno.readDir(path)) {
@@ -17,6 +17,8 @@ export async function recursiveReaddir (path: string) {
   return files
 }
 
+const windiClasses = new Set()
+let globalStyles = {}
 export default async function ({
   input = [ 'app/src' ],
   batch,
@@ -27,10 +29,34 @@ export default async function ({
   sveltePath = '/svelte'
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   const compNames: {[key: string]: boolean} = {}
-  let postcssComponents: string[] = []
-  let deps = {}
+  const windiProcessor = new WindiProcessor()
 
-  const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
+  let windiConf
+  try {
+    windiConf = (await import(join(Deno.cwd(), 'windi.config.js'))).default
+  } catch (_e) { }
+
+  windiProcessor.loadConfig(windiConf)
+
+  function collectWindiClasses (html: string) {
+    (new HTMLParser(html).parseClasses().map((i: any) => i.result)).forEach(windiClasses.add, windiClasses)
+  }
+
+  function makeGlobalStyles () {
+    const htmlClasses = [...windiClasses].join(' ')
+    const resets = windiProcessor.preflight()
+    const interpretedSheet = windiProcessor.interpret(htmlClasses).styleSheet
+
+    const APPEND = false
+    const MINIFY = !dev
+    const styles = interpretedSheet.extend(resets, APPEND).build(MINIFY)
+
+    return styles + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join()
+  }
+
+  const deps = {}
+
+  // const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
   const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = {
     files: {}
@@ -41,7 +67,7 @@ export default async function ({
       inFolder = inFolder.substring(0, inFolder.length - 1)
     }
 
-    const outputTarget = join(inFolder, '..', 'build') // output ? join(inFolder, '..', '..', 'build', basename(inFolder))
+    const outputTarget = join(inFolder, '..', 'build')
 
     try {
       if (clean) {
@@ -61,7 +87,7 @@ export default async function ({
     const files = batch ? batch.map(fname => fname.substring(1, fname.length)).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
 
     const fileCompilers = files.map(async file => {
-      let subPath = file.replace(inFolder, '')
+      const subPath = file.replace(inFolder, '')
       const newEmits = []
       try {
         Deno.statSync(file)
@@ -73,9 +99,7 @@ export default async function ({
       } catch (_e) { }
 
 
-      if (file.endsWith('.css')) {
-
-      }
+      if (file.endsWith('.css')) { }
 
       if (file.endsWith('.ts')) {
         const { metafile } = await build({
@@ -85,10 +109,10 @@ export default async function ({
           treeShaking: false,
           metafile: true,
           // keepNames: true,
-          outfile: outputTarget + subPath + '.js',
+          outfile: outputTarget + subPath + '.js'
         })
         // console.log(metafile)
-        // //# sourceMappingURL=make-product-type.ts.js.map
+        // # sourceMappingURL=make-product-type.ts.js.map
         newEmits.push(outputTarget + subPath + '.js')
         newEmits.push(outputTarget + subPath + '.js.map')
       }
@@ -97,7 +121,6 @@ export default async function ({
         // TODO: handle css files with auto js wrapper on import file.css
 
         let comp
-        // let forceGlobal
         try {
           const template = await Deno.readTextFile(file)
 
@@ -107,29 +130,23 @@ export default async function ({
           const filename = origFilename === 'index.svelte' ? basename(grandParent) + '/' + basename(parent) : basename(parent) + '/' + origFilename
 
           const { code } = await preprocess(template, {
-            style: async ({ content, attributes }) => { // { , filename }
+            style: ({ content, attributes, filename }: {content: string, attributes: {lang: string, global: boolean}, filename: string}) => {
               if (attributes.lang === 'postcss') {
-                // if (!attributes.global) {
-                //   console.error('🛑 Error: Svelte postcss supports only global styles at the moment, plase add the global attribute to the style tag and take care to avoid stylebleeds.')
-                //   return {code: ''}
-                // }
-                const basePath = join(outputTarget, subPath).replace('/src/', '/build/')
-                const absBasePath = join(Deno.cwd(), basePath)
-                const inPath = absBasePath + '.postcss.css'
-                const outPath = absBasePath + '.css'
-                await Deno.writeTextFile(inPath, content)
-                postcssComponents.push(inPath)
-                let final = ''
-                let sourcemap
-                if (!attributes.global ) { // !clean ||
-                  await exec(['npx', 'rollup', '-c', '-i', inPath, '-o', outPath])
-                  final = await Deno.readTextFile(outPath)
-                  sourcemap = await Deno.readTextFile(outPath + '.map')
-                } else {
-                  newEmits.push(basePath + '.postcss.css')
-                }
-                return { code: final, map: sourcemap }
+                const cssStyleSheet = new CSSParser(content, windiProcessor).parse()
+                content = cssStyleSheet?.build()
               }
+
+              if (attributes.global) {
+                globalStyles[filename] = content
+                return { code: '' }
+              } else if (!clean) {
+                delete globalStyles[filename]
+              }
+
+              return { code: content }
+            },
+            markup: ({ content }: { content: string, filename: string }) => {
+              collectWindiClasses(content)
             },
             script: async ({ content, attributes }: {content: string, attributes: {lang: string}, filename: string}) => {
               if (attributes.lang === 'ts') {
@@ -138,7 +155,6 @@ export default async function ({
                 // await Deno.writeTextFile(tsFilePath, content)
 
                 const {code, map, warnings} = await transform(content, { loader: 'ts', sourcemap: true, treeShaking: false })
-                // console.log(esbuildO)
                 // await Deno.writeTextFile(tsDep.replace('/src/', '/build/').replace('file://', ''), esbuildO)
 
                 // const { files, diagnostics, stats  } = await Deno.emit(fileUri, {
@@ -184,7 +200,7 @@ export default async function ({
 
                 return {
                   code, // files[`${fileUri}.js`],
-                  map, // files[`${fileUri}.js.map`],
+                  map // files[`${fileUri}.js.map`],
                   // dependencies
                 }
               }
@@ -224,14 +240,15 @@ export default async function ({
           return
         }
 
-        if (comp.css && comp.css.code && comp.css.code.length > 0) {
-          // const result = await postcss([postcsscss]).process(comp.css)
-          await Deno.writeTextFile(
-            join(outputTarget, subPath) + '.css',
-            comp.css.code
-              .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.css.map */')
-          )
-        }
+        // if (comp.css && comp.css.code && comp.css.code.length > 0) {
+        //   newEmits.push(basePath + '.postcss.css') ?
+        //   await Deno.writeTextFile(
+        //     join(outputTarget, subPath) + '.css',
+        //     comp.css.code
+        //     // .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.css.map */')
+        //   )
+        // }
+
         comp.js.code = comp.js.code
           .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/atreyu/src/deps/svelte-animate.js'`)
           .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/atreyu/src/deps/svelte-transition.js'`)
@@ -283,12 +300,12 @@ export default async function ({
     await Promise.all(input.map(inp => compileFolder(inp)))
   }
 
-  if (postcssComponents.length > 0 && clean) {
-    let twContent = ''
-    postcssComponents.forEach(twC => {
-      twContent += `@import ".${twC.split('/build')[1]}";\n`
-    })
-    await Deno.writeTextFile(join(Deno.cwd(), 'app/build/components.postcss.css'), twContent)
+  const baseStylePath = 'app/build/base.css'
+  await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), makeGlobalStyles())
+  newBuildRes.files[baseStylePath] = {
+    emits: [baseStylePath],
+    newEmits: [baseStylePath],
+    deps: []
   }
 
   return newBuildRes
@@ -332,6 +349,7 @@ export default async function ({
 // purgecss
 // const result = await postcss([autoprefixer]).process(css);
 // import { postcsscss } from '../deps-node.build.js'
+// const result = await postcss([postcsscss]).process(comp.css)
 // 'https://jspm.dev/postcsscss'
 // TODO: auto fetch and compile sub imports of svelte components?
 // TODO: prefixed imported styles

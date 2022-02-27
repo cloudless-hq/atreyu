@@ -4,11 +4,16 @@ import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../lib/escape-id.js'
 
+// TODO: support addtional dataSources like apollo
 export default function ({
-  appName,
   dbConf,
+  dataSources,
   schema
 }) {
+
+  if (dataSources) {
+    console.warn('Additional data sources not implemented yet.')
+  }
 
   if (schema.servers) {
     // TODO: parse schema for severs and set env according to origin
@@ -58,7 +63,7 @@ export default function ({
       try {
         newSession = await (await fetch('/_couch/_session', { redirect: 'manual' })).json()
       } catch (_) {
-        newSession = { userId: null }
+        newSession = { userId: null, appName: null }
       }
 
       if (newSession.userId !== self.session.value.userId) {
@@ -66,7 +71,7 @@ export default function ({
 
         let newDbConf
         if (typeof dbConf === 'function') {
-          newDbConf = dbConf({ userId: newSession.userId, appName, env: newSession.env, escapeId })
+          newDbConf = dbConf({ userId: newSession.userId, appName: newSession.appName, env: newSession.env, escapeId })
         } else {
           newDbConf = dbConf
         }

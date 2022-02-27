@@ -56,7 +56,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     //   //   invalidationHandler(paths)
     //   // }
     // },
+    // Jafar Husain: we notify of changes but you can calculate what changed based on the version annotations from root to any level of detail when you need. this balances the cost of pushing all changes and the cost of polling in a change pull model.
     onChange: () => {
+      // TODO: batch by frame or allready done by internal scheduler?
       if (changeHandler) {
         changeHandler()
       }

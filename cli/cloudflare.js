@@ -64,9 +64,9 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     console.warn('no zone found for project folder, using the default zone for the cf token. to disable this behaviour use --no-fallback-zone')
   }
 
+  // TODO: remove env vars that are removed
   // TODO: support schedules req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/${env}/schedules`)
 
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/bindings
   // accounts/{}/workers/services/convoi__cx__wh___ipfs?expand=scripts
   // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production?expand=routes
   // accounts/{}/workers/durable_objects/namespaces
@@ -178,6 +178,10 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     routes.forEach((route) => {
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
+
+    const oldBindings = await req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/production/bindings`)
+    console.log(oldBindings)
+    // TODO: nullify removed vars
 
     const scriptPath = codePath.replace(atreyuPath, projectPath).replace('/handlers/', '/build/').replace('/index', '')
     const scriptData = Deno.readTextFileSync(scriptPath)

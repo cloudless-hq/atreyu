@@ -1,14 +1,14 @@
 import falcorPaths from './falcor-paths.js'
 import windowPaths from './window-paths.js'
 
-import { toFalcorPaths, toWindowPaths} from './helpers.js'
+import { addPathTags } from './helpers.js'
 
 //  TODO: normalize leading slashes warn or auto handle missing leading slashes
 // TODO: support * methods?
 
 export default {
-  ...toFalcorPaths(falcorPaths),
-  ...toWindowPaths(windowPaths),
+  ...addPathTags(falcorPaths, 'falcor'),
+  ...addPathTags(windowPaths, 'window'),
 
   '/*': {
     get: {

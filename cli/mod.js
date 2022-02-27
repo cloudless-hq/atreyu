@@ -19,7 +19,7 @@ import { buildEdge, buildWorkerConfig } from './edge.ts'
 import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
-import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
+import { addPathTags } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
 import { exec } from './exec.js'
 import { watch } from './watcher.ts'
@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.js'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.5.27'
+export const ayuVersion = '0.6.2'
 // const denoVersion = '1.14.2'
 let buildName = ''
 let buildColor = ''
@@ -125,7 +125,7 @@ async function loadEdgeSchema () {
       import(projectPath + `/app/schema.js`)
     ])).schema
     if (typeof schema === 'function') {
-      schema = schema({ defaultPaths, toFalcorPaths, toWindowPaths })
+      schema = schema({ defaultPaths, addPathTags })
     }
   } catch (e) {
     console.log('  no schema found, fallback to basic ipfs setup')

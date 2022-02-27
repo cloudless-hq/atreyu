@@ -1,25 +1,24 @@
 import {
-    setColorEnabled,
-    reset,
-    bold,
-    blue,
-    green,
-    yellow,
-    italic,
-    red,
-    gray
+  setColorEnabled,
+  reset,
+  bold,
+  blue,
+  green,
+  yellow,
+  italic,
+  red,
+  gray
 } from '../deps-deno.js'
 
-
-  // TODO:
-  // long and short format man
-  // -u --upgrade <version>  Upgrade to latest version. (default: master)
-  // -c --config <file>      Use specific file as configuration.
-  // -i --init               Create config file in current working dir.
-  // version
-  // info print all versions and stats for debugging etc.
+// TODO:
+// long and short format man
+// -u --upgrade <version>  Upgrade to latest version. (default: master)
+// -c --config <file>      Use specific file as configuration.
+// -i --init               Create config file in current working dir.
+// version
+// info print all versions and stats for debugging etc.
 export function printHelp ({ version }) {
-    console.log(`${green('atreyu cli')} - ${version}
+  console.log(`${green('atreyu cli')} - ${version}
 atreyu - cutting edge web applications
 
 Usage:

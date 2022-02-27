@@ -1,33 +1,25 @@
-export function toFalcorPaths (paths) {
-  const methods = ['call', 'get', 'set']
+export function addPathTags (paths, tags) {
+  if (typeof tags === 'string') {
+    tags = [ tags ]
+  }
 
-  Object.entries(paths).forEach(([pathName, pathConf])=> {
-    methods.forEach(method => {
-      if (method in pathConf) {
-        if (!pathConf[method].tags) {
-          pathConf[method].tags = ['falcor']
-        } else if (!pathConf[method].tags.includes('falcor')){
-          pathConf[method].tags.push('falcor')
+  Object.values(paths).forEach(pathConf => {
+    if (tags.includes('window') && !pathConf.get) {
+      pathConf.get = {}
+    }
+
+    const methodConfs = Object.values(pathConf).filter(conf => typeof conf === 'object')
+
+    methodConfs.forEach(conf => {
+      tags.forEach(tag => {
+        if (!conf.tags) {
+          conf.tags = [tag]
+        } else if (!conf.tags.includes(tag)) {
+          conf.tags.push(tag)
         }
-      }
+      })
     })
   })
 
   return paths
-}
-
-export function toWindowPaths (paths) {
-  Object.entries(paths).forEach(([pathName, pathConf]) => {
-    if (!pathConf.get) {
-      pathConf.get = {tags: [ 'window' ]}
-    } else {
-      pathConf.get.tags = [ 'window' ]
-    }
-  })
-
-  return paths
-}
-
-export function normalize (path) {
-
 }

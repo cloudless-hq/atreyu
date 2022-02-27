@@ -15,7 +15,7 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
   } else {
     response = await fetch(url, { headers })
 
-    if (response.status === 200) {
+    if (response.ok) {
       const resHeaders = Object.fromEntries(response.headers.entries())
       resHeaders['cache-status'] = 'edge; hit'
 

@@ -7,3 +7,5 @@
 - feed/ updater without db or serviceworker
 - standard paths for edge functions without schema config
 - cloudflare r3 object store instead of pinata pinning mode
+- relay like fragments instead preloading?
+- graphql like subscriptions

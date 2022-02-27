@@ -1,13 +1,16 @@
 import { join } from '../deps-deno.js'
 import startWorker from './lib/start-worker.js'
-import { toFalcorPaths, toWindowPaths } from '../app/src/schema/helpers.js'
+import { addPathTags } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
+import { basename } from '../deps-deno.js'
 
 // TODO: use config and args from cli
 const ipfsGateway = 'http://127.0.0.1:8080'
 const ipfsApi = 'http://127.0.0.1:5001'
 const homeDir = Deno.env.get('HOME')
 const repoName = Deno.env.get('RepositoryName')
+const projectPath = Deno.cwd()
+const cwd = basename(projectPath)
 
 // bindings = bindingsFile.bindings.reduce((agr, ent) => {
 //   agr[ent.name] = ent.text
@@ -39,12 +42,13 @@ startWorker(async arg => {
 
   const localhostMatch = req.url.hostname.split('.localhost')
 
-  const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName
+  const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName || cwd
   const appKey = appName + '_dev'
 
   apps = (await getApps()) || []
 
   let app = apps.find(app => app.Name === appKey)
+  app.appName = appName
   arg.app = app // TODO find generic solution for local and cf
 
   if (!app) {
@@ -59,7 +63,7 @@ startWorker(async arg => {
       ])).schema
 
       if (typeof schema === 'function') {
-        schemas[appKey] = { data: schema({ defaultPaths, toFalcorPaths, toWindowPaths }), hash: app.Hash }
+        schemas[appKey] = { data: schema({ defaultPaths, addPathTags }), hash: app.Hash }
       } else {
         schemas[appKey] = { data: schema, hash: app.Hash }
       }

@@ -31,3 +31,6 @@ export { analyzeDeps } from 'https://deno.land/x/deploy@0.4.0/src/utils/info.ts'
 // '/Users/jan/Dev/cloudless/libs/deployctl/src/utils/info.ts'
 
 export { build, transform } from 'https://deno.land/x/esbuild@v0.14.23/mod.js'
+
+export { default as WindiProcessor } from 'https://esm.sh/windicss@3.4.4'
+export { HTMLParser, CSSParser } from 'https://esm.sh/windicss@3.4.4/utils/parser'
