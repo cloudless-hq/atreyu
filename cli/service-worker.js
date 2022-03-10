@@ -1,4 +1,4 @@
-import { join, green } from '../deps-deno.js'
+import { join, green } from '../deps-deno.ts'
 
 export default async function ({ batch, buildRes, clean } = {}) {
   const fileName = `service-worker.js`

@@ -1,4 +1,4 @@
-export async function loadConfig (env, appName) {
+export async function loadConfig (env, appName, repo) {
   let confFile
   let conf
 
@@ -32,6 +32,7 @@ export async function loadConfig (env, appName) {
       ...conf,
       ...envConf,
       appName,
+      repo,
       env
     },
     runConf: confFile?.runConf

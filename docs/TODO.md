@@ -9,3 +9,4 @@
 - cloudflare r3 object store instead of pinata pinning mode
 - relay like fragments instead preloading?
 - graphql like subscriptions
+- sourcemap and css import windi

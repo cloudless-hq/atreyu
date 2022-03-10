@@ -1,4 +1,4 @@
-import { join, basename, green } from '../deps-deno.js'
+import { join, basename, green } from '../deps-deno.ts'
 // import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
@@ -95,7 +95,7 @@ async function compile ({input, appName, workerName, output, buildName}) {
   ])
 }
 
-export function buildEdge (workers, buildName) {
+export function buildEdge (workers, buildName, batch, clean) {
   // const projectFolder = Deno.cwd()
   const appName = basename(Deno.cwd())
   const buildPath = join(Deno.cwd(), 'edge/build')

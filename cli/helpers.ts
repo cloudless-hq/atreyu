@@ -1,3 +1,21 @@
+import { join } from '../deps-deno.ts'
+
+export async function recursiveReaddir (path: string) {
+  const files: string[] = []
+  const getFiles = async (path: string) => {
+    for await (const dirEntry of Deno.readDir(path)) {
+      if (dirEntry.isDirectory) {
+        await getFiles(join(path, dirEntry.name))
+      } else if (dirEntry.isFile) {
+        files.push(join(path, dirEntry.name))
+      }
+    }
+  }
+  await getFiles(path)
+
+  return files
+}
+
 export async function execStream ({ cmd, getData }) {
   const proc = Deno.run({
     cmd,

@@ -5,10 +5,12 @@ import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../lib/escape-id.js'
 
 // TODO: support addtional dataSources like apollo
+
 export default function ({
   dbConf,
   dataSources,
-  schema
+  schema,
+  originWhitelist = []
 }) {
 
   if (dataSources) {
@@ -252,7 +254,7 @@ export default function ({
       return event.respondWith(new Response('OK'))
     }
 
-    if (url.origin !== location.origin) {
+    if (url.origin !== location.origin && !originWhitelist.includes(url.origin)) {
       return event.respondWith(corsHandler({ event, url, corsConf }))
     }
 

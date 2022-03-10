@@ -1,8 +1,9 @@
-import { join } from '../deps-deno.js'
+import { join } from '../deps-deno.ts'
 import startWorker from './lib/start-worker.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
+import { exec } from '../cli/helpers.ts'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { basename } from '../deps-deno.js'
+import { basename } from '../deps-deno.ts'
 
 // TODO: use config and args from cli
 const ipfsGateway = 'http://127.0.0.1:8080'
@@ -129,12 +130,15 @@ startWorker(async arg => {
     if (!configs[appKey]) {
       configs[appKey] = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
     }
+    if (!configs[appKey]?.repo) {
+      console.error(`called edge function without environment app: ${appKey}, worker: ${workerName}`)
+      return new Response('Error', { status: 500 })
+    }
 
     // todo: how to handle this reliably and less ugly?
     // setEnv(configs[appKey])
 
-    if (!workers[workerName] || workers[workerName].hash !== app.Hash) {
-      console.log('reloading worker script: ' + workerName)
+    if (!workers[workerName] || workers[workerName].appHash !== app.Hash) {
       Deno.env.set('appKey', appKey)
       let base = []
       let filenames = []
@@ -154,8 +158,13 @@ startWorker(async arg => {
       //   // TODO: ts support
       //   codePath = join(...base, filenames[1])
       // }
+      const denoCodePath = codePath.replace('.js', '.d.js')
 
-      workers[workerName] = { code: (await import(codePath.replace('.js', '.d.js') + `?${app.Hash}`)), hash: app.Hash }
+      const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
+      if (fileHash !== workers[workerName]?.fileHash) {
+        console.log('  reloading worker script ' + workerName)
+      }
+      workers[workerName] = { code: (await import(denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
     }
 
     return workers[workerName].code.handler(arg)

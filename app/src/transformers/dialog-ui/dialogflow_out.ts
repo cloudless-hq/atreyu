@@ -3,21 +3,17 @@ export default ({
   followupEvent,
   messages
 }) => {
+  let followupEventInput
+  if (followupEvent) {
+    followupEventInput = {
+      name: followupEvent.name,
+      parameters: followupEvent.context
+    }
+  }
+
   return {
     outputContext,
-    followupEvent,
+    followupEventInput,
     fulfillmentMessages: messages
   }
 }
-
-
-
-// {
-//   "followupEventInput": {
-//     "name": "event-name",
-//     "parameters": {
-//       "parameter-name-1": "parameter-value-1",
-//       "parameter-name-2": "parameter-value-2"
-//     }
-//   }
-// }

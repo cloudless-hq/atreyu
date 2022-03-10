@@ -9,7 +9,7 @@ import {
   color,
   red
   // analyzeDeps
-} from '../deps-deno.js'
+} from '../deps-deno.ts'
 
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
@@ -21,15 +21,17 @@ import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { exec } from './exec.js'
+import { exec } from './helpers.ts'
 import { watch } from './watcher.ts'
-import { globToRegExp } from '../deps-deno.js'
+import { globToRegExp } from '../deps-deno.ts'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.6.2'
-// const denoVersion = '1.14.2'
+export const ayuVersion = '0.6.4'
+
+const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.19.0' }
+
 let buildName = ''
 let buildColor = ''
 let buildTime = Date.now()
@@ -111,7 +113,7 @@ if (!cmd) {
   start = true
 }
 
-let { config = {}, runConf = {} } = await loadConfig(env, appName)
+let { config = {}, runConf = {} } = await loadConfig(env, appName, repo || homeConfPath)
 
 // TODO: allow argument relative path for apps different from cwd
 
@@ -182,10 +184,21 @@ async function doStart () {
   })
 }
 
+if (Deno.version.deno !== pinnedVersions.deno) {
+  console.error(`Your current ayu cli requires deno ${pinnedVersions.deno} but found ${Deno.version.deno }`)
+  if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
+    console.error(`Also your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}, we advice to use the latest ayu version and if necessary update the project and use the deno version required by that setup`)
+  }
+  Deno.exit(-1)
+}
+
+// TODO check ipfs: ver
+
 if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
   console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}`)
   Deno.exit(-1)
 }
+
 
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {
@@ -204,7 +217,7 @@ switch (cmd) {
 
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
-      const newConf = await loadConfig(env, appName)
+      const newConf = await loadConfig(env, appName, repo || homeConfPath)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 
@@ -229,7 +242,7 @@ switch (cmd) {
           clean
         }),
 
-        buildEdge(edgeSchema, buildName)
+        buildEdge(edgeSchema, buildName, batch, clean)
       ])
 
       let buildEmits = buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] )

@@ -1,4 +1,4 @@
-import { globToRegExp } from '../deps-deno.js'
+import { globToRegExp } from '../deps-deno.ts'
 
 export async function watch ({ watchPath, ignore, handler }: {watchPath: string, ignore: string[], handler: CallableFunction}) {
   const watcher = Deno.watchFs(watchPath, { recursive: true }) // deps handle seperately?

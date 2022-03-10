@@ -1,5 +1,5 @@
-import { join, basename, green, yellow } from '../deps-deno.js'
-import { execStream, exec } from './exec.js'
+import { join, basename, green, yellow } from '../deps-deno.ts'
+import { execStream, exec } from './helpers.ts'
 // async function ipfsFetch (cmd, data) {
 //  // todo: convert to http
 // }
@@ -181,7 +181,7 @@ export async function add ({
   //   }, body: JSON.stringify(listMap, null, 2)
   // })).text())
 
-  // TODO: add isntalling init atreyu
+  // TODO: add isntalling init atreyu, FIXME: this is not working!
   if (clean && pinName !== 'atreyu' + '_' + env) {
     await ipfs(`files cp /apps/atreyu_${env} /apps/${pinName}/atreyu`)
   }

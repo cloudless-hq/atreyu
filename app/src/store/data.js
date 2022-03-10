@@ -146,10 +146,6 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
       path = subModel ? [...subModel.getPath(), ...path] : path
 
-      if (onAccess) {
-        onAccess(path)
-      }
-
       const name = path[path.length - 1]
 
       if (name === 'length') {
@@ -182,6 +178,10 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         path = path.concat(boxKey)
       } else {
         adjustedModel = subModel || model
+      }
+
+      if (onAccess) {
+        onAccess(path)
       }
 
       const falcorCacheVal = extractFromCache(adjustedModel._root.cache, path)
@@ -271,9 +271,28 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
     },
 
-    set: (path, newValue, _delim, _id) => {
-      (subModel || model).setValue(path, newValue)
+    set: (path, newValue, delim, _id) => {
+      if (!path[path.length - 1]) {
+        path.pop()
+      }
+      path = subModel ? [...subModel.getPath(), ...path] : path
+
+      let boxKey = ''
+      if (delim && !delims.includes(delim)) {
+        boxKey = delim
+      }
+
+      let adjustedModel
+      if (boxKey !== '') {
+        adjustedModel = subModel ? subModel.boxValues() : boxedModel
+        path = path.concat(boxKey)
+      } else {
+        adjustedModel = subModel || model
+      }
+
+      adjustedModel.setValue(path, newValue)
         .then(() => {})
+        .catch(err => console.error(err))
 
       return true
     },

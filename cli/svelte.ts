@@ -1,24 +1,9 @@
-import { join, dirname, basename, compile, preprocess, green } from '../deps-deno.js'
-import { build, transform, WindiProcessor, HTMLParser, CSSParser } from '../deps-deno.js'
+import { join, dirname, basename, green } from '../deps-deno.ts'
+import { recursiveReaddir } from './helpers.ts'
+import { build, compile, transform, preprocess } from '../deps-deno.ts'
+import { collectWindiClasses, makeGlobalWindi, windiParse } from './windi.ts'
 
-async function recursiveReaddir (path: string) {
-  const files: string[] = []
-  const getFiles = async (path: string) => {
-    for await (const dirEntry of Deno.readDir(path)) {
-      if (dirEntry.isDirectory) {
-        await getFiles(join(path, dirEntry.name))
-      } else if (dirEntry.isFile) {
-        files.push(join(path, dirEntry.name))
-      }
-    }
-  }
-  await getFiles(path)
-
-  return files
-}
-
-const windiClasses = new Set()
-let globalStyles = {}
+const globalStyles: {[key: string]: string} = {}
 export default async function ({
   input = [ 'app/src' ],
   batch,
@@ -29,30 +14,6 @@ export default async function ({
   sveltePath = '/svelte'
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   const compNames: {[key: string]: boolean} = {}
-  const windiProcessor = new WindiProcessor()
-
-  let windiConf
-  try {
-    windiConf = (await import(join(Deno.cwd(), 'windi.config.js'))).default
-  } catch (_e) { }
-
-  windiProcessor.loadConfig(windiConf)
-
-  function collectWindiClasses (html: string) {
-    (new HTMLParser(html).parseClasses().map((i: any) => i.result)).forEach(windiClasses.add, windiClasses)
-  }
-
-  function makeGlobalStyles () {
-    const htmlClasses = [...windiClasses].join(' ')
-    const resets = windiProcessor.preflight()
-    const interpretedSheet = windiProcessor.interpret(htmlClasses).styleSheet
-
-    const APPEND = false
-    const MINIFY = !dev
-    const styles = interpretedSheet.extend(resets, APPEND).build(MINIFY)
-
-    return styles + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join()
-  }
 
   const deps = {}
 
@@ -75,6 +36,10 @@ export default async function ({
         await Deno.remove(outputTarget, { recursive: true })
       }
     } catch (_e) {}
+
+    try {
+      await Deno.mkdir(join(outputTarget), { recursive: true })
+    } catch (_e) { }
 
     try {
       Deno.statSync(inFolder)
@@ -102,7 +67,7 @@ export default async function ({
       if (file.endsWith('.css')) { }
 
       if (file.endsWith('.ts')) {
-        const { metafile } = await build({
+        await build({ // const { metafile } =
           entryPoints: [file],
           sourcemap: 'external',
           // splitting: true,
@@ -132,8 +97,7 @@ export default async function ({
           const { code } = await preprocess(template, {
             style: ({ content, attributes, filename }: {content: string, attributes: {lang: string, global: boolean}, filename: string}) => {
               if (attributes.lang === 'postcss') {
-                const cssStyleSheet = new CSSParser(content, windiProcessor).parse()
-                content = cssStyleSheet?.build()
+                content = windiParse(content)
               }
 
               if (attributes.global) {
@@ -145,8 +109,8 @@ export default async function ({
 
               return { code: content }
             },
-            markup: ({ content }: { content: string, filename: string }) => {
-              collectWindiClasses(content)
+            markup: async ({ content }: { content: string, filename: string }) => {
+              await collectWindiClasses(content)
             },
             script: async ({ content, attributes }: {content: string, attributes: {lang: string}, filename: string}) => {
               if (attributes.lang === 'ts') {
@@ -291,7 +255,7 @@ export default async function ({
       }
     })
 
-    return await Promise.all(fileCompilers)
+    return Promise.all(fileCompilers)
   }
 
   if (typeof input === 'string') {
@@ -301,55 +265,17 @@ export default async function ({
   }
 
   const baseStylePath = 'app/build/base.css'
-  await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), makeGlobalStyles())
+  await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), makeGlobalWindi(!dev) + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join())
   newBuildRes.files[baseStylePath] = {
     emits: [baseStylePath],
     newEmits: [baseStylePath],
     deps: []
   }
 
+  console.log(`  ${green('emitted:')} ` + 'app/build/base.css')
+
   return newBuildRes
 }
 
-// TODO: components/
-//   base/
-//       foo/
-//          Button.vue
-// The component name will be based on its own path directory and filename. Therefore, the component will be:
-// <BaseFooButton />
-// result: {
-//   code: string,
-//   dependencies: Array<string>
-// } = await svelte.preprocess(
-//   source: string,
-//   preprocessors: Array<{
-//     markup?: (input: { content: string, filename: string }) => Promise<{
-//       code: string,
-//       dependencies?: Array<string>
-//     }>,
-//     script?: (input: { content: string, markup: string, attributes: Record<string, string>, filename: string }) => Promise<{
-//       code: string,
-//       dependencies?: Array<string>
-//     }>,
-//     style?: (input: { content: string, markup: string, attributes: Record<string, string>, filename: string }) => Promise<{
-//       code: string,
-//       dependencies?: Array<string>
-//     }>
-//   }>,
-//   options?: {
-//     filename?: string
-//   }
-// )
-
-// const MagicString = require('magic-string')
-// const s = new MagicString(content, { filename }) s.overwrite(pos, pos + 3, 'bar', { storeName: true }) map: s.generateMap()
-// import postcss from "https://deno.land/x/postcss/mod.js";
-// import autoprefixer from "https://deno.land/x/postcss_autoprefixer/mod.js";
-// postcss_import@0.1.4
-// purgecss
-// const result = await postcss([autoprefixer]).process(css);
-// import { postcsscss } from '../deps-node.build.js'
-// const result = await postcss([postcsscss]).process(comp.css)
-// 'https://jspm.dev/postcsscss'
 // TODO: auto fetch and compile sub imports of svelte components?
 // TODO: prefixed imported styles

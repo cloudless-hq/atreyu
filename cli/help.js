@@ -8,7 +8,7 @@ import {
   italic,
   red,
   gray
-} from '../deps-deno.js'
+} from '../deps-deno.ts'
 
 // TODO:
 // long and short format man
