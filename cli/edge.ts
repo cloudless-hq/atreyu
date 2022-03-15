@@ -45,19 +45,28 @@ export function buildWorkerConfig (schema: any) {
   return workers
 }
 
-async function compile ({input, appName, workerName, output, buildName}) {
-  const { files, diagnostics } = await Deno.emit(join(atreyuPath, 'edge', 'entry-cloudflare.js'), {
-    bundle: 'module', // classic
-    check: false,
-    importMapPath: atreyuPath + '/atreyu',
-    importMap: {
-      'imports': {
-        '/atreyu/': './app/src/',
-        '$handler.js': input,
-        '$env.js': './edge/lib/env.js'
+async function compile ({ input, appName, workerName, output, buildName, publish }) {
+  if (publish) {
+    const cfRes = await Deno.emit(join(atreyuPath, 'edge', 'entry-cloudflare.js'), {
+      bundle: 'module', // classic
+      check: false,
+      importMapPath: atreyuPath + '/atreyu',
+      importMap: {
+        'imports': {
+          '/atreyu/': './app/src/',
+          '$handler.js': input,
+          '$env.js': './edge/lib/env.js'
+        }
       }
+    })
+    if (cfRes.diagnostics.length > 0) {
+      cfRes.diagnostics.map(di => console.warn(di))
     }
-  })
+    await Promise.all([
+      Deno.writeTextFile(output, cfRes.files['deno:///bundle.js'].replace('window.atob(', 'atob(').replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
+      Deno.writeTextFile(output + '.map', cfRes.files['deno:///bundle.js.map'])
+    ])
+  }
 
   const denoRes = await Deno.emit(input, {
     bundle: 'module',
@@ -82,40 +91,59 @@ async function compile ({input, appName, workerName, output, buildName}) {
   //   outfile: output.replace('.js', '.d.js')
   // })
 
-  if (diagnostics.length > 0) {
-    diagnostics.map(di => console.warn(di))
+  if (denoRes.diagnostics.length > 0) {
+    denoRes.diagnostics.map(di => console.warn(di))
   }
 
   await Promise.all([
-    Deno.writeTextFile(output, files['deno:///bundle.js'].replace('window.atob(', 'atob(').replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
-    Deno.writeTextFile(output + '.map', files['deno:///bundle.js.map']),
-
     Deno.writeTextFile(output.replace('.js', '.d.js'), denoRes.files['deno:///bundle.js'] + `\n\n//# sourceMappingURL=./${workerName}.d.js.map`),
     Deno.writeTextFile(output.replace('.js', '.d.js') + '.map', denoRes.files['deno:///bundle.js.map'])
   ])
+
+  return JSON.parse(denoRes.files['deno:///bundle.js.map']).sources
 }
 
-export function buildEdge (workers, buildName, batch, clean) {
-  // const projectFolder = Deno.cwd()
-  const appName = basename(Deno.cwd())
-  const buildPath = join(Deno.cwd(), 'edge/build')
-  console.log('  🐘 recreating: edge/build')
-  try {
-    Deno.removeSync(buildPath, { recursive: true })
-  } catch (_e) { }
-  try {
-    Deno.mkdirSync(buildPath, { recursive: true })
-  } catch (_e) { }
+const deps = {}
+export async function buildEdge ({ workers, buildName, batch, clean, publish }) {
+  const projectFolder = Deno.cwd()
+  const appName = basename(projectFolder)
+  const buildPath = join(projectFolder, 'edge/build')
 
-  Object.entries(workers).forEach(([workerName, { codePath }]) => {
-    console.log(`  building edge-worker: ${codePath.replace(atreyuPath, '/atreyu')}`)
+  if (clean) {
+    console.log('  🐘 recreating: edge/build')
+    try {
+      Deno.removeSync(buildPath, { recursive: true })
+    } catch (_e) { }
+    try {
+      Deno.mkdirSync(buildPath, { recursive: true })
+    } catch (_e) { }
+  }
+  console.log( `  compiling edge to: edge/build`)
 
-    if (!workerName.startsWith('_')) {
-      compile({input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
-    } else {
-      compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName})
-    }
-  })
+  let affectedWorkers = []
+  if (!clean) {
+    batch.forEach(change => {
+      affectedWorkers = affectedWorkers.concat(deps[change])
+    })
+  }
 
-  console.log( `  ${green('compiled to:')} ${buildPath}`)
+  await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath }]) => {
+    const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
+    console.log(`  building edge-worker: ${workerLogPath}`)
+
+    const newDeps = await compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
+
+    newDeps.filter(newDep => newDep.startsWith('file:///')).forEach(newDep => {
+      const normalized = newDep
+        .replace('file://' + atreyuPath, '/atreyu')
+        .replace('file://' + projectFolder, '')
+
+      if (!deps[normalized]) {
+        deps[normalized] = []
+      }
+      deps[normalized].push(workerName)
+    })
+  }))
+
+  return { files: {} } // emits[], newEmits[], deps: []
 }

@@ -56,7 +56,7 @@ startWorker(async arg => {
     return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
   }
 
-  if (!schemas[appKey] || schemas[appKey].hash !== app.Hash) {
+  if (!schemas[appKey] || schemas[appKey].appHash !== app.Hash) {
     try {
       const schema = (await Promise.any([
         import(ipfsGateway + `/ipfs/${app.Hash}/schema/index.js`),
@@ -64,9 +64,9 @@ startWorker(async arg => {
       ])).schema
 
       if (typeof schema === 'function') {
-        schemas[appKey] = { data: schema({ defaultPaths, addPathTags }), hash: app.Hash }
+        schemas[appKey] = { data: schema({ defaultPaths, addPathTags }), appHash: app.Hash }
       } else {
-        schemas[appKey] = { data: schema, hash: app.Hash }
+        schemas[appKey] = { data: schema, appHash: app.Hash }
       }
     } catch (e) {
       console.warn(` ⚠️ could not load schema for ${appKey}, falling back to default`)
@@ -82,7 +82,7 @@ startWorker(async arg => {
             }
           }
         },
-        hash: app.Hash
+        appHash: app.Hash
       }
     }
   }
