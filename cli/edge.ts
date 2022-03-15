@@ -104,7 +104,7 @@ async function compile ({ input, appName, workerName, output, buildName, publish
 }
 
 const deps = {}
-export async function buildEdge ({ workers, buildName, batch, clean, publish }) {
+export async function buildEdge ({ workers, buildName, batch = [], clean, publish }) {
   const projectFolder = Deno.cwd()
   const appName = basename(projectFolder)
   const buildPath = join(projectFolder, 'edge/build')
