@@ -28,9 +28,9 @@ import { globToRegExp } from '../deps-deno.ts'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.6.6'
+export const ayuVersion = '0.6.7'
 
-const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.19.0' }
+const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.20.1' }
 
 let buildName = ''
 let buildColor = ''
@@ -333,7 +333,7 @@ switch (cmd) {
       publish: true
     })
 
-    await buildEdge({ workers: edgeSchema, buildName, publish: true })
+    await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
 
     await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath, folderHash: pubFolderHash})
 

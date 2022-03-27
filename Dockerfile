@@ -53,7 +53,6 @@ RUN deno install \
 --allow-write=/tmp,"$HOME"/.atreyu,./,"$DENO_DIR",/root/.cache/deno,/root/.cache/esbuild \
 --allow-run=ipfs,npx,`command -v deno`,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.14.23 \
 --no-check \
---prompt \
 --unstable \
 -n ayu \
 -f /root/atreyu/cli/mod.js

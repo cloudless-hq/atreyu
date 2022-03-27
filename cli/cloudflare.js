@@ -179,7 +179,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
 
-    const oldBindings = await req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/production/bindings`)
+    const oldBindings = await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}/environments/production/bindings`)
     console.log(oldBindings)
     // TODO: nullify removed vars
 
