@@ -37,11 +37,11 @@ export function makeGlobalWindi (minify: boolean) {
       styles = styles.extend(styleSheet, APPEND)
     }
   })
-  styles = styles.extend(resets, APPEND)
+  styles = styles?.extend(resets, APPEND)
 
   // const ast = new ClassParser(htmlClasses).parse()
 
-  return styles.sort().build(MINIFY)
+  return styles?.sort().build(MINIFY)
 }
 
 export function collectWindiClasses (html: string) {
