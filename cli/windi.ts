@@ -41,7 +41,7 @@ export function makeGlobalWindi (minify: boolean) {
 
   // const ast = new ClassParser(htmlClasses).parse()
 
-  return styles?.sort().build(MINIFY)
+  return styles?.sort().build(MINIFY) || ''
 }
 
 export function collectWindiClasses (html: string) {
