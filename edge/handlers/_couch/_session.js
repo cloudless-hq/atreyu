@@ -17,6 +17,9 @@ function getCookie (name, cookieString = '') {
   return v ? v[2] : null
 }
 
+
+// TODO: create database if not existing
+
 export function handler ({ req, stats, app }) {
   let jwt
 
@@ -99,6 +102,8 @@ export function handler ({ req, stats, app }) {
       headers
     })
   }
+
+  // TODO: delete account and database
 
   // const dbUrl = `${dbHost}/user_${userId}`
   // const sessionsUrl = `${dbUrl}/_design/ntr/_view/lastSeen_by_userId?reduce=false`

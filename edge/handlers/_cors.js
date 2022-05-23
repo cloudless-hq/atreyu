@@ -38,13 +38,19 @@ import { cachedReq } from '../lib/req.js'
 
 const confCache = {}
 
-export async function handler ({event, req, app}) {
+export async function handler ({ req }) {
   const href = decodeURIComponent(req.url.href.substring(req.url.href.indexOf('?') + 1))
 
+  console.log(href)
+  if (!href || href.endsWith('.map')) {
+    return new Response('Cannot process request', {
+      status: 500,
+      statusText: 'Url not found in cors proxy request'
+    })
+  }
   // allow http
   // allowed cookies
   // TODO handle existing cookies and issue an unset if not whitelisted with warning
-
   // TODO: const originWhitelist = []
 
   const commonHeadersWhitelist = [

@@ -15,8 +15,9 @@
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
   "rules": {
-    "no-console": "error",
+    // "no-console": "error",
     "@typescript-eslint/no-explicit-any": ["off"],
+    "spaced-comment": ["error", "always"],
     "no-multi-spaces": "error",
     "no-tabs": "error",
     "curly": "error",
@@ -24,6 +25,7 @@
       "patterns": ["../..*"]
     }],
     "space-infix-ops": "error",
+    "functional/no-throw-statement": "error",
     "functional/no-class": "error",
     "functional/no-this-expression": "error",
     "no-invalid-this": "error",

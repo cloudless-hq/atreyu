@@ -214,6 +214,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
       return []
     })
+      .filter(binding => binding.text || binding.namespace_id)
 
     const bindingsData = JSON.stringify({
       body_part: 'script',
@@ -243,7 +244,7 @@ ${scriptData}
       ctype: `multipart/form-data; boundary=----AtreyuFormBoundary${randomBoundary}`
     })
 
-    if (res.size) {
+    if (res?.size) {
       console.log('  ✅ created worker: ' + cfWorkerName)
     } else {
       console.log('  ❌ failed creating worker: ' + cfWorkerName, res)
