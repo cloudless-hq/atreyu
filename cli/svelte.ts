@@ -265,7 +265,7 @@ export default async function ({
   }
 
   const baseStylePath = 'app/build/base.css'
-  await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), makeGlobalWindi(!dev) + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join())
+  await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), makeGlobalWindi(!dev) + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join('\n'))
   newBuildRes.files[baseStylePath] = {
     emits: [baseStylePath],
     newEmits: [baseStylePath],
