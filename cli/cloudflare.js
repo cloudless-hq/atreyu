@@ -271,17 +271,19 @@ ${scriptData}
     console.log(`  ✅ deleted ${pathDeletions.length} old paths.`)
   }
 
-  Object.entries(toSetRoutes).forEach(async ([pattern, workerName], i) => {
+  console.log('added routes: ', await Promise.all(Object.entries(toSetRoutes).map(([pattern, workerName]) => {
+    console.log({pattern, workerName})
     const patternConfig = { pattern, script: workerName }
 
-    req(`zones/${cloudflareZoneId}/workers/routes`, {
+    return req(`zones/${cloudflareZoneId}/workers/routes`, {
       method: 'POST',
       body: JSON.stringify(patternConfig)
     })
-      // .then(re => console.log(re))
-      .then(routeRes => console.log('  added route: ' + patternConfig.pattern))
-      .catch(err => console.log(err))
-  })
+    // console.log(routeRes)
+    // // .then(re => console.log(re))
+    // .then(routeRes => console.log('  added route: ' + patternConfig.pattern))
+    // .catch(err => console.log(err))
+  })))
 
   console.log(`  adding ${dnsAdditions.size} dns entries...`)
   await Promise.all(([...dnsAdditions]).map(async dnsEntry => {
