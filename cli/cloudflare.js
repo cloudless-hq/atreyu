@@ -47,13 +47,16 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
   let cloudflareZoneId = ''
 
-  if (!domain) {
-    if (env === 'prod') {
-      domain = appName
-    } else {
-      domain = `${env}.${appName}`
-    }
-  }
+  // if (!domain) {
+  //   if (env === 'prod') {
+  //     domain = appName
+  //   } else {
+  //     domain = `${env}.${appName}`
+  //   }
+  // } else {
+  const dnsName = `*.${domain}`
+  domain = `${env}.${domain}`
+  // }
 
   zones.forEach(zone => {
     if (domain.endsWith(zone.name)) {
@@ -151,8 +154,8 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   // }
   // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/content
 
-  const [_curWorkers, _curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
-    req(`accounts/${cloudflareAccountId}/workers/scripts`),
+  const [_curServices, _curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
+    req(`accounts/${cloudflareAccountId}/workers/services`),
     req(`accounts/${cloudflareAccountId}/workers/subdomain`),
     req(`accounts/${cloudflareAccountId}/storage/kv/namespaces`),
 
@@ -160,16 +163,18 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     req(`zones/${cloudflareZoneId}/dns_records`)
   ])
 
+  // console.log(curServices)
+
   console.log('  🔎 checked existing workers, domains, namespaces and routes.')
 
   const dnsAdditions = new Set()
-  if (curDns.find(entry => entry.name === domain)) {
-    console.log('  using existin dns entry')
+  if (curDns.find(entry => entry.name === dnsName)) {
+    console.log('  using existing dns entry')
   } else {
-    dnsAdditions.add(domain)
+    dnsAdditions.add(dnsName)
   }
 
-  const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__${env}__`
+  const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__`
 
   const toSetRoutes = {}
   const workerCreations = Object.entries(workers).map(async ([workerName, {codePath, routes}]) => {
@@ -179,9 +184,15 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
 
-    const oldBindings = await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}/environments/production/bindings`)
-    console.log(oldBindings)
     // TODO: nullify removed vars
+    // /environments/${env}/bindings
+
+    // const { default_environment, environments } = await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}`)
+    // // console.log({ default_environment, environments })
+    // if (!environments.find(({ environment }) => environment === env)) {
+    //   console.log(`creating new cloudflare worker service environmnt ${cfWorkerName} ${env}:`)
+    //   console.log(await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}/environments/${default_environment.environment}/copy/${env}`, { method: 'POST' }))
+    // }
 
     const scriptPath = codePath.replace(atreyuPath, projectPath).replace('/handlers/', '/build/').replace('/index', '')
     const scriptData = Deno.readTextFileSync(scriptPath)
@@ -226,7 +237,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       randomBoundary += Math.floor(Math.random() * 16).toString(16)
     }
 
-    const res = await req(`accounts/${cloudflareAccountId}/workers/scripts/${cfWorkerName}?include_subdomain_availability=true`, {
+    const res = await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}/environments/${env}?include_subdomain_availability=true`, {
       method: 'PUT',
 
       body: `------AtreyuFormBoundary${randomBoundary}
@@ -256,12 +267,14 @@ ${scriptData}
 
   const pathDeletions = []
   curRoutes.forEach(route => {
-    if (toSetRoutes[route.pattern] === route.script) {
-      delete toSetRoutes[route.pattern]
-    } else if (route.script.startsWith(appPrefix)) {
-      pathDeletions.push(req(`zones/${cloudflareZoneId}/workers/routes/${route.id}`, {
-        method: 'DELETE'
-      }))
+    if (route.environment === env) {
+      if (toSetRoutes[route.pattern] === route.script) {
+        delete toSetRoutes[route.pattern]
+      } else if (route.script.startsWith(appPrefix)) {
+        pathDeletions.push(req(`zones/${cloudflareZoneId}/workers/routes/${route.id}`, {
+          method: 'DELETE'
+        }))
+      }
     }
   })
 
@@ -271,19 +284,22 @@ ${scriptData}
     console.log(`  ✅ deleted ${pathDeletions.length} old paths.`)
   }
 
-  console.log('added routes: ', await Promise.all(Object.entries(toSetRoutes).map(([pattern, workerName]) => {
-    console.log({pattern, workerName})
-    const patternConfig = { pattern, script: workerName }
-
+  console.log(`  adding ${Object.entries(toSetRoutes).length} routes...`)
+  await Promise.all(Object.entries(toSetRoutes).map(([pattern, workerName]) => {
+    const patternConfig = { pattern, script: workerName, environment: env }
     return req(`zones/${cloudflareZoneId}/workers/routes`, {
       method: 'POST',
       body: JSON.stringify(patternConfig)
     })
-    // console.log(routeRes)
-    // // .then(re => console.log(re))
-    // .then(routeRes => console.log('  added route: ' + patternConfig.pattern))
-    // .catch(err => console.log(err))
-  })))
+      .then(res => {
+        if (res?.id) {
+          console.log('  added route: ' + JSON.stringify(patternConfig))
+        } else {
+          console.log('  failed adding route: ' + JSON.stringify(patternConfig) )
+        }
+      })
+      .catch(err => console.error(err))
+  }))
 
   console.log(`  adding ${dnsAdditions.size} dns entries...`)
   await Promise.all(([...dnsAdditions]).map(async dnsEntry => {

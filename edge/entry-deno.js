@@ -49,12 +49,13 @@ startWorker(async arg => {
   apps = (await getApps()) || []
 
   let app = apps.find(app => app.Name === appKey)
-  app.appName = appName
-  arg.app = app // TODO find generic solution for local and cf
 
   if (!app) {
     return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
   }
+
+  app.appName = appName
+  arg.app = app // TODO find generic solution for local and cf
 
   if (!schemas[appKey] || schemas[appKey].appHash !== app.Hash) {
     try {

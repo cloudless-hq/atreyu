@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.ts'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.7.2'
+export const ayuVersion = '0.7.3'
 
 const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.20.1' }
 
@@ -61,6 +61,7 @@ let {
   port = '80',
   start,
   repo,
+  domain,
   sveltePath,
   // customAyuRelease,
   verbose
@@ -199,7 +200,6 @@ if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
   Deno.exit(-1)
 }
 
-
 // TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {
   case 'version':
@@ -223,6 +223,7 @@ switch (cmd) {
 
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
+
       // todo: fix import path in local worker wrapper?
       await Deno.writeTextFile( join(homeConfPath, `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
 
@@ -335,9 +336,9 @@ switch (cmd) {
 
     await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
 
-    await cloudflareDeploy({workers: edgeSchema, appName, env, config, atreyuPath, projectPath, folderHash: pubFolderHash})
+    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, folderHash: pubFolderHash})
 
-    await couchUpdt({folderHash: pubFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
+    await couchUpdt({ folderHash: pubFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
     Deno.exit(0)
 
   case 'start':

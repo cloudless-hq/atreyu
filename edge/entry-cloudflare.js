@@ -11,7 +11,7 @@ async function getAppData () {
 
   if (couchHost && _couchKey && _couchSecret) {
     const settingsDocId = 'system:settings_' + env
-    const safeDbName = env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
+    const safeDbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
 
     const url = `${couchHost}/${safeDbName}/${settingsDocId}`
 

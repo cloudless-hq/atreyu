@@ -1,7 +1,7 @@
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-export async function couchUpdt ({folderHash, buildColor, config, _name, version, buildName, buildTime, appName, env}) {
-  const { couchHost, __couchAdminKey, __couchAdminSecret, couchKey, userId } = config
+export async function couchUpdt ({ folderHash, buildColor, config, version, buildName, buildTime, appName, env}) {
+  const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey, userId } = config
 
   if (!couchHost || !__couchAdminKey) {
     return
@@ -9,18 +9,12 @@ export async function couchUpdt ({folderHash, buildColor, config, _name, version
 
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
 
-  const dbName = env === 'dev' ? escapeId(env + '_' + userId + '.' + appName) : env === 'prod' ? escapeId(appName) : escapeId(env + '.' + appName)
+  const dbName = env === 'dev' ? escapeId(env + '_' + userId + '__' + appName) : env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
   console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
   try {
-    const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
-    // if (oldDoc?._rev) {
-    //   console.log('  found existing version')
-    // }
-    const _rev = oldDoc?._rev
-
     const dbRes = await fetch(`${couchHost}/${dbName}`, {
       headers
     })
@@ -38,7 +32,7 @@ export async function couchUpdt ({folderHash, buildColor, config, _name, version
         body: JSON.stringify({
           'cloudant': {
             'nobody': [],
-            [couchKey]: [
+            [_couchKey]: [
               '_reader',
               '_writer'
             ]
@@ -46,6 +40,9 @@ export async function couchUpdt ({folderHash, buildColor, config, _name, version
         })
       })
     }
+
+    const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
+    const _rev = oldDoc?._rev
 
     const updtRes = await (await fetch(`${couchHost}/${dbName}/${_id}`, {
       body: JSON.stringify({
