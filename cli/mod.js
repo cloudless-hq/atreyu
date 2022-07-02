@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.ts'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.7.3'
+export const ayuVersion = '0.7.4'
 
 const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.20.1' }
 
@@ -289,7 +289,7 @@ switch (cmd) {
       Deno.exit(0)
     }
 
-    // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/convoi.cx/app/schema/falcor.js')
+    // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/closr/app/schema/falcor.js')
     // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )
     // const depsChanged = new Set([...deps, ...newDeps]).size
     // if (depsChanged) { deps = newDeps }

@@ -16,8 +16,8 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
     response = await fetch(url, { headers })
 
     if (response.ok) {
-      const resHeaders = Object.fromEntries(response.headers.entries())
-      resHeaders['cache-status'] = 'edge; hit'
+      // const resHeaders = Object.fromEntries(response.headers.entries())
+      // resHeaders['cache-status'] = 'edge; hit'
 
       wait(
         (async () => {
@@ -25,7 +25,12 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
             metadata: {
               status: response.status,
               statusText: response.statusText,
-              headers: resHeaders
+              headers:  {
+                'content-type': response.headers.get('content-type'),
+                'content-length': response.headers.get('content-length'),
+                'last-modified': response.headers.get('last-modified'),
+                'cache-status': 'edge; hit'
+              }
             }
           })
         })()

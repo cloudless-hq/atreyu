@@ -21,7 +21,7 @@ export async function couchUpdt ({ folderHash, buildColor, config, version, buil
 
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
-      await fetch(`${couchHost}/${dbName}?partitioned=false`, {
+      await fetch(`${couchHost}/${dbName}?partitioned=true`, {
         headers,
         method: 'PUT'
       })

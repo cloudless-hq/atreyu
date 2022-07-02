@@ -112,6 +112,7 @@ export async function handler ({ req }) {
     }
   })
 
+  // TODO: headers allready stripped to minimum if they come from KV store
   let res = await cachedReq(href, 'cors', {
     headers: cleanReqHeaders
   })

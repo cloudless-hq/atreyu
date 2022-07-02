@@ -184,7 +184,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       toSetRoutes[`${domain}${route}`] = cfWorkerName
     })
 
-    // TODO: nullify removed vars
+    // TODO: nullify removed vars!
     // /environments/${env}/bindings
 
     // const { default_environment, environments } = await req(`accounts/${cloudflareAccountId}/workers/services/${cfWorkerName}`)
