@@ -36,7 +36,7 @@ import { cachedReq } from '../lib/req.js'
 
 // TODO: prevend cookie name clashes!!!!
 
-const confCache = {}
+// const confCache = {}
 
 export async function handler ({ req }) {
   const href = decodeURIComponent(req.url.href.substring(req.url.href.indexOf('?') + 1))

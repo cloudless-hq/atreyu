@@ -65,6 +65,8 @@
   // the initial update check to auto install updates on fresh load and preload the required data
   async function init () {
     const userId = await $data._session.userId$promise
+    // const appHash = await $data._session.userId$promise
+
     if (userId) {
       doSync($data, data.falcor)
 
@@ -76,6 +78,12 @@
       ])
 
       if (settingsDoc?.folderHash) {
+        // on dev this will happen if app db hash is updated but server not restarted but applicaiton is reloaded to update
+        // if (appHash !== settingsDoc.folderHash) {
+        //   alert('Application configuration is corrupt, please contact support to fix this.')
+        //   return
+        // }
+
         latestHash = settingsDoc.folderHash
 
         if ((latestHash && installedHash) && latestHash !== installedHash) {

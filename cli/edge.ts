@@ -55,7 +55,8 @@ async function compile ({ input, appName, workerName, output, buildName, publish
         'imports': {
           '/atreyu/': './app/src/',
           '$handler.js': input,
-          '$env.js': './edge/lib/env.js'
+          '$env.js': './edge/lib/env.js',
+          '$kvs.js': './edge/lib/kvs.js'
         }
       }
     })
@@ -75,7 +76,8 @@ async function compile ({ input, appName, workerName, output, buildName, publish
     importMap: {
       'imports': {
         '/atreyu/': './app/src/',
-        '$env.js': './edge/lib/env-local.js'
+        '$env.js': './edge/lib/env-local.js',
+        '$kvs.js': './edge/lib/kvs-local.js'
       }
     }
   })

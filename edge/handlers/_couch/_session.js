@@ -2,7 +2,7 @@
 // import maybeSetupUser from './setup'
 import { getEnv } from '$env.js'
 
-const { userId, env } = getEnv(['userId', 'env'])
+const { userId, env, folderHash } = getEnv(['userId', 'env', 'folderHash'])
 const orgId = 'igp'
 
 // function setCookie (name, value, days) {
@@ -123,6 +123,9 @@ export function handler ({ req, stats, app }) {
     userId: payload.email || null,
     env,
     appName: app.appName,
+
+    appHash: folderHash,
+
     // roles: [],
     // email,
     country: req.headers['cf-ipcountry'],

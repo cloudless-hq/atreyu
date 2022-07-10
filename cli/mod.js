@@ -28,7 +28,7 @@ import { globToRegExp } from '../deps-deno.ts'
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.7.4'
+export const ayuVersion = '0.7.5'
 
 const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.20.1' }
 

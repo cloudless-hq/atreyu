@@ -1,4 +1,4 @@
-const devCache= {}
+const devCache = {}
 
 const devKV = {
   // TODO: NOT implemented yet clone array buffer etc. for later use devCache[key] = { value, metadata }

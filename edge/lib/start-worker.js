@@ -13,7 +13,7 @@ export default handler => {
 
     async function execute () {
       try {
-        const { parsedBody, body } = await bodyParser({ event })
+        const { parsedBody, body } = await bodyParser({ event }) // clone: true
 
         if (req.url.href.startsWith('http://1')) {
           console.log(stats, req)

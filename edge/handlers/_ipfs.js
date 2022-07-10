@@ -1,5 +1,5 @@
 import { getEnv } from '$env.js'
-import { getKvStore } from '../lib/kv-store.js'
+import { getKvStore } from '$kvs.js'
 import wait from '../lib/wait.js'
 import { cachedReq } from '../lib/req.js'
 

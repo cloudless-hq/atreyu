@@ -1,4 +1,4 @@
-import { getKvStore } from '../lib/kv-store.js'
+import { getKvStore } from '$kvs.js'
 import wait from '../lib/wait.js'
 
 export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
