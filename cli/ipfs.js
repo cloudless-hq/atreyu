@@ -50,7 +50,7 @@ export async function add ({
 
   // TODO: default to short_name from app manifest.json
   const name = basename(Deno.cwd())
-  const pinName = name + '_' + env
+  const pinName = env === 'prod' ? name : name + '_' + env
 
   function ipfs (cmd, {silent} = {}) {
     return execIpfs(cmd, repo, silent)
@@ -182,8 +182,8 @@ export async function add ({
   // })).text())
 
   // TODO: add isntalling init atreyu, FIXME: this is not working!
-  if (clean && pinName !== 'atreyu' + '_' + env) {
-    await ipfs(`files cp /apps/atreyu_${env} /apps/${pinName}/atreyu`)
+  if (clean && !pinName.startsWith('atreyu')) {
+    await ipfs(`files cp /apps/atreyu /apps/${pinName}/atreyu`)
   }
 
   const preHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash
