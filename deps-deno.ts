@@ -1,4 +1,4 @@
-export { join, dirname, basename } from 'https://deno.land/std@0.126.0/path/mod.ts'
+export { join, dirname, basename } from 'https://deno.land/std@0.150.0/path/mod.ts'
 
 export {
   setColorEnabled,
@@ -25,12 +25,7 @@ export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/v1
 
 export { parse } from 'https://deno.land/std@0.126.0/flags/mod.ts'
 
-export {default as runDeno} from 'https://deno.land/x/deploy@0.4.0/src/subcommands/run.ts'
-// '/Users/jan/Dev/cloudless/libs/deployctl/src/subcommands/run.ts'
-export { analyzeDeps } from 'https://deno.land/x/deploy@0.4.0/src/utils/info.ts'
-// '/Users/jan/Dev/cloudless/libs/deployctl/src/utils/info.ts'
-
-export { build, transform } from 'https://deno.land/x/esbuild@v0.14.23/mod.js'
+export { build, transform } from 'https://deno.land/x/esbuild@v0.14.51/mod.js'
 
 export { default as WindiProcessor } from 'https://esm.sh/windicss@3.5.4'
 export { HTMLParser, CSSParser } from 'https://esm.sh/windicss@3.5.4/utils/parser' // ClassParser

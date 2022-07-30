@@ -1,4 +1,4 @@
-import { getEnv } from '$env.js'
+import { getEnv } from '/$env.js'
 // import { fetchStream } from '../../lib/http.js'
 import {handler as sessionHandler } from './_session.js'
 

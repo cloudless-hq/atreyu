@@ -1,10 +1,10 @@
+import { join } from '../deps-deno.ts'
 export async function loadConfig (env, appName, repo) {
   let confFile
   let conf
 
   try {
-    confFile = await import(Deno.cwd() + '/ayu.config.js')
-    confFile
+    confFile = await import('file://' + join('/', Deno.cwd(), 'ayu.config.js'))
 
     conf = { appPath: Deno.cwd(), ...confFile?.default }
   } catch (err) {

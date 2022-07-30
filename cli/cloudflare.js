@@ -1,4 +1,4 @@
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, folderHash }) {
+export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash }) {
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -47,16 +47,17 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
   let cloudflareZoneId = ''
 
-  // if (!domain) {
-  //   if (env === 'prod') {
-  //     domain = appName
-  //   } else {
-  //     domain = `${env}.${appName}`
-  //   }
-  // } else {
-  const dnsName = `*.${domain}`
-  domain = `${env}.${domain}`
-  // }
+  if (!domain) {
+    domain = appName
+  }
+
+  let dnsName
+  if (env === 'prod') {
+    dnsName = domain
+  } else {
+    dnsName = `*.${domain}`
+    domain = `${env}.${domain}`
+  }
 
   zones.forEach(zone => {
     if (domain.endsWith(zone.name)) {
@@ -168,6 +169,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   console.log('  🔎 checked existing workers, domains, namespaces and routes.')
 
   const dnsAdditions = new Set()
+
   if (curDns.find(entry => entry.name === dnsName)) {
     console.log('  using existing dns entry')
   } else {
@@ -199,7 +201,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
     config['env'] = env
-    config['folderHash'] = folderHash
+    config['folderHash'] = appFolderHash
     const bindings = Object.entries(config).flatMap(([key, value]) => {
       if (!key.startsWith('__')) {
         if (key.startsWith('_')) {
@@ -323,5 +325,5 @@ ${scriptData}
   // https://api.cloudflare.com/client/v4/accounts/{}/workers/scripts/{}/subdomain {enabled: true}
   // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFKFoZFDfvh DNS only
   // dnslink with gateway, ipfs worker gateway, ipfs worker
-  console.log('  🏁 finished cloudflare deployment ' + folderHash)
+  console.log('  🏁 finished cloudflare deployment ' + appFolderHash)
 }

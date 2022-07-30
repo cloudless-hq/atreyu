@@ -3,7 +3,6 @@ import {
   join,
   faker,
   basename,
-  runDeno,
   italic,
   bold,
   color,
@@ -11,6 +10,8 @@ import {
   // analyzeDeps
 } from '../deps-deno.ts'
 
+import { runDeno } from '../runtime/mod.ts'
+import { update } from './update.ts'
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
 import buildSvelte from './svelte.ts'
@@ -24,13 +25,12 @@ import defaultPaths from '../app/src/schema/default-routes.js'
 import { exec } from './helpers.ts'
 import { watch } from './watcher.ts'
 import { globToRegExp } from '../deps-deno.ts'
+import versions from './versions.json' assert { type: 'json' }
+const { ayuVersion, denoVersion } = versions
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-export const ayuVersion = '0.7.6'
-
-const pinnedVersions = { ipfs: '0.12.0', atreyu: ayuVersion, deno: '1.20.1' }
 
 let buildName = ''
 let buildColor = ''
@@ -124,14 +124,14 @@ async function loadEdgeSchema () {
   let schema
   try {
     schema = (await Promise.any([
-      import(projectPath + `/app/schema/index.js`),
-      import(projectPath + `/app/schema.js`)
+      import('file:' + projectPath + `/app/schema/index.js`),
+      import('file:' + projectPath + `/app/schema.js`)
     ])).schema
     if (typeof schema === 'function') {
       schema = schema({ defaultPaths, addPathTags })
     }
   } catch (e) {
-    console.log('  no schema found, fallback to basic ipfs setup')
+    console.log('  no schema found, fallback to basic ipfs setup', e)
     schema = {
       paths: {
         '/*': {
@@ -185,12 +185,12 @@ async function doStart () {
   })
 }
 
-if (Deno.version.deno !== pinnedVersions.deno) {
-  console.error(`Your current ayu cli requires deno ${pinnedVersions.deno} but found ${Deno.version.deno }`)
+if (Deno.version.deno !== denoVersion) {
+  console.error(`Your current ayu cli requires deno ${denoVersion} but found ${Deno.version.deno }`)
   if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
     console.error(`Also your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}, we advice to use the latest ayu version and if necessary update the project and use the deno version required by that setup`)
   }
-  Deno.exit(-1)
+  Deno.exit(1)
 }
 
 // TODO check ipfs: ver
@@ -264,7 +264,7 @@ switch (cmd) {
 
       await Promise.all(runs)
 
-      const folderHash = await addIpfs({
+      const { appFolderHash } = await addIpfs({
         input: _[1],
         repo: repo || homeConfPath,
         clean,
@@ -274,7 +274,7 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ folderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env })
+      await couchUpdt({ appFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env })
     }
 
     if (start) {
@@ -324,7 +324,7 @@ switch (cmd) {
     await Promise.all(runs)
 
     // TODO: warn and skip ipfs publishing on allready running offline node
-    const pubFolderHash = await addIpfs({
+    const { appFolderHash, rootFolderHash } = await addIpfs({
       input: _[1],
       repo: repo || homeConfPath,
       name,
@@ -336,10 +336,24 @@ switch (cmd) {
 
     await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
 
-    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, folderHash: pubFolderHash})
+    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash})
 
-    await couchUpdt({ folderHash: pubFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
+    await couchUpdt({ appFolderHash, rootFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
     Deno.exit(0)
+
+  case 'stop':
+    // TODO: kill daemon and ipfs
+    Deno.exit(0)
+
+  case 'update':
+    // TODO: kill daemon and ipfs
+    // Deno.exit(0)
+    await update()
+    break
+
+  case 'info':
+    // Deno.exit(0)
+    break
 
   case 'start':
     console.log(Deno.version)

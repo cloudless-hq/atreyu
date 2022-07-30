@@ -1,7 +1,7 @@
 import startWorker from './lib/start-worker.js'
 import stats from './lib/stats.js'
-import { handler } from '$handler.js'
-import { getEnv } from '$env.js'
+import { handler } from '/$handler.js'
+import { getEnv } from '/$env.js'
 import { escapeId } from '../app/src/lib/escape-id.js'
 
 async function getAppData () {
@@ -20,10 +20,13 @@ async function getAppData () {
         Authorization: `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
       }
     }))
+
     const settingsDoc = await settingsDocRes.json()
 
     appData.safeDbName = safeDbName
     appData.Hash = settingsDoc.folderHash
+    appData.rootFolderHash = settingsDoc.rootFolderHash
+    appData.version = settingsDoc.version
   } else {
     appData.Hash = folderHash
   }

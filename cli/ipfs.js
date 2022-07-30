@@ -1,5 +1,7 @@
 import { join, basename, green, yellow } from '../deps-deno.ts'
 import { execStream, exec } from './helpers.ts'
+import versions from './versions.json' assert { type: 'json' }
+const { ipfsVersion } = versions
 // async function ipfsFetch (cmd, data) {
 //  // todo: convert to http
 // }
@@ -56,14 +58,77 @@ export async function add ({
     return execIpfs(cmd, repo, silent)
   }
 
+  async function pin ({ hash, pinName }) {
+    if (!config.__ipfsPinningJWT) {
+      console.error('  ⚠️ no __ipfsPinningJWT in secrets.js, skipping pinning')
+      return
+    }
+    const ipfsPinningApi = config.__ipfsPinningApi || 'https://api.pinata.cloud/psa'
+
+    // TODO: ipfs pin remote ls --service=pinata handle existing keys
+    await ipfs(`pin remote service rm pinata`)
+    await ipfs(`pin remote service add pinata ${ipfsPinningApi} ${config.__ipfsPinningJWT}`)
+
+    const listRes = await (await fetch(`${ipfsPinningApi}/pins?status=queued,pinning,pinned,failed&name=${pinName}&limit=100`, {
+      headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}` }
+    })).json()
+
+    let pinRequestId
+    let deletions = []
+    if (listRes.count > 100) {
+      console.error('  🛑 too many pinned objects for the name, limited to 100, please remove manually or raise issue on github to implement paging')
+      return
+    } else if (listRes.count > 0) {
+      // if (prompt(`  ⚠️  remove ${listRes.count - 1} older pins for the name? y/n`, 'n') === 'y') {
+      deletions = listRes.results.flatMap(pin => {
+        // if (i === listRes.count -1) {
+        // pinRequestId = pin.requestid
+        // return []
+        // } else {
+        return pin.requestid
+        // }
+      })
+      // } else {
+      // return
+      // }
+    }
+    // else if (listRes.count === 1) {
+    // pinRequestId = listRes.results[0].requestid
+    // }
+
+    for (let i = 0; i < deletions.length; i++) {
+      await fetch(`${ipfsPinningApi}/pins/${deletions[i]}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}` }
+      }).catch(err => console.error(`  🛑 error deleting pin ${deletions[i]}`, err))
+    }
+
+    if (pinRequestId) {
+      await ipfs(`pin remote add --service=pinata --name=${pinName} ${hash}`)
+      // await fetch(`${ipfsPinningApi}/pins/${pinRequestId}`, {
+      //   method: 'POST',
+      //   headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}`, 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     name,
+      //     cid: hash
+      //     // todo: origins or ipfs(`pin remote update --service=pinata --name=${name} ${hash}`)
+      //   })
+      // }).catch(err => console.error(`  🛑 error updating pin ${deletions[i]}`, err))
+    } else {
+      await ipfs(`pin remote add --service=pinata --name=${pinName} ${hash}`)
+    }
+    // TODO check pinning status!
+  }
+
   if (clean) {
+    // TODO: use ipfsVersion
     const version = (await ipfs(`version`)).replace('\n', '').replace('ipfs version ', '').split('.').map(x => Number(x))
     if (version[1] < 8) {
       console.log(`  ${yellow(' warning: ipfs version must be at least 0.8, found:')}`, version)
     }
   }
 
-  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=package.json `
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=secrets.js `
   async function doAdd (fName) {
     if (fName.endsWith('/')) {
       const rootHash = (await ipfs(addCommand + fName)).replace('\n', '')
@@ -181,7 +246,7 @@ export async function add ({
   //   }, body: JSON.stringify(listMap, null, 2)
   // })).text())
 
-  // TODO: add isntalling init atreyu, FIXME: this is not working!
+  // TODO: add installing init atreyu, FIXME: this is not working!
   if (clean && !pinName.startsWith('atreyu')) {
     await ipfs(`files cp /apps/atreyu /apps/${pinName}/atreyu`)
   }
@@ -200,83 +265,32 @@ export async function add ({
 
   // const appFolders= await (await fetch(ipfsApi + `/api/v0/files/ls?arg=/apps/&long=true`, {method: 'POST'})).json()
   // appFolders.Entries.find(({Name}) => Name === name).Hash
-  const folderHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash
+  const appFolderHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash
 
   // TODO: allow version history and cleanup in dashboard with hash-history
-  // Deno.writeTextFileSync(input + '/ipfsHashes', folderHash + '\n', {append: true})
 
+  let rootFolderHash
   if (publish) {
-    if (!config.__ipfsPinningJWT) {
-      console.error('  ⚠️ no __ipfsPinningJWT in secrets.js, skipping pinning')
-      return
-    }
-    const ipfsPinningApi = config.__ipfsPinningApi || 'https://api.pinata.cloud/psa'
-
-    // TODO: ipfs pin remote ls --service=pinata handle existing keys
-    await ipfs(`pin remote service rm pinata`)
-    await ipfs(`pin remote service add pinata ${ipfsPinningApi} ${config.__ipfsPinningJWT}`)
-
-    const listRes = await (await fetch(`${ipfsPinningApi}/pins?status=queued,pinning,pinned,failed&name=${pinName}&limit=100`, {
-      headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}` }
-    })).json()
-
-    let pinRequestId
-    let deletions = []
-    if (listRes.count > 100) {
-      console.error('  🛑 too many pinned objects for the name, limited to 100, please remove manually or raise issue on github to implement paging')
-      return
-    } else if (listRes.count > 0) {
-      // if (prompt(`  ⚠️  remove ${listRes.count - 1} older pins for the name? y/n`, 'n') === 'y') {
-      deletions = listRes.results.flatMap(pin => {
-        // if (i === listRes.count -1) {
-        // pinRequestId = pin.requestid
-        // return []
-        // } else {
-        return pin.requestid
-        // }
-      })
-      // } else {
-      // return
-      // }
-    }
-    // else if (listRes.count === 1) {
-    // pinRequestId = listRes.results[0].requestid
-    // }
-
-    for (let i = 0; i < deletions.length; i++) {
-      await fetch(`${ipfsPinningApi}/pins/${deletions[i]}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}` }
-      }).catch(err => console.error(`  🛑 error deleting pin ${deletions[i]}`, err))
+    if (pinName.startsWith('atreyu')) {
+      rootFolderHash = (await doAdd('./'))['']
+      await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/atreyu_repo&recursive=true`, {method: 'POST'})
+      await ipfs(`files cp /ipfs/${rootFolderHash} /apps/atreyu_repo`)
+      console.log(`  atreyu cli version published: http://atreyu.localhost/ipfs/${rootFolderHash}/cli/mod.js`)
+      // https://cloudless.mypinata.cloud/ipfs/
+      await pin({ hash: rootFolderHash, pinName: 'atreyu_repo' })
     }
 
-    if (pinRequestId) {
-      await ipfs(`pin remote add --service=pinata --name=${pinName} ${folderHash}`)
-      // await fetch(`${ipfsPinningApi}/pins/${pinRequestId}`, {
-      //   method: 'POST',
-      //   headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}`, 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     name,
-      //     cid: folderHash
-      //     // todo: origins or ipfs(`pin remote update --service=pinata --name=${name} ${folderHash}`)
-      //   })
-      // }).catch(err => console.error(`  🛑 error updating pin ${deletions[i]}`, err))
-    } else {
-      await ipfs(`pin remote add --service=pinata --name=${pinName} ${folderHash}`)
-    }
-    // TODO check pinning status!
-    console.log(green(`  ✅ added ${name} `))
-    // http://${keys.atreyu}.ipns.pinata.cloud${port == 80 ? '' : ':' + port}`))
-  } else {
-    // await Promise.all([
-    //   ipfs(`pin add ${atreyuFileHashes['']}`), // update /ipns/${keys.atreyu.cid}
-    //   ipfs(`pin add ${folderHash}`), // update /ipns/${keys[name].cid}
-    //   // ipfs(`name publish --lifetime=2000h --key=atreyu ${atreyuFileHashes['']} --quieter --resolve=false --allow-offline`),
-    //   // ipfs(`name publish --lifetime=2000h --key=${name} ${folderHash} --quieter --resolve=false --allow-offline`)
-    // ])
-
-    console.log(green(`  ✅ added ${name}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
+    await pin({ hash: appFolderHash, pinName })
   }
 
-  return folderHash
+  // await Promise.all([
+  //   ipfs(`pin add ${atreyuFileHashes['']}`), // update /ipns/${keys.atreyu.cid}
+  //   ipfs(`pin add ${folderHash}`), // update /ipns/${keys[name].cid}
+  //   ipfs(`name publish --lifetime=2000h --key=atreyu ${atreyuFileHashes['']} --quieter --resolve=false --allow-offline`),
+  //   ipfs(`name publish --lifetime=2000h --key=${name} ${folderHash} --quieter --resolve=false --allow-offline`)
+  // ])
+
+  console.log(green(`  ✅ added ${name}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
+
+  return { appFolderHash, rootFolderHash }
 }

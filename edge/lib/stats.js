@@ -1,10 +1,7 @@
-const version = 'dev'
-const build = '<@buildName@>'
-const appName = '<@appName@>'
+import { getEnv } from '/$env.js'
+const { appName } = getEnv(['appName'])
 
 const stats = {
-  version,
-  build,
   appName,
   workerId: Math.round(Math.random() * 10000000000000),
   workerStart: null, // Date.now(), is 0 outside of req, so we assume first req is worker start

@@ -3,3 +3,4 @@ node_modules
 docs/screens
 **/ipfs-map.json
 edge/build
+secrets.js

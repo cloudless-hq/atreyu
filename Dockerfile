@@ -32,18 +32,11 @@ RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g yarn
 
-# atreyu https://github.com/cloudless-hq/atreyu/README.md
-# RUN wget https://github.com/cloudless-hq/atreyu/archive/refs/tags/v${AYU_VERSION}.zip
-# RUN unzip v${AYU_VERSION}.zip
-# RUN rm -f v${AYU_VERSION}.zip
-# RUN mv atreyu-${AYU_VERSION} atreyu
-# RUN pwd
-# RUN ls .
 COPY . /root/atreyu
 
 RUN mkdir -p /root/.cache/esbuild /root/.cache/deno
 
-#=DENO_DIR,_DIALOGFLOWCONFIG,HOME,ESBUILD_BINARY_PATH,XDG_CACHE_HOME,CODESPACE_NAME,GITHUB_USER,__CLOUDFLARETOKEN,__IPFSPINNINGJWT,_ELASTIC_AUTH,_COUCHKEY,_COUCHSECRET,__COUCHADMINKEY,__COUCHADMINSECRET,_DIALOGFLOW_SERVICEACCOUNTKEY \
+#env=DENO_DIR,_DIALOGFLOWCONFIG,HOME,ESBUILD_BINARY_PATH,XDG_CACHE_HOME,CODESPACE_NAME,GITHUB_USER,__CLOUDFLARETOKEN,__IPFSPINNINGJWT,_ELASTIC_AUTH,_COUCHKEY,_COUCHSECRET,__COUCHADMINKEY,__COUCHADMINSECRET,_DIALOGFLOW_SERVICEACCOUNTKEY \
 
 RUN deno install \
 --allow-hrtime \

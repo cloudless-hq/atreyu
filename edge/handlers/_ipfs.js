@@ -1,5 +1,5 @@
-import { getEnv } from '$env.js'
-import { getKvStore } from '$kvs.js'
+import { getEnv } from '/$env.js'
+import { getKvStore } from '/$kvs.js'
 import wait from '../lib/wait.js'
 import { cachedReq } from '../lib/req.js'
 
@@ -27,6 +27,33 @@ export async function handler ({ req, app }) {
     url = ipfsGateway + req.url.pathname
     reqHash = req.url.pathname.replace('/ipfs/', '')
     ipfsPath = req.url.pathname
+  } else if (req.url.pathname.startsWith('/ayu@')) {
+    if (req.url.pathname.startsWith('/ayu@latest')) {
+      // return (new Response(JSON.stringify({ version: app.version, hash: app.rootFolderHash }), {
+      //   status: 200,
+      //   statusText: 'OK',
+      //   headers: {
+      //     'content-type': 'application/json'
+      //   }
+      // }))
+
+      const folderPath = req.url.pathname.replace('/ayu@latest', '')
+
+      reqHash = app.rootFolderHash + folderPath
+      ipfsPath = `/ipfs/${reqHash}`
+      url = ipfsGateway + ipfsPath
+    } else {
+      const pathArray = req.url.pathname.replace('/ayu@', '').split('/')
+      const version = pathArray.shift()
+      const folderPath = '/' + pathArray.join('/')
+      if (version === app.version) {
+        reqHash = app.rootFolderHash + folderPath
+        ipfsPath = `/ipfs/${reqHash}`
+        url = ipfsGateway + ipfsPath
+      } else {
+        // TODO: other version support
+      }
+    }
   } else {
     if (req.url.pathname.endsWith('/')) {
       req.url.pathname += 'index.html'
@@ -103,6 +130,8 @@ export async function handler ({ req, app }) {
     contentType = 'application/javascript'
   } else if (req.url.pathname.endsWith('.json')) {
     contentType = 'application/json'
+  } else if (req.url.pathname.endsWith('.ts')) {
+    contentType = 'application/typescript'
   }
   if (disableCache) {
     headers = new Headers({

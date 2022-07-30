@@ -2,6 +2,8 @@
 
 ## Getting started
 
+Notice: This is the readme for working on the atreyu itself. For just using it please refer to the documentation on https://atreyu.dev
+
 #### 1. Install environment dependencies.
 
 You need to have the following tools installed on your machine:

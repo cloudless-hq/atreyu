@@ -1,5 +1,6 @@
-import { join, basename, green } from '../deps-deno.ts'
-// import * as esbuild from 'https://deno.land/x/esbuild@v0.13.3/mod.js'
+import { join, basename, green, build } from '../deps-deno.ts'
+import { folderHandlers } from '../edge/handlers/index.js'
+import esbuildPlugin from './esbuild-plugin.ts'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
@@ -15,23 +16,17 @@ export function buildWorkerConfig (schema: any) {
         }
 
         let base = []
-        let filenames = []
+        let filename
 
         if (workerName.startsWith('_')) {
           base = [atreyuPath, 'edge']
-          filenames = [`handlers/${operationId}.js`, `handlers/${operationId}/index.js`]
+          filename = folderHandlers.includes(operationId) ? `handlers/${operationId}/index.js` : `handlers/${operationId}.js`
         } else {
           base = [Deno.cwd(), 'edge', 'handlers'] // configs[appKey].appPath,
-          filenames = [operationId]
-        }
-        let codePath = join(...base, filenames[0])
-        try {
-          Deno.statSync(codePath)
-        } catch (_e) {
-          codePath = join(...base, filenames[1])
+          filename = operationId
         }
 
-        workers[workerName].codePath = codePath
+        workers[workerName].codePath = join(...base, filename)
 
         if (workers[workerName].routes) {
           workers[workerName].routes.push(path)
@@ -45,64 +40,40 @@ export function buildWorkerConfig (schema: any) {
   return workers
 }
 
+const buildSettings = {
+  sourcemap: 'linked',
+  bundle: true,
+  treeShaking: true,
+  metafile: true,
+  minify: false,
+  sourceRoot: './',
+  target: 'esnext',
+  platform: 'neutral'
+}
 async function compile ({ input, appName, workerName, output, buildName, publish }) {
   if (publish) {
-    const cfRes = await Deno.emit(join(atreyuPath, 'edge', 'entry-cloudflare.js'), {
-      bundle: 'module', // classic
-      check: false,
-      importMapPath: atreyuPath + '/atreyu',
-      importMap: {
-        'imports': {
-          '/atreyu/': './app/src/',
-          '$handler.js': input,
-          '$env.js': './edge/lib/env.js',
-          '$kvs.js': './edge/lib/kvs.js'
-        }
-      }
-    })
-    if (cfRes.diagnostics.length > 0) {
-      cfRes.diagnostics.map(di => console.warn(di))
-    }
-    await Promise.all([
-      Deno.writeTextFile(output, cfRes.files['deno:///bundle.js'].replace('window.atob(', 'atob(').replace('<@buildName@>', buildName).replace('<@appName@>', appName) + `\n\n//# sourceMappingURL=./${workerName}.js.map`),
-      Deno.writeTextFile(output + '.map', cfRes.files['deno:///bundle.js.map'])
-    ])
+    await build({
+      entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
+      plugins: [ esbuildPlugin({local: false, input, atreyuPath}) ],
+      outfile: output,
+      ...buildSettings
+    }).catch(err => console.error(err))
   }
 
-  const denoRes = await Deno.emit(input, {
-    bundle: 'module',
-    check: false,
-    importMapPath: atreyuPath + '/atreyu',
-    importMap: {
-      'imports': {
-        '/atreyu/': './app/src/',
-        '$env.js': './edge/lib/env-local.js',
-        '$kvs.js': './edge/lib/kvs-local.js'
-      }
+  const buildRes = await build({
+    entryPoints: [input],
+    plugins: [ esbuildPlugin({ local: true, input, atreyuPath }) ],
+    outfile: output.replace('.js', '.d.js'),
+    ...buildSettings
+  }).catch(err => console.error(err))
+
+  return Object.keys(buildRes.metafile.inputs).map(path => {
+    if (path.includes('/atreyu/')) {
+      return '/atreyu/' + path.split('/atreyu/')[1]
+    } else {
+      return path
     }
   })
-
-  // const { metafile } =
-  // await esbuild.build({
-  //   entryPoints: [input],
-  //   sourcemap: 'external',
-  //   bundle: true,
-  //   minify: false,
-  //   treeShaking: false,
-  //   metafile: true,
-  //   outfile: output.replace('.js', '.d.js')
-  // })
-
-  if (denoRes.diagnostics.length > 0) {
-    denoRes.diagnostics.map(di => console.warn(di))
-  }
-
-  await Promise.all([
-    Deno.writeTextFile(output.replace('.js', '.d.js'), denoRes.files['deno:///bundle.js'] + `\n\n//# sourceMappingURL=./${workerName}.d.js.map`),
-    Deno.writeTextFile(output.replace('.js', '.d.js') + '.map', denoRes.files['deno:///bundle.js.map'])
-  ])
-
-  return JSON.parse(denoRes.files['deno:///bundle.js.map']).sources
 }
 
 const deps = {}
@@ -135,15 +106,11 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
 
     const newDeps = await compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 
-    newDeps.filter(newDep => newDep.startsWith('file:///')).forEach(newDep => {
-      const normalized = newDep
-        .replace('file://' + atreyuPath, '/atreyu')
-        .replace('file://' + projectFolder, '')
-
-      if (!deps[normalized]) {
-        deps[normalized] = []
+    newDeps.forEach(newDep => {
+      if (!deps[newDep]) {
+        deps[newDep] = []
       }
-      deps[normalized].push(workerName)
+      deps[newDep].push(workerName)
     })
   }))
 

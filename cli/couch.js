@@ -1,6 +1,6 @@
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-export async function couchUpdt ({ folderHash, buildColor, config, version, buildName, buildTime, appName, env}) {
+export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey, userId } = config
 
   if (!couchHost || !__couchAdminKey) {
@@ -14,6 +14,7 @@ export async function couchUpdt ({ folderHash, buildColor, config, version, buil
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
   console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
+
   try {
     const dbRes = await fetch(`${couchHost}/${dbName}`, {
       headers
@@ -48,7 +49,8 @@ export async function couchUpdt ({ folderHash, buildColor, config, version, buil
       body: JSON.stringify({
         _id,
         _rev,
-        folderHash,
+        folderHash: appFolderHash,
+        rootFolderHash,
         version,
         buildName,
         buildTime,
@@ -61,7 +63,7 @@ export async function couchUpdt ({ folderHash, buildColor, config, version, buil
     if (!updtRes?.ok) {
       console.error('  🛑 Unexpected update result...', updtRes)
     } else {
-      console.log('  🏁 app db update finished ' + folderHash)
+      console.log('  🏁 app db update finished ' + appFolderHash)
     }
   } catch (err) {
     console.log('  🛑 Error updating app db version...', err)

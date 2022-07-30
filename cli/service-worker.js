@@ -1,5 +1,5 @@
-import { join, green } from '../deps-deno.ts'
-
+import { join, green, build } from '../deps-deno.ts'
+import esbuildPlugin from './esbuild-plugin.ts'
 export default async function ({ batch, buildRes, clean } = {}) {
   const fileName = `service-worker.js`
   const appFolder = join(Deno.cwd(), 'app')
@@ -30,36 +30,31 @@ export default async function ({ batch, buildRes, clean } = {}) {
 
   console.log('  building service-worker: ' + projectPath)
 
-  const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
+  const atreyuPath = join(Deno.mainModule, '..', '..', 'app').replace('file:', '').replace('https:/', 'https://')
 
-  const emitRes = await Deno.emit(swPath, {
-    bundle: 'module', // classic
-    check: false,
-    compilerOptions: {
-      removeComments: true
-    },
-    importMapPath: atreyuPath + '/imports.json',
-    importMap: {
-      imports: {
-        '/atreyu/': './app/'
-      }
-    }
-  })
+  const { errors, warnings, metafile } = await build({
+    entryPoints: [swPath],
+    sourcemap: 'linked',
+    // splitting: true,
+    bundle: true,
+    treeShaking: true,
+    metafile: true,
+    minify: false,
+    plugins: [ esbuildPlugin({ atreyuPath }) ],
+    sourceRoot: './',
+    format: 'esm', // iife
+    // keepNames: true,
+    platform: 'browser',
+    outfile: `${appFolder}/service-worker.bundle.js`
+  }).catch(e => { console.error(e) })
 
-  const { files, diagnostics, _stats, ignoredOptions } = emitRes
-
-  if (ignoredOptions) {
-    console.warn('ignored deno emit opts:', ignoredOptions)
-  }
-
-  if (diagnostics.length > 0) {
-    diagnostics.map(di => console.warn(di))
-  }
-
-  await Promise.all([
-    Deno.writeTextFile(`${appFolder}/service-worker.bundle.js`, files['deno:///bundle.js'] + `\n\n//# sourceMappingURL=./service-worker.bundle.js.map`),
-    Deno.writeTextFile(`${appFolder}/service-worker.bundle.js.map`, files['deno:///bundle.js.map'])
-  ])
+  // if (warnings.length > 0) {
+  //   warnings.forEach(warn => console.warn(warn))
+  // }
+  // if (errors.length > 0) {
+  //   errors.forEach(err => console.error(err))
+  // }
+  // console.log(metafile)
 
   newBuildRes.files[projectPath] = {
     emits: [
@@ -70,7 +65,13 @@ export default async function ({ batch, buildRes, clean } = {}) {
       `app/service-worker.bundle.js`,
       `app/service-worker.bundle.js.map`
     ],
-    deps: JSON.parse(files['deno:///bundle.js.map']).sources.map(path => path.replace('file://', '').replace(Deno.cwd(), ''))
+    deps: Object.keys(metafile.inputs).map(path => {
+      if (path.includes('/atreyu/')) {
+        return '/atreyu/' + path.split('/atreyu/')[1]
+      } else {
+        return path
+      }
+    })
   }
 
   console.log(`  ${green('emitted:')} app/service-worker.bundle.js`)

@@ -1,6 +1,6 @@
 // import { authHeaders } from '../couchdb/helpers'
 // import maybeSetupUser from './setup'
-import { getEnv } from '$env.js'
+import { getEnv } from '/$env.js'
 
 const { userId, env, folderHash } = getEnv(['userId', 'env', 'folderHash'])
 const orgId = 'igp'

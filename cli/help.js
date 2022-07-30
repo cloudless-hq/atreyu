@@ -17,13 +17,20 @@ import {
 // -i --init               Create config file in current working dir.
 // version
 // info print all versions and stats for debugging etc.
-export function printHelp ({ version }) {
-  console.log(`${green('atreyu cli')} - ${version}
+export function printHelp ({ ayuVersion }) {
+  console.log(`${green('atreyu cli')} - ${ayuVersion}
 atreyu - cutting edge web applications
 
 Usage:
-  ${green('ayu')}
-    Shorthand for ayu dev --start (see below)
+  ${green('ayu')}                           ${gray('-- eg: ayu dev myapp --watch',)}
+    equivalent to ayu svelte && ayu edge && ayu add
+    Options:
+      --watch
+        Watches for changes
+      --start
+        automatically start the local daemon in the background
+      --bg
+        start daemon in background and exit
 
   ${green('ayu')} ${yellow('init')}
     initialize atreyu. This creates a fresh 'offline' ipfs repo
@@ -34,21 +41,7 @@ Usage:
       ipfs repo to use
       optional, defaults to 'ipfs' folder in current path
 
-  ${green('ayu')} ${yellow('dev')}         ${
-    gray(
-        '-- eg: ayu dev myapp --watch',
-    )
-    }
-    equivalent to ayu svelte && ayu edge && ayu add
-    Options:
-    --watch
-      Watches for changes
-    --start
-      automatically start the local daemon in the background
-    --bg
-      start daemon in background and exit
-
-  ${green('ayu')} ${yellow('publish')}        ${gray('-- eg: ayu publish')}
+  ${green('ayu')} ${yellow('publish')}      ${gray('-- eg: ayu publish')}
     Publish the current build to the ipfs pinning service configured.
 
   ${green('ayu')} ${yellow('start')}        ${gray('-- eg: ayu start --bg')}
@@ -63,6 +56,12 @@ Usage:
       start in background, you can stop the server with ayu stop later,
       this is helpfull, when you constantly run ayu dev without watch mode
       and want to avoid the ipfs startup and shutdown time
+
+  ${green('ayu')} ${yellow('stop')}
+
+  ${green('ayu')} ${yellow('update')}
+
+  ${green('ayu')} ${yellow('info')}
 `)
 }
 
@@ -107,3 +106,21 @@ Usage:
 // Options:
 //   <path>
 //   folder where to create the project
+
+// `ayu update
+// update deployctl to the given version (defaults to latest).
+
+// To update to latest version:
+// ayu update
+
+// To update to specific version:
+// ayu update v0.1.0
+
+// USAGE:
+//     ayu update [OPTIONS] [<version>]
+
+// OPTIONS:
+//     -h, --help        Prints help information
+
+// ARGS:
+//     <version>         The version to update to (defaults to @latest)

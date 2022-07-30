@@ -116,7 +116,6 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
         'etag': `"${hash}"`,
         'cache-control': 'public, must-revalidate, max-age=2',
         'x-ipfs-path': '/ipfs/' + hash,
-        date: response.headers.get('date'),
         'cache-status': 'sw; miss'
       })
 
