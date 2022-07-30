@@ -1,11 +1,10 @@
 import { fromFileUrl, join } from '../../deps.ts';
-// import { getVersions } from '../subcommands/upgrade.ts';
 
 /**
  * Analyzes the given specifier and returns all code or type dependencies of
  * that module (remote and local), as fully qualified module specifiers.
  */
-export async function analyzeDeps(
+export async function analyzeDeps (
   specifier: URL,
 ): Promise<{ deps: string[]; errors: string[] }> {
   const proc = Deno.run({
@@ -14,30 +13,33 @@ export async function analyzeDeps(
       'info',
       '--json',
       '--unstable',
-      specifier.href,
+      specifier.href
     ],
-    stdout: 'piped',
-  });
-  const raw = await proc.output();
-  const status = await proc.status();
+    stdout: 'piped'
+  })
+
+  const raw = await proc.output()
+  const status = await proc.status()
+
   if (!status.success) {
-    const path = fromFileUrl(specifier);
+    const path = fromFileUrl(specifier)
     return {
       deps: [path],
-      errors: [`Failed to analyze ${path}`],
-    };
+      errors: [`Failed to analyze ${path}`]
+    }
   }
+
   const modules: Array<{ specifier: string; error?: string }> =
-    JSON.parse(new TextDecoder().decode(raw)).modules;
+    JSON.parse(new TextDecoder().decode(raw)).modules
 
   const deps = modules.filter((module) => module.error === undefined)
     .map((module) => module.specifier)
     .filter((file) => file.startsWith('file://'))
-    .map((file) => fromFileUrl(file));
+    .map((file) => fromFileUrl(file))
   const errors = modules.filter((module) => module.error !== undefined)
-    .map((module) => module.error!);
+    .map((module) => module.error!)
 
-  return { deps, errors };
+  return { deps, errors }
 }
 
 export function getConfigPaths() {

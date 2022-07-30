@@ -1,9 +1,8 @@
-import { join } from '../deps-deno.ts'
+import { join, basename } from '../deps-deno.ts'
 import startWorker from './lib/start-worker.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
 import { exec } from '../cli/helpers.ts'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { basename } from '../deps-deno.ts'
 
 // TODO: use config and args from cli
 const ipfsGateway = 'http://127.0.0.1:8080'

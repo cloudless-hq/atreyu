@@ -93,7 +93,7 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
   }
 }
 
-async function once(opts: RunOpts) {
+async function once (opts: RunOpts) {
   const { errors } = await analyzeDeps(opts.entrypoint)
   for (const error of errors) {
     console.error(error)
@@ -107,12 +107,15 @@ async function once(opts: RunOpts) {
   }
 }
 
-async function watch(opts: RunOpts) {
-  let { deps, errors } = await analyzeDeps(opts.entrypoint);
+async function watch (opts: RunOpts) {
+  let { deps, errors } = await analyzeDeps(opts.entrypoint)
   for (const error of errors) {
-    printError(error)
+    console.error(error, opts)
+    Deno.exit(1)
   }
+
   let proc: Deno.Process | null = null
+
   if (errors.length === 0) {
     proc = await run(opts)
   }

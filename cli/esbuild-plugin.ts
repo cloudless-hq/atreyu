@@ -44,7 +44,7 @@ export default ({ local, input, atreyuPath }) => ({
       }}
     }
 
-    onResolve({ filter: /^https?:\/\// }, ({ path }) => {
+    onResolve({ filter: /^https?:\// }, ({ path }) => {
       return { path, namespace: 'http-import' }
     })
 
