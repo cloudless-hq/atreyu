@@ -141,30 +141,28 @@ startWorker(async arg => {
     if (!workers[workerName] || workers[workerName].appHash !== app.Hash) {
       Deno.env.set('appKey', appKey)
       let base = []
-      let filenames = []
+      let filename
       if (workerName.startsWith('_')) {
         base = [configs[appKey].appPath, 'edge', 'build'] // [import.meta.url.replace('file://', ''), '..' ]
-        filenames = [`${workerName}.js`] // `build or handlers/${workerName}/index.js`
+        filename = `${workerName}.js` // `build or handlers/${workerName}/index.js`
       } else {
         base = [configs[appKey].appPath, 'edge', 'build']
-        filenames = [workerName]
+        filename = workerName
       }
 
-      let codePath = join(...base, filenames[0])
-      // try {
-      //   // console.log(codePath)
-      //   Deno.statSync(codePath)
-      // } catch (_e) {
-      //   // TODO: ts support
-      //   codePath = join(...base, filenames[1])
-      // }
+      let codePath = join(...base, filename)
       const denoCodePath = codePath.replace('.js', '.d.js')
 
-      const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
-      if (fileHash !== workers[workerName]?.fileHash) {
-        console.log('  reloading worker script ' + workerName)
+      try {
+        const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
+        if (fileHash !== workers[workerName]?.fileHash) {
+          console.log('  reloading worker script: ' + workerName)
+        }
+
+        workers[workerName] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
+      } catch (err) {
+        console.error('  could not load edge worker: ' + workerName, err)
       }
-      workers[workerName] = { code: (await import(denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
     }
 
     return workers[workerName].code.handler(arg)

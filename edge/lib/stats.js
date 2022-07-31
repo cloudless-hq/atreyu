@@ -1,13 +1,13 @@
-import { getEnv } from '/$env.js'
-const { appName } = getEnv(['appName'])
-
 const stats = {
-  appName,
   workerId: Math.round(Math.random() * 10000000000000),
   workerStart: null, // Date.now(), is 0 outside of req, so we assume first req is worker start
   reqs: 0,
   traceId: 0
 }
+
+// const { getEnv } = await import('/$env.js').catch(_e => {})
+// const { appName } = getEnv(['appName'])
+// stats.appName = appName
 
 export default {
   get: () => {

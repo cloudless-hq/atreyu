@@ -1,13 +1,11 @@
 import startWorker from './lib/start-worker.js'
-import stats from './lib/stats.js'
 import { handler } from '/$handler.js'
 import { getEnv } from '/$env.js'
 import { escapeId } from '../app/src/lib/escape-id.js'
 
 async function getAppData () {
   const appData = {}
-  const { appName } = stats.get()
-  const { couchHost, _couchKey, _couchSecret, env, folderHash } = getEnv(['couchHost', '_couchKey', '_couchSecret', 'env', 'folderHash'])
+  const { couchHost, _couchKey, _couchSecret, env, folderHash, appName } = getEnv(['couchHost', '_couchKey', '_couchSecret', 'env', 'folderHash', 'appName'])
 
   if (couchHost && _couchKey && _couchSecret) {
     const settingsDocId = 'system:settings_' + env

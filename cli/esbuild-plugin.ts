@@ -34,7 +34,7 @@ export default ({ local, input, atreyuPath }) => ({
         return toPathObj(atreyuPath + (local ? '/edge/lib/env-local.js' : '/edge/lib/env.js'))
       }},
       handler: { filter: /^\/\$handler\.js/, fun: () => {
-        return { path: input }
+        return toPathObj(input)
       }},
       ayu: { filter: /^\/\$ayu\//, fun: ({ path }) => {
         return toPathObj(path.replace('/$ayu', atreyuPath + '/app/src/'))

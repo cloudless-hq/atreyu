@@ -11,6 +11,7 @@ import {
 } from '../deps-deno.ts'
 
 import { runDeno } from '../runtime/mod.ts'
+
 import { update } from './update.ts'
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
@@ -195,7 +196,7 @@ if (Deno.version.deno !== denoVersion) {
 
 // TODO check ipfs: ver
 
-if (config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
+if (cmd !== 'update' && config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
   console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}`)
   Deno.exit(-1)
 }

@@ -111,7 +111,6 @@ async function watch (opts: RunOpts) {
   let { deps, errors } = await analyzeDeps(opts.entrypoint)
   for (const error of errors) {
     console.error(error, opts)
-    Deno.exit(1)
   }
 
   let proc: Deno.Process | null = null

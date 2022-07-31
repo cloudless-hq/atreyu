@@ -18,24 +18,29 @@ export async function analyzeDeps (
     stdout: 'piped'
   })
 
+
   const raw = await proc.output()
   const status = await proc.status()
 
   if (!status.success) {
     const path = fromFileUrl(specifier)
+
     return {
       deps: [path],
       errors: [`Failed to analyze ${path}`]
     }
   }
 
+  const textRes = new TextDecoder().decode(raw)
+
   const modules: Array<{ specifier: string; error?: string }> =
-    JSON.parse(new TextDecoder().decode(raw)).modules
+    JSON.parse(textRes).modules
 
   const deps = modules.filter((module) => module.error === undefined)
     .map((module) => module.specifier)
     .filter((file) => file.startsWith('file://'))
     .map((file) => fromFileUrl(file))
+
   const errors = modules.filter((module) => module.error !== undefined)
     .map((module) => module.error!)
 
@@ -45,13 +50,14 @@ export async function analyzeDeps (
 export function getConfigPaths() {
   const homeDir = Deno.build.os == 'windows'
     ? Deno.env.get('USERPROFILE')!
-    : Deno.env.get('HOME')!;
-  const configDir = join(homeDir, '.deno', 'deployctl');
+    : Deno.env.get('HOME')!
+
+  const configDir = join(homeDir, '.deno', 'deployctl')
 
   return {
     configDir,
-    updatePath: join(configDir, "update.json"),
-  };
+    updatePath: join(configDir, "update.json")
+  }
 }
 
 export async function fetchReleases () {
