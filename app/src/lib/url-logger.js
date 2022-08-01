@@ -40,7 +40,7 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
   /* eslint-disable no-console */
   if (richConsole) {
     console.groupCollapsed(
-      `${(scope && edgeWorker) ? scope + ': ' : ''}%c${missing ? 'missing' : ''}%c${missing ? ' ' : ''}%c${method}%c %c ${displayUrl}`,
+      `${(scope && edgeWorker) ? scope + ': ' : ''}%c${missing ? 'missing route' : ''}%c${missing ? ' ' : ''}%c${method}%c %c ${displayUrl}`,
       richConsole && missing ? `background-color:red;border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px` : '',
       richConsole ? 'color:grey' : '',
       richConsole ? `background-color:${badgeColor};border-radius:3px;color:black;font-weight:bold;padding-left:2px;padding-right:2px` : '',
@@ -48,7 +48,7 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
       richConsole ? 'color:grey' : ''
     )
   } else {
-    console.log(`${(scope && edgeWorker) ? scope + ': ' : ''} ${missing ? 'missing' : ''} ${missing ? ' ' : ''} ${method}    ${displayUrl}`)
+    console.log(`${(scope && edgeWorker) ? scope + ': ' : ''} ${missing ? 'missing route' : ''} ${missing ? ' ' : ''} ${method}    ${displayUrl}`)
   }
 
   if (!edgeWorker && scope) {

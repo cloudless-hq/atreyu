@@ -2,6 +2,7 @@ import { join, basename, green, yellow } from '../deps-deno.ts'
 import { execStream, exec } from './helpers.ts'
 import versions from './versions.json' assert { type: 'json' }
 const { ipfsVersion } = versions
+
 // async function ipfsFetch (cmd, data) {
 //  // todo: convert to http
 // }
@@ -205,10 +206,15 @@ export async function add ({
     }
   }
 
+  let curAyuIpfsPath
+  if (!Deno.mainModule.startsWith('file:')) {
+    const hashRes = await fetch(Deno.mainModule.replace('/cli/mod.js', '', { method: 'HEAD' }))
+    curAyuIpfsPath = hashRes.headers.get('x-ipfs-path')
+  }
+
   // if ayu is run from local filesystem add atreyu to the ipfs
   // deployment because it is probably a dev or custom version not available in through http
   // let atreyuFileHashes = {}
-  // if (Deno.mainModule.startsWith('file://')) { // todo fix dev and prod logic for ayu
   // const atreyuPath = join(Deno.mainModule, '..').replace('file:', '') + '/app/'
   // const dashData = {
   //   logo_url: 'https://dui.ask-joe.co/details/Logo_colour.png',
@@ -248,7 +254,7 @@ export async function add ({
 
   // TODO: add installing init atreyu, FIXME: this is not working!
   if (clean && !pinName.startsWith('atreyu')) {
-    await ipfs(`files cp /apps/atreyu /apps/${pinName}/atreyu`)
+    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath : '/apps/atreyu_dev'} /apps/${pinName}/atreyu`)
   }
 
   const preHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash

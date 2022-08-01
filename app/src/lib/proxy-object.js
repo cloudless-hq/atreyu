@@ -99,9 +99,19 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
         return set(path, newValue, delim, id)
       },
       get (obj, key) {
+        if (key === Symbol.toPrimitive) {
+          return (_hint) => {
+            // console.warn('Rendering hint "' + hint + '" not supported yet, falling back to empty string, did you forget to add trailing "$" to your atreyu data store access? If this is a valid usecase please open and explain in a github issue. Encountered at path:', rootPath)
+            const path = [...rootPath]
+            path.pop()
+            const cleanKey = rootPath[rootPath.length - 1]
+            return get(path, subObj[cleanKey], cleanKey, id)
+          }
+        }
+
         if (typeof key !== 'string') {
-          console.warn('non string key access not supported yet, please raise github issue explaining usecase ', { rootPath, key })
-          return []
+          console.warn('did your forget the trailing "$"? Non string key access not supported yet, if needed, raise github issue explaining usecase ', { rootPath, key })
+          return false
         }
 
         let { isPathEnd, cleanKey, delim } = clean(key, endRegex)

@@ -19,7 +19,7 @@ export { globToRegExp } from 'https://deno.land/std@0.126.0/path/glob.ts'
 export {
   compile,
   preprocess
-} from 'https://cdn.skypack.dev/svelte@3.46.4/compiler.mjs'
+} from 'https://cdn.skypack.dev/svelte@3.49.0/compiler.mjs'
 
 export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/v1.0.3/mod.ts'
 

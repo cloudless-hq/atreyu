@@ -267,6 +267,10 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       } else if (delim === '$not') {
         return loadingFirstValue ? { toString: () => {''} } : !value
       } else {
+        if (value?.$type === 'atom') {
+          console.warn('Missing data in ayu data store at:', path)
+          return ''
+        }
         return loadingFirstValue ? '' : value
       }
     },

@@ -92,7 +92,8 @@
       </a>
     </div>
     disable/ enable preloading
-
+    show key names instead of data
+    disable/ enable logging
     run tests
     <div class="py-1" role="none">
       <a href="#/todo" class="text-gray-700 group flex items-center px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-6">

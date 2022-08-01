@@ -6,12 +6,12 @@ import {
   italic,
   bold,
   color,
-  red
+  red,
+  globToRegExp
   // analyzeDeps
 } from '../deps-deno.ts'
 
 import { runDeno } from '../runtime/mod.ts'
-
 import { update } from './update.ts'
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
@@ -25,7 +25,6 @@ import { addPathTags } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
 import { exec } from './helpers.ts'
 import { watch } from './watcher.ts'
-import { globToRegExp } from '../deps-deno.ts'
 import versions from './versions.json' assert { type: 'json' }
 const { ayuVersion, denoVersion } = versions
 
@@ -64,7 +63,6 @@ let {
   repo,
   domain,
   sveltePath,
-  // customAyuRelease,
   verbose
 } = parse(Deno.args)
 
@@ -92,9 +90,7 @@ const homeConfPath = home + '/.atreyu'
 const projectPath = Deno.cwd()
 const appName = basename(projectPath)
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
-// alternative: (import.meta.url.replace('file://', ''), '..', '..')
 
-// TODO: handle servers from schema for env
 if (!env) {
   if (cmd === 'publish') {
     env = 'prod'
@@ -148,7 +144,7 @@ async function loadEdgeSchema () {
   return buildWorkerConfig(schema)
 }
 
-function startDaemon ({ publish }) {
+function startIpfsDaemon ({ publish }) {
   const runPath = _[1] || homeConfPath
   const offline = (online || publish) ? '' : ' --offline'
   const ready = new Promise((resolve, _reject) => {
@@ -175,7 +171,7 @@ function startDaemon ({ publish }) {
 }
 
 async function doStart () {
-  await startDaemon({})
+  await startIpfsDaemon({})
 
   runDeno({
     addr: ':' + port,
@@ -194,14 +190,13 @@ if (Deno.version.deno !== denoVersion) {
   Deno.exit(1)
 }
 
-// TODO check ipfs: ver
+// TODO check ipfs: ver, check deno
 
-if (cmd !== 'update' && config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
+if (!['update', 'version', 'help', 'info'].includes(cmd) && config.atreyuVersion && ayuVersion !== config.atreyuVersion) {
   console.error(`Your current project requires atreyu ${config.atreyuVersion} but found ${ayuVersion}`)
-  Deno.exit(-1)
+  Deno.exit(1)
 }
 
-// TODO: eject, create, check deno and ayu version updates/ compat.
 switch (cmd) {
   case 'version':
     console.log(ayuVersion)
@@ -367,6 +362,7 @@ switch (cmd) {
     printHelp({ ayuVersion })
 }
 
+// TODO: eject, create
 // case 'build':
 //   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
 //   // build:svelte build:edge build:service-worker
@@ -391,4 +387,3 @@ switch (cmd) {
 //     env,
 //     config
 //   })
-//   break
