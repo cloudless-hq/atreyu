@@ -20,8 +20,9 @@ export function install (newAyuVersion) {
 exec deno run ${permissions.join(' \\\n')} 'https://atreyu.dev/ayu@${newAyuVersion}/cli/mod.js' "$@"
 `
   Deno.writeTextFileSync(denoHome + '/bin/ayu', runCommand, { mode: 0o755 })
+  // TODO: execute and fetch dependencies
 
-  console.log('Installed ayu with following permissions:\n' + permissions.join(' \n'))
+  console.log(`\nInstalled ayu script https://atreyu.dev/ayu@${newAyuVersion}/cli/mod.js with following permissions:\n` + permissions.join(' \n'))
 }
 
 if (import.meta.main) {

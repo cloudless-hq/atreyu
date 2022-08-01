@@ -208,8 +208,10 @@ export async function add ({
 
   let curAyuIpfsPath
   if (!Deno.mainModule.startsWith('file:')) {
-    const hashRes = await fetch(Deno.mainModule.replace('/cli/mod.js', '', { method: 'HEAD' }))
+    const hashRes = await fetch(Deno.mainModule.replace('/cli/mod.js', '', { method: 'HEAD' })).catch(err => console.error(err))
+    console.log({ hashRes })
     curAyuIpfsPath = hashRes.headers.get('x-ipfs-path')
+    console.log({ curAyuIpfsPath })
   }
 
   // if ayu is run from local filesystem add atreyu to the ipfs
