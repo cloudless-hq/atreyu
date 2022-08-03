@@ -17,7 +17,7 @@ export default {
     stats.traceId = Math.round(Math.random() * 10000000000000)
     stats.time = (new Date()).toISOString()
     if (event) {
-      stats.cf = event.request.cf
+      stats.cf = { ...event.request.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined }
     }
 
     if (!stats.workerStart) {

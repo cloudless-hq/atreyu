@@ -28,12 +28,22 @@ export function toFalcorRoutes (schema) {
   ;([...Object.entries(schema.paths)]).forEach(([path, { get, call, set }]) => {
     const handlers = {}
 
+    /* eslint-disable functional/no-this-expression */
     if (get && get.tags?.includes('falcor')) {
       handlers.get = function () {
+        const path = [ ...arguments[0] ]
+
         arguments[0].dbs = this.dbs
         arguments[0].userId = this.userId
         arguments[0].Observable = this.Observable
-        return get.handler(...arguments)
+
+        const getRes = get.handler(...arguments)
+
+        if (getRes.value && !getRes.path) {
+          getRes.path = path
+        }
+
+        return getRes
       }
     }
 
@@ -56,6 +66,7 @@ export function toFalcorRoutes (schema) {
         return handler(...arguments)
       }
     }
+    /* eslint-enable functional/no-this-expression */
 
     if (Object.keys(handlers).length > 0) {
       routes.push({
@@ -78,7 +89,7 @@ function find (map, pathString) {
 }
 
 export function makeRouter (dataRoutes) {
-  class AtreyuRouter extends Router.createClass(dataRoutes) {
+  class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
     constructor ({ userId, dbs }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
@@ -154,9 +165,11 @@ export function makeRouter (dataRoutes) {
         }
       })
 
+      /* eslint-disable functional/no-this-expression */
       this.userId = userId
       this.dbs = dbs
       this.Observable = Observable
+      /* eslint-enable functional/no-this-expression */
     }
   }
 

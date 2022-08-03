@@ -63,6 +63,7 @@ let {
   repo,
   domain,
   sveltePath,
+  resetTestDb,
   verbose
 } = parse(Deno.args)
 
@@ -270,7 +271,7 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ appFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env })
+      await couchUpdt({ appFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetTestDb })
     }
 
     if (start) {
@@ -334,7 +335,7 @@ switch (cmd) {
 
     await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash})
 
-    await couchUpdt({ appFolderHash, rootFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env})
+    await couchUpdt({ appFolderHash, rootFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetTestDb})
     Deno.exit(0)
 
   case 'stop':

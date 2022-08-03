@@ -122,10 +122,9 @@ export async function add ({
   }
 
   if (clean) {
-    // TODO: use ipfsVersion
-    const version = (await ipfs(`version`)).replace('\n', '').replace('ipfs version ', '').split('.').map(x => Number(x))
-    if (version[1] < 8) {
-      console.log(`  ${yellow(' warning: ipfs version must be at least 0.8, found:')}`, version)
+    const version = (await ipfs(`version`)).replace('\n', '').replace('ipfs version ', '') // .split('.').map(x => Number(x))
+    if (version !== ipfsVersion) {
+      console.log(`  ${yellow(' warning: only tested with ipfs version ' + ipfsVersion + ', but found:')}`, version)
     }
   }
 
@@ -209,9 +208,8 @@ export async function add ({
   let curAyuIpfsPath
   if (!Deno.mainModule.startsWith('file:')) {
     const hashRes = await fetch(Deno.mainModule.replace('/cli/mod.js', '', { method: 'HEAD' })).catch(err => console.error(err))
-    console.log({ hashRes })
     curAyuIpfsPath = hashRes.headers.get('x-ipfs-path')
-    console.log({ curAyuIpfsPath })
+    // console.log({ curAyuIpfsPath, mod: Deno.mainModule })
   }
 
   // if ayu is run from local filesystem add atreyu to the ipfs
@@ -256,7 +254,7 @@ export async function add ({
 
   // TODO: add installing init atreyu, FIXME: this is not working!
   if (clean && !pinName.startsWith('atreyu')) {
-    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath : '/apps/atreyu_dev'} /apps/${pinName}/atreyu`)
+    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath + '/app' : '/apps/atreyu_dev'} /apps/${pinName}/atreyu`)
   }
 
   const preHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash

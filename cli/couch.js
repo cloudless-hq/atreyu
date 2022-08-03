@@ -1,10 +1,14 @@
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env }) {
+export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetTestDb }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey, userId } = config
 
   if (!couchHost || !__couchAdminKey) {
     return
+  }
+
+  if (resetTestDb && env !== 'test') {
+    return console.error('Refusing to erase database outside of test environment')
   }
 
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
@@ -20,8 +24,20 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       headers
     })
 
+    let createDb = false
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
+      createDb = true
+    } else if (resetTestDb) {
+      console.log('  Resetting existing test database...')
+      await fetch(`${couchHost}/${dbName}`, {
+        headers,
+        method: 'DELETE'
+      })
+      createDb = true
+    }
+
+    if (createDb) {
       await fetch(`${couchHost}/${dbName}?partitioned=true`, {
         headers,
         method: 'PUT'

@@ -45,9 +45,8 @@ export async function handler ({ req, app }) {
     } else {
       const pathArray = req.url.pathname.replace('/ayu@', '').split('/')
       const version = pathArray.shift()
-      const folderPath = '/' + pathArray.join('/')
       if (version === app.version) {
-        reqHash = app.rootFolderHash + folderPath
+        reqHash = app.rootFolderHash + (pathArray.length ? '/' + pathArray.join('/') : '')
         ipfsPath = `/ipfs/${reqHash}`
         url = ipfsGateway + ipfsPath
       } else {

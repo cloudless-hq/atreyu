@@ -43,6 +43,10 @@ export default async function ({ req, body, response, stats, duration = null }) 
     return
   }
 
+  // Delete for data laws
+  delete req.headers['cf-connecting-ip']
+  delete req.headers['x-real-ip']
+
   return fetch(envConf.ELASTIC_URL, {
     method: 'POST',
     headers: new Headers({
