@@ -34,7 +34,7 @@ RUN npm install -g yarn
 
 COPY . /root/atreyu
 
-COPY /root/atreyu/secrets_template.js /root/atreyu/secrets.js
+RUN cp /root/atreyu/secrets_template.js /root/atreyu/secrets.js
 
 RUN mkdir -p /root/.cache/esbuild /root/.cache/deno
 
