@@ -64,8 +64,13 @@ let {
   domain,
   sveltePath,
   resetTestDb,
-  verbose
+  verbose,
+  ...rest
 } = parse(Deno.args)
+
+if (Object.keys(rest).length) {
+  console.error(`  ❓ Unknown command line arguments:`, rest)
+}
 
 const ignore = [
   '**/.git/**',
@@ -185,6 +190,9 @@ async function doStart () {
     noCheck: true,
     watch: true,
     inspect: true,
+    env: {
+      env
+    },
     _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
   })
 }

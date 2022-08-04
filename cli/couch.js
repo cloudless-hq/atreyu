@@ -13,8 +13,6 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
 
   const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
-  console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
-
   try {
     const dbRes = await fetch(`${couchHost}/${dbName}`, {
       headers
@@ -24,15 +22,17 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
       createDb = true
-    } else if (resetTestDb && env == 'test') {
-      console.log('  ♻️ Resetting existing test database...')
-      await fetch(`${couchHost}/${dbName}`, {
-        headers,
-        method: 'DELETE'
-      })
-      createDb = true
-    } else if (resetTestDb && env !== 'test') {
-      console.error('  🛑 Refusing to erase database outside of test environment!!')
+    } else if (resetTestDb) {
+      if (env == 'test') {
+        console.log(`  ♻️ Resetting existing test database ${couchHost}/${dbName}`)
+        await fetch(`${couchHost}/${dbName}`, {
+          headers,
+          method: 'DELETE'
+        })
+        createDb = true
+      } else {
+        console.error('  🛑 Refusing to erase database outside of test environment!')
+      }
     }
 
     if (createDb) {
@@ -59,6 +59,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
     const _rev = oldDoc?._rev
 
+    console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
     const updtRes = await (await fetch(`${couchHost}/${dbName}/${_id}`, {
       body: JSON.stringify({
         _id,

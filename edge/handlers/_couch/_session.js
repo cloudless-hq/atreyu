@@ -2,6 +2,8 @@
 // import maybeSetupUser from './setup'
 import { getEnv } from '/$env.js'
 
+const denoLocal = !!window.Deno
+
 const { userId, env, folderHash } = getEnv(['userId', 'env', 'folderHash'])
 const orgId = 'igp'
 
@@ -24,7 +26,7 @@ export function handler ({ req, stats, app }) {
   let jwt
 
   const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
-  if (env === 'dev' && !req.headers['cf-access-jwt-assertion'] && authCookie) {
+  if (denoLocal && !req.headers['cf-access-jwt-assertion'] && authCookie) {
     jwt = authCookie
   } else {
     jwt = req.headers['cf-access-jwt-assertion']
@@ -66,7 +68,7 @@ export function handler ({ req, stats, app }) {
       }
     })
   } else if (req.url.search.startsWith('?dev_login')) {
-    if (env !== 'dev') {
+    if (!denoLocal) {
       return new Response('forbidden', { status: 403 })
     }
     const params = new URLSearchParams(req.url.search)
@@ -86,7 +88,7 @@ export function handler ({ req, stats, app }) {
 
     const headers = { 'Cache-Control': 'must-revalidate' }
 
-    if (env === 'dev') {
+    if (denoLocal) {
       headers['Location'] = `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {

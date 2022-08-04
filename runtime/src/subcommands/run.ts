@@ -19,7 +19,6 @@ USAGE:
 
 OPTIONS:
         --addr=<addr>          The address to listen on (default ":8080")
-        --env=<path/to/.env>   Load environment variables from the provided .env file
     -h, --help                 Prints help information
         --inspect              Activate inspector on 127.0.0.1:9229
         --libs=<libs>          The deploy type libs that are loaded (default "ns,window,fetchevent")
@@ -44,7 +43,7 @@ export interface Args {
 }
 
 export default async function (rawArgs: Record<string, any>): Promise<void> {
-  const libs = String(rawArgs.libs).split(",")
+  const libs = String(rawArgs.libs).split(',')
   const args: Args = {
     addr: String(rawArgs.addr),
     help: !!rawArgs.help,
@@ -52,7 +51,7 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     inspect: !!rawArgs.inspect,
     reload: !!rawArgs.reload,
     watch: !!rawArgs.watch,
-    env: String(rawArgs.env),
+    env: rawArgs.env,
     libs: {
       ns: libs.includes('ns'),
       window: libs.includes('window'),
@@ -84,8 +83,9 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     noCheck: args.noCheck,
     reload: args.reload,
     libs: args.libs,
-    env: dotEnvConfig({ path: args.env })
-  };
+    env: args.env
+  }
+
   if (args.watch) {
     await watch(opts)
   } else {
@@ -95,10 +95,13 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
 
 async function once (opts: RunOpts) {
   const { errors } = await analyzeDeps(opts.entrypoint)
+
   for (const error of errors) {
     console.error(error)
   }
-  if (errors.length !== 0) Deno.exit(1)
+  if (errors.length !== 0) {
+    Deno.exit(1)
+  }
   const proc = await run(opts)
   const status = await proc.status()
   if (!status.success) {
@@ -138,7 +141,7 @@ async function watch (opts: RunOpts) {
         )
         errors = newErrors
         for (const error of errors) {
-          printError(error)
+          console.error(error)
         }
         const depsChanged = new Set([...deps, ...newDeps]).size
         if (depsChanged) {

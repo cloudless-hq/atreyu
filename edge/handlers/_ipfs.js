@@ -87,7 +87,7 @@ export async function handler ({ req, app }) {
 
     const existingHash = req.headers['if-none-match']?.replaceAll('"', '').replace('W/', '')
 
-    if (!ipfsMap[req.url.pathname] && !req.url.pathname.endsWith('/ipfs-map.json')) {
+    if (!ipfsMap?.[req.url.pathname] && !req.url.pathname.endsWith('/ipfs-map.json')) {
       return (new Response(null, { status: 404, statusText: 'Not Found'}))
     }
 

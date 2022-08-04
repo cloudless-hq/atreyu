@@ -1,7 +1,6 @@
 // Copyright 2021 Deno Land Inc. All rights reserved. MIT license.
 
 import { green, yellow } from "../../deps.ts";
-import { error, printError } from "../error.ts";
 import { analyzeDeps } from "../utils/info.ts";
 import { tsconfig } from "../utils/tsconfig.ts";
 import { loaderDataUrl } from "../utils/run.ts";
@@ -24,7 +23,7 @@ OPTIONS:
         --libs=<libs>   The deploy type libs that are loaded (default "ns,window,fetchevent")
     -r, --reload        Reload source code cache (recompile TypeScript)
         --watch         Watch for file changes and restart process automatically
-`;
+`
 
 export interface Args {
   help: boolean;
@@ -34,12 +33,12 @@ export interface Args {
     ns: boolean;
     window: boolean;
     fetchevent: boolean;
-  };
+  }
 }
 
 // deno-lint-ignore no-explicit-any
 export default async function (rawArgs: Record<string, any>): Promise<void> {
-  const libs = String(rawArgs.libs).split(",");
+  const libs = String(rawArgs.libs).split(",")
   const args: Args = {
     help: !!rawArgs.help,
     reload: !!rawArgs.reload,
@@ -47,35 +46,37 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     libs: {
       ns: libs.includes("ns"),
       window: libs.includes("window"),
-      fetchevent: libs.includes("fetchevent"),
-    },
-  };
+      fetchevent: libs.includes("fetchevent")
+    }
+  }
   const entrypoint: string | null = typeof rawArgs._[0] === "string"
     ? rawArgs._[0]
-    : null;
+    : null
   if (args.help) {
-    console.log(help);
-    Deno.exit(0);
+    console.log(help)
+    Deno.exit(0)
   }
   if (entrypoint === null) {
-    console.error(help);
-    error("No entrypoint specifier given.");
+    console.error(help)
+    console.error("No entrypoint specifier given.")
+    Deno.exit(1)
   }
   if (rawArgs._.length > 1) {
-    console.error(help);
-    error("Too many positional arguments given.");
+    console.error(help)
+    console.error("Too many positional arguments given.")
+    Deno.exit(1)
   }
 
   const opts = {
     entrypoint: await parseEntrypoint(entrypoint),
     reload: args.reload,
-    libs: args.libs,
-  };
+    libs: args.libs
+  }
 
   if (args.watch) {
-    await watch(opts);
+    await watch(opts)
   } else {
-    await once(opts);
+    await once(opts)
   }
 }
 
@@ -90,64 +91,66 @@ interface CheckOpts {
 }
 
 async function once(opts: CheckOpts): Promise<void> {
-  const { errors } = await analyzeDeps(opts.entrypoint);
+  const { errors } = await analyzeDeps(opts.entrypoint)
   for (const error of errors) {
-    printError(error);
+    console.error(error)
   }
-  if (errors.length !== 0) Deno.exit(1);
-  const status = await check(opts);
-  Deno.exit(status);
+  if (errors.length !== 0) {
+    Deno.exit(1)
+  }
+  const status = await check(opts)
+  Deno.exit(status)
 }
 
 async function check({ entrypoint, reload, libs }: CheckOpts): Promise<number> {
-  const tsconfigPath = await tsconfig();
-  const dataUrl = await loaderDataUrl(entrypoint, libs);
-  const args = ["--config", tsconfigPath];
+  const tsconfigPath = await tsconfig()
+  const dataUrl = await loaderDataUrl(entrypoint, libs)
+  const args = ["--config", tsconfigPath]
   if (reload) {
-    args.push("--reload");
+    args.push("--reload")
   }
   // TODO(kt3k): Filter "Check data:..." lines
   const p = Deno.run({
-    cmd: [Deno.execPath(), "cache", ...args, dataUrl],
-  });
-  const [status] = await Promise.all([p.status()]);
+    cmd: [Deno.execPath(), "cache", ...args, dataUrl]
+  })
+  const [status] = await Promise.all([p.status()])
   if (status.code === 0) {
-    console.log(green("OK"));
+    console.log(green("OK"))
   }
-  return status.code;
+  return status.code
 }
 
 async function watch(opts: CheckOpts) {
-  let { deps, errors } = await analyzeDeps(opts.entrypoint);
+  let { deps, errors } = await analyzeDeps(opts.entrypoint)
   for (const error of errors) {
-    printError(error);
+    console.error(error)
   }
-  let debouncer = null;
+  let debouncer = null
   if (errors.length === 0) {
-    await check(opts);
+    await check(opts)
   }
 
   while (true) {
-    const watcher = Deno.watchFs(deps);
+    const watcher = Deno.watchFs(deps)
     for await (const event of watcher) {
-      if (typeof debouncer == "number") clearTimeout(debouncer);
+      if (typeof debouncer == "number") clearTimeout(debouncer)
       debouncer = setTimeout(async () => {
-        console.warn(yellow(`${event.paths[0]} changed. Restarting...`));
+        console.warn(yellow(`${event.paths[0]} changed. Restarting...`))
         const { deps: newDeps, errors: newErrors } = await analyzeDeps(
-          opts.entrypoint,
-        );
+          opts.entrypoint
+        )
         for (const error of newErrors) {
-          printError(error);
+          console.error(error)
         }
-        const depsChanged = new Set([...deps, ...newDeps]).size;
+        const depsChanged = new Set([...deps, ...newDeps]).size
         if (depsChanged) {
-          deps = newDeps;
-          watcher.return?.();
+          deps = newDeps
+          watcher.return?.()
         }
         if (errors.length === 0) {
-          await check(opts);
+          await check(opts)
         }
-      }, 100);
+      }, 100)
     }
   }
 }
