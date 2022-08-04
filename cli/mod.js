@@ -112,6 +112,12 @@ if (!cmd) {
   start = true
 }
 
+try {
+  Deno.lstatSync(homeConfPath)
+} catch (_e) {
+  Deno.mkdirSync(homeConfPath)
+}
+
 let { config = {}, runConf = {} } = await loadConfig(env, appName, repo || homeConfPath)
 
 // TODO: allow argument relative path for apps different from cwd
