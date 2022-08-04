@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 ARG AYU_VERSION
 ARG DENO_VERSION="1.24.1"
 ARG NODE_VERSION="16"
-ARG IPFS_VERSION="0.12.0"
+ARG IPFS_VERSION="0.14.0"
 ENV TZ=Europe/Budapest
 
 # TODO: use user accounts instead root https://aka.ms/vscode-remote/containers/non-root
@@ -34,6 +34,8 @@ RUN npm install -g yarn
 
 COPY . /root/atreyu
 
+COPY /root/atreyu/secrets_template.js /root/atreyu/secrets.js
+
 RUN mkdir -p /root/.cache/esbuild /root/.cache/deno
 
 #env=DENO_DIR,_DIALOGFLOWCONFIG,HOME,ESBUILD_BINARY_PATH,XDG_CACHE_HOME,CODESPACE_NAME,GITHUB_USER,__CLOUDFLARETOKEN,__IPFSPINNINGJWT,_ELASTIC_AUTH,_COUCHKEY,_COUCHSECRET,__COUCHADMINKEY,__COUCHADMINSECRET,_DIALOGFLOW_SERVICEACCOUNTKEY \
@@ -60,7 +62,6 @@ RUN rm -f go-ipfs_v${IPFS_VERSION}_linux-amd64.tar.gz
 RUN ipfs --version
 
 # install playwright deps
-
 RUN PLAYWRIGHT_BROWSERS_PATH=/root/pw-browsers npx playwright install-deps && PLAYWRIGHT_BROWSERS_PATH=/root/pw-browsers npx playwright install
 
 # initialize the atreyu ipfs repo

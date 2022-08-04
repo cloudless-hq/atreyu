@@ -96,8 +96,9 @@
 
   let updated
   function closeUpdateNotification (e) {
+    const path = e.composedPath()
     if (updated) {
-      if (!e.path.includes(updatedNotification)) {
+      if (!path.includes(updatedNotification)) {
         closeUpdated()
       }
     }

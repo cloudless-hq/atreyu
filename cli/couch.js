@@ -7,10 +7,6 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     return
   }
 
-  if (resetTestDb && env !== 'test') {
-    return console.error('Refusing to erase database outside of test environment')
-  }
-
   const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
 
   const dbName = env === 'dev' ? escapeId(env + '_' + userId + '__' + appName) : env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
@@ -28,13 +24,15 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
       createDb = true
-    } else if (resetTestDb) {
-      console.log('  Resetting existing test database...')
+    } else if (resetTestDb && env == 'test') {
+      console.log('  ♻️ Resetting existing test database...')
       await fetch(`${couchHost}/${dbName}`, {
         headers,
         method: 'DELETE'
       })
       createDb = true
+    } else if (resetTestDb && env !== 'test') {
+      console.error('  🛑 Refusing to erase database outside of test environment!!')
     }
 
     if (createDb) {

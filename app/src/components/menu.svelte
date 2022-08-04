@@ -9,7 +9,8 @@
   }
 
   function mouseUp (e) {
-    if (e.path.includes(menuNode)) {
+    const path = e.composedPath()
+    if (path.includes(menuNode)) {
       // if (!originalClick) {
         e.target.dispatchEvent(new MouseEvent('mousedown', {
           bubbles: true,
@@ -19,18 +20,19 @@
       // }
 
       open = false
-    } else if (!e.path.includes(buttonNode)) {
+    } else if (!path.includes(buttonNode)) {
       open = false
     }
     // originalClick = false
   }
 
   function mouseDown (e) {
+    const path = e.composedPath()
     if (open) {
-      if (e.path.includes(menuNode)) {
+      if (path.includes(menuNode)) {
         // originalClick = true
         open = false
-      } else if (!e.path.includes(buttonNode)) {
+      } else if (!path.includes(buttonNode)) {
         open = false
       }
     }
