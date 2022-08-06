@@ -2,7 +2,10 @@
 // import maybeSetupUser from './setup'
 import { getEnv } from '/$env.js'
 
-const denoLocal = !!window.Deno
+let denoLocal = false
+try {
+  denoLocal = !!window.Deno
+} catch (_e) {}
 
 const { userId, env, folderHash } = getEnv(['userId', 'env', 'folderHash'])
 const orgId = 'igp'
