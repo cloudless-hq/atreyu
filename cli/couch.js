@@ -25,10 +25,11 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     } else if (resetTestDb) {
       if (env == 'test') {
         console.log(`  ♻️ Resetting existing test database ${couchHost}/${dbName}`)
-        await fetch(`${couchHost}/${dbName}`, {
+        const deleteRes = await fetch(`${couchHost}/${dbName}`, {
           headers,
           method: 'DELETE'
         })
+        console.log(await deleteRes.text())
         createDb = true
       } else {
         console.error('  🛑 Refusing to erase database outside of test environment!')

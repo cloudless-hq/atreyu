@@ -13,12 +13,15 @@ ENV TZ=Europe/Budapest
 
 WORKDIR /root
 
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive  \
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 && apt-get install -y curl \
 unzip \
 git \
 tzdata \
 wget curl ca-certificates rsync -y
+
+RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+&& dpkg -i cloudflared.deb
 
 # deno
 RUN wget https://deno.land/x/install/install.sh
