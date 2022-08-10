@@ -112,6 +112,7 @@ export default function ({
               cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
             }
             if (!url.pathname.startsWith('/atreyu/accounts')) {
+              console.log('redirecting other clients', newSession)
               client.navigate(`/_couch/_session?login${cont}`)
             }
           }
@@ -210,7 +211,7 @@ export default function ({
     }))
   })
 
-  let bypass = []
+  const bypass = []
   let corsConf
   Object.entries(schema.paths).forEach(([path, methods]) => {
     Object.entries(methods).forEach(([_method, { operationId, tags }]) => {

@@ -176,7 +176,7 @@ export async function add ({
   }
 
   let listMap
-  let watchRes = {}
+  const watchRes = {}
   if (clean) {
     console.log('  ➕ adding folder to ipfs: ' + input)
     listMap = await doAdd(input + '/')
@@ -232,7 +232,7 @@ export async function add ({
   if (clean) {
     try {
       await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
-    } catch (_) {}
+    } catch (_err) { }
     try {
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
       await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
@@ -265,7 +265,7 @@ export async function add ({
 
   try {
     await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'})
-  } catch (_) {}
+  } catch (_) { }
 
   await ipfs(`files cp /ipfs/${mapRes} /apps/${pinName}/ipfs-map.json`)
 

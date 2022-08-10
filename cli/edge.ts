@@ -5,7 +5,7 @@ import esbuildPlugin from './esbuild-plugin.ts'
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
 export function buildWorkerConfig (schema: any) {
-  const workers = {}
+  const workers: Record<string, unknown> = {}
 
   Object.entries(schema.paths).forEach(([path, conf]) => {
     Object.entries(conf).forEach(([_method, { tags, operationId }]) => {

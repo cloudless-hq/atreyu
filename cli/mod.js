@@ -57,7 +57,7 @@ let {
   once,
   version,
   name,
-  env,
+  env: envFlag,
   port = '80',
   start,
   repo,
@@ -97,13 +97,6 @@ const projectPath = Deno.cwd()
 const appName = basename(projectPath)
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
-if (!env) {
-  if (cmd === 'publish') {
-    env = 'prod'
-  } else {
-    env = 'dev'
-  }
-}
 
 if (help) {
   cmd = 'help'
@@ -123,7 +116,7 @@ try {
   Deno.mkdirSync(homeConfPath)
 }
 
-let { config = {}, runConf = {} } = await loadConfig(env, appName, repo || homeConfPath)
+let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath)
 
 // TODO: allow argument relative path for apps different from cwd
 
@@ -228,7 +221,7 @@ switch (cmd) {
 
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
-      const newConf = await loadConfig(env, appName, repo || homeConfPath)
+      const newConf = await loadConfig(env, cmd, appName, repo || homeConfPath)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 

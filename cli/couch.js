@@ -1,17 +1,21 @@
+import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/escape-id.js'
 
 export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetTestDb }) {
-  const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey, userId } = config
+  const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
 
   if (!couchHost || !__couchAdminKey) {
     return
   }
 
-  const headers = { Authorization: `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}` }
+  const headers = {
+    'Authorization': `Basic ${btoa(__couchAdminKey + ':' + __couchAdminSecret)}`,
+    'Content-Type': 'application/json'
+  }
 
-  const dbName = env === 'dev' ? escapeId(env + '_' + userId + '__' + appName) : env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
+  const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
 
-  const _id = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
+  const _id = `system:settings_${env}`
 
   try {
     const dbRes = await fetch(`${couchHost}/${dbName}`, {
@@ -29,7 +33,10 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
           headers,
           method: 'DELETE'
         })
-        console.log(await deleteRes.text())
+        if (!deleteRes.ok) {
+          console.error('  🛑 ' + await deleteRes.text())
+          Deno.exit(1)
+        }
         createDb = true
       } else {
         console.error('  🛑 Refusing to erase database outside of test environment!')
@@ -57,28 +64,45 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       })
     }
 
+    let dbSeeds = []
+    // TODO: handle updates
+    if (createDb) {
+      try {
+        dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
+      } catch (_err) { console.log(_err)}
+    }
+
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
     const _rev = oldDoc?._rev
 
     console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
-    const updtRes = await (await fetch(`${couchHost}/${dbName}/${_id}`, {
-      body: JSON.stringify({
-        _id,
-        _rev,
-        folderHash: appFolderHash,
-        rootFolderHash,
-        version,
-        buildName,
-        buildTime,
-        buildColor
-      }),
+    const updtRes = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, {
+      body: JSON.stringify({ docs: [
+        {
+          _id,
+          _rev,
+          folderHash: appFolderHash,
+          rootFolderHash,
+          version,
+          buildName,
+          buildTime,
+          buildColor
+        },
+        ...dbSeeds
+      ] }),
       headers,
-      method: 'PUT'
+      method: 'POST'
     })).json()
 
-    if (!updtRes?.ok) {
-      console.error('  🛑 Unexpected update result...', updtRes)
-    } else {
+    let clean = true
+    updtRes.forEach(res => {
+      if (!res?.ok) {
+        clean = false
+        console.error('  🛑 Unexpected update result...', res)
+      }
+    })
+
+    if (clean) {
       console.log('  🏁 app db update finished ' + appFolderHash)
     }
   } catch (err) {

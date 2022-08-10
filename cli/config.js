@@ -1,5 +1,5 @@
 import { join } from '../deps-deno.ts'
-export async function loadConfig (env, appName, repo) {
+export async function loadConfig (envFlag, cmd, appName, repo) {
   let confFile
   let conf
 
@@ -16,18 +16,30 @@ export async function loadConfig (env, appName, repo) {
   }
   // console.log('pre conf', conf)
 
+  let env
+  if (!envFlag) {
+    if (cmd === 'publish') {
+      env = 'prod'
+    } else {
+      env = conf.defaultEnv || 'dev'
+    }
+  } else {
+    env = envFlag
+  }
+
   let envConf = {}
   if (conf[env]) {
     envConf = conf[env]
   }
 
-  for (let key in conf) {
+  for (const key in conf) {
     if (typeof conf[key] === 'object' && key !== 'kv_namespaces') {
       delete conf[key]
     }
   }
 
   return {
+    env,
     config: {
       ...conf,
       ...envConf,

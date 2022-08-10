@@ -7,8 +7,7 @@ try {
   denoLocal = !!window.Deno
 } catch (_e) {}
 
-const { userId, env, folderHash } = getEnv(['userId', 'env', 'folderHash'])
-const orgId = 'igp'
+const { env, folderHash, orgId = 'igp' } = getEnv(['env', 'folderHash', 'orgId'])
 
 // function setCookie (name, value, days) {
 //     let d = new Date
@@ -75,7 +74,7 @@ export function handler ({ req, stats, app }) {
       return new Response('forbidden', { status: 403 })
     }
     const params = new URLSearchParams(req.url.search)
-    const devJwt = 'dev.' + btoa(JSON.stringify({ email: userId }))
+    const devJwt = 'dev.' + btoa(JSON.stringify({ email: `local_${env}_user` }))
 
     return new Response(JSON.stringify({}), {
       status: 302,

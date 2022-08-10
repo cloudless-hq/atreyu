@@ -19,8 +19,8 @@ export default (ex, request) => {
       'X-Sentry-Auth': [
         'Sentry sentry_version=7',
         `sentry_client=${CLIENT_NAME}/${CLIENT_VERSION}`,
-        `sentry_key=${SENTRY_KEY}`,
-      ].join(', '),
+        `sentry_key=${SENTRY_KEY}`
+      ].join(', ')
     }
   })
 }
@@ -35,19 +35,19 @@ function toSentryEvent (err, request) {
     event_id: uuidv4(),
     project: SENTRY_PROJECT_ID,
     message: errType + ': ' + (err.message || '<no message>'),
-    logger: "javascript",
+    logger: 'javascript',
     exception: {
       values: [
         {
           type: errType,
           value: err.message,
           stacktrace: frames.length ? { frames: frames.reverse() } : undefined,
-        },
-      ],
+        }
+      ]
     },
     extra: extraKeys.length
       ? {
-          [errType]: extraKeys.reduce((obj, key) => ({ ...obj, [key]: err[key] }), {}),
+          [errType]: extraKeys.reduce((obj, key) => ({ ...obj, [key]: err[key] }), {})
         }
       : undefined,
     tags: TAGS,
@@ -62,10 +62,10 @@ function toSentryEvent (err, request) {
             url: request.url,
             query_string: request.query,
             headers: request.headers,
-            data: request.body,
+            data: request.body
           }
         : undefined,
-    release: RELEASE,
+    release: RELEASE
   }
 }
 

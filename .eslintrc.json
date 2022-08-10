@@ -13,7 +13,7 @@
   "extends": [
     "plugin:@typescript-eslint/recommended"
   ],
-  "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*"],
+  "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*", "runtime/**", "app/src/deps/**"],
   "rules": {
     // "no-console": "error",
     "@typescript-eslint/no-explicit-any": ["off"],
@@ -28,6 +28,7 @@
     "functional/no-throw-statement": "error",
     "functional/no-class": "error",
     "functional/no-this-expression": "error",
+    "@typescript-eslint/no-inferrable-types": "error",
     "no-invalid-this": "error",
     "eol-last": ["error", "always"],
     "no-trailing-spaces": "error",

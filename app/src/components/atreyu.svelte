@@ -1,147 +1,147 @@
 <script>
-	import data from '/atreyu/src/store/data.js'
-  export let env = 'prod'
+import data from '/atreyu/src/store/data.js'
+export let env = 'prod'
 
-  let seq
-  export let doSync = async (dataProxy) => {
-    try {
-      seq = (await dataProxy._sync(seq))?.json?._seq || seq
-    } catch (err) {
-      console.log(err)
-    } finally {
-      setTimeout(() => {
-        doSync(dataProxy)
-      }, 100)
-    }
+let seq
+export let doSync = async (dataProxy) => {
+  try {
+    seq = (await dataProxy._sync(seq))?.json?._seq || seq
+  } catch (err) {
+    console.log(err)
+  } finally {
+    setTimeout(() => {
+      doSync(dataProxy)
+    }, 100)
   }
+}
 
-  // let versionTooltip = ''
-  let updatedNotification
-  let latestHash = ''
-  let installedHash = ''
-  let newHash = null
-  let updating = false
-  let settingsDocId
+// let versionTooltip = ''
+let updatedNotification
+let latestHash = ''
+let installedHash = ''
+let newHash = null
+let updating = false
+let settingsDocId
 
-  let _silent = localStorage.getItem('_silent')
-  let _updateImmediate = localStorage.getItem('_updateImmediate')
-  let _updating = localStorage.getItem('_updating')
+let _silent = localStorage.getItem('_silent')
+let _updateImmediate = localStorage.getItem('_updateImmediate')
+let _updating = localStorage.getItem('_updating')
 
-  // TODO: full support for long running observables to avoid this loop
+// TODO: full support for long running observables to avoid this loop
 
-  $: {
-    if ($data._session.userId$) {
-      // the reactive check to ask for updates and reload while the page is open
-      settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
-      const settingsDoc = $data._docs[settingsDocId + '$']
+$: {
+  if ($data._session.userId$) {
+    // the reactive check to ask for updates and reload while the page is open
+    settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
+    const settingsDoc = $data._docs[settingsDocId + '$']
 
-      if (settingsDoc && !$data._hash$loading) {
-        latestHash = settingsDoc.folderHash
-        installedHash = $data._hash$
-      }
-      if (latestHash && installedHash && latestHash !== installedHash) {
-        newHash = latestHash
-
-        if (_updateImmediate && !updating) {
-          doUpdate({ auto: true })
-        }
-      }
+    if (settingsDoc && !$data._hash$loading) {
+      latestHash = settingsDoc.folderHash
+      installedHash = $data._hash$
     }
-  }
+    if (latestHash && installedHash && latestHash !== installedHash) {
+      newHash = latestHash
 
-  // else {
-  // versionTooltip = `Build: "${settingsDoc.buildName$}"
-  // Atreyu  Version: "${settingsDoc.version$}"
-  // Installled Hash: "${installedHash.substr(-8)}"
-  // Latest     Hash: "${newHash.substr(-8)}"`
-  //     }
-  //   } else {
-  // versionTooltip = `Build: "${settingsDoc.buildName$}"
-  // Atreyu Version: "${settingsDoc.version$}"
-  // Installed Hash: "${installedHash.substr(-8)}"`
-  //   }
-  // }
-
-  // the initial update check to auto install updates on fresh load and preload the required data
-  async function init () {
-    const userId = await $data._session.userId$promise
-    // const appHash = await $data._session.userId$promise
-
-    if (userId) {
-      doSync($data, data.falcor)
-
-      settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
-
-      const [settingsDoc, installedHash] = await Promise.all([
-        $data._docs[settingsDocId + '$promise'],
-        $data._hash$promise
-      ])
-
-      if (settingsDoc?.folderHash) {
-        // on dev this will happen if app db hash is updated but server not restarted but applicaiton is reloaded to update
-        // if (appHash !== settingsDoc.folderHash) {
-        //   alert('Application configuration is corrupt, please contact support to fix this.')
-        //   return
-        // }
-
-        latestHash = settingsDoc.folderHash
-
-        if ((latestHash && installedHash) && latestHash !== installedHash) {
-          doUpdate({})
-        }
+      if (_updateImmediate && !updating) {
+        doUpdate({ auto: true })
       }
     }
   }
-  init()
+}
 
-  let updated
-  function closeUpdateNotification (e) {
-    const path = e.composedPath()
-    if (updated) {
-      if (!path.includes(updatedNotification)) {
-        closeUpdated()
+// else {
+// versionTooltip = `Build: "${settingsDoc.buildName$}"
+// Atreyu  Version: "${settingsDoc.version$}"
+// Installled Hash: "${installedHash.substr(-8)}"
+// Latest     Hash: "${newHash.substr(-8)}"`
+//     }
+//   } else {
+// versionTooltip = `Build: "${settingsDoc.buildName$}"
+// Atreyu Version: "${settingsDoc.version$}"
+// Installed Hash: "${installedHash.substr(-8)}"`
+//   }
+// }
+
+// the initial update check to auto install updates on fresh load and preload the required data
+async function init () {
+  const userId = await $data._session.userId$promise
+  // const appHash = await $data._session.userId$promise
+
+  if (userId) {
+    doSync($data, data.falcor)
+
+    settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
+
+    const [settingsDoc, installedHash] = await Promise.all([
+      $data._docs[settingsDocId + '$promise'],
+      $data._hash$promise
+    ])
+
+    if (settingsDoc?.folderHash) {
+      // on dev this will happen if app db hash is updated but server not restarted but applicaiton is reloaded to update
+      // if (appHash !== settingsDoc.folderHash) {
+      //   alert('Application configuration is corrupt, please contact support to fix this.')
+      //   return
+      // }
+
+      latestHash = settingsDoc.folderHash
+
+      if ((latestHash && installedHash) && latestHash !== installedHash) {
+        doUpdate({})
       }
     }
   }
+}
+init()
 
-  if (_updating) {
-    updated = true
+let updated
+function closeUpdateNotification (e) {
+  const path = e.composedPath()
+  if (updated) {
+    if (!path.includes(updatedNotification)) {
+      closeUpdated()
+    }
   }
-  function closeUpdated () {
-    updated = false
-    localStorage.removeItem('_updating')
-  }
+}
 
-  async function doUpdate ({ auto, silent }) {
-    if (silent) {
-      localStorage.setItem('_silent', true)
-    }
+if (_updating) {
+  updated = true
+}
+function closeUpdated () {
+  updated = false
+  localStorage.removeItem('_updating')
+}
 
-    if (auto) {
-      localStorage.setItem('_updateImmediate', true)
-    }
-    if (_updating === newHash) {
-      newHash = null
-    }
-    if (!newHash) {
-      return
-    }
-    localStorage.setItem('_updating', newHash)
-    updated = false
-    updating = true
-    const cache = await caches.open('ipfs')
-    await cache.delete('/ipfs-map.json')
-    await data.falcor.setValue(['_updating'], updating) // todo promise mode for set and call
-
-    // if service worker new...
-    // await (await navigator.serviceWorker.getRegistration()).update()
-
-    // setTimeout(() => {
-    location.reload()
-    // }, 0)
+async function doUpdate ({ auto, silent }) {
+  if (silent) {
+    localStorage.setItem('_silent', true)
   }
 
-  // Updated notification with expansion to show changes and changed files, version numbers etc.
+  if (auto) {
+    localStorage.setItem('_updateImmediate', true)
+  }
+  if (_updating === newHash) {
+    newHash = null
+  }
+  if (!newHash) {
+    return
+  }
+  localStorage.setItem('_updating', newHash)
+  updated = false
+  updating = true
+  const cache = await caches.open('ipfs')
+  await cache.delete('/ipfs-map.json')
+  await data.falcor.setValue(['_updating'], updating) // todo promise mode for set and call
+
+  // if service worker new...
+  // await (await navigator.serviceWorker.getRegistration()).update()
+
+  // setTimeout(() => {
+  location.reload()
+  // }, 0)
+}
+
+// Updated notification with expansion to show changes and changed files, version numbers etc.
 </script>
 
 <svelte:body on:mousedown|passive={closeUpdateNotification}  />

@@ -48,7 +48,7 @@ startWorker(async arg => {
 
   apps = (await getApps()) || []
 
-  let app = apps.find(app => app.Name === appKey)
+  const app = apps.find(app => app.Name === appKey)
 
   if (!app) {
     return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
@@ -69,7 +69,7 @@ startWorker(async arg => {
       } else {
         schemas[appKey] = { data: schema, appHash: app.Hash }
       }
-    } catch (e) {
+    } catch (_err) {
       console.warn(` ⚠️ could not load schema for ${appKey}, falling back to default`)
       // TODO: make generic fallback for cloudflare and local
       schemas[appKey] = {
@@ -151,7 +151,7 @@ startWorker(async arg => {
         filename = workerName
       }
 
-      let codePath = join(...base, filename)
+      const codePath = join(...base, filename)
       const denoCodePath = codePath.replace('.js', '.d.js')
 
       try {
