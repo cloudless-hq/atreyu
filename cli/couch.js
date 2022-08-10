@@ -1,7 +1,7 @@
 import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/escape-id.js'
 
-export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetTestDb }) {
+export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
 
   if (!couchHost || !__couchAdminKey) {
@@ -26,8 +26,8 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     if (dbRes.status === 404) {
       console.log('  no existing app db found for environment, creating a new one...')
       createDb = true
-    } else if (resetTestDb) {
-      if (env == 'test') {
+    } else if (resetAppDb) {
+      if (force || confirm(`Do you really want to delete ${dbName}?`)) {
         console.log(`  ♻️ Resetting existing test database ${couchHost}/${dbName}`)
         const deleteRes = await fetch(`${couchHost}/${dbName}`, {
           headers,
@@ -57,7 +57,8 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
             'nobody': [],
             [_couchKey]: [
               '_reader',
-              '_writer'
+              '_writer',
+              '_admin'
             ]
           }
         })
