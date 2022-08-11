@@ -30,7 +30,9 @@ export default function ({
 
     pendingInit: null,
 
-    value: {},
+    value: {
+      userId: null
+    },
 
     dbs: new Map(),
 
@@ -62,13 +64,20 @@ export default function ({
       let redirectOtherClients = null
 
       let newSession
-      try {
-        newSession = await (await fetch('/_couch/_session', { redirect: 'manual' })).json()
-      } catch (_) {
-        newSession = { userId: null, appName: null }
+      // try {
+      const sessionReq = await fetch('/_couch/_session', { redirect: 'manual' })
+      if (sessionReq.ok) {
+        newSession = await sessionReq.json()
       }
+      // } catch (_) {
+      //   newSession = { userId: null, appName: null }
+      // }
 
-      if (newSession.userId !== self.session.value.userId) {
+      if (!newSession.userId ) {
+        self.session.clear()
+
+        redirectOtherClients = 'logout'
+      } else if (newSession.userId !== self.session.value.userId) {
         self.session.clear()
 
         let newDbConf
@@ -91,10 +100,6 @@ export default function ({
         }
       }
 
-      if (!newSession.userId ) {
-        redirectOtherClients = 'logout'
-      }
-
       self.session.value = newSession
 
       if (redirectOtherClients) {
@@ -109,9 +114,13 @@ export default function ({
           } else {
             let cont = ''
             if (url.pathname.length > 1 || url.hash || url.search > 0) {
-              cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
+              if (params.get('continue')) {
+                cont = params.get('continue')
+              } else {
+                cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
+              }
             }
-            if (!url.pathname.startsWith('/atreyu/accounts')) {
+            if (!url.pathname.startsWith('/atreyu/accounts') && !url.pathname.startsWith('/_couch/_session?login')) {
               console.log('redirecting other clients', newSession)
               client.navigate(`/_couch/_session?login${cont}`)
             }

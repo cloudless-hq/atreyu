@@ -72,10 +72,13 @@ export async function handler ({ req, app }) {
       ipfsMaps[app.Hash] = await kvs.get(ipfsMapPath, {type: 'json'})
 
       if (!ipfsMaps[app.Hash]) {
-        try {
-          ipfsMaps[app.Hash] = await (await fetch(ipfsGateway + ipfsMapPath, {headers: { 'user-agent': 'atreyu edge worker' } })).json()
-        } catch (e) {
-          console.log(e)
+        const mapReq = await fetch(ipfsGateway + ipfsMapPath, { headers: { 'user-agent': 'atreyu edge worker' } }).catch(err => console.error(err))
+
+        if (!mapReq.ok) {
+          console.error({ error: await mapReq.text(), status: mapReq.status, path: ipfsMapPath, ipfsGateway })
+          ipfsMaps[app.Hash] = {}
+        } else {
+          ipfsMaps[app.Hash] = await mapReq.json()
         }
 
         if (ipfsMaps[app.Hash]) {

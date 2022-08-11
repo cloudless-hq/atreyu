@@ -70,7 +70,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     if (createDb) {
       try {
         dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
-      } catch (_err) { console.log(_err)}
+      } catch (_err) { }
     }
 
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()

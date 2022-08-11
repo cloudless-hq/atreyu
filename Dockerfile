@@ -4,7 +4,7 @@ ARG AYU_VERSION
 ARG DENO_VERSION="1.24.1"
 ARG NODE_VERSION="16"
 ARG IPFS_VERSION="0.14.0"
-ENV TZ=Europe/Budapest
+ENV TZ=Europe/Berlin
 
 # TODO: use user accounts instead root https://aka.ms/vscode-remote/containers/non-root
 # ARG USERNAME=vscode
