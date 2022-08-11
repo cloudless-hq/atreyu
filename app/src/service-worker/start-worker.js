@@ -64,16 +64,15 @@ export default function ({
       let redirectOtherClients = null
 
       let newSession
-      // try {
       const sessionReq = await fetch('/_couch/_session', { redirect: 'manual' })
       if (sessionReq.ok) {
         newSession = await sessionReq.json()
       }
       // } catch (_) {
-      //   newSession = { userId: null, appName: null }
+      //   newSession = { userId: null }
       // }
 
-      if (!newSession.userId ) {
+      if (!newSession?.userId ) {
         self.session.clear()
 
         redirectOtherClients = 'logout'
