@@ -28,7 +28,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       createDb = true
     } else if (resetAppDb) {
       if (force || confirm(`Do you really want to delete ${dbName}?`)) {
-        console.log(`  ♻️ Resetting existing test database ${couchHost}/${dbName}`)
+        console.log(`  ♻️ Resetting existing database ${couchHost}/${dbName}`)
         const deleteRes = await fetch(`${couchHost}/${dbName}`, {
           headers,
           method: 'DELETE'
