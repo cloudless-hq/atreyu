@@ -74,7 +74,7 @@ export function handler ({ req, stats, app }) {
       return new Response('forbidden', { status: 403 })
     }
     const params = new URLSearchParams(req.url.search)
-    const devJwt = 'dev.' + btoa(JSON.stringify({ email: `local_${env}_user` }))
+    const devJwt = 'dev.' + btoa(JSON.stringify({ email: `local_${env}_user`, dev_mock: true }))
 
     return new Response(JSON.stringify({}), {
       status: 302,
@@ -90,7 +90,7 @@ export function handler ({ req, stats, app }) {
 
     const headers = { 'Cache-Control': 'must-revalidate' }
 
-    if (denoLocal) {
+    if (payload.dev_mock) {
       headers['Location'] = `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {

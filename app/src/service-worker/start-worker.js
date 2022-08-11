@@ -30,14 +30,12 @@ export default function ({
 
     pendingInit: null,
 
-    value: {
-      userId: null
-    },
+    value: null,
 
     dbs: new Map(),
 
     clear: () => {
-      self.session.value = { userId: null }
+      self.session.value = null
       self.session.dbs.forEach(db => {
         db.ayuSync.cancel()
         db.close()
@@ -76,7 +74,7 @@ export default function ({
         self.session.clear()
 
         redirectOtherClients = 'logout'
-      } else if (newSession.userId !== self.session.value.userId) {
+      } else if (newSession.userId !== self.session.value?.userId) {
         self.session.clear()
 
         let newDbConf
@@ -167,7 +165,7 @@ export default function ({
   setInterval(purgeClients, 2500)
 
   addEventListener('message', async e => {
-    if ((!self.session.loaded || !self.session.value.userId) && !self.session.pendingInit) {
+    if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
       self.session.pendingInit = self.session.refresh({where: 'falcor', data: e.data}).then()
     }
     if (self.session.pendingInit) {
@@ -267,7 +265,7 @@ export default function ({
       return event.respondWith(corsHandler({ event, url, corsConf }))
     }
 
-    if ((!self.session.loaded || !self.session.value.userId) && !self.session.pendingInit) {
+    if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
       self.session.pendingInit = self.session.refresh({where: 'fetch', data: event.request.url}).then()
     }
 
