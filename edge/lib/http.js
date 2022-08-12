@@ -79,7 +79,7 @@ export async function bodyParser ({ event, clone }) {
     try {
       text = await req.text()
       ret = JSON.parse(text)
-    } catch (err) {
+    } catch (_err) {
       ret = { error: 'invalid json', text }
     }
     return { parsedBody: ret, body: text }

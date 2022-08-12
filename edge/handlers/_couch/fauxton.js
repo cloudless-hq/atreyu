@@ -3,14 +3,14 @@ const utils = 'https://storage.googleapis.com/cloudless-public/fauxton/release'
 
 export default async function ({ req, event }) {
   let path = req.url.pathname.replace('/_utils', '')
-  let search = req.url.serach ? req.url.serach : ''
+  const search = req.url.serach ? req.url.serach : ''
 
   if (path === '/') {
     path = '/index.html'
   }
 
   async function refreshCache () {
-    let response = await fetch(utils + path + search, event.request)
+    const response = await fetch(utils + path + search, event.request)
 
     if (response.status === 200) {
       const modifiedHeaders = new Headers({
@@ -20,7 +20,7 @@ export default async function ({ req, event }) {
         'Content-Length': response.headers.get('Content-Length'),
         'date': response.headers.get('date'),
         'last-modified': response.headers.get('last-modified'),
-        'cache-status': 'edge; hit'
+        'cache-status': 'edge-cache; hit'
       })
 
       const init = {

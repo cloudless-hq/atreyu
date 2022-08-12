@@ -116,7 +116,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
         'etag': `"${hash}"`,
         'cache-control': 'public, must-revalidate, max-age=2',
         'x-ipfs-path': '/ipfs/' + hash,
-        'cache-status': 'sw; miss'
+        'cache-status': 'sw-cache; miss'
       })
 
       response = new Response(response.body, {
@@ -130,7 +130,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
       //   console.warn('ipfs hash inconsistency for ' + path + ' ' + etag + ' ' + hash)
       // }
       const clone = response.clone()
-      clone.headers.set('cache-status', 'sw; hit; stored')
+      clone.headers.set('cache-status', 'sw-cache; hit; stored')
       cache.put(hash, clone)
     }
 

@@ -113,7 +113,7 @@ export async function handler ({ req }) {
   })
 
   // TODO: headers allready stripped to minimum if they come from KV store
-  let res = await cachedReq(href, 'cors', {
+  const res = await cachedReq(href, 'cors', {
     headers: cleanReqHeaders
   })
 
@@ -137,7 +137,7 @@ export async function handler ({ req }) {
 
   cleanResHeaders.server = 'cors-edge-worker'
   if (!cleanResHeaders['cache-status']) {
-    cleanResHeaders['cache-status'] = 'cors-edge; miss'
+    cleanResHeaders['cache-status'] = 'edge-kv; miss'
   }
 
   const ress = new Response(await res.arrayBuffer(), {

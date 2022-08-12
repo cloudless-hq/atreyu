@@ -7,7 +7,7 @@ const { IPFS_GATEWAY, env } = getEnv(['IPFS_GATEWAY', 'env'])
 
 const ipfsGateway = IPFS_GATEWAY || 'http://127.0.0.1:8080'
 
-let ipfsMaps = {}
+const ipfsMaps = {}
 const kvs = getKvStore('ipfs')
 
 export async function handler ({ req, app }) {
@@ -114,8 +114,7 @@ export async function handler ({ req, app }) {
       headers: {
         'content-type': 'application/json',
         'content-length': bodyText.length,
-        // 'x-edge-cache-status': 'HIT'
-        'cache-status': 'ipfs-edge; hit'
+        'cache-status': 'edge-mem; hit'
       }
     })
   } else {
@@ -143,9 +142,7 @@ export async function handler ({ req, app }) {
       'cache-control': 'public, must-revalidate, max-age=0',
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      // 'x-env': env,
-      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
-      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
     })
   } else if (revalidate) {
     headers = new Headers({
@@ -155,9 +152,7 @@ export async function handler ({ req, app }) {
       'cache-control': 'public, must-revalidate, max-age=' + (env === 'prod' ? 3 * 60 * 60 : 4), // prod 3h, other 4s
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      // 'x-env': env,
-      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
-      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
     })
   } else {
     headers = new Headers({
@@ -168,9 +163,7 @@ export async function handler ({ req, app }) {
       'last-modified': response.headers.get('last-modified'),
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      // 'x-env': env,
-      // 'x-edge-cache-status': response.headers.get('x-edge-cache-status') || 'MISS'
-      'cache-status': response.headers.get('cache-status') || 'ipfs-edge; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
     })
   }
 
