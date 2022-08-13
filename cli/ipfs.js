@@ -257,7 +257,7 @@ export async function add ({
 
   // TODO: add installing init atreyu, FIXME: this is not working!
   if (clean && !pinName.startsWith('atreyu')) {
-    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath + '/app' : '/apps/atreyu_dev'} /apps/${pinName}/atreyu`)
+    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath + '/app' : (env === 'dev' ? '/apps/atreyu_dev' : '/apps/atreyu')} /apps/${pinName}/atreyu`)
   }
 
   const preHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash

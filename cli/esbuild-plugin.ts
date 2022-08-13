@@ -36,6 +36,9 @@ export default ({ local, input, atreyuPath }) => ({
       handler: { filter: /^\/\$handler\.js/, fun: () => {
         return toPathObj(input)
       }},
+      edge: { filter: /^\/\$edge\//, fun: ({ path }) => {
+        return toPathObj(path.replace('/$edge', atreyuPath + '/edge/'))
+      }},
       ayu: { filter: /^\/\$ayu\//, fun: ({ path }) => {
         return toPathObj(path.replace('/$ayu', atreyuPath + '/app/src/'))
       }},
@@ -81,6 +84,7 @@ export default ({ local, input, atreyuPath }) => ({
 
     onResolve({filter: pathConf.atreyu.filter}, pathConf.atreyu.fun)
     onResolve({filter: pathConf.ayu.filter}, pathConf.ayu.fun)
+    onResolve({filter: pathConf.edge.filter}, pathConf.edge.fun)
     onResolve({filter: pathConf.env.filter }, pathConf.env.fun)
     onResolve({filter: pathConf.kvs.filter }, pathConf.kvs.fun)
     onResolve({filter: pathConf.handler.filter}, pathConf.handler.fun)

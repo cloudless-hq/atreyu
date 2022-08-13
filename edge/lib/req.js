@@ -1,7 +1,7 @@
 import { getKvStore } from '/$kvs.js'
 import wait from '../lib/wait.js'
 
-export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
+export async function cachedReq (url, ns, { cacheKey, headers = {}, ttl }) {
   if (!cacheKey) {
     cacheKey = url
   }
@@ -21,6 +21,8 @@ export async function cachedReq (url, ns, { cacheKey, headers = {} }) {
       wait(
         (async () => {
           await kvs.put(cacheKey, await response.clone().arrayBuffer(), {
+            expirationTtl: ttl, // s
+
             metadata: {
               status: response.status,
               statusText: response.statusText,

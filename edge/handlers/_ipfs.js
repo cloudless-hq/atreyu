@@ -20,7 +20,7 @@ export async function handler ({ req, app }) {
   let disableCache = false
   let ipfsMap
   let reqHash
-  // console.log(req.url.pathname)
+  let ipfsMapCacheStatus = ''
 
   if (req.url.pathname.startsWith('/ipfs/')) {
     // TODO: support ipfs folder requests
@@ -67,11 +67,13 @@ export async function handler ({ req, app }) {
     ) {
       disableCache = true
     }
+
     if (!ipfsMaps[app.Hash]) {
       const ipfsMapPath = '/ipfs/' + app.Hash + '/ipfs-map.json'
       ipfsMaps[app.Hash] = await kvs.get(ipfsMapPath, {type: 'json'})
 
       if (!ipfsMaps[app.Hash]) {
+        ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; miss; stored'
         const mapReq = await fetch(ipfsGateway + ipfsMapPath, { headers: { 'user-agent': 'atreyu edge worker' } }).catch(err => console.error(err))
 
         if (!mapReq.ok) {
@@ -84,7 +86,11 @@ export async function handler ({ req, app }) {
         if (ipfsMaps[app.Hash]) {
           wait(kvs.put(ipfsMapPath, JSON.stringify(ipfsMaps[app.Hash])))
         }
+      } else {
+        ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; hit'
       }
+    } else {
+      ipfsMapCacheStatus = 'edge-mem; hit'
     }
     ipfsMap = ipfsMaps[app.Hash]
 
@@ -114,7 +120,7 @@ export async function handler ({ req, app }) {
       headers: {
         'content-type': 'application/json',
         'content-length': bodyText.length,
-        'cache-status': 'edge-mem; hit'
+        'cache-status': ipfsMapCacheStatus
       }
     })
   } else {
