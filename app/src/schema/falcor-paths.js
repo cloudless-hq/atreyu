@@ -171,10 +171,16 @@ export default {
   '_docs[{keys:ids}]': {
     set: {
       handler: async ({ _docs, dbs, _userId }) => {
-        const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(({value}) => {
+        const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(({ value }) => {
           if (!value.changes) {
             value.changes = []
           }
+
+          if (value.changes.length > 12) {
+            value.changes.splice(2, value.changes.length - 4)
+            value.changes.push({ userId: session.value.userId, action: 'aggregated', date: Date.now() })
+          }
+
           if (value.deleted) {
             value.changes.push({ userId: session.value.userId, action: 'deleted', date: Date.now() })
           } else if (!value._rev) {

@@ -32,6 +32,7 @@ export function execIpfsStream (cmd, repo, getData) {
 }
 
 export function execIpfs (cmd, repo, silent) {
+  // verbose console.log(['ipfs', `--config=${repo}`, ...cmd.split(' ')].join(' '))
   return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')], silent)
 }
 
@@ -128,7 +129,7 @@ export async function add ({
     }
   }
 
-  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --ignore=node_modules --pin=false --ignore=yarn.lock --ignore=secrets.js `
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=yarn.lock --ignore=secrets.js `
   async function doAdd (fName) {
     if (fName.endsWith('/')) {
       const rootHash = (await ipfs(addCommand + fName)).replace('\n', '')
@@ -147,11 +148,13 @@ export async function add ({
       '': rootHash
     }
 
-    const refHashes = await ipfs(`refs ${rootHash} -r --format <src>/<dst>/<linkname>`)
+    const refHashes = await ipfs(`refs ${rootHash} -r --format "<src>/<dst>/<linkname>"`)
 
     refHashes.split('\n').map(line => line.split('/')).forEach(entry => {
       if (entry.length === 3) {
-        const [from, to, eName] = entry
+        let [from, to, eName] = entry
+        from = from.replace('"', '')
+        eName = eName.replace('"', '')
 
         if (hashMap[from] !== undefined ) {
           hashMap[to] = hashMap[from] + '/' + eName
@@ -160,7 +163,7 @@ export async function add ({
             map[hashMap[to]] = to
           }
         } else {
-          console.error('unmatched entry: ' + entry)
+          console.error('unmatched ipfs ref entry: ' + entry)
         }
       }
     })
