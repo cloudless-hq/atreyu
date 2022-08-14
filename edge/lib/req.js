@@ -47,7 +47,8 @@ export default async function req (url, { method, body, headers: headersArg, ttl
   }
 
   let retried
-  if (!res) {
+  const cacheMiss = !res
+  if (cacheMiss) {
     res = await fetch(url, { method, body, headers }).catch(fetchError => ({ ok: false, error: fetchError }))
 
     if (!res.ok) {
@@ -63,12 +64,6 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     }
 
     if (res.ok && cacheNs) {
-      let oldCacheStatus = res.headers.get('cache-status') || ''
-      if (oldCacheStatus) {
-        oldCacheStatus += ', '
-      }
-      res.headers.set('cache-status', oldCacheStatus + 'edge-kv; miss; stored')
-
       wait((async () => {
         await kvs.put(cacheKey, await res.clone().arrayBuffer(), {
           expirationTtl: ttl, // s
@@ -90,6 +85,13 @@ export default async function req (url, { method, body, headers: headersArg, ttl
   let text
   if (!rawArg && res.headers) {
     resHeaders = Object.fromEntries(res.headers.entries())
+    if (cacheMiss) {
+      let oldCacheStatus = res.headers.get('cache-status') || ''
+      if (oldCacheStatus) {
+        oldCacheStatus += ', '
+      }
+      resHeaders['cache-status'] = oldCacheStatus + 'edge-kv; miss; stored'
+    }
 
     if (res.headers.get('content-type') === 'application/json') {
       json = await res.json()
