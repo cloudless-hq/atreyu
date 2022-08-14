@@ -63,7 +63,7 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     }
 
     if (res.ok && cacheNs) {
-      const oldCacheStatus = res.headers.get('cache-status') || ''
+      let oldCacheStatus = res.headers.get('cache-status') || ''
       if (oldCacheStatus) {
         oldCacheStatus += ', '
       }
