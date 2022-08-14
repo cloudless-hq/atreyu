@@ -89,9 +89,9 @@ export async function bodyParser ({ event, clone }) {
     const bodyParts = body.split('&')
     const bodyObj = {}
     bodyParts.forEach(part => {
-      let i = part.indexOf('=')
-      let key = part.substring(0, i)
-      let value = part.substring(i + 1)
+      const i = part.indexOf('=')
+      const key = part.substring(0, i)
+      const value = part.substring(i + 1)
       bodyObj[key] = decodeURIComponent(value.replace(/\+/g, ' '))
     })
     bodyObj.raw = body

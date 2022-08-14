@@ -1,7 +1,6 @@
 import { getEnv } from '/$env.js'
 import { getKvStore } from '/$kvs.js'
-import wait from '../lib/wait.js'
-import { cachedReq } from '../lib/req.js'
+import doReq from '../lib/req.js'
 
 const { IPFS_GATEWAY, env } = getEnv(['IPFS_GATEWAY', 'env'])
 
@@ -10,7 +9,7 @@ const ipfsGateway = IPFS_GATEWAY || 'http://127.0.0.1:8080'
 const ipfsMaps = {}
 const kvs = getKvStore('ipfs')
 
-export async function handler ({ req, app }) {
+export async function handler ({ req, app, wait }) {
   // TODO: header Server-Timing: miss, db;dur=53, app;dur=47.2
   // Cache-Status: CacheName; param; param=value; param..., CacheName2; param; param...
   // https://httptoolkit.tech/blog/status-targeted-caching-headers/
@@ -124,7 +123,7 @@ export async function handler ({ req, app }) {
       }
     })
   } else {
-    response = await cachedReq(url, 'ipfs', {cacheKey: reqHash})
+    response = (await doReq(url, { cacheKey: reqHash, cacheNs: 'ipfs', raw: true })).raw
   }
 
   if (!response.ok) {

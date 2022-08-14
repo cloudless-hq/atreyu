@@ -4,12 +4,12 @@ import { urlLogger } from '../../app/src/lib/url-logger.js'
 // TODO: sentry support for exceptions https://github.com/bustle/cf-sentry/blob/master/sentry.js
 let envConf
 
-export default async function ({ req, body, response, stats, duration = null }) {
+// TODO fix funciton call signature to json payload
+export default async function ({ req, body, res, response, stats, duration = null }) {
   if (!envConf) {
     envConf = getEnv(['_ELASTIC_AUTH', 'ELASTIC_URL', 'env'])
   }
 
-  let res
   let wokerName
 
   if (response) {
@@ -21,11 +21,7 @@ export default async function ({ req, body, response, stats, duration = null }) 
       resp = response
     }
 
-    const headers = {}
-    const resHeaders = [...resp.headers]
-    resHeaders.forEach(ent => {
-      headers[ent[0]] = ent[1]
-    })
+    const headers = Object.fromEntries(resp.headers.entries())
 
     res = {
       headers,
@@ -54,7 +50,7 @@ export default async function ({ req, body, response, stats, duration = null }) 
       'Content-Type': 'application/json'
     }),
     body: JSON.stringify({
-      stats: stats.get(),
+      stats: stats?.get(),
 
       duration,
 

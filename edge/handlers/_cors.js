@@ -1,6 +1,6 @@
 // TODO: needs different domain from main?!
 // import { getEnv } from '$env.js'
-import { cachedReq } from '../lib/req.js'
+import doReq from '../lib/req.js'
 
 // const env = getEnv(['cloudantKey', 'cloudantSecret', 'cloudantDomain'])
 
@@ -113,8 +113,10 @@ export async function handler ({ req }) {
   })
 
   // TODO: headers allready stripped to minimum if they come from KV store
-  const res = await cachedReq(href, 'cors', {
-    headers: cleanReqHeaders
+  const { raw: res } = await doReq(href, {
+    cacheNs: 'cors',
+    headers: cleanReqHeaders,
+    raw: true
   })
 
   // console.log(req.headers)
