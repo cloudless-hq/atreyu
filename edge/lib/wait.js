@@ -1,11 +1,13 @@
 let event
 
-export const attachWait = (newEvent) => {
-  event = newEvent
-  return wait
+export const getWait = (newEvent) => {
+  if (newEvent) {
+    event = newEvent
+  }
+  return { waitUntil, event }
 }
 
-export default function wait (fn) {
+export default function waitUntil (fn) {
   if (event && event.waitUntil) {
     return event.waitUntil(fn)
   } else {

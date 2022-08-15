@@ -1,5 +1,5 @@
 import { getKvStore } from '/$kvs.js'
-import wait from './wait.js' // ./lib. ?
+import { getWait } from './wait.js'
 import log from './log.js'
 
 
@@ -13,7 +13,7 @@ const sleepRandom = () => {
 }
 
 export default async function req (url, { method, body, headers: headersArg, ttl, cacheKey, cacheNs, raw: rawArg }) {
-  const reqStart = Date.now()
+  const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'
   }
@@ -22,6 +22,10 @@ export default async function req (url, { method, body, headers: headersArg, ttl
   const headers = {
     'Content-Type': 'application/json',
     ...headersArg
+  }
+
+  if (body && headers['Content-Type'] === 'application/json') {
+    body = JSON.stringify(body)
   }
 
   let res
@@ -37,7 +41,7 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other?
 
     if (kvRes?.value) {
-      kvRes.metadata.headers['cache-status'] = `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Date.now()) : ''}`
+      kvRes.metadata.headers['cache-status'] = `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}`
       kvRes.metadata.ok = true
       kvRes.metadata.statusText = 'OK'
       kvRes.metadata.status = 200
@@ -47,8 +51,9 @@ export default async function req (url, { method, body, headers: headersArg, ttl
   }
 
   let retried
-  const cacheMiss = !res
-  if (cacheMiss) {
+  const reqStart = Date.now()
+  const wasCached = !!res
+  if (!wasCached) {
     res = await fetch(url, { method, body, headers }).catch(fetchError => ({ ok: false, error: fetchError }))
 
     if (!res.ok) {
@@ -64,11 +69,11 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     }
 
     if (res.ok && cacheNs) {
-      wait((async () => {
+      waitUntil((async () => {
         await kvs.put(cacheKey, await res.clone().arrayBuffer(), {
           expirationTtl: ttl, // s
           metadata: {
-            expiration: ttl ? (Date.now() + ttl) : undefined,
+            expiration: ttl ? (Math.floor(Date.now() / 1000) + ttl) : undefined,
             headers:  {
               'content-type': res.headers.get('content-type'),
               'content-length': res.headers.get('content-length'),
@@ -79,18 +84,22 @@ export default async function req (url, { method, body, headers: headersArg, ttl
       })())
     }
   }
+  const duration = (Date.now() - reqStart)
 
   let resHeaders
   let json
   let text
   if (!rawArg && res.headers) {
     resHeaders = Object.fromEntries(res.headers.entries())
-    if (cacheMiss) {
+    if (!wasCached) {
       let oldCacheStatus = res.headers.get('cache-status') || ''
       if (oldCacheStatus) {
         oldCacheStatus += ', '
       }
-      resHeaders['cache-status'] = oldCacheStatus + 'edge-kv; miss; stored'
+      // TODO:
+      resHeaders['referer'] = 'todo'
+      resHeaders['traceId'] = 'todo'
+      resHeaders['cache-status'] = oldCacheStatus + 'edge-kv; miss' + (kvs ? ' ; stored' : '')
     }
 
     if (res.headers.get('content-type') === 'application/json') {
@@ -100,12 +109,12 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     }
   }
 
-  const duration = (Date.now() - reqStart)
   const baseResponse = {
     json,
     text,
     headers: resHeaders,
 
+    duration,
     ok: res.ok,
     redirected: res.redirected,
     status: res.status,
@@ -113,16 +122,20 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     retried,
     error: res.error
   }
-  wait(log({
-    req: {
-      method,
-      url: new URL(url),
-      headers
-    },
-    res: baseResponse,
-    body,
-    duration
-  }))
+
+  if (!wasCached) {
+    waitUntil(log({
+      stats: event?.stats,
+      req: {
+        method,
+        url: new URL(url),
+        headers
+      },
+      res: baseResponse,
+      body,
+      duration
+    }))
+  }
 
   return {
     raw: res,

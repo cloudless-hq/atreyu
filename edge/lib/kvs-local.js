@@ -8,11 +8,11 @@ const devKV = {
 }
 
 export function getKvStore (name) {
-  if (!self[name]) {
-    // console.warn('using in memory kv fallback for dev')
-    return devKV
-  }
-  return self[name]
+  // if (!self[name]) {
+  // console.warn('using in memory kv fallback for dev')
+  return devKV
+  // }
+  // return self[name]
 }
 
 // async function handleRequest(request) {

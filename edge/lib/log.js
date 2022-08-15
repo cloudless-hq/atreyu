@@ -42,6 +42,8 @@ export default async function ({ req, body, res, response, stats, duration = nul
   // Delete for data laws
   delete req.headers['cf-connecting-ip']
   delete req.headers['x-real-ip']
+  delete req.headers['Authorization']
+  delete req.headers['cookie']
 
   return fetch(envConf.ELASTIC_URL, {
     method: 'POST',
@@ -50,7 +52,7 @@ export default async function ({ req, body, res, response, stats, duration = nul
       'Content-Type': 'application/json'
     }),
     body: JSON.stringify({
-      stats: stats?.get(),
+      stats: stats.get(),
 
       duration,
 

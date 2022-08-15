@@ -2,13 +2,15 @@ import log from './log.js'
 import { parseReq, bodyParser } from './http.js'
 import stats from './stats.js'
 import sentryLog from './sentry.js'
-import { attachWait } from './wait.js'
+import { getWait } from './wait.js'
 
 export default handler => {
   addEventListener('fetch', event => {
     const fetchStart = Date.now()
-    const wait = attachWait(event)
+
     stats.updt(event)
+    event.stats = stats
+    const { waitUntil } = getWait(event)
 
     const req = parseReq(event.request)
 
@@ -26,11 +28,11 @@ export default handler => {
           parsedBody,
           body,
           event,
-          wait
+          waitUntil
         })
           .then(response => {
             const duration = (Date.now() - fetchStart)
-            wait(log({ req, response, stats, body, duration }))
+            waitUntil(log({ req, response, stats, body, duration }))
             try {
               // FIXME: cloudant requests have immutable headers?
               response.headers.set('server-timing', 'edge;dur=' + duration)
@@ -40,7 +42,7 @@ export default handler => {
             return response
           })
       } catch (ex) {
-        wait(sentryLog(ex, event.request))
+        waitUntil(sentryLog(ex, event.request))
 
         return new Response(ex.message || 'An error occurred', { status: ex.statusCode || 500 })
       }
