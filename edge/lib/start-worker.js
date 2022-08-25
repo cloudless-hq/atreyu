@@ -1,14 +1,14 @@
 import log from './log.js'
 import { parseReq, bodyParser } from './http.js'
 import stats from './stats.js'
-import sentryLog from './sentry.js'
+// import apm from './apm.js'
 import { getWait } from './wait.js'
-
-export default handler => {
+export default (handler, app) => {
   addEventListener('fetch', event => {
     const fetchStart = Date.now()
 
-    stats.updt(event)
+    // TODO: workers can get fetch events in parrallel and stats architecture needs to be rewritten combined with intgrtaing apm
+    stats.updt(event, app)
     event.stats = stats
     const { waitUntil } = getWait(event)
 
@@ -17,10 +17,6 @@ export default handler => {
     async function execute () {
       try {
         const { parsedBody, body } = await bodyParser({ event }) // clone: true
-
-        if (req.url.href.startsWith('http://1')) {
-          console.log(stats, req)
-        }
 
         return handler({
           stats,
@@ -42,7 +38,7 @@ export default handler => {
             return response
           })
       } catch (ex) {
-        waitUntil(sentryLog(ex, event.request))
+        // waitUntil(apm(ex, event.request))
 
         return new Response(ex.message || 'An error occurred', { status: ex.statusCode || 500 })
       }

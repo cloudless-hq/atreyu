@@ -1,8 +1,8 @@
 import ipfsHandler from './handlers/ipfs.js'
-import corsHandler from './handlers/cors.js'
+// import corsHandler from './handlers/cors.js'
 import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
-import { escapeId } from '../lib/escape-id.js'
+import { escapeId } from '../lib/helpers.js'
 
 // TODO: support addtional dataSources like apollo
 
@@ -48,27 +48,27 @@ export default function ({
       self.session.clear()
 
       clientsRes = await clients.matchAll()
-      clientsRes.forEach(client => {
+      const logoutNavs = clientsRes.map(client => {
         const url = new URL(client.url)
         let cont = ''
         if (url.pathname.length > 1 || url.hash) {
           cont = `&continue=${encodeURIComponent(url.pathname + url.hash)}`
         }
-        client.navigate(`/_couch/_session?logout${cont}`)
+        return client.navigate(`/_api/_session?logout${cont}`).catch(err => console.error(err))
       })
+
+      await Promise.all(logoutNavs)
     },
 
     refresh: async () => {
+      // console.log(arg)
       let redirectOtherClients = null
 
       let newSession
-      const sessionReq = await fetch('/_couch/_session', { redirect: 'manual' })
+      const sessionReq = await fetch('/_api/_session', { redirect: 'manual' })
       if (sessionReq.ok) {
         newSession = await sessionReq.json()
       }
-      // } catch (_) {
-      //   newSession = { userId: null }
-      // }
 
       if (!newSession?.userId ) {
         self.session.clear()
@@ -101,12 +101,13 @@ export default function ({
 
       if (redirectOtherClients) {
         clientsRes = await clients.matchAll()
-        clientsRes.forEach(client => {
+
+        const clientNavigations = clientsRes.map(client => {
           const url = new URL(client.url)
           const params = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
             if (url.pathname.startsWith('/atreyu/accounts')) {
-              client.navigate(params.get('continue') || '/')
+              return client.navigate(params.get('continue') || '/').catch(err => console.error(err))
             }
           } else {
             let cont = ''
@@ -117,12 +118,16 @@ export default function ({
                 cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
               }
             }
-            if (!url.pathname.startsWith('/atreyu/accounts') && !url.pathname.startsWith('/_couch/_session?login')) {
-              console.log('redirecting other clients', newSession)
-              client.navigate(`/_couch/_session?login${cont}`)
+            if (!url.pathname.startsWith('/atreyu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
+              const url = `/_api/_session?login${cont}`
+              console.log('redirecting other clients', url, newSession, client)
+
+              return client.navigate(url).catch(err => console.error(err))
             }
           }
         })
+
+        await Promise.all(clientNavigations)
       }
 
       self.session.loaded = true
@@ -166,7 +171,7 @@ export default function ({
 
   addEventListener('message', async e => {
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-      self.session.pendingInit = self.session.refresh({where: 'falcor', data: e.data}).then()
+      self.session.pendingInit = self.session.refresh({ where: 'falcor', data: e.data }).then()
     }
     if (self.session.pendingInit) {
       await self.session.pendingInit
@@ -191,6 +196,7 @@ export default function ({
           e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {
+          console.log('falcor error in executer', error)
           e.source.postMessage(JSON.stringify({ id: reqId, error }))
         },
         async _done => {
@@ -218,7 +224,7 @@ export default function ({
   })
 
   const bypass = []
-  let corsConf
+  // let corsConf
   Object.entries(schema.paths).forEach(([path, methods]) => {
     Object.entries(methods).forEach(([_method, { operationId, tags }]) => {
       if (operationId === '_cors') {
@@ -251,22 +257,28 @@ export default function ({
         }
       }
     })
+
     if (bypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
       console.info('bypassing: ' + url.href)
       return
     }
 
-    if (url.pathname === '/_logout') {
+    if (url.pathname === '/_api/_logout') {
       self.session.logout()
       return event.respondWith(new Response('OK'))
     }
 
-    if (url.origin !== location.origin && !originWhitelist.includes(url.origin)) {
-      return event.respondWith(corsHandler({ event, url, corsConf }))
+    if (url.origin !== location.origin) {
+      if (!originWhitelist.includes(url.origin)) {
+        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
+      } else {
+        return
+      }
+      // corsHandler({ event, url, corsConf })
     }
 
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-      self.session.pendingInit = self.session.refresh({where: 'fetch', data: event.request.url}).then()
+      self.session.pendingInit = self.session.refresh({ where: 'fetch', data: event.request.url })
     }
 
     if (event.request.method !== 'GET') {

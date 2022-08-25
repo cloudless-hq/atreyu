@@ -1,5 +1,0 @@
-export { default as User } from './components/User.svelte'
-export { default as UserSwitcher } from './components/UserSwitcher.svelte'
-export { default as AddUser } from './components/AddUser.svelte'
-export { default as Login } from './components/Login.svelte'
-export { default as Confirmation } from './components/Confirmation.svelte'

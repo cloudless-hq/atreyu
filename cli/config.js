@@ -1,5 +1,5 @@
 import { join } from '../deps-deno.ts'
-export async function loadConfig (envFlag, cmd, appName, repo) {
+export async function loadConfig (envFlag, cmd, appName, repo, buildName, ayuVersion) {
   let confFile
   let conf
 
@@ -44,6 +44,8 @@ export async function loadConfig (envFlag, cmd, appName, repo) {
       ...conf,
       ...envConf,
       appName,
+      buildName,
+      ayuVersion,
       repo,
       env
     },

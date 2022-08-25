@@ -6,16 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="atreyu account management" />
     <title>Account Management</title>
-    <script>
-      function devLogin () {
-        let searchTxt = location.href.split('?')[1]
 
-        location.href = `/_couch/_session?dev_login${searchTxt ? '&' + searchTxt : ''}`
-      }
-    </script>
+    <link rel='stylesheet' href='./assets/global.css'>
+
+    <script type="module" src="./src/main.js"></script>
   </head>
+
   <body>
-    <!-- <script type="module" src="./src/main.js"></script> -->
-    <button class="login" onclick="devLogin()">login</button>
+    <div id="app"></div>
   </body>
 </html>

@@ -2,9 +2,10 @@ import { getEnv } from '/$env.js'
 import { getKvStore } from '/$kvs.js'
 import doReq from '../lib/req.js'
 
-const { IPFS_GATEWAY, env } = getEnv(['IPFS_GATEWAY', 'env'])
+const { IPFS_GATEWAY, env, appPath } = getEnv(['IPFS_GATEWAY', 'env', 'appPath'])
 
-const ipfsGateway = IPFS_GATEWAY || 'http://127.0.0.1:8080'
+// appPath only set in local develpemnt, but not in cloudflare
+const ipfsGateway = IPFS_GATEWAY || (appPath ? 'http://127.0.0.1:8080' : 'https://cloudless.mypinata.cloud')
 
 const ipfsMaps = {}
 const kvs = getKvStore('ipfs')
@@ -73,13 +74,13 @@ export async function handler ({ req, app, waitUntil }) {
 
       if (!ipfsMaps[app.Hash]) {
         ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; miss; stored'
-        const mapReq = await fetch(ipfsGateway + ipfsMapPath, { headers: { 'user-agent': 'atreyu edge worker' } }).catch(err => console.error(err))
+        const { json: mapReq, error, ok, status } = await doReq(ipfsGateway + ipfsMapPath)
 
-        if (!mapReq.ok) {
-          console.error({ error: await mapReq.text(), status: mapReq.status, path: ipfsMapPath, ipfsGateway })
+        if (!ok) {
+          console.error({ error, status, path: ipfsMapPath, ipfsGateway })
           ipfsMaps[app.Hash] = {}
         } else {
-          ipfsMaps[app.Hash] = await mapReq.json()
+          ipfsMaps[app.Hash] = mapReq
         }
 
         if (ipfsMaps[app.Hash]) {
@@ -101,7 +102,7 @@ export async function handler ({ req, app, waitUntil }) {
 
     if (!req.url.pathname.endsWith('/ipfs-map.json')) {
       if (ipfsMap[req.url.pathname] === existingHash) {
-        return (new Response(null, { status: 304, statusText: 'Not Modified' }))
+        return (new Response(null, { status: 304, statusText: 'Not Modified', 'cache-status': 'browser-cache; hit' }))
       } else {
         reqHash = ipfsMap[req.url.pathname]
       }
@@ -147,7 +148,7 @@ export async function handler ({ req, app, waitUntil }) {
       'cache-control': 'public, must-revalidate, max-age=0',
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss'
     })
   } else if (revalidate) {
     headers = new Headers({

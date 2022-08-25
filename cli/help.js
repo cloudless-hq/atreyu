@@ -22,7 +22,7 @@ export function printHelp ({ ayuVersion }) {
 atreyu - cutting edge web applications
 
 Usage:
-  ${green('ayu')}                           ${gray('-- eg: ayu dev myapp --watch',)}
+  ${green('ayu')}                           ${gray('-- eg: ayu myapp --watch',)}
     equivalent to ayu svelte && ayu edge && ayu add
     Options:
       --watch

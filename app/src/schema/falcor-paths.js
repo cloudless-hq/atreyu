@@ -208,7 +208,7 @@ export default {
         }
       }
     },
-    get: {
+    get: { // -> get: getDocs,
       handler: async ({ ids, _keys, dbs }) => {
         const pouchRes = await userDb(dbs)?.allDocs({
           include_docs: true,

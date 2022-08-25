@@ -47,8 +47,8 @@ function toSentryEvent (err, request) {
     },
     extra: extraKeys.length
       ? {
-          [errType]: extraKeys.reduce((obj, key) => ({ ...obj, [key]: err[key] }), {})
-        }
+        [errType]: extraKeys.reduce((obj, key) => ({ ...obj, [key]: err[key] }), {})
+      }
       : undefined,
     tags: TAGS,
     platform: 'javascript',
@@ -58,12 +58,12 @@ function toSentryEvent (err, request) {
     request:
       request && request.url
         ? {
-            method: request.method,
-            url: request.url,
-            query_string: request.query,
-            headers: request.headers,
-            data: request.body
-          }
+          method: request.method,
+          url: request.url,
+          query_string: request.query,
+          headers: request.headers,
+          data: request.body
+        }
         : undefined,
     release: RELEASE
   }

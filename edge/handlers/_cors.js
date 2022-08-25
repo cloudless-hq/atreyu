@@ -6,7 +6,7 @@ import doReq from '../lib/req.js'
 
 // function couch (path, body) {
 //     const url = 'https://' + env.cloudantDomain + '/dep-manager/' + path
-//     return fetch(url, {
+//     return req(url, {
 //         headers: {
 //             Authorization: `Basic ${btoa(env.cloudantKey + ':' + env.cloudantSecret)}`
 //         }

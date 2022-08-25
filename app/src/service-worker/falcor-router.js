@@ -1,6 +1,8 @@
+// eslint-disable-next-line no-restricted-imports
 import { Router, Observable } from '../../build/deps/falcor.js' // @graphistry/
 import { urlLogger } from '../lib/url-logger.js'
 import * as systemHandlers from '../schema/falcor-handlers/index.js'
+import req from '../lib/req.js'
 
 export function falcorTags (routes) {
   Object.keys(routes).forEach(key => {
@@ -36,6 +38,7 @@ export function toFalcorRoutes (schema) {
         arguments[0].dbs = this.dbs
         arguments[0].userId = this.userId
         arguments[0].Observable = this.Observable
+        arguments[0].req = this.req
 
         const getRes = get.handler(...arguments)
 
@@ -52,6 +55,7 @@ export function toFalcorRoutes (schema) {
         arguments[0].dbs = this.dbs
         arguments[0].userId = this.userId
         arguments[0].Observable = this.Observable
+        arguments[0].req = this.req
         return set.handler(...arguments)
       }
     }
@@ -63,6 +67,7 @@ export function toFalcorRoutes (schema) {
         arguments[0].dbs = this.dbs
         arguments[0].userId = this.userId
         arguments[0].Observable = this.Observable
+        arguments[0].req = this.req
         return handler(...arguments)
       }
     }
@@ -158,7 +163,7 @@ export function makeRouter (dataRoutes) {
                 missing = true
               }
               paths = e.callPath || e.jsonGraphEnvelope.paths
-              let body = e.jsonGraphEnvelope || e.results.map(res => res.value.jsonGraph || res.value.value)
+              const body = e.jsonGraphEnvelope || e.results.map(res => res.value.jsonGraph || res.value.value)
               urlLogger({ missing, method: e.method.toUpperCase(), url: `falcor://${JSON.stringify(paths)}`, body, duration, args: e.args })
             }
           }
@@ -168,6 +173,7 @@ export function makeRouter (dataRoutes) {
       /* eslint-disable functional/no-this-expression */
       this.userId = userId
       this.dbs = dbs
+      this.req = req
       this.Observable = Observable
       /* eslint-enable functional/no-this-expression */
     }

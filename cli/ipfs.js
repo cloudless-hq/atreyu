@@ -27,6 +27,8 @@ const { ipfsVersion } = versions
 //   // return outStr
 // }
 
+// console.log({ a: import.meta.url.startsWith('file:/'), b: Deno.mainModule.startsWith('file:'), mainModule: Deno.mainModule, metaUrl: import.meta.url })
+
 export function execIpfsStream (cmd, repo, getData) {
   return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData })
 }
@@ -36,10 +38,29 @@ export function execIpfs (cmd, repo, silent) {
   return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')], silent)
 }
 
+async function uploadToKvs ({ hash, pinName }) {
+  // GET accounts/:account_identifier/storage/kv/namespaces
+
+  // curl -X GET "/accounts/01a7362d577a6c3019a474fd6f485823/storage/kv/namespaces/0f2ac74b498b48028cb68387c421e279/metadata/My-Key" \
+  //    -H "X-Auth-Email: user@example.com" \
+  //    -H "X-Auth-Key: c2547eb745079dac9320b638f5e225cf483cc5cfdda41"
+
+  // GET accounts/:account_identifier/storage/kv/namespaces/:namespace_identifier/values/:key_name
+
+  // HEAD accounts/:account_identifier/storage/kv/namespaces/:namespace_identifier/values/:key_name
+
+  // curl -X PUT "/accounts/01a7362d577a6c3019a474fd6f485823/storage/kv/namespaces/0f2ac74b498b48028cb68387c421e279/bulk" \
+  //    -H "X-Auth-Email: user@example.com" \
+  //    -H "X-Auth-Key: c2547eb745079dac9320b638f5e225cf483cc5cfdda41" \
+  //    -H "Content-Type: application/json" \
+  //    --data '[{"key":"My-Key","value":"Some string","expiration":1578435000,"expiration_ttl":300,"metadata":{"someMetadataKey":"someMetadataValue"},"base64":false}]'
+}
+
 export async function add ({
   input = 'app',
   repo,
   clean,
+  pin: pinToService,
   batch,
   buildEmits,
   publish,
@@ -233,9 +254,8 @@ export async function add ({
   // atreyuFileHashes = await doAdd(atreyuPath) }
 
   if (clean) {
-    try {
-      await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'})
-    } catch (_err) { }
+    await fetch(ipfsApi + '/api/v0/files/mkdir?arg=/apps', {method: 'POST'}).catch(_err => {})
+
     try {
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
       await ipfs(`files cp /ipfs/${listMap['']} /apps/${pinName}`)
@@ -257,7 +277,13 @@ export async function add ({
 
   // TODO: add installing init atreyu, FIXME: this is not working!
   if (clean && !pinName.startsWith('atreyu')) {
-    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath + '/app' : (env === 'dev' ? '/apps/atreyu_dev' : '/apps/atreyu')} /apps/${pinName}/atreyu`)
+    let localDev = false
+    // TODO: unify with deno main module check in this file
+    if (!publish && (import.meta.url.startsWith('file:/') || env === 'dev')) {
+      console.log('  ⚠️  using local dev version of atreyu...')
+      localDev = true
+    }
+    await ipfs(`files cp ${curAyuIpfsPath ? curAyuIpfsPath + '/app' : (localDev ? '/apps/atreyu_dev' : '/apps/atreyu')} /apps/${pinName}/atreyu`)
   }
 
   const preHash = (await (await fetch(ipfsApi + `/api/v0/files/stat?arg=/apps/${pinName}&hash=true`, {method: 'POST'})).json()).Hash
@@ -266,9 +292,7 @@ export async function add ({
 
   const mapRes = await doAdd(input + '/ipfs-map.json')
 
-  try {
-    await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'})
-  } catch (_) { }
+  await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'}).catch(_err => {})
 
   await ipfs(`files cp /ipfs/${mapRes} /apps/${pinName}/ipfs-map.json`)
 
@@ -280,16 +304,24 @@ export async function add ({
 
   let rootFolderHash
   if (publish) {
+    const publishActions = []
     if (pinName.startsWith('atreyu')) {
       rootFolderHash = (await doAdd('./'))['']
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/atreyu_repo&recursive=true`, {method: 'POST'})
       await ipfs(`files cp /ipfs/${rootFolderHash} /apps/atreyu_repo`)
-      console.log(`  atreyu cli version published: http://atreyu.localhost/ipfs/${rootFolderHash}/cli/mod.js`)
       // https://cloudless.mypinata.cloud/ipfs/
-      await pin({ hash: rootFolderHash, pinName: 'atreyu_repo' })
+      if (pinToService) {
+        publishActions.push(pin({ hash: rootFolderHash, pinName: 'atreyu_repo' }))
+      }
+      publishActions.push(uploadToKvs({ hash: rootFolderHash, pinName: 'atreyu_repo' }))
+      console.log(`  publishing atreyu cli version: http://atreyu.localhost/ipfs/${rootFolderHash}/cli/mod.js`)
     }
+    if (pinToService) {
+      publishActions.push(pin({ hash: appFolderHash, pinName }))
+    }
+    publishActions.push(uploadToKvs({ hash: appFolderHash, pinName }))
 
-    await pin({ hash: appFolderHash, pinName })
+    await Promise.all(publishActions)
   }
 
   // await Promise.all([
@@ -299,7 +331,7 @@ export async function add ({
   //   ipfs(`name publish --lifetime=2000h --key=${name} ${folderHash} --quieter --resolve=false --allow-offline`)
   // ])
 
-  console.log(green(`  ✅ added ${name}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
+  console.log(green(`  ✅ added ${pinName}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
 
   return { appFolderHash, rootFolderHash }
 }

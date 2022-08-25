@@ -1,3 +1,14 @@
+<script>
+  export let user
+  let open
+
+  const accountRemoveHandler = () => {
+    alert('your local data is removed from this device (but not really')
+  }
+  export let loginUser
+
+</script>
+
 <style>
   .user {
     position: relative;
@@ -10,16 +21,17 @@
     color: #707070;
     transition: .2s all ease-in-out;
   }
-  .user:hover{
+  /* .user:hover{
     background: rgba(255, 255, 255, 1);
-  }
-  .user:hover .name{
+  } */
+  /* .user:hover .name{
     color:rgb(112, 112, 112);
-  }
-  .user.open{
+  } */
+  .user.open {
     background: rgba(255, 255, 255, 1);
   }
-  .picture{
+  .picture {
+    cursor: pointer;
     height: 65px;
     width: 65px;
     border-radius: 100px;
@@ -29,12 +41,6 @@
     left: 50%;
     transform: translateX(-50%);
     font-size: 35px;
-  }
-  .picture > .far {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
   }
 
   .data {
@@ -55,7 +61,7 @@
     left: 50%;
     transform: translateX(-50%);
   }
-  .btn-remove{
+  .btn-remove {
     background-color: #dc3545;
     padding: 10px 20px;
     border: none;
@@ -69,6 +75,7 @@
     box-shadow: 3px 3px 8px 3px rgba(0, 0, 0, 0.2);
   }
   .name {
+    cursor: pointer;
     width: fit-content;
     font-weight: 200;
     margin: auto;
@@ -76,65 +83,55 @@
     color: white;
     transition: all ease-in-out .2s;
   }
-  .name.open{
+  .name.open {
     color:rgb(112,112,112);
   }
-
+  svg {
+    width: 100%;
+    height: 100%;
+    fill: #858585;
+    padding: 16px;
+  }
 </style>
 
-<svelte:head>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous" />
-</svelte:head>
-
-<div class="user" class:open on:click={detailsToggler}>
+<div class="user" class:open>
   <div class="details">
-    <div class="picture"><i class="far fa-user"></i></div>
-    <h2 class="name" class:open>{username}</h2>
+    <div class="picture" on:click={() => loginUser(user.id)} preload="none">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M224 256c70.7 0 128-57.31 128-128s-57.3-128-128-128C153.3 0 96 57.31 96 128S153.3 256 224 256zM274.7 304H173.3C77.61 304 0 381.6 0 477.3c0 19.14 15.52 34.67 34.66 34.67h378.7C432.5 512 448 496.5 448 477.3C448 381.6 370.4 304 274.7 304z"/></svg>
+    </div>
+
+    <h2 class="name" class:open on:click={() => { open = true; console.log(open) }}>{user.username}</h2>
 
     {#if open}
       <div class="data">
-        <div class="notifications"><i class="fas fa-globe"></i> {notifications} new</div>
+        <div class="notifications">
+          <i class="fas fa-globe"></i>
+
+          {user.notifications} new
+        </div>
       </div>
       <div class="unsynced">
-        <p><i class="fas fa-exclamation-triangle"></i> unsynced data: {unsynced} items<br/>since: 2019/09/1</p>
+        <p>
+          <i class="fas fa-exclamation-triangle"></i>
+          unsynced data: {user.unsynced} items<br/>since: 2019/09/1
+        </p>
       </div>
       <div class="data">
         <div class="last-login">last login: 2019/10/11</div>
         <div class="local-space">local space used: 2mb/23mb</div>
       </div>
     {/if}
-    </div>
+  </div>
 
-    {#if open}
-      <button class="btn-remove" on:click={accountRemoveHandler}>remove account from this device</button>
-    {/if}
+  {#if open}
+    <button class="btn-remove" on:click={accountRemoveHandler}>remove account from this device</button>
+  {/if}
 </div>
 
-
-<script>
-  import { createEventDispatcher } from 'svelte'
-
-  const dispatch = createEventDispatcher()
-
-  export let open
-  export let username
-  export let unsynced
-  export let notifications
-
-  const detailsToggler = () => {
-    dispatch('open')
-  }
-
-  const accountRemoveHandler = () => {
-    alert('your local data is removed from this device (but not really')
-  }
-
-</script>
-
-{pw = new PasswordCredential({
+<!-- {const pw = new PasswordCredential({
   id: 'jan2',
   data: 'sdfsdf',
   password: 'pas sdfsdfsdf sd fsdf sdf sdfwe r23422 3 3dfwefsdf +sword',
   name: '#Ksdflsdfwe12, Cloudant: jan',
   iconURL: "https://cloud.ibm.com/cache/8c7-1137334920/api/v6/img/favicon.png"
-})}
+})} -->

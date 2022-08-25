@@ -11,7 +11,7 @@ const onIdle = window.requestIdleCallback || function (cb) {
   cb({ timeRemaining: function () { return 41 } })
 }
 
-export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
+export default function (schema = {paths: {}, fallback: true}, { preloadDisabled, _preloadDefault } = {}) {
   const routes = []
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
@@ -120,7 +120,9 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
     // localStorage.getItem('atreyu_userId') ?
     let missing = false
     if (matchedRoutes.length < 1) {
-      missing = true
+      if (!schema.fallback) {
+        missing = true
+      }
     } else {
       if (matchedRoutes[0].security) {
         matchedRoutes[0].security.forEach(scheme => {
@@ -397,14 +399,14 @@ export default function (schema, { preloadDisabled, _preloadDefault } = {}) {
 
     updateRoute()
 
-    window.addEventListener('popstate', updateRoute)
-    window.addEventListener('mousedown', linkClickHandler)
-    window.addEventListener('click', preventer)
+    self.addEventListener('popstate', updateRoute)
+    self.addEventListener('mousedown', linkClickHandler)
+    self.addEventListener('click', preventer)
 
     return () => {
-      window.removeEventListener('popstate', updateRoute)
-      window.removeEventListener('mousedown', linkClickHandler)
-      window.addEventListener('click', preventer)
+      self.removeEventListener('popstate', updateRoute)
+      self.removeEventListener('mousedown', linkClickHandler)
+      self.addEventListener('click', preventer)
     }
   })
 

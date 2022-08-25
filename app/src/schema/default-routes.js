@@ -16,32 +16,52 @@ export default {
       operationId: '_ipfs'
     }
   },
-  '/_debug': {
-    get: {
-      tags: [ 'edge' ],
-      operationId: '_debug'
-    }
-  },
 
-  // codespace support
-  '/signin*': {
-    get: {
-      operationId: '_bypass'
-    }
-  },
+  // '/_debug': {
+  //   get: {
+  //     tags: [ 'edge' ],
+  //     operationId: '_debug'
+  //   }
+  // },
+  // '/_cors/*': {
+  //   get: {
+  //     tags: [ 'edge', 'service-worker' ],
+  //     operationId: '_cors'
+  //   }
+  // },
+  // codespace support TODO: remove
+  // '/signin*': {
+  //   get: {
+  //     operationId: '_bypass'
+  //   }
+  // },
+
   '/atreyu/accounts*': {
     get: {
-      // tags: [],
       operationId: '_bypass' // '_accounts'
     }
   },
-  '/_feed/*': {
+  // '/_api/_feed/*': {
+  //   get: {
+  //     tags: [ 'edge' ],
+  //     operationId: '_feed'
+  //   }
+  // },
+  '/_api/_session*': {
     get: {
       tags: [ 'edge' ],
-      operationId: '_feed'
+      operationId: '_session'
+    },
+    post: {
+      tags: [ 'edge' ],
+      operationId: '_session'
+    },
+    delete: {
+      tags: [ 'edge' ],
+      operationId: '_session'
     }
   },
-  '/_couch/*': {
+  '/_api/_couch/*': {
     get: {
       tags: [ 'edge' ],
       operationId: '_couch'
@@ -59,16 +79,11 @@ export default {
       operationId: '_couch'
     }
   },
+  // cloudflare access support
   '/cdn-cgi/access*': {
     get: {
       // tags: [],
       operationId: '_bypass'
-    }
-  },
-  '/_cors/*': {
-    get: {
-      tags: [ 'edge', 'service-worker' ],
-      operationId: '_cors'
     }
   }
 }

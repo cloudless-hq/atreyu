@@ -1,9 +1,11 @@
+// deno-lint-ignore-file no-fallthrough no-case-declarations no-inner-declarations
 import {
   parse,
   join,
   faker,
   basename,
   italic,
+  yellow,
   bold,
   color,
   red,
@@ -49,7 +51,7 @@ rollBuildMeta()
 
 // TODO: warn or autofix if no service or edge worker to use custom sevlte library eg. --sveltePath=https://cdn.skypack.dev/svelte@v3.35.0
 
-let {
+const {
   _,
   output,
   online,
@@ -59,7 +61,8 @@ let {
   name,
   env: envFlag,
   port = '80',
-  start,
+  pin,
+  noStart,
   repo,
   domain,
   sveltePath,
@@ -77,6 +80,7 @@ const ignore = [
   '**/.git/**',
   '**/**.build.css',
   'node_modules/**',
+  '**/node_modules/**',
   'yarn.lock',
   '**/*.svelte.js',
   '**/build/**',
@@ -108,7 +112,6 @@ if (version) {
 
 if (!cmd) {
   cmd = 'dev'
-  start = true
 }
 
 try {
@@ -117,7 +120,7 @@ try {
   Deno.mkdirSync(homeConfPath)
 }
 
-let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath)
+let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
 
 // TODO: allow argument relative path for apps different from cwd
 
@@ -125,16 +128,23 @@ let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName,
 async function loadEdgeSchema () {
   // TODO: support implicit endpoints folder routs
   let schema
-  try {
-    schema = (await Promise.any([
-      import('file:' + projectPath + `/app/schema/index.js`),
-      import('file:' + projectPath + `/app/schema.js`)
-    ])).schema
-    if (typeof schema === 'function') {
-      schema = schema({ defaultPaths, addPathTags })
-    }
-  } catch (e) {
-    console.log('  no schema found, fallback to basic ipfs setup', e)
+  // NOTE: workaround because Promise.any() crashed deno when both promises fail
+  const schemaImports = await Promise.all([
+    import('file:' + projectPath + `/app/schema/index.js`)
+      .catch(error => ({ error })),
+    import('file:' + projectPath + `/app/schema.js`)
+      .catch(error => ({ error }))
+  ])
+
+  schema = schemaImports.filter(schemaImport => !schemaImport.error)?.[0]?.schema
+
+  if (typeof schema === 'function') {
+    schema = schema({ defaultPaths, addPathTags })
+  }
+
+  if (!schema) {
+    console.warn('  no valid schema found, fallback to basic ipfs setup', schemaImports)
+
     schema = {
       paths: {
         '/*': {
@@ -177,8 +187,24 @@ function startIpfsDaemon ({ publish }) {
 }
 
 async function doStart () {
+  // console.log('starting...')
+  // TODO: add gneric timeout for all localhost requests...
+  const c = new AbortController()
+  const id = setTimeout(() => c.abort(), 1000)
+  const res = await fetch('http://localhost:' + port, { signal: c.signal }).catch(error => ({error}))
+  clearTimeout(id)
+
+  if (res?.headers?.get('server') === 'ipfs-edge-worker') {
+    console.info('  using allready running daemon...')
+    return
+  } else if (res.ok) {
+    console.error('  ❗️ other process allready running on port ' + port)
+    return
+  }
+
   await startIpfsDaemon({})
 
+  console.log('  starting local worker runtime on env: ' + yellow(bold(env)))
   runDeno({
     addr: ':' + port,
     noCheck: true,
@@ -219,10 +245,10 @@ switch (cmd) {
 
   case 'dev':
     edgeSchema = await loadEdgeSchema()
-
+    // console.log(edgeSchema)
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
-      const newConf = await loadConfig(env, cmd, appName, repo || homeConfPath)
+      const newConf = await loadConfig(env, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 
@@ -273,6 +299,7 @@ switch (cmd) {
         input: _[1],
         repo: repo || homeConfPath,
         clean,
+        pin,
         batch,
         buildEmits,
         name,
@@ -282,7 +309,7 @@ switch (cmd) {
       await couchUpdt({ appFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb: clean && resetAppDb, force })
     }
 
-    if (start) {
+    if (!noStart) {
       await doStart()
     }
 
@@ -304,7 +331,7 @@ switch (cmd) {
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
     edgeSchema = await loadEdgeSchema()
 
-    if (start) {
+    if (!noStart) {
       await doStart()
     }
 
@@ -333,6 +360,7 @@ switch (cmd) {
       input: _[1],
       repo: repo || homeConfPath,
       name,
+      pin,
       clean: true,
       env,
       config,

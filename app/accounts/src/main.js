@@ -1,6 +1,6 @@
-const App = await import('pages/App.svelte')
+import App from '/atreyu/build/components/accounts/app.svelte.js'
 
-new App.default({
-  target: document.body,
+new App({
+  target: document.querySelector('#app'),
   intro: true
 })

@@ -5,9 +5,9 @@ import { getEnv } from '/$env.js'
 let denoLocal = false
 try {
   denoLocal = !!window.Deno
-} catch (_e) {}
+} catch (_e) { }
 
-const { env, folderHash, orgId = 'igp' } = getEnv(['env', 'folderHash', 'orgId'])
+const { env, folderHash, orgId } = getEnv(['env', 'folderHash', 'orgId'])
 
 // function setCookie (name, value, days) {
 //     let d = new Date
@@ -24,7 +24,7 @@ function getCookie (name, cookieString = '') {
 
 // TODO: create database if not existing
 
-export function handler ({ req, stats, app }) {
+export function handler ({ req, stats, parsedBody, app }) {
   let jwt
 
   const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
@@ -39,9 +39,9 @@ export function handler ({ req, stats, app }) {
     payload = JSON.parse(atob(jwt.split('.')[1]))
   }
 
-  if (!payload.email && payload.common_name) {
-    payload.email = payload.common_name + '@' + orgId
-  }
+  // if (!payload.email && payload.common_name) {
+  //   payload.email = payload.common_name + '@' + orgId
+  // }
 
   if (req.url.search.startsWith('?login')) {
     const params = new URLSearchParams(req.url.search)
@@ -56,7 +56,7 @@ export function handler ({ req, stats, app }) {
       })
     }
 
-    let Location = '/atreyu/accounts'
+    let Location = '/atreyu/accounts/'
     if (params.get('continue')) {
       Location += `?continue=${encodeURIComponent(params.get('continue'))}`
     }
@@ -70,11 +70,19 @@ export function handler ({ req, stats, app }) {
       }
     })
   } else if (req.url.search.startsWith('?dev_login')) {
+    // console.log(parsedBody)
+    // {
+    //   email: "dev_user@localhost",
+    //   org: "",
+    //   saveToDevice: "on",
+    //   sessionName: "Google Chrome on macOS",
+    //   raw: "email=dev_user%40localhost&org=&saveToDevice=on&sessionName=Google+Chrome+on+macOS"
+    // }
     if (!denoLocal) {
       return new Response('forbidden', { status: 403 })
     }
     const params = new URLSearchParams(req.url.search)
-    const devJwt = 'dev.' + btoa(JSON.stringify({ email: `local_${env}_user`, dev_mock: true }))
+    const devJwt = 'dev.' + btoa(JSON.stringify({ email: parsedBody.email, dev_mock: true }))
 
     return new Response(JSON.stringify({}), {
       status: 302,
@@ -91,13 +99,13 @@ export function handler ({ req, stats, app }) {
     const headers = { 'Cache-Control': 'must-revalidate' }
 
     if (payload.dev_mock) {
-      headers['Location'] = `/atreyu/accounts${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
+      headers['Location'] = `/atreyu/accounts/${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {
       headers['Location'] = `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
-      headers['Location'] = `/atreyu/accounts?login`
+      headers['Location'] = `/atreyu/accounts/?login`
       // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     }
 
@@ -111,7 +119,7 @@ export function handler ({ req, stats, app }) {
 
   // const dbUrl = `${dbHost}/user_${userId}`
   // const sessionsUrl = `${dbUrl}/_design/ntr/_view/lastSeen_by_userId?reduce=false`
-  // const sessions = await fetch(sessionsUrl, {
+  // const sessions = await req(sessionsUrl, {
   //   method: 'GET',
   //   headers: await authHeaders({ userId })
   // })

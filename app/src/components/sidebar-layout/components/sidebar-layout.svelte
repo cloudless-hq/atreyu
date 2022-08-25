@@ -1,3 +1,16 @@
+<script>
+  export let right = false
+  // Represents the width of the sidebar when adjacent. If not set (null) it defaults to the sidebar's content width
+  // .with-sidebar > :global(*) > :global(*) {flex-basis: sideWidth}
+  export let sideWidth = 'auto'
+  // A CSS percentage value. The minimum width of the content element in the horizontal configuration
+  // .with-sidebar > :global(*) > :global(:last-child) {min-width: calc(contentMin - var(--space))}
+  export let contentMin = 50
+  export let closed
+  export let height = '100vh'
+  export let top = '0'
+</script>
+
 <style>
   /* TODO: only evaluate on sidebar and content classes */
 
@@ -11,7 +24,7 @@
 
   .with-sidebar.right{
     flex-direction: row-reverse;
-  } 
+  }
 
   .with-sidebar > :global(*) {
     flex-grow: 1;
@@ -57,22 +70,3 @@
 <div class="with-sidebar" class:closed class:right style="--height: {height}; --top: {top}; --side-width: {sideWidth}; --content-min: {contentMin};">
   <slot></slot>
 </div>
-
-<script>
-
-  export let right = false
-
-  // Represents the width of the sidebar when adjacent. If not set (null) it defaults to the sidebar's content width
-  // .with-sidebar > :global(*) > :global(*) {flex-basis: sideWidth}
-  export let sideWidth = 'auto'
-
-  // A CSS percentage value. The minimum width of the content element in the horizontal configuration
-  // .with-sidebar > :global(*) > :global(:last-child) {min-width: calc(contentMin - var(--space))}
-  export let contentMin = 50
-
-  export let closed
-
-  export let height = '100vh'
-
-  export let top = '0'
-</script>

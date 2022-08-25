@@ -1,3 +1,11 @@
+export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+// min, max are inclusive
+export const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1) + min)
+export const sleepRandom = () => {
+  const ms = randomInt(500, 1500)
+  return sleep(ms)
+}
+
 export function escapeId (baseString, doc) {
   let result = ''
   let char = ''

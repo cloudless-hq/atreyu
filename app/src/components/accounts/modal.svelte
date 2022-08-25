@@ -1,7 +1,7 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from 'svelte'
 
-	const dispatch = createEventDispatcher();
+	const dispatch = createEventDispatcher()
 </script>
 
 <style>
@@ -28,9 +28,9 @@
 		background: white;
 	}
 
-	button {
+	/* button {
 		display: block;
-	}
+	} */
 </style>
 
 <div class='modal-background' on:click='{() => dispatch("close")}'></div>
@@ -42,4 +42,4 @@
 	<hr>
 </div>
 
-// navigator.credentials.get({password: true})
+<!-- // navigator.credentials.get({password: true}) -->

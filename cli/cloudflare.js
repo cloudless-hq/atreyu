@@ -202,6 +202,12 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
     config['env'] = env
     config['folderHash'] = appFolderHash
+    config['rootFolderHash'] = rootFolderHash
+
+    delete config.appPath
+    delete config.defaultEnv
+    delete config.repo
+
     const bindings = Object.entries(config).flatMap(([key, value]) => {
       if (!key.startsWith('__')) {
         if (key.startsWith('_')) {

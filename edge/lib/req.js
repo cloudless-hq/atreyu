@@ -12,19 +12,19 @@ const sleepRandom = () => {
   return sleep(ms)
 }
 
-export default async function req (url, { method, body, headers: headersArg, ttl, cacheKey, cacheNs, raw: rawArg }) {
+export default async function req (url, { method, body, headers: headersArg = {}, ttl, cacheKey, cacheNs, raw: rawArg } = {}) {
   const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'
   }
 
-  // TODO: make case insensitive with native heders obj
-  const headers = {
-    'Content-Type': 'application/json',
-    ...headersArg
+  const headers = new Headers(headersArg)
+
+  if (body && !headers.get('content-type')) {
+    headers.set('content-type', 'application/json')
   }
 
-  if (body && headers['Content-Type'] === 'application/json') {
+  if (body && headers.get('content-type') === 'application/json') {
     body = JSON.stringify(body)
   }
 
@@ -96,22 +96,16 @@ export default async function req (url, { method, body, headers: headersArg, ttl
       if (oldCacheStatus) {
         oldCacheStatus += ', '
       }
-      // TODO:
-      resHeaders['referer'] = 'todo'
-      resHeaders['traceId'] = 'todo'
-      resHeaders['cache-status'] = oldCacheStatus + 'edge-kv; miss' + (kvs ? ' ; stored' : '')
+      resHeaders['cache-status'] = oldCacheStatus + 'edge-kv; miss' + (kvs ? '; stored' : '')
     }
 
+    text = await res.text()
     if (res.headers.get('content-type') === 'application/json') {
-      json = await res.json()
-    } else {
-      text = await res.text()
+      json = JSON.parse(text)
     }
   }
 
   const baseResponse = {
-    json,
-    text,
     headers: resHeaders,
 
     duration,
@@ -123,15 +117,19 @@ export default async function req (url, { method, body, headers: headersArg, ttl
     error: res.error
   }
 
+  headers.set('referer', 'todo')
+  headers.set('traceId', 'todo')
+  headers.set('host', 'todo')
+
   if (!wasCached) {
     waitUntil(log({
       stats: event?.stats,
       req: {
         method,
         url: new URL(url),
-        headers
+        headers: Object.fromEntries(headers.entries())
       },
-      res: baseResponse,
+      res: { body: text, ...baseResponse},
       body,
       duration
     }))
@@ -139,6 +137,8 @@ export default async function req (url, { method, body, headers: headersArg, ttl
 
   return {
     raw: res,
+    json,
+    text,
     ...baseResponse
   }
 }

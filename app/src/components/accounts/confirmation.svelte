@@ -1,3 +1,14 @@
+<script>
+  import Modal from './modal.svelte.js'
+  let userAgreement = false
+  let signUp = false
+  let buttonText = ''
+  $: userAgreement ? buttonText = "Sign Up" : buttonText = "Please agree to the terms of service"
+  const signUpBtnHandler = () => {
+    signUp = true
+  }
+</script>
+
 <style>
   .btn {
     background: #3898ec;
@@ -16,6 +27,7 @@
   }
 
 </style>
+
 <Modal>
   {#if (userAgreement === true) && (signUp === true)}
     <div class="email">
@@ -27,19 +39,8 @@
   {:else}
     <div class="confirmation">
       <p>We did not find an account for jan@bruh.com, would you like to create an account?</p>
-      <input type="checkbox" bind:checked={userAgreement}/> I agree to the <a src="#">Terms of Service</a> and <a src="#">Privacy Policy</a>.
+      <input type="checkbox" bind:checked={userAgreement}/> I agree to the <a href="/#">Terms of Service</a> and <a href="/#">Privacy Policy</a>.
       <button class="btn" class:inactive={!userAgreement} on:click={signUpBtnHandler}>{buttonText}</button>
     </div>
   {/if}
 </Modal>
-
-<script>
-  import Modal from './Modal.svelte'
-  let userAgreement = false
-  let signUp = false
-  let buttonText = ''
-  $: userAgreement ? buttonText = "Sign Up" : buttonText = "Please agree to the terms of service"
-  const signUpBtnHandler = () => {
-    signUp = true
-  }
-</script>

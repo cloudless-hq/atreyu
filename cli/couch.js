@@ -1,5 +1,5 @@
 import { join } from '../deps-deno.ts'
-import { escapeId } from '../app/src/lib/escape-id.js'
+import { escapeId } from '../app/src/lib/helpers.js'
 
 export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
@@ -15,7 +15,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
 
   const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
 
-  const _id = `system:settings_${env}`
+  const _id = `system:ayu_settings`
 
   try {
     const dbRes = await fetch(`${couchHost}/${dbName}`, {
@@ -77,14 +77,15 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     const _rev = oldDoc?._rev
 
     console.log(`  🛋  pushing new hash to app db ${couchHost}/${dbName}`)
-    const updtRes = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, {
+    const updtRes = await fetch(`${couchHost}/${dbName}/_bulk_docs`, {
       body: JSON.stringify({ docs: [
         {
           _id,
           _rev,
           folderHash: appFolderHash,
           rootFolderHash,
-          version,
+          version, // deprecate this key
+          ayuVersion: version,
           buildName,
           buildTime,
           buildColor
@@ -93,15 +94,20 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       ] }),
       headers,
       method: 'POST'
-    })).json()
+    })
 
     let clean = true
-    updtRes.forEach(res => {
-      if (!res?.ok) {
-        clean = false
-        console.error('  🛑 Unexpected update result...', res)
-      }
-    })
+    if (!updtRes.ok) {
+      console.error('  🛑 Error updating app hash', await updtRes.text())
+      clean = false
+    } else {
+      (await updtRes.json()).forEach(res => {
+        if (!res?.ok) {
+          clean = false
+          console.error('  🛑 Unexpected update result...', res)
+        }
+      })
+    }
 
     if (clean) {
       console.log('  🏁 app db update finished ' + appFolderHash)

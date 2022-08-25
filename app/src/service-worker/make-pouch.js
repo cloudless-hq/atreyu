@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import Pouchdb from '../../build/deps/pouchdb.js'
 
 // import findPlugin from 'Pouchdb-find'
@@ -43,7 +44,7 @@ export default async function ({
   // TODO: move to application logic or make configurable with different strategies
   // [admin ? 'sync' : 'replicate']
 
-  const proxyUrl = `${location.origin}/_couch/${dbName}`
+  const proxyUrl = `${location.origin}/_api/_couch/${dbName}`
 
   const sync = Pouchdb.sync(proxyUrl, dbName, {
     live: true,

@@ -1,6 +1,5 @@
 <script>
 import data from '/atreyu/src/store/data.js'
-export let env = 'prod'
 
 let seq
 export let doSync = async (dataProxy) => {
@@ -21,7 +20,7 @@ let latestHash = ''
 let installedHash = ''
 let newHash = null
 let updating = false
-let settingsDocId
+const settingsDocId = 'system:ayu_settings'
 
 let _silent = localStorage.getItem('_silent')
 let _updateImmediate = localStorage.getItem('_updateImmediate')
@@ -32,7 +31,6 @@ let _updating = localStorage.getItem('_updating')
 $: {
   if ($data._session.userId$) {
     // the reactive check to ask for updates and reload while the page is open
-    settingsDocId = env === 'dev' ? `system:settings_${env}_${$data._session.userId$}` : `system:settings_${env}`
     const settingsDoc = $data._docs[settingsDocId + '$']
 
     if (settingsDoc && !$data._hash$loading) {
@@ -69,8 +67,6 @@ async function init () {
 
   if (userId) {
     doSync($data, data.falcor)
-
-    settingsDocId = env === 'dev' ? `system:settings_${env}_${userId}` : `system:settings_${env}`
 
     const [settingsDoc, installedHash] = await Promise.all([
       $data._docs[settingsDocId + '$promise'],
@@ -127,18 +123,21 @@ async function doUpdate ({ auto, silent }) {
     return
   }
   localStorage.setItem('_updating', newHash)
+
   updated = false
   updating = true
+
   const cache = await caches.open('ipfs')
   await cache.delete('/ipfs-map.json')
-  await data.falcor.setValue(['_updating'], updating) // todo promise mode for set and call
+
+  await data.falcor.setValue(['_updating'], updating) // TODO: promise mode for set and call
 
   // if service worker new...
   // await (await navigator.serviceWorker.getRegistration()).update()
 
-  // setTimeout(() => {
-  location.reload()
-  // }, 0)
+  setTimeout(() => {
+    location.reload()
+  }, 200)
 }
 
 // Updated notification with expansion to show changes and changed files, version numbers etc.

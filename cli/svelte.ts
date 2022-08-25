@@ -59,10 +59,8 @@ export default async function ({
       } catch (_e) {
         return
       }
-      try {
-        await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true })
-      } catch (_e) { }
 
+      await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true }).catch(_err => {})
 
       if (file.endsWith('.css')) { }
 
@@ -214,11 +212,11 @@ export default async function ({
         // }
 
         comp.js.code = comp.js.code
-          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/atreyu/src/deps/svelte-animate.js'`)
-          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/atreyu/src/deps/svelte-transition.js'`)
-          .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)
-          .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/atreyu/src/deps/svelte-store.js'`)
-          .replaceAll(/[",']\/?svelte[",']/ig, `'/atreyu/src/deps/svelte-internal.js'`)
+          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/atreyu/build/deps/svelte-animate.js'`)
+          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/atreyu/build/deps/svelte-transition.js'`)
+          .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/atreyu/build/deps/svelte-internal.js'`)
+          .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/atreyu/build/deps/svelte-store.js'`)
+          .replaceAll(/[",']\/?svelte[",']/ig, `'/atreyu/build/deps/svelte-internal.js'`)
           .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([

@@ -15,5 +15,5 @@ if (creds?.id) {
   if (location.origin.endsWith('localhost')) {
     setCookie('CF_Authorization', 'creds.id', 3)
   }
-  location.href= '/'
+  location.href = '/'
 }

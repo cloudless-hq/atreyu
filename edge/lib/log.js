@@ -42,8 +42,18 @@ export default async function ({ req, body, res, response, stats, duration = nul
   // Delete for data laws
   delete req.headers['cf-connecting-ip']
   delete req.headers['x-real-ip']
+  delete req.headers['cf-access-jwt-assertion']
   delete req.headers['Authorization']
   delete req.headers['cookie']
+
+  let location
+  const statsVal = stats?.get()
+  if (statsVal?.cf?.latitude !== undefined && statsVal?.cf?.longitude !== undefined) {
+    location = {
+      lat: statsVal?.cf?.latitude,
+      lon: statsVal?.cf?.longitude
+    }
+  }
 
   return fetch(envConf.ELASTIC_URL, {
     method: 'POST',
@@ -52,15 +62,19 @@ export default async function ({ req, body, res, response, stats, duration = nul
       'Content-Type': 'application/json'
     }),
     body: JSON.stringify({
-      stats: stats.get(),
+      time: (new Date()).toISOString(),
+
+      stats: statsVal,
 
       duration,
 
+      method: req.method,
+      url: req.url.href,
+      path: req.url.pathname,
+
       req: {
-        method: req.method,
-        url: req.url.href,
-        path: req.url.pathname,
         headers: req.headers,
+        location,
         body
       },
 
