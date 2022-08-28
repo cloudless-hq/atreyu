@@ -1,16 +1,16 @@
 import { dirname, join } from '../deps-deno.ts'
 
-function toPathObj (newPath) {
-  const newPathObj = { path: newPath }
-
-  if (newPath.startsWith('http')) {
-    newPathObj.namespace = 'http-import'
+function toPathObj (newPath: string) {
+  const newPathObj = {
+    path: newPath,
+    namespace: newPath.startsWith('http') ? 'http-import' : undefined
   }
+
   return newPathObj
 }
 
-const responseCache = {}
-async function useResponseCacheElseLoad (path, headers) {
+const responseCache: Record<string, Response> = {}
+async function useResponseCacheElseLoad (path: string, headers: Headers) {
   if (responseCache[ path ]) {
     return responseCache[ path ]
   }
@@ -18,41 +18,48 @@ async function useResponseCacheElseLoad (path, headers) {
   return responseCache[ path ] = await fetch(path.split('?')[ 0 ], { headers })
 }
 
-export default ({ local, input, atreyuPath }) => ({
+interface pathConf { path: string, importer: string }
+interface callbackArg { filter : RegExp, namespace?: string }
+
+type callbackFun = (arg: pathConf) => { path: string, namespace?: string }
+type onLoadcallbackFun = (arg: pathConf) => Promise<{ contents: string | Uint8Array, loader?: string }>
+type lifecycleFun = (arg: callbackArg, arg2: callbackFun | onLoadcallbackFun) => pathConf
+
+
+export default ({ local, input, atreyuPath }: { local: boolean, input: string, atreyuPath: string }) => ({
   name: 'atreyu',
 
-  setup: ({ onResolve, onLoad, initialOptions }) => {
-    function subMatch (path) {
-
-    }
-
+  setup: ({ onResolve, onLoad, initialOptions }: {onResolve: lifecycleFun, onLoad: lifecycleFun, initialOptions: { loader?: Record<string, string>} }) => {
     const pathConf = {
-      kvs: { filter: /^\/\$kvs\.js/, fun: () => {
+      kvs: { filter: /^\/\_kvs\.js/, fun: () => {
         return toPathObj(atreyuPath + (local ? '/edge/lib/kvs-local.js' : '/edge/lib/kvs.js'))
       } },
-      env: { filter: /^\/\$env\.js/, fun: () => {
+      env: { filter: /^\/\_env\.js/, fun: () => {
         return toPathObj(atreyuPath + (local ? '/edge/lib/env-local.js' : '/edge/lib/env.js'))
       }},
-      handler: { filter: /^\/\$handler\.js/, fun: () => {
+      handler: { filter: /^\/\_handler\.js/, fun: () => {
         return toPathObj(input)
       }},
-      edge: { filter: /^\/\$edge\//, fun: ({ path }) => {
-        return toPathObj(path.replace('/$edge', atreyuPath + '/edge/'))
+      edge: { filter: /^\/\_edge\//, fun: ({ path }: pathConf) => {
+        return toPathObj(path.replace('/_edge', atreyuPath + '/edge/'))
       }},
-      ayu: { filter: /^\/\$ayu\//, fun: ({ path }) => {
-        return toPathObj(path.replace('/$ayu', atreyuPath + '/app/src/'))
-      }},
-      atreyu: { filter: /^\/atreyu\//, fun: ({ path }) => {
-        return toPathObj(path.replace('/atreyu', atreyuPath))
+      ayu: { filter: /^\/\_ayu\//, fun: ({ path }: pathConf) => {
+        // console.log({atreyuPath, path})
+        return toPathObj(path.replace('/_ayu', atreyuPath + '/app/'))
       }}
+
+      // // TODO: deprecate
+      // atreyu: { filter: /^\/atreyu\//, fun: ({ path }: pathConf) => {
+      //   return toPathObj(path.replace('/atreyu', atreyuPath))
+      // }}
     }
 
-    onResolve({ filter: /^https?:\// }, ({ path }) => {
+    onResolve({ filter: /^https?:\// }, ({ path }: pathConf) => {
       return { path, namespace: 'http-import' }
     })
 
-    onResolve({ filter: /.*/, namespace: 'http-import' }, ({ path, importer }) => {
-      for (let conf of Object.values(pathConf)) {
+    onResolve({ filter: /.*/, namespace: 'http-import' }, ({ path, importer }: pathConf) => {
+      for (const conf of Object.values(pathConf)) {
         if (conf.filter.test(path)) {
           return conf.fun({ path, importer })
         }
@@ -60,9 +67,8 @@ export default ({ local, input, atreyuPath }) => ({
       return toPathObj(join( dirname(importer), path ))
     })
 
-    onLoad({ filter: /.*/, namespace: 'http-import' }, async ({ path }) => {
+    onLoad({ filter: /.*/, namespace: 'http-import' }, async ({ path }: pathConf) => {
       const headers = new Headers()
-
       const source = await useResponseCacheElseLoad(path, headers)
 
       if (!source.ok) {
@@ -82,7 +88,7 @@ export default ({ local, input, atreyuPath }) => ({
       }
     })
 
-    onResolve({filter: pathConf.atreyu.filter}, pathConf.atreyu.fun)
+    // onResolve({filter: pathConf.atreyu.filter}, pathConf.atreyu.fun)
     onResolve({filter: pathConf.ayu.filter}, pathConf.ayu.fun)
     onResolve({filter: pathConf.edge.filter}, pathConf.edge.fun)
     onResolve({filter: pathConf.env.filter }, pathConf.env.fun)

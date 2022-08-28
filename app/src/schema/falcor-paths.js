@@ -91,7 +91,7 @@ export default {
           return doc
         }))
 
-        return result.map((doc, i) => {
+        return result.map((_doc, i) => {
           return { path: ['_docs', docs[i]._id], value: docs[i] } // { $type: 'atom', value:
         })
       }
@@ -232,7 +232,7 @@ export default {
               } else if (row.doc.types?.length === 1) {
                 _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
               } else if (row.doc.types?.length > 1) {
-                _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => {$ref: type.profile}) }
+                _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => ({ '$ref': type.profile })) }
               }
             } else {
               console.warn(row)

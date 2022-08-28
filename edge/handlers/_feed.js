@@ -1,4 +1,4 @@
-import { getEnv } from '/$env.js'
+import { getEnv } from '/_env.js'
 import { fetchStream } from '../lib/http.js'
 
 const env = getEnv(['_couchKey', '_couchSecret', '_couchHost'])

@@ -1,11 +1,11 @@
 // import { authHeaders } from '../couchdb/helpers'
 // import maybeSetupUser from './setup'
-import { getEnv } from '/$env.js'
+import { getEnv } from '/_env.js'
 
 let denoLocal = false
 try {
-  denoLocal = !!window.Deno
-} catch (_e) { }
+  denoLocal = !!self.Deno
+} catch (_e) { /* ignore */ }
 
 const { env, folderHash, orgId } = getEnv(['env', 'folderHash', 'orgId'])
 
@@ -56,7 +56,7 @@ export function handler ({ req, stats, parsedBody, app }) {
       })
     }
 
-    let Location = '/atreyu/accounts/'
+    let Location = '/_ayu/accounts/'
     if (params.get('continue')) {
       Location += `?continue=${encodeURIComponent(params.get('continue'))}`
     }
@@ -99,13 +99,13 @@ export function handler ({ req, stats, parsedBody, app }) {
     const headers = { 'Cache-Control': 'must-revalidate' }
 
     if (payload.dev_mock) {
-      headers['Location'] = `/atreyu/accounts/${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
+      headers['Location'] = `/_ayu/accounts/${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {
       headers['Location'] = `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
-      headers['Location'] = `/atreyu/accounts/?login`
+      headers['Location'] = `/_ayu/accounts/?login`
       // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     }
 

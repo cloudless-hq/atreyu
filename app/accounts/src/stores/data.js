@@ -1,3 +1,3 @@
-import makeDataStore from '/atreyu/store/data'
+import makeDataStore from '/_ayu/store/data'
 
 export default makeDataStore({})

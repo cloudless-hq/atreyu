@@ -1,6 +1,6 @@
 // Copyright 2021 Deno Land Inc. All rights reserved. MIT license.
 
-import { dotEnvConfig, yellow } from '../../deps.ts'
+import { yellow } from '../../deps.ts'
 import { analyzeDeps } from '../utils/info.ts'
 import { run, RunOpts } from '../utils/run.ts'
 import { parseEntrypoint } from '../utils/entrypoint.ts'

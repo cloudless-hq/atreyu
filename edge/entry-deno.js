@@ -54,8 +54,10 @@ startWorker(async arg => {
     return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
   }
 
+  const ayuHash = apps.find(app => app.Name === 'atreyu_dev').Hash // TODO only use dev for ayudev execution
+  app.ayuHash = ayuHash
   app.appName = appName
-  arg.app = app // TODO find generic solution for local and cf
+  arg.app = app // TODO find generic solution for local and cf, seperate local envs into processes
 
   if (!schemas[appKey] || schemas[appKey].appHash !== app.Hash) {
     try {
@@ -129,6 +131,7 @@ startWorker(async arg => {
 
   if (workerName) {
     if (!configs[appKey]) {
+      // console.log({appKey})
       configs[appKey] = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
     }
     if (!configs[appKey]?.repo) {
@@ -138,8 +141,9 @@ startWorker(async arg => {
 
     // todo: how to handle this reliably and less ugly?
     // setEnv(configs[appKey])
+    const workerKey = `${workerName}__${appKey}`
 
-    if (!workers[workerName] || workers[workerName].appHash !== app.Hash) {
+    if (!workers[workerKey] || workers[workerKey].appHash !== app.Hash) {
       Deno.env.set('appKey', appKey)
       let base = []
       let filename
@@ -156,17 +160,17 @@ startWorker(async arg => {
 
       try {
         const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
-        if (fileHash !== workers[workerName]?.fileHash) {
-          console.log('  reloading worker script: ' + workerName)
+        if (fileHash !== workers[workerKey]?.fileHash) {
+          console.log(`  ${workers[workerKey] ? 're' : ''}loading worker script: ` + workerKey)
         }
 
-        workers[workerName] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
+        workers[workerKey] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
       } catch (err) {
-        console.error('  could not load edge worker: ' + workerName, err)
+        console.error('  could not load edge worker: ' + workerKey, err)
       }
     }
 
-    return workers[workerName].code.handler(arg)
+    return workers[workerKey].code.handler(arg)
   } else {
     console.log(`${req.method} ${req.url}`)
     return new Response('No matches found in schema: ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain'} })

@@ -7,7 +7,7 @@
 // http://localhost:5012/api/v0/ls?arg=/ipfs/asdf/
 
 let cache
-export let manifest = {
+export const manifest = {
   '/api/_session': '/api/_session',
   'integrity': null
 }
@@ -15,7 +15,7 @@ let waiting = []
 
 self.manifest = manifest
 
-async function init () {
+function init () {
   console.log('cache init')
   manifest.integrity = 'refreshing...'
   // navigator.storage.estimate().then(e => {
@@ -34,24 +34,24 @@ async function init () {
   //   })
   // )
   return cache.match('/manifest.json')
-  .then(res => res.json())
-  .then(res => {
-    manifest.integrity = res['manifest.json'].integrity
-    return updatedCache(res)
-  })
-  .finally(() => {
-    if (waiting.length > 0) {
-      waiting.forEach(resolver => {
-        resolver()
-      })
-      waiting = []
-    }
-    checkUpdt()
-  })
+    .then(res => res.json())
+    .then(res => {
+      manifest.integrity = res['manifest.json'].integrity
+      return updatedCache(res)
+    })
+    .finally(() => {
+      if (waiting.length > 0) {
+        waiting.forEach(resolver => {
+          resolver()
+        })
+        waiting = []
+      }
+      checkUpdt()
+    })
 }
 
 function updatedCache (res) {
-  let proms = []
+  const proms = []
 
   Object.entries(res).forEach(resource => {
     let cacheSrc = ''
@@ -65,16 +65,16 @@ function updatedCache (res) {
       (cacheSrc !== 'service-worker.js') &&
       (cacheSrc !== 'manifest.json')
     ) {
-      let cacheKey = resource[1].integrity
+      const cacheKey = resource[1].integrity
 
       proms.push(cache.match(cacheKey).then(cacheRes => {
         if (!cacheRes) {
           console.log('new: /' + cacheSrc)
           return fetch('/' + cacheSrc, { redirect: 'manual' }).then(freshRes => {
             return cache.put(cacheKey, freshRes)
-            .then(() => {
-              console.log('installed update: /' + cacheSrc)
-            })
+              .then(() => {
+                console.log('installed update: /' + cacheSrc)
+              })
           })
         }
       }))
@@ -97,33 +97,33 @@ function checkUpdt () {
     clone = res.clone()
     return res.json()
   })
-  .then(res => {
-    if (res['manifest.json'].integrity !== manifest.integrity) {
-      cache.put('/manifest.json', clone)
-      manifest.integrity = res['manifest.json'].integrity
+    .then(res => {
+      if (res['manifest.json'].integrity !== manifest.integrity) {
+        cache.put('/manifest.json', clone)
+        manifest.integrity = res['manifest.json'].integrity
 
-      updatedCache(res)
-      .then(() => {
-        // console.log('prod mode manifest update check...')
-        // setTimeout(function () {
-        //   checkUpdt()
-        // }, 3000)
-      })
-    }
+        updatedCache(res)
+          .then(() => {
+            // console.log('prod mode manifest update check...')
+            // setTimeout(function () {
+            //   checkUpdt()
+            // }, 3000)
+          })
+      }
     // else {
       // console.log('prod mode manifest update check...')
       // setTimeout(function () {
       //   checkUpdt()
       // }, 3000)
     // }
-  })
-  .catch(warning => {
-    console.warn(warning)
+    })
+    .catch(warning => {
+      console.warn(warning)
 
-    // setTimeout(function () {
-    //   checkUpdt()
-    // }, 5000)
-  })
+      // setTimeout(function () {
+      //   checkUpdt()
+      // }, 5000)
+    })
 }
 
 // function cleanCache () {

@@ -148,7 +148,7 @@ export function makeRouter (dataRoutes) {
                     batchMarker = ' ...'
                   }
 
-                  let body = route.results?.map(res => res.value.jsonGraph || res.value.value)
+                  const body = route.results?.map(res => res.value.jsonGraph || res.value.value)
                   duration = route.end && route.start ? route.end - route.start : 0
                   urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body })
                 } else {

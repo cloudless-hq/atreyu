@@ -2,7 +2,7 @@
   import Login from './login.svelte.js'
   // import Confirmation from './confirmation.svelte.js'
   import UserSwitcher from './user-switcher.svelte.js'
-	import makeRouterStore from '/atreyu/src/store/router.js'
+	import makeRouterStore from '/_ayu/src/store/router.js'
   // import schema from '../schema.js'
 
   const router = makeRouterStore() // schema

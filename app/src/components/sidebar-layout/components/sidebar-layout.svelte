@@ -47,18 +47,18 @@
     min-width: calc(1% * var(--content-min)); /* TODO: find less hacky workaound */
   }
 
-  .with-sidebar > :global(:first-child)::after { /* TODO: this creates an unclickable deadzone on the button, fix needed */
+  /* .with-sidebar > :global(:first-child)::after {  TODO: this creates an unclickable deadzone on the button, fix needed
     /* content:"";
     width: 10px;
     height: 100vh;
     position: absolute;
     left:15rem;
-    top:0; */
+    top:0;
   }
 
-  .with-sidebar.closed > :global(:first-child)::after {
-    /* left:0; */
-  }
+   .with-sidebar.closed > :global(:first-child)::after {
+    left:0;
+  } */
 
   .with-sidebar > :global(:first-child:hover) :global(.menu-toggle-button){
     transition-delay: .1s;

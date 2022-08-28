@@ -1,13 +1,19 @@
+// eslint-disable-next-line no-restricted-imports
 import { urlLogger } from '../../lib/url-logger.js'
 
-let ipfsMap
-let inFlight
+const ipfsMap = {
+  app: null,
+  ayu: null
+}
+
 let cache = caches.open('ipfs').then(openedCache => cache = openedCache)
 
 // TODO: make all offline avail. after finished initial page, cleanup unused ipfs hashes
 export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
+  const appPrefix = url.pathname.startsWith('/_ayu') ? 'ayu' : 'app'
+
   let contentTypeOverride = null
-  const path = url.pathname
+  const path = appPrefix === 'ayu' ? url.pathname.replace('/_ayu', '') : url.pathname
   // let loggedOut = false
   // const pathParts = path.split('/')
   // const fileName = pathParts[pathParts.length - 1]
@@ -30,50 +36,49 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
   if (cache.then) {
     await cache
   }
-  if (!ipfsMap || self.updating) {
+  if (!ipfsMap[appPrefix]?.['/'] || self.updating) {
     self.updating = false
 
-    if (inFlight) {
-      await inFlight
+    if (ipfsMap[appPrefix]?.inFlight) {
+      await ipfsMap[appPrefix].inFlight
     } else {
-      inFlight = (async () => {
-        const manifestName = '/ipfs-map.json'
-        let ipfsMapResponse
-        try {
-          ipfsMapResponse = await fetch(manifestName, { headers: {'Via': 'atreyu serviceworker'} })
-        } catch (e) {
-          console.log('map get error: ', e)
-        }
+      ipfsMap[appPrefix] = {
+        inFlight: (async () => {
+          const manifestName =  appPrefix === 'ayu' ? '/_ayu/ipfs-map.json' : '/ipfs-map.json'
+          let ipfsMapResponse
 
-        // if (ipfsMapResponse?.redirected) {
-        //   ipfsMapResponse = null
-        //   loggedOut = true
-        //   return
-        // }
+          ipfsMapResponse = await fetch(manifestName).catch(err => console.log('map get error: ', err))
 
-        if (ipfsMapResponse?.ok) { // && !loggedOut
-          cache.put(manifestName, ipfsMapResponse.clone())
-        } else {
-          ipfsMapResponse = await cache.match(manifestName)
-        }
+          // if (ipfsMapResponse?.redirected) {
+          //   ipfsMapResponse = null
+          //   loggedOut = true
+          //   return
+          // }
 
-        ipfsMap = await ipfsMapResponse.json()
+          if (ipfsMapResponse?.ok) { // && !loggedOut
+            cache.put(manifestName, ipfsMapResponse.clone())
+          } else {
+            ipfsMapResponse = await cache.match(manifestName)
+          }
 
-        const ipfsPath = ipfsMapResponse.headers.get('x-ipfs-path').split('/')[2]
+          ipfsMap[appPrefix] = await ipfsMapResponse.json()
 
-        self.ipfsHash = ipfsPath
-        inFlight = null
-      })()
+          if (appPrefix === 'app') {
+            const ipfsPath = ipfsMapResponse.headers.get('x-ipfs-path').split('/')[2]
+            self.ipfsHash = ipfsPath
+          }
+        })()
+      }
 
-      await inFlight
+      await ipfsMap[appPrefix].inFlight
     }
   }
 
   // if (loggedOut) {
-  //   return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
+  //   return new Response('Logged Out', { status: 307, headers: { location: '/_ayu/accounts?logout' } })
   // }
 
-  const hash = ipfsMap[path]
+  const hash = ipfsMap[appPrefix][path]
 
   let match
   if (hash) {
@@ -97,9 +102,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
 
     // TODO: make content type override not necessary with '/ipfs/appahsh/path' or filename.ext
 
-    let response = await fetch(ifpsUrl, {
-      headers: {'via': 'atreyu serviceworker'}
-    })
+    let response = await fetch(ifpsUrl)
 
     // if (response?.redirected) {
     //   return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
@@ -110,7 +113,6 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
     if (response?.ok) {
       const headers = new Headers({
         'content-type': contentTypeOverride ? contentTypeOverride : response.headers.get('content-type'),
-        'server': 'AtreyuServiceWorker',
         'content-length': response.headers.get('content-length'),
         'date': response.headers.get('date'),
         'etag': `"${hash}"`,
@@ -137,5 +139,5 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
     return response
   }
 
-  return new Response('Forbidden or Missing: ' + path, {status: 500})
+  return new Response(' Missing: ' + path, { status: 404 })
 }

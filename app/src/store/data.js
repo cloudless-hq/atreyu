@@ -1,9 +1,9 @@
 import { makeProxy } from '../lib/proxy-object.js'
-import { falcor } from '/atreyu/src/deps/falcor.js'
+import { falcor } from '/_ayu/src/deps/falcor.js'
 import { extractFromCache } from './helpers.js'
 import ServiceWorkerSource from './service-worker-source.js'
 
-let _undefined = Symbol('undefined')
+const _undefined = Symbol('undefined')
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 // Implemented like this for compatibilty with practices in falcor
@@ -36,8 +36,7 @@ class frameScheduler {
 /* eslint-enable functional/no-this-expression, functional/no-class */
 
 
-function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess }) {
-  let changeHandler
+function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess, changeHandler }) {
   // let invalidationHandler
   if (typeof source === 'undefined') {
     source = new ServiceWorkerSource({ wake: 20_000 })

@@ -1,15 +1,14 @@
 /* eslint-disable no-restricted-imports */
 /* global EventSource */
 
-// @deno-types="../../build/deps/pouchdb.d.ts"
 import Pouchdb from '../../build/deps/pouchdb.js'
 
 // import findPlugin from 'Pouchdb-find'
 // PouchDB.plugin(findPlugin)
 
 export default async function ({
-  dbName,
-  designDocs
+  dbName
+  // designDocs
 }) {
   const dbProxyUrl = `${location.origin}/_api/_couch/${dbName}`
   const pouch = new Pouchdb(dbName)
@@ -22,7 +21,7 @@ export default async function ({
     .on('change', change => {
       // console.log('pouch change: ' + change.last_seq, change)
       const newDocs = []
-      const updtDocs: Document[] = []
+      const updtDocs = []
       change.docs.forEach(doc => {
         if (doc._revisions) {
           updtDocs.push(doc)
@@ -92,7 +91,7 @@ export default async function ({
       const headers = new Headers()
       headers.append('Authorization', 'Basic ' + btoa(CLOUDANT_KEY + ':' + CLOUDANT_SECRET))
       headers.append('content-type', 'application/json')
-      const dbInfoRes = await fetch(cloudantDomain +`/${userDbName}`, { redirect: 'error', headers })
+      const dbInfoRes = await fetch(cloudantDomain + `/${userDbName}`, { redirect: 'error', headers })
       const dbInfo = await dbInfoRes.json()
       console.timeEnd('db info get')
 
@@ -133,7 +132,7 @@ export default async function ({
       // deleted: true
       // id: "bXNnX2NydDE1NDQ2NjE4Mzc3OTl3aGF0c2FwcDo0OTE3NzI4NTkwODAxNg=="
       // seq: "2914-g1AAAAQJeJzN0z0OgkAQBeBVjB7BzgOYuEHYRe08gn9bG2bAELJqImjrcVQaj2LlcRSHR ]
-      return pouch.bulkDocs(newDocs, { new_edits: false }, (err, docRes) => {
+      return pouch.bulkDocs(newDocs, { new_edits: false }, (err, _docRes) => {
         if (err) {
           console.error(err)
         } else {

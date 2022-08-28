@@ -1,4 +1,4 @@
-import { getKvStore } from '/$kvs.js'
+import { getKvStore } from '/_kvs.js'
 import { getWait } from './wait.js'
 import log from './log.js'
 
@@ -41,12 +41,17 @@ export default async function req (url, { method, body, headers: headersArg = {}
     const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other?
 
     if (kvRes?.value) {
-      kvRes.metadata.headers['cache-status'] = `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}`
-      kvRes.metadata.ok = true
-      kvRes.metadata.statusText = 'OK'
-      kvRes.metadata.status = 200
-      kvRes.metadata.redirected = false
-      res = new Response(kvRes.value, kvRes.metadata)
+      const options = {...kvRes.metadata}
+      if (!options.headers) {
+        options.headers = {}
+      }
+      options.headers['cache-status'] = `edge-kv; hit${options.expiration ? '; ttl=' + (options.expiration - Math.floor(Date.now() / 1000)) : ''}`
+
+      options.ok = true
+      options.statusText = 'OK'
+      options.status = 200
+      options.redirected = false
+      res = new Response(kvRes.value, options)
     }
   }
 

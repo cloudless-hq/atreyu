@@ -1,8 +1,9 @@
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash }) {
+export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash }) {
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
   }
+  const ipfsGateway = 'http://127.0.0.1:8080'
 
   async function req (path, { method, body, ctype } = {}) {
     const res = await fetch(`https://api.cloudflare.com/client/v4/${path}`, {
@@ -13,6 +14,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
       method,
       body: (body && typeof body !== 'string') ? JSON.stringify(body) : body
     })
+    // console.log(Object.fromEntries(res.headers.entries()), res.status, res.statusText, method)
     const resText = await res.text()
     let json = {}
     try {
@@ -70,7 +72,6 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
   // TODO: remove env vars that are removed
   // TODO: support schedules req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/${env}/schedules`)
-
   // accounts/{}/workers/services/convoi__cx__wh___ipfs?expand=scripts
   // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production?expand=routes
   // accounts/{}/workers/durable_objects/namespaces
@@ -164,7 +165,85 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     req(`zones/${cloudflareZoneId}/dns_records`)
   ])
 
-  // console.log(curServices)
+  const pinName = env === 'prod' ? appName : appName + '_' + env
+  const prefix = pinName + ':'
+  const ipfsNsId = curNamespaces.find(curNs => curNs.title === 'ipfs').id
+
+  const currKeys = await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/keys?prefix=${prefix}`)
+  // console.log(currKeys)
+
+  const deletions = []
+  currKeys.forEach(({ name }) => {
+    const hash = name.replace(prefix, '')
+    if (!fileList.has(hash)) {
+      deletions.push(name)
+    } else {
+      fileList.delete(hash)
+    }
+  })
+  // console.log(deletions)
+  // console.log(fileList)
+
+  if (currKeys.length > 999) {
+    console.error('  ATTENTION, only 1000 cf kv pin hash keys max supported in prerelease!')
+    return
+  }
+
+  // const imageUrlToBase64 = async url => {
+  //   const response = await fetch(url)
+  //   const blob = await response.blob()
+  //   return new Promise((onSuccess, onError) => {
+  //     try {
+  //       const reader = new FileReader()
+  //       reader.onload = function(){ onSuccess(this.result) }
+  //       reader.readAsDataURL(blob)
+  //     } catch (e) {
+  //       onError(e)
+  //     }
+  //   })
+  // }
+  // TODO: batch to max parallel
+  console.log(`  uploading ${fileList.size} new assets and deleting ${deletions.length} old from kv-store 'ipfs' prefix '${prefix}'`)
+  await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/bulk`, {
+    method: 'PUT',
+    body: await Promise.all([...fileList].map(async ([ hash, names ]) => {
+      const res = await fetch(`${ipfsGateway}/ipfs/${hash}`)
+      const value = await res.text()
+      return {
+        key: `${pinName}:${hash}`,
+        value,
+        metadata: { names, contentType: res.headers.get('content-type') },
+        base64: false
+      }
+    }))
+  })
+
+  await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/bulk`, {
+    method: 'DELETE',
+    body: deletions
+  })
+
+  // "expiration":1578435000,
+  // "expiration_ttl":300
+  // &cursor=curN"
+  // {
+  //   "success": true,
+  //   "errors": [],
+  //   "messages": [],
+  //   "result": [
+  //     {
+  //       "name": "My-Key",
+  //       "expiration": 1577836800,
+  //       "metadata": {
+  //         "someMetadataKey": "someMetadataValue"
+  //       }
+  //     }
+  //   ],
+  //   "result_info": {
+  //     "count": 1,
+  //     "cursor": "curN"
+  //   }
+  // }
 
   console.log('  🔎 checked existing workers, domains, namespaces and routes.')
 
@@ -203,6 +282,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     config['env'] = env
     config['folderHash'] = appFolderHash
     config['rootFolderHash'] = rootFolderHash
+    config['ayuHash'] = ayuHash
 
     delete config.appPath
     delete config.defaultEnv

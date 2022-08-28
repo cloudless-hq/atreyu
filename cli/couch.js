@@ -1,7 +1,7 @@
 import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/helpers.js'
 
-export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force }) {
+export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force, ayuHash }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
 
   if (!couchHost || !__couchAdminKey) {
@@ -70,7 +70,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     if (createDb) {
       try {
         dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
-      } catch (_err) { }
+      } catch (_err) { /* ignore */ }
     }
 
     const oldDoc = await (await fetch(`${couchHost}/${dbName}/${_id}`, {headers})).json()
@@ -83,6 +83,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
           _id,
           _rev,
           folderHash: appFolderHash,
+          ayuHash,
           rootFolderHash,
           version, // deprecate this key
           ayuVersion: version,

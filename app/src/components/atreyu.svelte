@@ -1,5 +1,5 @@
 <script>
-import data from '/atreyu/src/store/data.js'
+import data from '/_ayu/src/store/data.js'
 
 let seq
 export let doSync = async (dataProxy) => {

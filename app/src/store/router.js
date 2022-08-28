@@ -1,5 +1,7 @@
-import { readable } from '../deps/svelte-store.js'
-import { Route, merge } from '../deps/util.js'
+// eslint-disable-next-line no-restricted-imports
+import { readable } from '../../build/deps/svelte-store.js'
+// eslint-disable-next-line no-restricted-imports
+import { Route, merge } from '../../build/deps/util.js'
 import { urlLogger } from '../lib/url-logger.js'
 
 // TODO: data saver mode respect for preloader

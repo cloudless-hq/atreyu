@@ -102,7 +102,6 @@ const projectPath = Deno.cwd()
 const appName = basename(projectPath)
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
-
 if (help) {
   cmd = 'help'
 }
@@ -122,6 +121,7 @@ try {
 
 let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
 
+const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
 
 // TODO: unify with other schema loader which allows also schema.js
@@ -256,7 +256,7 @@ switch (cmd) {
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
 
       // todo: fix import path in local worker wrapper?
-      await Deno.writeTextFile( join(homeConfPath, `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
+      Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
 
       buildRes = await Promise.all([
         buildSvelte({
@@ -335,7 +335,7 @@ switch (cmd) {
       await doStart()
     }
 
-    Deno.writeTextFileSync( join(home, '.atreyu', `${appName + '_' + env}.json`), JSON.stringify(config, null, 2))
+    Deno.writeTextFileSync( join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
 
     await Promise.all([
       buildSvelte({
@@ -355,8 +355,8 @@ switch (cmd) {
     })())
     await Promise.all(runs)
 
-    // TODO: warn and skip ipfs publishing on allready running offline node
-    const { appFolderHash, rootFolderHash } = await addIpfs({
+    // TODO: warn and exit ipfs publishing on allready running offline node
+    const { appFolderHash, rootFolderHash, fileList, ayuHash } = await addIpfs({
       input: _[1],
       repo: repo || homeConfPath,
       name,
@@ -369,9 +369,9 @@ switch (cmd) {
 
     await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
 
-    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash})
+    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash})
 
-    await couchUpdt({ appFolderHash, rootFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
+    await couchUpdt({ appFolderHash, rootFolderHash, ayuHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
     Deno.exit(0)
 
   case 'stop':

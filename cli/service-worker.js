@@ -30,7 +30,7 @@ export default async function ({ batch, buildRes, clean } = {}) {
 
   console.log('  building service-worker: ' + projectPath)
 
-  const atreyuPath = join(Deno.mainModule, '..', '..', 'app').replace('file:', '').replace('https:/', 'https://')
+  const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '').replace('https:/', 'https://')
 
   const { errors, warnings, metafile } = await build({
     entryPoints: [swPath],

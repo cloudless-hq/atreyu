@@ -1,5 +1,5 @@
 // TODO: needs different domain from main?!
-// import { getEnv } from '$env.js'
+// import { getEnv } from '_env.js'
 import doReq from '../lib/req.js'
 
 // const env = getEnv(['cloudantKey', 'cloudantSecret', 'cloudantDomain'])

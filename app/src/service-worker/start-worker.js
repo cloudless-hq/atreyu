@@ -106,7 +106,7 @@ export default function ({
           const url = new URL(client.url)
           const params = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
-            if (url.pathname.startsWith('/atreyu/accounts')) {
+            if (url.pathname.startsWith('/_ayu/accounts')) {
               return client.navigate(params.get('continue') || '/').catch(err => console.error(err))
             }
           } else {
@@ -118,7 +118,7 @@ export default function ({
                 cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
               }
             }
-            if (!url.pathname.startsWith('/atreyu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
+            if (!url.pathname.startsWith('/_ayu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
               const url = `/_api/_session?login${cont}`
               console.log('redirecting other clients', url, newSession, client)
 
@@ -258,6 +258,7 @@ export default function ({
       }
     })
 
+    // allowing non http url schemses is to prevent browser plugins from breaking
     if (bypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
       console.info('bypassing: ' + url.href)
       return
@@ -306,7 +307,7 @@ function rewrite (url) {
   if (url.pathname.endsWith('.svelte') || url.pathname.endsWith('.ts')) {
     url.pathname = url.pathname.replace('src', 'build') + '.js'
   } else if (url.pathname === '/svelte/store') {
-    url.pathname = '/atreyu/build/deps/svelte-store.js'
+    url.pathname = '/_ayu/build/deps/svelte-store.js'
     return url
   } else {
     url.pathname = url.pathname.replace('/src/deps/', '/build/deps/')

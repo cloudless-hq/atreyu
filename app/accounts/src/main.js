@@ -1,4 +1,4 @@
-import App from '/atreyu/build/components/accounts/app.svelte.js'
+import App from '/_ayu/build/components/accounts/app.svelte.js'
 
 new App({
   target: document.querySelector('#app'),

@@ -68,8 +68,8 @@ async function compile ({ input, appName, workerName, output, buildName, publish
   }).catch(err => console.error(err))
 
   return Object.keys(buildRes.metafile.inputs).map(path => {
-    if (path.includes('/atreyu/')) {
-      return '/atreyu/' + path.split('/atreyu/')[1]
+    if (path.includes('/_ayu/')) {
+      return '/_ayu/' + path.split('/_ayu/')[1]
     } else {
       return path
     }

@@ -35,18 +35,19 @@ export default {
   //     operationId: '_bypass'
   //   }
   // },
-
-  '/atreyu/accounts*': {
+  '/_ayu/accounts*': {
     get: {
       operationId: '_bypass' // '_accounts'
     }
   },
+
   // '/_api/_feed/*': {
   //   get: {
   //     tags: [ 'edge' ],
   //     operationId: '_feed'
   //   }
   // },
+
   '/_api/_session*': {
     get: {
       tags: [ 'edge' ],

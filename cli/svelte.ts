@@ -15,7 +15,7 @@ export default async function ({
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   const compNames: {[key: string]: boolean} = {}
 
-  const deps = {}
+  const deps: Record<string, {files: string[],stats: string[][]}> = {}
 
   // const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
@@ -35,11 +35,11 @@ export default async function ({
         console.log('  🐘 recreating:', outputTarget)
         await Deno.remove(outputTarget, { recursive: true })
       }
-    } catch (_e) {}
+    } catch (_e) { /* ignore */ }
 
     try {
       await Deno.mkdir(join(outputTarget), { recursive: true })
-    } catch (_e) { }
+    } catch (_e) { /* ignore */ }
 
     try {
       Deno.statSync(inFolder)
@@ -62,7 +62,8 @@ export default async function ({
 
       await Deno.mkdir(join(outputTarget, dirname(subPath)), { recursive: true }).catch(_err => {})
 
-      if (file.endsWith('.css')) { }
+      // if (file.endsWith('.css')) {
+      // }
 
       if (file.endsWith('.ts')) {
         await build({ // const { metafile } =
@@ -127,13 +128,13 @@ export default async function ({
                 //     removeComments: true,
                 //     allowUnreachableCode: true,
                 //     suppressImplicitAnyIndexErrors: true,
-                //     // baseUrl: './app/src', paths: { '/atreyu/': ['./app/'] }
+                //     // baseUrl: './app/src', paths: { '/_ayu/': ['./app/'] }
                 //   },
                 //   importMapPath: atreyuPath + '/imports.json',
                 //   importMap: {
                 //     imports: {
-                //       '/atreyu/src/deps/': './app/build/deps/',
-                //       '/atreyu/': './app/',
+                //       '/_ayu/src/deps/': './app/build/deps/',
+                //       '/_ayu/': './app/',
                 //       '/src/': join(Deno.cwd(), 'app', 'src/'),
                 //       '/schema/': join(Deno.cwd(), 'app', 'schema/'),
                 //       'svelte': './app/src/deps/svelte-internal.js',
@@ -212,11 +213,11 @@ export default async function ({
         // }
 
         comp.js.code = comp.js.code
-          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/atreyu/build/deps/svelte-animate.js'`)
-          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/atreyu/build/deps/svelte-transition.js'`)
-          .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/atreyu/build/deps/svelte-internal.js'`)
-          .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/atreyu/build/deps/svelte-store.js'`)
-          .replaceAll(/[",']\/?svelte[",']/ig, `'/atreyu/build/deps/svelte-internal.js'`)
+          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/_ayu/build/deps/svelte-animate.js'`)
+          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/_ayu/build/deps/svelte-transition.js'`)
+          .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/_ayu/build/deps/svelte-internal.js'`)
+          .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/_ayu/build/deps/svelte-store.js'`)
+          .replaceAll(/[",']\/?svelte[",']/ig, `'/_ayu/build/deps/svelte-internal.js'`)
           .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([
@@ -244,10 +245,10 @@ export default async function ({
 
         console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js')
 
-        deps[subPath]?.files.forEach((compDep, i) => {
+        deps[subPath]?.files.forEach((compDep:string, i:number) => {
           console.log(`    ├─ ${compDep.replace(Deno.cwd(), '')}`)
           if (deps[subPath]?.files.length === i + 1) {
-            console.log(`    └─ ${deps[subPath]?.stats.map(stat => stat.join(': ')).join(', ')}`)
+            console.log(`    └─ ${deps[subPath]?.stats.map((stat: string[]) => stat.join(': ')).join(', ')}`)
           }
         })
       }

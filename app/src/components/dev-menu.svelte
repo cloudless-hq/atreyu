@@ -1,5 +1,5 @@
 <script>
-    import Menu from '/atreyu/src/components/menu.svelte'
+    import Menu from '/_ayu/src/components/menu.svelte'
 </script>
 
 <style>

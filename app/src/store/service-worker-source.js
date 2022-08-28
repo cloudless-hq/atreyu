@@ -1,4 +1,4 @@
-import { Observable } from '/atreyu/src/deps/falcor.js'
+import { Observable } from '/_ayu/src/deps/falcor.js'
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {

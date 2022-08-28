@@ -1,8 +1,8 @@
-import { getEnv } from '/$env.js'
-import { getKvStore } from '/$kvs.js'
+import { getEnv } from '/_env.js'
+import { getKvStore } from '/_kvs.js'
 import doReq from '../lib/req.js'
 
-const { IPFS_GATEWAY, env, appPath } = getEnv(['IPFS_GATEWAY', 'env', 'appPath'])
+const { IPFS_GATEWAY, env, appPath, appName } = getEnv(['IPFS_GATEWAY', 'env', 'appPath', 'appName'])
 
 // appPath only set in local develpemnt, but not in cloudflare
 const ipfsGateway = IPFS_GATEWAY || (appPath ? 'http://127.0.0.1:8080' : 'https://cloudless.mypinata.cloud')
@@ -18,17 +18,24 @@ export async function handler ({ req, app, waitUntil }) {
   let ipfsPath
   let revalidate = false
   let disableCache = false
+
+  const pinName = env === 'prod' ? appName : appName + '_' + env
+  const kvPrefix = req.url.pathname.startsWith('/_ayu') ? 'ayu:' : pinName + ':'
+
   let ipfsMap
   let reqHash
   let ipfsMapCacheStatus = ''
 
-  if (req.url.pathname.startsWith('/ipfs/')) {
+  const appHash = req.url.pathname.startsWith('/_ayu') ? app.ayuHash : app.Hash
+  let path = req.url.pathname.startsWith('/_ayu') ? req.url.pathname.replace('/_ayu', '') : req.url.pathname
+
+  if (path.startsWith('/ipfs/')) {
     // TODO: support ipfs folder requests
-    url = ipfsGateway + req.url.pathname
-    reqHash = req.url.pathname.replace('/ipfs/', '')
-    ipfsPath = req.url.pathname
-  } else if (req.url.pathname.startsWith('/ayu@')) {
-    if (req.url.pathname.startsWith('/ayu@latest')) {
+    url = ipfsGateway + path
+    reqHash = path.replace('/ipfs/', '')
+    ipfsPath = path
+  } else if (path.startsWith('/ayu@')) {
+    if (path.startsWith('/ayu@latest')) {
       // return (new Response(JSON.stringify({ version: app.version, hash: app.rootFolderHash }), {
       //   status: 200,
       //   statusText: 'OK',
@@ -37,13 +44,13 @@ export async function handler ({ req, app, waitUntil }) {
       //   }
       // }))
 
-      const folderPath = req.url.pathname.replace('/ayu@latest', '')
+      const folderPath = path.replace('/ayu@latest', '')
 
       reqHash = app.rootFolderHash + folderPath
       ipfsPath = `/ipfs/${reqHash}`
       url = ipfsGateway + ipfsPath
     } else {
-      const pathArray = req.url.pathname.replace('/ayu@', '').split('/')
+      const pathArray = path.replace('/ayu@', '').split('/')
       const version = pathArray.shift()
       if (version === app.version) {
         reqHash = app.rootFolderHash + (pathArray.length ? '/' + pathArray.join('/') : '')
@@ -54,37 +61,37 @@ export async function handler ({ req, app, waitUntil }) {
       }
     }
   } else {
-    if (req.url.pathname.endsWith('/')) {
-      req.url.pathname += 'index.html'
+    if (path.endsWith('/')) {
+      path += 'index.html'
       disableCache = true
-    } else if (!req.url.pathname) {
-      req.url.pathname = '/index.html'
+    } else if (!path) {
+      path = '/index.html'
       disableCache = true
     } else if (
-      req.url.pathname.startsWith('/atreyu/accounts') ||
-      req.url.pathname.endsWith('/ipfs-map.json') ||
-      req.url.pathname.endsWith('/service-worker.bundle.js')
+      path.startsWith('/atreyu/accounts') ||
+      path.endsWith('/ipfs-map.json') ||
+      path.endsWith('/service-worker.bundle.js')
     ) {
       disableCache = true
     }
 
-    if (!ipfsMaps[app.Hash]) {
-      const ipfsMapPath = '/ipfs/' + app.Hash + '/ipfs-map.json'
-      ipfsMaps[app.Hash] = await kvs.get(ipfsMapPath, {type: 'json'})
+    if (!ipfsMaps[appHash]) {
+      const ipfsMapPath = appHash + '/ipfs-map.json'
+      ipfsMaps[appHash] = await kvs.get(kvPrefix + ipfsMapPath, {type: 'json'})
 
-      if (!ipfsMaps[app.Hash]) {
+      if (!ipfsMaps[appHash]) {
         ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; miss; stored'
-        const { json: mapReq, error, ok, status } = await doReq(ipfsGateway + ipfsMapPath)
+        const { json: mapReq, error, ok, status } = await doReq(ipfsGateway + '/ipfs/' + ipfsMapPath)
 
         if (!ok) {
           console.error({ error, status, path: ipfsMapPath, ipfsGateway })
-          ipfsMaps[app.Hash] = {}
+          ipfsMaps[appHash] = {}
         } else {
-          ipfsMaps[app.Hash] = mapReq
+          ipfsMaps[appHash] = mapReq
         }
 
-        if (ipfsMaps[app.Hash]) {
-          waitUntil(kvs.put(ipfsMapPath, JSON.stringify(ipfsMaps[app.Hash])))
+        if (ipfsMaps[appHash]) {
+          waitUntil(kvs.put(kvPrefix + ipfsMapPath, JSON.stringify(ipfsMaps[appHash])))
         }
       } else {
         ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; hit'
@@ -92,30 +99,31 @@ export async function handler ({ req, app, waitUntil }) {
     } else {
       ipfsMapCacheStatus = 'edge-mem; hit'
     }
-    ipfsMap = ipfsMaps[app.Hash]
+    ipfsMap = ipfsMaps[appHash]
+    // console.log({ipfsMap, appHash, hash: app.Hash})
 
     const existingHash = req.headers['if-none-match']?.replaceAll('"', '').replace('W/', '')
 
-    if (!ipfsMap?.[req.url.pathname] && !req.url.pathname.endsWith('/ipfs-map.json')) {
+    if (!ipfsMap?.[path] && !path.endsWith('/ipfs-map.json')) {
       return (new Response(null, { status: 404, statusText: 'Not Found'}))
     }
 
-    if (!req.url.pathname.endsWith('/ipfs-map.json')) {
-      if (ipfsMap[req.url.pathname] === existingHash) {
+    if (!path.endsWith('/ipfs-map.json')) {
+      if (ipfsMap[path] === existingHash) {
         return (new Response(null, { status: 304, statusText: 'Not Modified', 'cache-status': 'browser-cache; hit' }))
       } else {
-        reqHash = ipfsMap[req.url.pathname]
+        reqHash = ipfsMap[path]
       }
     }
 
     revalidate = true
-    ipfsPath = `/ipfs/${app.Hash}${req.url.pathname}`
+    ipfsPath = `/ipfs/${appHash}${path}`
     url = ipfsGateway + ipfsPath // `/ipfs/${reqHash}`
   }
 
   let response
-  if (req.url.pathname.endsWith('/ipfs-map.json')) {
-    const bodyText = JSON.stringify(ipfsMaps[app.Hash])
+  if (path.endsWith('/ipfs-map.json')) {
+    const bodyText = JSON.stringify(ipfsMaps[appHash])
     response = new Response(bodyText, {
       headers: {
         'content-type': 'application/json',
@@ -124,7 +132,7 @@ export async function handler ({ req, app, waitUntil }) {
       }
     })
   } else {
-    response = (await doReq(url, { cacheKey: reqHash, cacheNs: 'ipfs', raw: true })).raw
+    response = (await doReq(url, { cacheKey: kvPrefix + reqHash, cacheNs: 'ipfs', raw: true })).raw
   }
 
   if (!response.ok) {
@@ -133,11 +141,11 @@ export async function handler ({ req, app, waitUntil }) {
 
   let headers
   let contentType
-  if (req.url.pathname.endsWith('.js')) {
+  if (path.endsWith('.js')) {
     contentType = 'application/javascript'
-  } else if (req.url.pathname.endsWith('.json')) {
+  } else if (path.endsWith('.json')) {
     contentType = 'application/json'
-  } else if (req.url.pathname.endsWith('.ts')) {
+  } else if (path.endsWith('.ts')) {
     contentType = 'application/typescript'
   }
   if (disableCache) {
