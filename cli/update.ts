@@ -1,18 +1,18 @@
-import {
-  italic,
-  bold,
-  color,
-  red,
-  green
-} from '../deps-deno.ts'
+// import {
+//   italic,
+//   bold,
+//   color,
+//   red,
+//   green
+// } from '../deps-deno.ts'
 
 import { install } from './install.js'
 
 import versions from './versions.json' assert { type: 'json' }
-const { ayuVersion: curAyuVersion, ipfsVersion: curIpfsversion, denoVersion: curDenoVersion } = versions
+const { ayuVersion: curAyuVersion, ipfsVersion: _curIpfsversion, denoVersion: _curDenoVersion } = versions
 
 export async function update (): Promise<void> {
-  const { ayuVersion: newAyuVersion, ipfsVersion: newIpfsVersino, denoVersion: newDenoVersion, versions, error } = await getVersions()
+  const { ayuVersion: newAyuVersion, ipfsVersion: _newIpfsVersino, denoVersion: _newDenoVersion, error } = await getVersions()
 
   if (error) {
     console.error(error)
