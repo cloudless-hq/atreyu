@@ -1,5 +1,5 @@
 /* global fetch */
-import { idEscape, authHeaders } from '../couchdb/helpers'
+import { idEscape, authHeaders } from '../couchdb/helpers.js'
 
 const usersByEmail = {
   'jan@ntr.io': {
