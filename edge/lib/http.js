@@ -113,6 +113,7 @@ export function parseReq (req) {
     raw: req,
     method: req.method,
     headers: reqHeaderObj,
+    params: Object.fromEntries(url.searchParams.entries()),
     url
   }
 }

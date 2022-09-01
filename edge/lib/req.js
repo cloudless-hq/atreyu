@@ -37,21 +37,24 @@ export default async function req (url, { method, body, headers: headersArg = {}
 
     kvs = getKvStore(cacheNs)
 
-    // TODO: streams are faster for non binaries
-    const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other?
+    if (headers.get('cache-control') !== 'no-cache') {
+      // TODO: streams are faster for non binaries
+      const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other? remember if the key needs to be changed this needs to be reduced and then increased again!
 
-    if (kvRes?.value) {
-      const options = {...kvRes.metadata}
-      if (!options.headers) {
-        options.headers = {}
+      if (kvRes?.value) {
+        const options = {
+          headers: {
+            'cache-status': `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}`,
+            'content-type': kvRes.metadata.headers?.['content-type']
+          },
+          ok: true,
+          statusText: 'OK',
+          status: 200,
+          redirect: false
+        }
+
+        res = new Response(kvRes.value, options)
       }
-      options.headers['cache-status'] = `edge-kv; hit${options.expiration ? '; ttl=' + (options.expiration - Math.floor(Date.now() / 1000)) : ''}`
-
-      options.ok = true
-      options.statusText = 'OK'
-      options.status = 200
-      options.redirected = false
-      res = new Response(kvRes.value, options)
     }
   }
 
@@ -67,7 +70,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
         statusText: res.statusText,
         text: res.text ? await res.text() : undefined,
         error: res.error,
-        redirected: res.redirected
+        redirect: res.redirected
       }
       await sleepRandom()
       res = await fetch(url, { method, body, headers }).catch(fetchError => ({ ok: false, error: fetchError }))
@@ -115,7 +118,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
 
     duration,
     ok: res.ok,
-    redirected: res.redirected,
+    redirect: res.redirected,
     status: res.status,
     statusText: res.statusText,
     retried,

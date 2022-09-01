@@ -7,7 +7,7 @@ try {
   denoLocal = !!self.Deno
 } catch (_e) { /* ignore */ }
 
-const { env, folderHash, orgId } = getEnv(['env', 'folderHash', 'orgId'])
+const { env, folderHash, auth_domain } = getEnv(['env', 'folderHash', 'auth_domain'])
 
 // function setCookie (name, value, days) {
 //     let d = new Date
@@ -102,7 +102,7 @@ export function handler ({ req, stats, parsedBody, app }) {
       headers['Location'] = `/_ayu/accounts/${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (payload.email) {
-      headers['Location'] = `https://${orgId}.cloudflareaccess.com/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
+      headers['Location'] = `https://${auth_domain}/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
       headers['Location'] = `/_ayu/accounts/?login`

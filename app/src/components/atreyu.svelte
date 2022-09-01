@@ -1,4 +1,5 @@
 <script>
+// TODO: refactor split update logic and ui
 import data from '/_ayu/src/store/data.js'
 
 let seq
@@ -129,6 +130,7 @@ async function doUpdate ({ auto, silent }) {
 
   const cache = await caches.open('ipfs')
   await cache.delete('/ipfs-map.json')
+  await cache.delete('/_ayu/ipfs-map.json')
 
   await data.falcor.setValue(['_updating'], updating) // TODO: promise mode for set and call
 

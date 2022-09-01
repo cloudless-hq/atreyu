@@ -35,6 +35,7 @@ export interface Args {
   reload: boolean;
   watch: boolean;
   env: string;
+  killFun: RunOpts['killFun'];
   libs: {
     ns: boolean;
     window: boolean;
@@ -52,6 +53,7 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     reload: !!rawArgs.reload,
     watch: !!rawArgs.watch,
     env: rawArgs.env,
+    killFun: rawArgs.killFun,
     libs: {
       ns: libs.includes('ns'),
       window: libs.includes('window'),
@@ -83,7 +85,8 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     noCheck: args.noCheck,
     reload: args.reload,
     libs: args.libs,
-    env: args.env
+    env: args.env,
+    killFun: args.killFun
   }
 
   if (args.watch) {
@@ -103,6 +106,9 @@ async function once (opts: RunOpts) {
     Deno.exit(1)
   }
   const proc = await run(opts)
+
+  opts.killFun?.(proc)
+
   const status = await proc.status()
   if (!status.success) {
     console.error(`Process exited with code ${status.code}`)
@@ -120,6 +126,7 @@ async function watch (opts: RunOpts) {
 
   if (errors.length === 0) {
     proc = await run(opts)
+    opts.killFun?.(proc)
   }
   let debouncer = null
 
@@ -150,6 +157,7 @@ async function watch (opts: RunOpts) {
         }
         if (errors.length === 0) {
           proc = await run(opts)
+          opts.killFun?.(proc)
         }
       }, 100)
     }

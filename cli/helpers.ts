@@ -1,4 +1,4 @@
-import { join } from '../deps-deno.ts'
+import { join, iter } from '../deps-deno.ts'
 
 export async function recursiveReaddir (path: string) {
   const files: string[] = []
@@ -16,12 +16,14 @@ export async function recursiveReaddir (path: string) {
   return files
 }
 
-export async function execStream ({ cmd, getData }) {
+export async function execStream ({ cmd, getData, killFun }: {cmd: string[], getData: (arg: string) => null, killFun: (arg: Deno.Process) => null }) {
   const proc = Deno.run({
     cmd,
     stdout: 'piped',
     stderr: 'piped'
   })
+
+  killFun?.(proc)
 
   proc.status().then(async ({ code }) => {
     // console.log('finish')
@@ -32,7 +34,7 @@ export async function execStream ({ cmd, getData }) {
     }
   })
 
-  for await (const buffer of Deno.iter(proc.stdout)) {
+  for await (const buffer of iter(proc.stdout)) {
     const str = new TextDecoder().decode(buffer)
 
     if (getData) {
@@ -45,7 +47,7 @@ export async function execStream ({ cmd, getData }) {
   await proc.close()
 }
 
-export async function exec (cmd, silent) {
+export async function exec (cmd: string[], silent: boolean) {
   const proc = Deno.run({
     cmd,
     stdout: 'piped',
@@ -64,7 +66,7 @@ export async function exec (cmd, silent) {
 
   const rawOutput = await proc.output()
   const outStr = new TextDecoder().decode(rawOutput)
-  proc.close()
+  await proc.close()
 
   return outStr
 }

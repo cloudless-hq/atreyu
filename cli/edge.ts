@@ -1,4 +1,4 @@
-import { join, basename, green, build } from '../deps-deno.ts'
+import { join, basename, build } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
 import esbuildPlugin from './esbuild-plugin.ts'
 
@@ -102,7 +102,7 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
 
   await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath }]) => {
     const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
-    console.log(`  building edge-worker: ${workerLogPath}`)
+    console.log(`    building edge-worker: ${workerLogPath}`)
 
     const newDeps = await compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 

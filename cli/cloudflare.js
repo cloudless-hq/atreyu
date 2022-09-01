@@ -1,4 +1,4 @@
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash }) {
+export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs }) {
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -72,18 +72,18 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
   // TODO: remove env vars that are removed
   // TODO: support schedules req(`accounts/${cloudflareAccountId}/workers/services/${workerName}/environments/${env}/schedules`)
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs?expand=scripts
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production?expand=routes
+  // accounts/{}/workers/services/serviceid?expand=scripts
+  // accounts/{}/workers/services/serviceid/environments/production?expand=routes
   // accounts/{}/workers/durable_objects/namespaces
   // {
   //   "result": {
-  //     "id": "convoi__cx__wh___ipfs",
+  //     "id": "serviceid",
   //     "default_environment": {
   //       "environment": "production",
   //       "created_on": "2021-11-28T23:25:57.962688Z",
   //       "modified_on": "2022-02-21T00:47:50.940228Z",
   //       "script": {
-  //         "id": "convoi__cx__wh___ipfs",
+  //         "id": "serviceid",
   //         "etag": "1344d41e4748563781b1de743430066a3b3eebea3ec7bda90d505bb25b7c02d1",
   //         "handlers": [
   //           "fetch"
@@ -108,16 +108,16 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   //   "errors": [],
   //   "messages": []
   // }
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs
+  // accounts/{}/workers/services/serviceid
   // {
   //   "result": {
-  //     "id": "convoi__cx__wh___ipfs",
+  //     "id": "serviceid",
   //     "default_environment": {
   //       "environment": "production",
   //       "created_on": "2021-11-28T23:25:57.962688Z",
   //       "modified_on": "2022-02-21T00:47:50.940228Z",
   //       "script": {
-  //         "id": "convoi__cx__wh___ipfs",
+  //         "id": "serviceid",
   //         "etag": "1344d41e4748563781b1de743430066a3b3eebea3ec7bda90d505bb25b7c02d1",
   //         "handlers": [
   //           "fetch"
@@ -142,24 +142,25 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   //   "errors": [],
   //   "messages": []
   // }
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/routes
+  // accounts/{}/workers/services/serviceid/environments/production/routes
   // {
   //   "result": [
   //     {
   //       "id": "536656de99844ed5b448c95cc163055e",
-  //       "pattern": "wh.convoi.cx/*"
+  //       "pattern": "w.x/*"
   //     }
   //   ],
   //   "success": true,
   //   "errors": [],
   //   "messages": []
   // }
-  // accounts/{}/workers/services/convoi__cx__wh___ipfs/environments/production/content
+  // accounts/{}/workers/services/serviceid/environments/production/content
 
-  const [_curServices, _curSubdomains, curNamespaces, curRoutes, curDns] = await Promise.all([
+  const [_curServices, _curSubdomains, curNamespaces, curOrg, curRoutes, curDns] = await Promise.all([
     req(`accounts/${cloudflareAccountId}/workers/services`),
     req(`accounts/${cloudflareAccountId}/workers/subdomain`),
     req(`accounts/${cloudflareAccountId}/storage/kv/namespaces`),
+    req(`accounts/${cloudflareAccountId}/access/organizations`),
 
     req(`zones/${cloudflareZoneId}/workers/routes`),
     req(`zones/${cloudflareZoneId}/dns_records`)
@@ -170,50 +171,55 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   const ipfsNsId = curNamespaces.find(curNs => curNs.title === 'ipfs').id
 
   const currKeys = await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/keys?prefix=${prefix}`)
-  // console.log(currKeys)
 
   const deletions = []
   currKeys.forEach(({ name }) => {
     const hash = name.replace(prefix, '')
     if (!fileList.has(hash)) {
       deletions.push(name)
-    } else {
+    } else if (!resetKvs) {
       fileList.delete(hash)
     }
   })
-  // console.log(deletions)
-  // console.log(fileList)
 
   if (currKeys.length > 999) {
     console.error('  ATTENTION, only 1000 cf kv pin hash keys max supported in prerelease!')
     return
   }
 
-  // const imageUrlToBase64 = async url => {
-  //   const response = await fetch(url)
-  //   const blob = await response.blob()
-  //   return new Promise((onSuccess, onError) => {
-  //     try {
-  //       const reader = new FileReader()
-  //       reader.onload = function(){ onSuccess(this.result) }
-  //       reader.readAsDataURL(blob)
-  //     } catch (e) {
-  //       onError(e)
-  //     }
-  //   })
-  // }
   // TODO: batch to max parallel
+  const blobCTypes = ['image/png', 'image/jpeg', 'font/ttf', 'font/woff2', 'application/octet-stream']
   console.log(`  uploading ${fileList.size} new assets and deleting ${deletions.length} old from kv-store 'ipfs' prefix '${prefix}'`)
   await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/bulk`, {
     method: 'PUT',
     body: await Promise.all([...fileList].map(async ([ hash, names ]) => {
-      const res = await fetch(`${ipfsGateway}/ipfs/${hash}`)
-      const value = await res.text()
+      const res = await fetch(`${ipfsGateway}/ipfs/${hash}?filename=${names[0]}`) // filename param required to set propper content type from suffix
+
+      const contentType = res.headers.get('content-type')
+      let value
+      if (blobCTypes.includes(contentType)) {
+        // console.log(contentType, names)
+        const blob = await res.blob()
+
+        const base64 = await new Promise((onSuccess, onError) => {
+          try {
+            const reader = new FileReader()
+            reader.onload = e => { onSuccess(e.target.result) }
+            reader.readAsDataURL(blob)
+          } catch (e) {
+            onError(e)
+          }
+        })
+
+        value = { value: base64.split('base64,')[1], base64: true }
+      } else {
+        value = { value: await res.text(), base64: false }
+      }
+
       return {
         key: `${pinName}:${hash}`,
-        value,
-        metadata: { names, contentType: res.headers.get('content-type') },
-        base64: false
+        metadata: { names, headers: { 'content-type': contentType } },
+        ...value
       }
     }))
   })
@@ -283,6 +289,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     config['folderHash'] = appFolderHash
     config['rootFolderHash'] = rootFolderHash
     config['ayuHash'] = ayuHash
+    config['auth_domain'] = curOrg.auth_domain
 
     delete config.appPath
     delete config.defaultEnv
@@ -344,9 +351,9 @@ ${scriptData}
     })
 
     if (res?.size) {
-      console.log('  ✅ created worker: ' + cfWorkerName)
+      console.log('    ✅ created worker: ' + cfWorkerName)
     } else {
-      console.log('  ❌ failed creating worker: ' + cfWorkerName, res)
+      console.log('    ❌ failed creating worker: ' + cfWorkerName, res)
     }
   })
 
@@ -409,7 +416,7 @@ ${scriptData}
   // TODO: curSubdomains
   // TODO: pattern = "*${domain}/cdn-cgi/access/logout", enabled = false ?
   // https://api.cloudflare.com/client/v4/accounts/{}/workers/scripts/{}/subdomain {enabled: true}
-  // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFKFoZFDfvh DNS only
+  // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFoZFDfvh DNS only
   // dnslink with gateway, ipfs worker gateway, ipfs worker
   console.log('  🏁 finished cloudflare deployment ' + appFolderHash)
 }

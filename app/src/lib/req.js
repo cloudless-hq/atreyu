@@ -5,7 +5,7 @@ import { sleepRandom } from './helpers.js'
 
 // TODO: handle logout detection and service worker integration!!!
 // TODO: integrate base features with edge/lib/req.js
-export default async function req (url, { method, body, headers: headersArg = {}, raw: rawArg, retry = true, redirect = 'error' } = {}) {
+export default async function req (url, { method, body, headers: headersArg = {}, raw: rawArg, retry = true, redirect = 'manual' } = {}) {
   // TODO: ttl, cacheKey, cacheNs,
   // const { waitUntil, event } = getWait()
   if (!method) {
@@ -56,7 +56,10 @@ export default async function req (url, { method, body, headers: headersArg = {}
         statusText: res.statusText,
         text: res.text ? await res.text() : undefined,
         error: res.error,
-        redirected: res.redirected
+        redirect: res.redirected || res.type === 'opaqueredirect'
+      }
+      if (retried.redirect) {
+        self.session?.refresh()
       }
       await sleepRandom()
       res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
@@ -104,11 +107,15 @@ export default async function req (url, { method, body, headers: headersArg = {}
 
     duration,
     ok: res.ok,
-    redirected: res.redirected,
+    redirect: res.redirected || res.type === 'opaqueredirect',
     status: res.status,
     statusText: res.statusText,
     retried,
     error: res.error
+  }
+
+  if (baseResponse.redirect) {
+    self.session?.refresh()
   }
 
   // headers['referer'] = 'todo'

@@ -243,7 +243,7 @@ export default async function ({
           deps: comp.js.map.sources.map((path: string) => path.replace('<file://', '').replace('>', ''))
         }
 
-        console.log(`  ${green('emitted:')} ` + outputTarget + subPath + '.js')
+        console.log(`    ${green('emitted:')} ` + outputTarget + subPath + '.js')
 
         deps[subPath]?.files.forEach((compDep:string, i:number) => {
           console.log(`    ├─ ${compDep.replace(Deno.cwd(), '')}`)
@@ -271,7 +271,7 @@ export default async function ({
     deps: []
   }
 
-  console.log(`  ${green('emitted:')} ` + 'app/build/base.css')
+  console.log(`    ${green('emitted:')} ` + 'app/build/base.css')
 
   return newBuildRes
 }

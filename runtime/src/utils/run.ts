@@ -68,6 +68,8 @@ export interface RunOpts {
   /** Environment variables for the script. */
   env: { [key: string]: string };
 
+  killFun?: (arg: Deno.Process) => null;
+
   libs: {
     ns: boolean;
     window: boolean;

@@ -2,8 +2,8 @@
 import { urlLogger } from '../../lib/url-logger.js'
 
 const ipfsMap = {
-  app: null,
-  ayu: null
+  app: { map: null, rootHash: null, inFlight: null },
+  ayu: { map: null, rootHash: null, inFlight: null }
 }
 
 let cache = caches.open('ipfs').then(openedCache => cache = openedCache)
@@ -36,39 +36,40 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
   if (cache.then) {
     await cache
   }
-  if (!ipfsMap[appPrefix]?.['/'] || self.updating) {
+  if (!ipfsMap[appPrefix].map || ipfsMap[appPrefix].inFlight || self.updating) {
     self.updating = false
 
     if (ipfsMap[appPrefix]?.inFlight) {
       await ipfsMap[appPrefix].inFlight
     } else {
-      ipfsMap[appPrefix] = {
-        inFlight: (async () => {
-          const manifestName =  appPrefix === 'ayu' ? '/_ayu/ipfs-map.json' : '/ipfs-map.json'
-          let ipfsMapResponse
+      ipfsMap[appPrefix].inFlight = (async () => {
+        const manifestName = appPrefix === 'ayu' ? '/_ayu/ipfs-map.json' : '/ipfs-map.json'
+        let ipfsMapResponse
 
-          ipfsMapResponse = await fetch(manifestName).catch(err => console.log('map get error: ', err))
+        ipfsMapResponse = await fetch(manifestName).catch(err => console.log('map get error: ', err))
 
-          // if (ipfsMapResponse?.redirected) {
-          //   ipfsMapResponse = null
-          //   loggedOut = true
-          //   return
-          // }
+        // if (ipfsMapResponse?.redirected) {
+        //   ipfsMapResponse = null
+        //   loggedOut = true
+        //   return
+        // }
 
-          if (ipfsMapResponse?.ok) { // && !loggedOut
-            cache.put(manifestName, ipfsMapResponse.clone())
-          } else {
-            ipfsMapResponse = await cache.match(manifestName)
-          }
+        if (ipfsMapResponse?.ok) { // && !loggedOut
+          cache.put(manifestName, ipfsMapResponse.clone())
+        } else {
+          ipfsMapResponse = await cache.match(manifestName)
+        }
 
-          ipfsMap[appPrefix] = await ipfsMapResponse.json()
+        ipfsMap[appPrefix].map = await ipfsMapResponse.json()
+        const ipfsHash = ipfsMapResponse.headers.get('x-ipfs-path').split('/')[2]
+        ipfsMap[appPrefix].rootHash = ipfsHash
 
-          if (appPrefix === 'app') {
-            const ipfsPath = ipfsMapResponse.headers.get('x-ipfs-path').split('/')[2]
-            self.ipfsHash = ipfsPath
-          }
-        })()
-      }
+        if (appPrefix === 'app') {
+          self.ipfsHash = ipfsHash
+        }
+
+        ipfsMap[appPrefix].inFlight = null
+      })()
 
       await ipfsMap[appPrefix].inFlight
     }
@@ -78,7 +79,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
   //   return new Response('Logged Out', { status: 307, headers: { location: '/_ayu/accounts?logout' } })
   // }
 
-  const hash = ipfsMap[appPrefix][path]
+  const hash = ipfsMap[appPrefix].map[path]
 
   let match
   if (hash) {
@@ -98,7 +99,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
   }
 
   if (hash) {
-    const ifpsUrl = (ipfsGateway === '/' ? '' : ipfsGateway) + '/ipfs/' + hash // + `?filename=${fileName}`
+    const ifpsUrl = (ipfsGateway === '/' ? '' : ipfsGateway) + '/ipfs/' + ipfsMap[appPrefix].rootHash + path // hash // + `?filename=${fileName}`
 
     // TODO: make content type override not necessary with '/ipfs/appahsh/path' or filename.ext
 

@@ -6,6 +6,7 @@
 //   green
 // } from '../deps-deno.ts'
 
+// FIXME: need to import install command from new ayu version instead in case permissions are upadted etc.
 import { install } from './install.js'
 
 import versions from './versions.json' assert { type: 'json' }

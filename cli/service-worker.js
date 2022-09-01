@@ -74,7 +74,7 @@ export default async function ({ batch, buildRes, clean } = {}) {
     })
   }
 
-  console.log(`  ${green('emitted:')} app/service-worker.bundle.js`)
+  console.log(`    ${green('emitted:')} app/service-worker.bundle.js`)
   // console.log(`    └─ ${emitRes}`) // .map(stat => stat.join(': ')).join(', ') currently always empty
 
   return newBuildRes

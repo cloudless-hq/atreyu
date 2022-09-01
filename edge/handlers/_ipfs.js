@@ -20,21 +20,16 @@ export async function handler ({ req, app, waitUntil }) {
   let disableCache = false
 
   const pinName = env === 'prod' ? appName : appName + '_' + env
-  const kvPrefix = req.url.pathname.startsWith('/_ayu') ? 'ayu:' : pinName + ':'
+  let kvPrefix = req.url.pathname.startsWith('/_ayu') ? 'ayu:' : pinName + ':'
 
   let ipfsMap
   let reqHash
   let ipfsMapCacheStatus = ''
 
-  const appHash = req.url.pathname.startsWith('/_ayu') ? app.ayuHash : app.Hash
+  let appHash = req.url.pathname.startsWith('/_ayu') ? app.ayuHash : app.Hash
   let path = req.url.pathname.startsWith('/_ayu') ? req.url.pathname.replace('/_ayu', '') : req.url.pathname
 
-  if (path.startsWith('/ipfs/')) {
-    // TODO: support ipfs folder requests
-    url = ipfsGateway + path
-    reqHash = path.replace('/ipfs/', '')
-    ipfsPath = path
-  } else if (path.startsWith('/ayu@')) {
+  if (path.startsWith('/ayu@')) {
     if (path.startsWith('/ayu@latest')) {
       // return (new Response(JSON.stringify({ version: app.version, hash: app.rootFolderHash }), {
       //   status: 200,
@@ -61,68 +56,96 @@ export async function handler ({ req, app, waitUntil }) {
       }
     }
   } else {
-    if (path.endsWith('/')) {
-      path += 'index.html'
-      disableCache = true
-    } else if (!path) {
-      path = '/index.html'
-      disableCache = true
-    } else if (
-      path.startsWith('/atreyu/accounts') ||
-      path.endsWith('/ipfs-map.json') ||
-      path.endsWith('/service-worker.bundle.js')
-    ) {
-      disableCache = true
+    if (path.startsWith('/ipfs/')) {
+      // TODO: support ipfs folder requests
+      const maybeHash = path.replace('/ipfs/', '')
+      const ipfsPathParts = maybeHash.split('/')
+      if (ipfsPathParts.length === 1) {
+        reqHash = ipfsPathParts[0]
+        url = ipfsGateway + path
+        ipfsPath = path
+      } else {
+        // get ipfsmap, get hash
+        const folderHash = ipfsPathParts[0]
+        if (folderHash === app.ayuHash) {
+          kvPrefix = 'ayu:'
+          appHash = app.ayuHash
+          path = path.replace(`/ipfs/${folderHash}`, '')
+        } else if (folderHash === app.Hash) {
+          path = path.replace(`/ipfs/${folderHash}`, '')
+        } else {
+          return new Response('Root hash not pinned, please update your application', { status: 404, statusText: 'Not Found' })
+        }
+      }
     }
 
-    if (!ipfsMaps[appHash]) {
-      const ipfsMapPath = appHash + '/ipfs-map.json'
-      ipfsMaps[appHash] = await kvs.get(kvPrefix + ipfsMapPath, {type: 'json'})
+    if (!reqHash) {
+      if (path.endsWith('/')) {
+        path += 'index.html'
+      } else if (!path) {
+        path = '/index.html'
+      }
+
+      if (
+        path.endsWith('/index.html') ||
+        path.endsWith('/ipfs-map.json') ||
+        path.endsWith('/service-worker.bundle.js') ||
+        req.url.pathname.startsWith('/_ayu/accounts')
+      ) {
+        disableCache = true
+      }
 
       if (!ipfsMaps[appHash]) {
-        ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; miss; stored'
-        const { json: mapReq, error, ok, status } = await doReq(ipfsGateway + '/ipfs/' + ipfsMapPath)
+        const ipfsMapPath = appHash + '/ipfs-map.json'
+        ipfsMaps[appHash] = await kvs.get(kvPrefix + ipfsMapPath, {type: 'json'})
 
-        if (!ok) {
-          console.error({ error, status, path: ipfsMapPath, ipfsGateway })
-          ipfsMaps[appHash] = {}
+        if (!ipfsMaps[appHash]) {
+          ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; miss; stored'
+          const { json: mapReq, error, ok, status } = await doReq(ipfsGateway + '/ipfs/' + ipfsMapPath)
+
+          if (!ok) {
+            console.error({ error, status, path: ipfsMapPath, ipfsGateway })
+            ipfsMaps[appHash] = {}
+          } else {
+            ipfsMaps[appHash] = mapReq
+          }
+
+          if (ipfsMaps[appHash]) {
+            waitUntil(kvs.put(kvPrefix + ipfsMapPath, JSON.stringify(ipfsMaps[appHash])))
+          }
         } else {
-          ipfsMaps[appHash] = mapReq
-        }
-
-        if (ipfsMaps[appHash]) {
-          waitUntil(kvs.put(kvPrefix + ipfsMapPath, JSON.stringify(ipfsMaps[appHash])))
+          ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; hit'
         }
       } else {
-        ipfsMapCacheStatus = 'edge-mem; miss; stored, edge-kv; hit'
+        ipfsMapCacheStatus = 'edge-mem; hit'
       }
-    } else {
-      ipfsMapCacheStatus = 'edge-mem; hit'
-    }
-    ipfsMap = ipfsMaps[appHash]
-    // console.log({ipfsMap, appHash, hash: app.Hash})
+      ipfsMap = ipfsMaps[appHash]
+      // console.log({ipfsMap, appHash, hash: app.Hash})
 
-    const existingHash = req.headers['if-none-match']?.replaceAll('"', '').replace('W/', '')
+      const existingHash = req.headers['if-none-match']?.replaceAll('"', '').replace('W/', '')
 
-    if (!ipfsMap?.[path] && !path.endsWith('/ipfs-map.json')) {
-      return (new Response(null, { status: 404, statusText: 'Not Found'}))
-    }
-
-    if (!path.endsWith('/ipfs-map.json')) {
-      if (ipfsMap[path] === existingHash) {
-        return (new Response(null, { status: 304, statusText: 'Not Modified', 'cache-status': 'browser-cache; hit' }))
-      } else {
-        reqHash = ipfsMap[path]
+      if (!ipfsMap?.[path] && !path.endsWith('/ipfs-map.json')) {
+        return (new Response(null, { status: 404, statusText: 'Not Found'}))
       }
-    }
 
-    revalidate = true
-    ipfsPath = `/ipfs/${appHash}${path}`
-    url = ipfsGateway + ipfsPath // `/ipfs/${reqHash}`
+      if (!path.endsWith('/ipfs-map.json')) {
+        // TODO: we can also 304 uncahnged ipfs maps + need to poll for hash update in ayu updater
+        if (ipfsMap[path] === existingHash) {
+          return (new Response(null, { status: 304, statusText: 'Not Modified', 'cache-status': 'browser-cache; hit' }))
+        } else {
+          reqHash = ipfsMap[path]
+        }
+      }
+
+      revalidate = true
+      ipfsPath = `/ipfs/${appHash}${path}`
+      url = ipfsGateway + ipfsPath // `/ipfs/${reqHash}`
+    }
   }
 
   let response
   if (path.endsWith('/ipfs-map.json')) {
+    reqHash = appHash + '/ipfs-map.json'
     const bodyText = JSON.stringify(ipfsMaps[appHash])
     response = new Response(bodyText, {
       headers: {
@@ -149,6 +172,7 @@ export async function handler ({ req, app, waitUntil }) {
     contentType = 'application/typescript'
   }
   if (disableCache) {
+    // TODO: But now that HTTP/1.1-conformant servers are widely deployed, there's no reason to ever use that max-age=0-and-must-revalidate combination — you should instead just use no-cache
     headers = new Headers({
       'content-type': contentType || response.headers.get('content-type'),
       'content-length': response.headers.get('content-length'),

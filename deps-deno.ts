@@ -1,5 +1,7 @@
 export { join, dirname, basename } from 'https://deno.land/std@0.150.0/path/mod.ts'
 
+export { iterateReader as iter } from 'https://deno.land/std@0.153.0/streams/conversion.ts'
+
 export {
   setColorEnabled,
   reset,
@@ -14,7 +16,7 @@ export {
   bgRgb24 as background
 } from 'https://deno.land/std@0.126.0/fmt/colors.ts'
 
-export { globToRegExp } from 'https://deno.land/std@0.126.0/path/glob.ts'
+export { globToRegExp } from 'https://deno.land/std@0.153.0/path/glob.ts'
 
 export {
   compile,

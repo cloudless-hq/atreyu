@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-fallthrough no-case-declarations no-inner-declarations
+// deno-lint-ignore-file no-case-declarations no-inner-declarations
 import {
   parse,
   join,
@@ -56,6 +56,7 @@ const {
   output,
   online,
   help,
+  kill,
   once,
   version,
   name,
@@ -63,6 +64,7 @@ const {
   port = '80',
   pin,
   noStart,
+  resetKvs,
   repo,
   domain,
   sveltePath,
@@ -86,9 +88,10 @@ const ignore = [
   '**/build/**',
   '**/*.svelte.ssr.js',
   '.gitignore',
+  '**/.devcontainer/**',
   'README.md',
   '**/*.svelte.css',
-  '.github/**',
+  '**/.github/**',
   '**/*.map',
   '**/ipfs-map.json',
   '**/*.bundle.js'
@@ -160,6 +163,7 @@ async function loadEdgeSchema () {
   return buildWorkerConfig(schema)
 }
 
+let ipfsDaemon
 function startIpfsDaemon ({ publish }) {
   const runPath = _[1] || homeConfPath
   const offline = (online || publish) ? '' : ' --offline'
@@ -180,13 +184,19 @@ function startIpfsDaemon ({ publish }) {
           console.log('  ✅ Started ipfs daemon')
           resolve()
         }
-      }
+      },
+      proc => { ipfsDaemon = proc }
     )
   })
   return ready
 }
 
+let edgeDaemon
 async function doStart () {
+  if (kill) {
+    // TODO handle pid files
+    await stopAll()
+  }
   // console.log('starting...')
   // TODO: add gneric timeout for all localhost requests...
   const c = new AbortController()
@@ -208,13 +218,29 @@ async function doStart () {
   runDeno({
     addr: ':' + port,
     noCheck: true,
-    watch: true,
-    inspect: true,
+    watch: cmd !== 'publish',
+    inspect: cmd !== 'publish',
+    killFun: (proc) => { edgeDaemon = proc },
     env: {
       env
     },
     _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
   })
+}
+
+async function stopAll () {
+  // NOTICE: deno kill bug prevents this from working rihgt atm
+  // await edgeDaemon.kill('SIGKILL')
+  // Deno.kill(ipfsDaemon.pid, 'SIGKILL')
+  // await Deno.close(ipfsDaemon.rid)
+
+  ipfsDaemon?.pid && await Deno.run({cmd: ['kill', ipfsDaemon.pid]}).status()
+  edgeDaemon?.pid && await Deno.run({cmd: ['kill', edgeDaemon.pid]}).status()
+
+  // await edgeDaemon.close()
+
+  ipfsDaemon = null
+  edgeDaemon = null
 }
 
 if (Deno.version.deno !== denoVersion) {
@@ -318,9 +344,9 @@ switch (cmd) {
     if (!once) {
       await watch({ watchPath: projectPath, ignore, handler: devBuild })
     } else {
-      Deno.exit(0)
+      await stopAll()
+      Deno.exit()
     }
-
     // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/closr/app/schema/falcor.js')
     // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )
     // const depsChanged = new Set([...deps, ...newDeps]).size
@@ -369,14 +395,17 @@ switch (cmd) {
 
     await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
 
-    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash})
+    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs})
 
     await couchUpdt({ appFolderHash, rootFolderHash, ayuHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
-    Deno.exit(0)
+    await stopAll()
+    Deno.exit()
+    break
 
   case 'stop':
-    // TODO: kill daemon and ipfs
-    Deno.exit(0)
+    await stopAll()
+    Deno.exit()
+    break
 
   case 'update':
     // TODO: kill daemon and ipfs

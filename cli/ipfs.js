@@ -29,8 +29,8 @@ const { ipfsVersion } = versions
 
 // console.log({ a: import.meta.url.startsWith('file:/'), b: Deno.mainModule.startsWith('file:'), mainModule: Deno.mainModule, metaUrl: import.meta.url })
 
-export function execIpfsStream (cmd, repo, getData) {
-  return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData })
+export function execIpfsStream (cmd, repo, getData, killFun) {
+  return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData, killFun })
 }
 
 export function execIpfs (cmd, repo, silent) {
@@ -64,16 +64,18 @@ export async function add ({
     return execIpfs(cmd, repo, silent)
   }
 
+  const ipfsPinningApi = config.__ipfsPinningApi || 'https://api.pinata.cloud/psa'
+  if (pinToService) {
+    // TODO: ipfs pin remote ls --service=pinata handle existing keys
+    await ipfs(`pin remote service rm pinata`)
+    await ipfs(`pin remote service add pinata ${ipfsPinningApi} ${config.__ipfsPinningJWT}`)
+  }
+
   async function pin ({ hash, pinName }) {
     if (!config.__ipfsPinningJWT) {
       console.error('  ⚠️ no __ipfsPinningJWT in secrets.js, skipping pinning')
       return
     }
-    const ipfsPinningApi = config.__ipfsPinningApi || 'https://api.pinata.cloud/psa'
-
-    // TODO: ipfs pin remote ls --service=pinata handle existing keys
-    await ipfs(`pin remote service rm pinata`)
-    await ipfs(`pin remote service add pinata ${ipfsPinningApi} ${config.__ipfsPinningJWT}`)
 
     const listRes = await (await fetch(`${ipfsPinningApi}/pins?status=queued,pinning,pinned,failed&name=${pinName}&limit=100`, {
       headers: { 'Authorization': `Bearer ${config.__ipfsPinningJWT}` }
@@ -133,11 +135,11 @@ export async function add ({
     }
   }
 
-  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=yarn.lock --ignore=secrets.js `
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js `
   async function doAdd (fName) {
     if (fName.endsWith('/')) {
       const rootHash = (await ipfs(addCommand + fName)).replace('\n', '')
-      return (await ls(rootHash)).map
+      return { rootHash, ...await ls(rootHash) }
     } else {
       return (await ipfs(addCommand + fName)).replace('\n', '')
     }
@@ -151,7 +153,7 @@ export async function add ({
     const map = {
       '': rootHash
     }
-    const folders = new Set(['QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn']) // hash of empty folder always excluded
+    const folders = new Set(['QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn', rootHash]) // hash of empty folder and root folder always excluded
 
     const refHashes = await ipfs(`refs ${rootHash} -r --format "<src>/<dst>/<linkname>"`)
 
@@ -174,7 +176,10 @@ export async function add ({
       }
     })
     const fileList = new Map()
-    Object.entries(map).filter(([_name, hash]) => !folders.has(hash)).forEach(([name, hash]) => {
+    Object.entries(map).forEach(([name, hash]) => {
+      if (folders.has(hash) || name === '/ipfs-map.json') {
+        return
+      }
       if (!fileList.has(hash)) {
         fileList.set(hash, [name])
       } else {
@@ -182,6 +187,8 @@ export async function add ({
       }
     })
 
+    delete map['']
+    delete map['/ipfs-map.json']
     return { map, fileList }
   }
 
@@ -193,10 +200,13 @@ export async function add ({
   }
 
   let ipfsMap
+  let newRootHash
   const watchRes = {}
   if (clean) {
     console.log('  ➕ adding folder to ipfs: ' + input)
-    ipfsMap = await doAdd(input + '/')
+    const addResult = await doAdd(input + '/')
+    ipfsMap = addResult.map
+    newRootHash = addResult.rootHash
   } else {
     const changedFiles = ([...batch, ...buildEmits])
       .map(file => join('./', file))
@@ -225,8 +235,10 @@ export async function add ({
   let ayuHash
   if (!Deno.mainModule.startsWith('file:')) {
     const hashRes = await fetch(Deno.mainModule.replace('/cli/mod.js', '/app', { method: 'HEAD' })).catch(err => console.error(err))
+
     ayuHash = hashRes.headers.get('x-ipfs-path').replace('/ipfs/', '')
-    // console.log({ ayuHash, mod: Deno.mainModule })
+  } else {
+    ayuHash = (await (await fetch(ipfsApi + '/api/v0/files/stat?arg=/apps/atreyu', { method: 'POST' })).json()).Hash
   }
 
   // if ayu is run from local filesystem add atreyu to the ipfs
@@ -251,7 +263,7 @@ export async function add ({
 
     try {
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}&recursive=true`, {method: 'POST'})
-      await ipfs(`files cp /ipfs/${ipfsMap['']} /apps/${pinName}`)
+      await ipfs(`files cp /ipfs/${newRootHash} /apps/${pinName}`)
     } catch (err) {
       console.error('🛑 Cannot connect to atreyu daemon. Forgot running "ayu start"?\n\n', err)
       return
@@ -302,7 +314,8 @@ export async function add ({
   if (publish) {
     const publishActions = []
     if (pinName.startsWith('atreyu')) {
-      rootFolderHash = (await doAdd('./'))['']
+      rootFolderHash = (await doAdd('./')).rootHash
+
       await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/atreyu_repo&recursive=true`, {method: 'POST'})
       await ipfs(`files cp /ipfs/${rootFolderHash} /apps/atreyu_repo`)
       // https://cloudless.mypinata.cloud/ipfs/
@@ -321,9 +334,9 @@ export async function add ({
   }
 
   // await Promise.all([
-  //   ipfs(`pin add ${atreyuFileHashes['']}`), // update /ipns/${keys.atreyu.cid}
+  //   ipfs(`pin add ${ayuRootHash}`), // update /ipns/${keys.atreyu.cid}
   //   ipfs(`pin add ${folderHash}`), // update /ipns/${keys[name].cid}
-  //   ipfs(`name publish --lifetime=2000h --key=atreyu ${atreyuFileHashes['']} --quieter --resolve=false --allow-offline`),
+  //   ipfs(`name publish --lifetime=2000h --key=atreyu ${ayuRootHash} --quieter --resolve=false --allow-offline`),
   //   ipfs(`name publish --lifetime=2000h --key=${name} ${folderHash} --quieter --resolve=false --allow-offline`)
   // ])
 
