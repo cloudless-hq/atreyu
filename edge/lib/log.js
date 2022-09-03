@@ -48,10 +48,10 @@ export default async function ({ req, body, res, response, stats, duration = nul
 
   let location
   const statsVal = stats?.get()
-  if (statsVal?.cf?.latitude !== undefined && statsVal?.cf?.longitude !== undefined) {
+  if (!isNaN(parseFloat(statsVal?.cf?.latitude)) && !isNaN(parseFloat(statsVal?.cf?.longitude))) {
     location = {
-      lat: statsVal?.cf?.latitude,
-      lon: statsVal?.cf?.longitude
+      lat: parseFloat(statsVal?.cf?.latitude),
+      lon: parseFloat(statsVal?.cf?.longitude)
     }
   }
 

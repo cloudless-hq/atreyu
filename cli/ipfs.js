@@ -55,6 +55,7 @@ export async function add ({
     ipfsGatewayPort: port = 80,
     ipfsApi: ipfsApi = 'http://127.0.0.1:5001'
   } = config
+  const startTime = Date.now()
 
   // TODO: default to short_name from app manifest.json
   const name = basename(Deno.cwd())
@@ -341,6 +342,8 @@ export async function add ({
   // ])
 
   console.log(green(`  ✅ added ${pinName}: http://${name}.localhost${port == 80 ? '' : ':' + port}`))
-
+  // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
+  // duration && console.log('  ' + duration + 's')
+  // console.log('')
   return { appFolderHash, rootFolderHash, fileList, ayuHash }
 }

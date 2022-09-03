@@ -7,8 +7,9 @@ export async function loadConfig (envFlag, cmd, appName, repo, buildName, ayuVer
     confFile = await import('file://' + join('/', Deno.cwd(), 'ayu.config.js'))
 
     conf = { appPath: Deno.cwd(), ...confFile?.default }
-  } catch (err) {
-    console.error({err, message: 'error loading config'})
+  } catch (_err) {
+    // console.error({err, message: 'error loading config'})
+    console.warn('  could not load ayu configuration, falling back to default')
     // if (err not found) {
     //   console.warn('  ⚠️ No ayu.config.js found, using defaults')
     // }

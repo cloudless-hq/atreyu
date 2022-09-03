@@ -10,12 +10,12 @@
 	// import data from '../src/stores/data.js'
 	import { fade } from '/svelte/transition'
 
-  $: newUser = $router.hash === '#new'
+  $: newUser = ($router.hash === '#new')
 
   let userDbs
   indexedDB.databases().then(dbs => {
-    userDbs = dbs.filter(({ name }) => name.startsWith('_pouch_') && !name.includes('-mrview')).map(({name}) => name.replace('_pouch_', ''))
-  })
+    userDbs = dbs.filter(({ name }) => name?.startsWith('_pouch_') && !name?.includes('-mrview')).map(({name}) => name?.replace('_pouch_', ''))
+  }).catch(err => { console.error(err); userDbs = []; })
 
   let userId
   function loginUser (id) {
@@ -34,7 +34,7 @@
 </style>
 
 <div class="app" transition:fade="{{ duration: 250}}">
-  {#if (userDbs && (userDbs.length === 0 || userId || newUser))}
+  {#if userDbs && (userDbs?.length === 0 || userId || newUser)}
     <Login {userId} />
   {:else if userDbs}
     <UserSwitcher {userDbs} {loginUser} />

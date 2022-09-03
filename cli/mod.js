@@ -146,7 +146,7 @@ async function loadEdgeSchema () {
   }
 
   if (!schema) {
-    console.warn('  no valid schema found, fallback to basic ipfs setup', schemaImports)
+    console.warn('  could not load schmea, falling back to default') // verbose schemaImports
 
     schema = {
       paths: {
@@ -164,9 +164,9 @@ async function loadEdgeSchema () {
 }
 
 let ipfsDaemon
-function startIpfsDaemon ({ publish }) {
+function startIpfsDaemon () {
   const runPath = _[1] || homeConfPath
-  const offline = (online || publish) ? '' : ' --offline'
+  const offline = (online || pin) ? '' : ' --offline'
   const ready = new Promise((resolve, _reject) => {
     execIpfsStream(
       'daemon --enable-gc=true --migrate=true' + offline,
@@ -212,11 +212,11 @@ async function doStart () {
     return
   }
 
-  await startIpfsDaemon({})
+  await startIpfsDaemon()
 
   console.log('  starting local worker runtime on env: ' + yellow(bold(env)))
   runDeno({
-    addr: ':' + port,
+    addr: ':' + port, // FIXME: localhost requires sudo but 0.0.0.0 works?
     noCheck: true,
     watch: cmd !== 'publish',
     inspect: cmd !== 'publish',
@@ -375,11 +375,15 @@ switch (cmd) {
       buildServiceWorker({clean: true})
     ])
 
+    // const startTime = Date.now()
     const runs = Object.entries(runConf).map(([command]) => (async () => { // unused? , { globs }
       console.log(`  ▶️  running ${command}...`)
       await exec(command.split(' '))
     })())
     await Promise.all(runs)
+    // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
+    // duration && console.log('  ' + duration + 's')
+    // console.log('')
 
     // TODO: warn and exit ipfs publishing on allready running offline node
     const { appFolderHash, rootFolderHash, fileList, ayuHash } = await addIpfs({

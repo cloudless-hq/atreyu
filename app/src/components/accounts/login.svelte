@@ -16,9 +16,10 @@
 
   let saveToDevice = true
 
-  let sessionName = `${navigator.userAgentData.brands[navigator.userAgentData.brands.length - 1].brand} on ${navigator.userAgentData.platform}`
+  const hasBrands = !!navigator?.userAgentData?.brands?.length
+  let sessionName = `${hasBrands ? navigator?.userAgentData?.brands?.[navigator?.userAgentData?.brands?.length - 1].brand : 'unknown browser'} on ${navigator?.userAgentData?.platform || 'unknown platform'}`
 
-  let searchTxt = location.href.split('?')[1]
+  let searchTxt = location.href.split('?')?.[1]
   let formTarget = `/_api/_session?dev_login${searchTxt ? '&' + searchTxt : ''}`
 </script>
 

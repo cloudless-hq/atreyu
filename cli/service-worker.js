@@ -1,6 +1,7 @@
 import { join, green, build } from '../deps-deno.ts'
 import esbuildPlugin from './esbuild-plugin.ts'
 export default async function ({ batch, buildRes, clean } = {}) {
+  const startTime = Date.now()
   const fileName = `service-worker.js`
   const appFolder = join(Deno.cwd(), 'app')
   const swPath = join(appFolder, fileName)
@@ -76,6 +77,8 @@ export default async function ({ batch, buildRes, clean } = {}) {
 
   console.log(`    ${green('emitted:')} app/service-worker.bundle.js`)
   // console.log(`    └─ ${emitRes}`) // .map(stat => stat.join(': ')).join(', ') currently always empty
-
+  // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
+  // duration && console.log('  ' + duration + 's')
+  // console.log('')
   return newBuildRes
 }

@@ -1,4 +1,5 @@
 export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs }) {
+  const startTime = Date.now()
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -20,17 +21,17 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     try {
       json = JSON.parse(resText)
     } catch (err) {
-      console.error(err, resText)
+      console.error(path, err, resText)
     }
 
     if (json.result_info && json.result_info.total_pages > 1) {
       console.warn(path + ': ATTENTION, only one resource page per cloudflare api supported currently, please restrict the cf token to only the resources used by this project to avoid errors and tighten security. if this is not suffiecient raise an issue on github.')
     }
     if (json.errors && json.errors.length > 0) {
-      console.error(json.errors)
+      console.error(path, json.errors)
     }
     if (json.messages && json.messages.length > 0) {
-      console.info(json.messages)
+      console.info(path, json.messages)
     }
     return json.result
   }
@@ -53,6 +54,9 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     domain = appName
   }
 
+  // TODO: migrate for worker domains if no wildcard needed
+  // If you are currently invoking a Worker using a Route with /*,
+  // and your DNS points to 100:: or similar, a Custom Domain is a recommended replacement.
   let dnsName
   if (env === 'prod') {
     dnsName = domain
@@ -289,7 +293,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
     config['folderHash'] = appFolderHash
     config['rootFolderHash'] = rootFolderHash
     config['ayuHash'] = ayuHash
-    config['auth_domain'] = curOrg.auth_domain
+    config['auth_domain'] = curOrg?.auth_domain
 
     delete config.appPath
     delete config.defaultEnv
@@ -396,6 +400,15 @@ ${scriptData}
       .catch(err => console.error(err))
   }))
 
+
+  // TODO: support worker domains
+  // /workers/domains/records
+  // Request Method: PUT
+  // {"hostname": "test2.closr.cx",
+  // "zone_id": "54d23b39aa0c6b23aa40b40e292a7e5b",
+  // "service": "gentle-voice-cf2d",
+  // "environment": "production"}
+
   console.log(`  adding ${dnsAdditions.size} dns entries...`)
   await Promise.all(([...dnsAdditions]).map(async dnsEntry => {
     const newDns = {
@@ -419,4 +432,7 @@ ${scriptData}
   // TXT _dnslink dnslink=/ipfs/QmduDF2ous2tHtoSuQHLjYpT9hUUPmiftWRKFoZFDfvh DNS only
   // dnslink with gateway, ipfs worker gateway, ipfs worker
   console.log('  🏁 finished cloudflare deployment ' + appFolderHash)
+  // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
+  // duration && console.log('  ' + duration + 's')
+  // console.log('')
 }

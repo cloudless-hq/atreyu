@@ -72,7 +72,7 @@ startWorker(async arg => {
         schemas[appKey] = { data: schema, appHash: app.Hash }
       }
     } catch (_err) {
-      console.warn(` ⚠️ could not load schema for ${appKey}, falling back to default`)
+      console.warn(`  could not load schemas for ${appKey}, using defaults`)
       // TODO: make generic fallback for cloudflare and local
       schemas[appKey] = {
         data: {
