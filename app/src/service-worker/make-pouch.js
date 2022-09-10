@@ -1,84 +1,98 @@
 // eslint-disable-next-line no-restricted-imports
-import Pouchdb from '../../build/deps/pouchdb.js'
-
-// import findPlugin from 'Pouchdb-find'
-// import allDbs from 'Pouchdb-all-dbs'
-// allDbs(PouchDB)
-// PouchDB.plugin(findPlugin)
-// import debugPlugin from 'Pouchdb-debug'
-// PouchDB.plugin(debugPlugin)
-// PouchDB.debug.enable('*')
+import PouchDB from '../../build/deps/pouchdb.js'
+// import findPlugin from 'pouchdb-find'; PouchDB.plugin(findPlugin)
 
 export default async function ({
-  dbName,
-  designDocs
+  clientDbName,
+  serverDbName,
+  sessionId,
+  preload
 }) {
+  PouchDB.prefix = '_ayu_'
+  const pouch = new PouchDB(clientDbName)
+  const couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`)
 
-  // TODO support schema based configuration and direct client couch connection with cors support
-  // couchHost ? `https://${couchKey}:${couchSecret}@${couchHost}` : `${location.origin}`
-  // ${couchRoot ? couchRoot : '/'}$
+  const sessionDoc = await couch.get(sessionId)
+  await pouch.put({ _id: '_local/ayu', sessionId }).catch(() => {})
 
-  const pouch = new Pouchdb(dbName)
-
-  if (designDocs && designDocs.length > 0) {
-    try {
-      await pouch.bulkDocs(designDocs)
-    } catch (err) {
-      // TODO: overwrite or merge updates?
-      // if (err.name !== 'conflict') {
-      console.log(err)
-      // }
-    }
-
-    // .catch(err => {
-    // })
-    // .finally(() => {
-    //   startSync()
-    // })
+  if (preload?.length > 0 && !sessionDoc.replications) {
+    // TODO: handle updates
+    // Use batch instead
+    console.log('preloading docs to new pouch...')
+    await PouchDB.replicate(couch, pouch, { doc_ids: preload })
   }
-  //  else {
-  //   startSync()
-  // }
 
-  // function startSync () {
-  // TODO: move to application logic or make configurable with different strategies
-  // [admin ? 'sync' : 'replicate']
-
-  const proxyUrl = `${location.origin}/_api/_couch/${dbName}`
-
-  const sync = Pouchdb.sync(proxyUrl, dbName, {
+  const sync = PouchDB.sync(pouch, couch, {
     live: true,
+    sse: true,
+    skipInitialBatch: true, // TODO: setup depending on time since last login?
     retry: true,
-    heartbeat: 2500
-    // filter: doc => {
-    //   return !doc._id.startsWith('_design/client')
-    // }
-    // checkpoint: false source target
+    heartbeat: 2500,
+    conflicts: true, // TODO
+    pull: {
+      since: sessionDoc.startSeq,
+      filter: (doc, opts) => {
+        if (doc._conflicts) {
+          console.warn(doc._conflicts)
+        }
+        // console.log('pull filter', { doc, opts })
+        return true
+        // return !doc._id.startsWith('_design/client')
+      }
+    },
+    push: {
+      filter: (doc, opts) => {
+        if (doc._conflicts) {
+          console.warn(doc._conflicts)
+        }
+        // console.log('push filter', { doc, opts })
+        return true
+        // return !doc._id.startsWith('_design/client')
+      }
+    }
+    // back_off_function: delay => { return 1000 } // TODO integrate online/offline
   })
     .on('denied', err => {
-      onsole.error('denied', err)
-      // a document failed to replicate (e.g. due to permissions)
+      console.error('denied', err)
     })
     .on('error', err => {
       console.error(err)
-      // debugger; TODO put in error handler globally?
+    })
+    .on('paused', (a) => {
+      console.info('replication paused', a)
+    })
+    .on('active', ({ _direction }) => {
+      init?.()
     })
 
-  // .on('change', info => {
-  //   console.log(info)
-  // }).on('paused', () => {
-  //   // replication paused (e.g. replication up to date, user went offline)
-  // }).on('active', () => {
-  //   // replicate resumed (e.g. new changes replicating, user went back online)
-  // })..on('complete', info => {
-  //   // console.log(info)
-  // })
-  // }
-  // pouch.info().then(info => {
-  //   // TODO: this leads to replay of all changes since worker started on new clients for running worker
-  //   pouch._startSeq = info.update_seq
-  // })
-  pouch.ayuSync = sync
+  let init = () => {
+    console.log('initting changes session doc')
+    if (sync.pull.replicationId && sync.push.replicationId) {
+      let updateReplications = false
+      if (sessionDoc.replications) {
+        if (sessionDoc.replications.pull !== sync.pull.replicationId) {
+          console.error('pull replication id cahnged', sessionDoc, sync.pull)
+          // TODO: remove old doc
+          updateReplications = true
+        }
+        if (sessionDoc.replications.push !== sync.push.replicationId) {
+          console.error('push replication id cahnged', sessionDoc, sync.push)
+          // TODO: remove old doc
+          updateReplications = true
+        }
+      }
 
-  return pouch
+      if (!sessionDoc.replications || updateReplications) {
+        console.log('writing replications to session...')
+        sessionDoc.replications = {
+          pull: sync.pull.replicationId,
+          push: sync.push.replicationId
+        }
+        couch.put(sessionDoc)
+      }
+      init = null
+    }
+  }
+
+  return { pouch, couch, sync }
 }

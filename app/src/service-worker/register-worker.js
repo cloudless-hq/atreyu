@@ -15,28 +15,31 @@ export default async function registerWorker (workerPath, loaded) {
     }
   }
 
+  let reg
   if (regs.length === 0) {
-    const reg = await navigator.serviceWorker.register(workerPath, {
+    reg = await navigator.serviceWorker.register(workerPath, {
       updateViaCache: 'all',
       scope: '/'
     })
 
     console.log('ServiceWorker registred')
-
-    navigator.serviceWorker.addEventListener('message', async e => {
-      if (e.data === '{"worker":"active"}') {
-        await navigator.serviceWorker.ready
-        console.log('ServiceWorker ready after activate')
-        loaded(reg)
-      } else {
-        console.log(e.data)
-      }
-    }, { once: true })
-
     // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
   } else {
     await navigator.serviceWorker.ready
     console.log('ServiceWorker ready, allready installed')
     loaded(regs[0])
   }
+
+  navigator.serviceWorker.addEventListener('message', async e => {
+    if (e.data === '{"worker":"active"}') {
+      // this onlye needs , { once: true } after safari supports client.navigate
+      await navigator.serviceWorker.ready
+      console.log('ServiceWorker ready after activate')
+      loaded(reg)
+    } else if (e.data.startsWith('navigate:')) {
+      // Fox until safari support client.navigate()
+      window.location.href = e.data.replace('navigate:', '')
+      // TODO handle logout, cleanup etc
+    }
+  })
 }

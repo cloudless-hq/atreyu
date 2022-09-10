@@ -1,12 +1,19 @@
+/* eslint-disable functional/no-this-expression */
+/* eslint-disable functional/no-class */
 import { makeRouter, toFalcorRoutes } from './falcor-router.js'
 
 class WorkerServer {
-  constructor(dataSource) {
+  constructor (dataSource) {
     this.dataSource = dataSource
   }
 
-  execute(action) {
+  execute (action) {
     const method = action[1]
+    const jsonGraphEnvelope = action[2] // or
+    const callPath = action[2]
+    const args = action[3] || []
+    const pathSuffixes = action[4] || []
+
     let paths
 
     switch (method) {
@@ -14,14 +21,9 @@ class WorkerServer {
         paths = action[2]
         return this.dataSource.get(paths)
       case 'set':
-        let jsonGraphEnvelope = action[2]
         return this.dataSource.set(jsonGraphEnvelope)
       case 'call':
-        let callPath = action[2]
-        let args = action[3] || []
-        let pathSuffixes = action[4] || []
         paths = action[5] || []
-
         return this.dataSource.call(callPath, args, pathSuffixes, paths)
     }
   }
@@ -30,11 +32,12 @@ class WorkerServer {
 // TODO: userId, additional dataSources
 export default function ({
   schema,
-  dbs
+  dbs,
+  userId
 }) {
   const dataRoutes = toFalcorRoutes(schema)
   const FalcorRouter = makeRouter(dataRoutes)
-  const routerInstance = new FalcorRouter({ dbs })
+  const routerInstance = new FalcorRouter({ dbs, userId })
 
   // const serverDataSource = falcor({
   //   cache: {},

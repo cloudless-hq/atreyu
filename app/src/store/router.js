@@ -333,6 +333,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
         return {}
       }
       if (a.rel === 'external') {
+        a.click()
         return {}
       }
       if (a.rel === 'replace') {
@@ -351,7 +352,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
       if (e.button !== 0) {
         return
       }
-      const {prevented, a} = preventer(e)
+      const { prevented, a } = preventer(e)
       if (!prevented) {
         return
       }

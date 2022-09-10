@@ -8,11 +8,6 @@
 // },
 // TODO migrate to box shorthand :  {$atom: somevalue}, {$ref: [1, 'b', 'd'}, {$error: 'error 1 occured'}
 
-function userDb (dbs) {
-  // just get first db at the moment
-  return dbs.entries().next().value?.[1]
-}
-
 export default {
   '_sync': {
     call: {
@@ -64,29 +59,30 @@ export default {
       }
     }
   },
-  '_changes.length': {
-    get: {
-      handler: async ({ dbs }) => {
-        const pouchRes = await userDb(dbs).info()
-        return { path: ['_changes', 'length'], value: pouchRes.update_seq }
-      }
-    }
-  },
-  '_changes': {
-    get: {
-      handler: async ({ ids, _keys, dbs }) => {
-        const _pouchRes = await userDb(dbs).allDocs({
-          include_docs: true,
-          conflicts: true,
-          keys: ids
-        })
-      }
-    }
-  },
+  // '_changes.length': {
+  //   get: {
+  //     handler: async ({ dbs }) => {
+  //       const pouchRes = await dbs.pouch.info()
+  //       return { path: ['_changes', 'length'], value: pouchRes.update_seq }
+  //     }
+  //   }
+  // },
+  // '_changes': {
+  //   get: {
+  //     handler: ({ _ids, _keys, _dbs }) => {
+  //       consoe.log('fixme')
+  //       // const _pouchRes = await db.allDocs({
+  //       //   include_docs: true,
+  //       //   conflicts: true,
+  //       //   keys: ids
+  //       // })
+  //     }
+  //   }
+  // },
   '_docs.create': {
     call: {
       handler: async ({ dbs, _userId, _Observable }, [ docs ]) => {
-        const result = await userDb(dbs).bulkDocs(docs.map(doc => {
+        const result = await dbs.pouch.bulkDocs(docs.map(doc => {
           doc.changes = [{ userId: session.value.userId, action: 'created', date: Date.now() }]
           return doc
         }))
@@ -100,9 +96,9 @@ export default {
   // this route handles subkey upsert and subset key requests
   // '_docs[{keys:ids}][{keys:keys}]': {
   //   set: {
-  //     handler: async ({ _docs, dbs, _userId, keys, ids }) => {
+  //     handler: async ({ _docs, db, _userId, keys, ids }) => {
   //       console.log(_docs, keys, ids)
-  //       const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(({value}) => {
+  //       const result = await db.bulkDocs(Object.values(_docs).map(({value}) => {
   //         if (!value.changes) {
   //           value.changes = []
   //         }
@@ -130,9 +126,9 @@ export default {
   //     }
   //   },
   //   get: {
-  //     handler: async ({ ids, keys, dbs }) => {
+  //     handler: async ({ ids, keys, db }) => {
   //       console.log( keys, ids)
-  //       const pouchRes = await userDb(dbs).allDocs({
+  //       const pouchRes = await db.allDocs({
   //         include_docs: true,
   //         conflicts: true,
   //         keys: ids
@@ -168,10 +164,14 @@ export default {
   //     }
   //   }
   // },
+
   '_docs[{keys:ids}]': {
+    get: {
+      operationId: 'getDocs'
+    },
     set: {
       handler: async ({ _docs, dbs, _userId }) => {
-        const result = await userDb(dbs).bulkDocs(Object.values(_docs).map(({ value }) => {
+        const result = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
           if (!value.changes) {
             value.changes = []
           }
@@ -200,79 +200,6 @@ export default {
             console.error('set doc error', res)
           }
         })
-
-        return {
-          jsonGraph: {
-            _docs
-          }
-        }
-      }
-    },
-    get: { // -> get: getDocs,
-      handler: async ({ ids, _keys, dbs }) => {
-        const pouchRes = await userDb(dbs)?.allDocs({
-          include_docs: true,
-          conflicts: true,
-          keys: ids
-        }) || {rows:[]}
-
-        const missingIds = []
-        const _docs = {}
-
-        pouchRes.rows.forEach(row => {
-          if (row.error === 'not_found') {
-            missingIds.push(row.key)
-          } else if (!row.error) {
-            if (row.doc) {
-
-              _docs[row.key] = { $type: 'atom', value: row.doc }
-
-              if (row.doc.type) {
-                _docs[row.key].$schema = { $ref: row.doc.type }
-              } else if (row.doc.types?.length === 1) {
-                _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
-              } else if (row.doc.types?.length > 1) {
-                _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => ({ '$ref': type.profile })) }
-              }
-            } else {
-              console.warn(row)
-            }
-          } else {
-            console.error(row)
-          }
-        })
-
-        // const res = {}
-        // ids.forEach(id => {
-        //   res[id] = {}
-        //   keys.forEach(key => {
-        //     res[id][key] = byId[id][key]
-        //   })
-        // })
-        // return {
-        //   jsonGraph: {
-        //     byId: res
-        //   }
-        // }
-        // const pouchRes = await userDb(dbs).allDocs({
-        //     include_docs: true,
-        //     keys: ids
-        // })
-        // const missingIds = []
-        // const _docs = {}
-        // pouchRes.rows.forEach(row => {
-        // if (row.error === 'not_found') {
-        //     missingIds.push(row.key)
-        // } else if (!row.error) {
-        //     if (row.doc) {
-        //     _docs[row.key] = { $type: 'atom', value: row.doc }
-        //     } else {
-        //     console.error(row)
-        //     }
-        // } else {
-        //     console.error(row)
-        // }
-        // })
 
         return {
           jsonGraph: {

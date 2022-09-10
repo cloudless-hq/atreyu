@@ -27,24 +27,22 @@ export default function ({
 
   self.session = {
     loaded: false,
-
     pendingInit: null,
-
     value: null,
+    dbs: null,
+    falcorServer: null,
 
-    dbs: new Map(),
-
-    clear: () => {
+    clear () {
       self.session.value = null
-      self.session.dbs.forEach(db => {
-        db.ayuSync.cancel()
-        db.close()
-      })
-      self.session.dbs.clear()
+      self.session.falcorServer = null // TODO: check if needs destroy or cleanup
+      self.session.dbs?.sync.cancel()
+      self.session.dbs?.pouch.close()
+      self.session.dbs?.couch.close()
+      self.session.dbs = null
       self.session.loaded = false
     },
 
-    logout: async () => {
+    async logout () {
       self.session.clear()
 
       clientsRes = await clients.matchAll()
@@ -54,14 +52,15 @@ export default function ({
         if (url.pathname.length > 1 || url.hash) {
           cont = `&continue=${encodeURIComponent(url.pathname + url.hash)}`
         }
-        return client.navigate(`/_api/_session?logout${cont}`).catch(err => console.error(err))
+
+        return client.postMessage(`navigate:/_api/_session?logout${cont}`)
+        // client.navigate().catch(err => console.error(err))
       })
 
       await Promise.all(logoutNavs)
     },
 
-    refresh: async () => {
-      // console.log(arg)
+    async refresh () {
       let redirectOtherClients = null
 
       let newSession
@@ -72,25 +71,29 @@ export default function ({
 
       if (!newSession?.userId ) {
         self.session.clear()
-
         redirectOtherClients = 'logout'
       } else if (newSession.userId !== self.session.value?.userId) {
         self.session.clear()
 
+        // FIXME: this formmat and flow is awkward leftover from supporting any number of client dbs per user (now only one)
         let newDbConf
         if (typeof dbConf === 'function') {
-          newDbConf = dbConf({ userId: newSession.userId, appName: newSession.appName, env: newSession.env, escapeId })
+          newDbConf = dbConf({ userId: newSession.userId, appName: newSession.appName, env: newSession.env, escapeId, org: newSession.org })
         } else {
           newDbConf = dbConf
         }
+        const clientDbName = newDbConf.clientDbName
+        const serverDbName = newDbConf.serverDbName
 
-        await Promise.all(Object.entries(newDbConf).map(async ([dbName, designDocs]) => {
-          const pouchSetup = await makePouch({
-            dbName,
-            designDocs
-          })
-          self.session.dbs.set(dbName, pouchSetup)
-        }))
+        self.session.dbs = await makePouch({
+          clientDbName,
+          serverDbName,
+          sessionId: newSession.sessionId,
+          preload: newDbConf.preload,
+          clientDesignDocs: newDbConf[clientDbName]
+        })
+
+        self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, userId: newSession.userId })
 
         if (newSession.userId && !self.session.loaded) {
           redirectOtherClients = 'continue'
@@ -107,7 +110,8 @@ export default function ({
           const params = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
             if (url.pathname.startsWith('/_ayu/accounts')) {
-              return client.navigate(params.get('continue') || '/').catch(err => console.error(err))
+              return client.postMessage('navigate:' + (params.get('continue') || '/'))
+              // client.navigate().catch(err => console.error(err))
             }
           } else {
             let cont = ''
@@ -122,7 +126,8 @@ export default function ({
               const url = `/_api/_session?login${cont}`
               console.log('redirecting other clients', url, newSession, client)
 
-              return client.navigate(url).catch(err => console.error(err))
+              return client.postMessage('navigate:' + url)
+              // after safari support: client.navigate().catch(err => console.error(err))
             }
           }
         })
@@ -137,13 +142,6 @@ export default function ({
   }
 
   console.log('starting service worker...')
-
-  const falcorServer = makeFalcorServer({dbs: self.session.dbs, schema})
-
-  self.ayu = {
-    dbs: self.session.dbs,
-    falcorServer
-  }
 
   clients.matchAll().then(res => {
     // send clients hello message on startup to know pending requests need to be restarted
@@ -167,7 +165,7 @@ export default function ({
       })
     })
   }
-  setInterval(purgeClients, 2500)
+  setInterval(purgeClients, 2000)
 
   addEventListener('message', async e => {
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
@@ -190,9 +188,10 @@ export default function ({
       return
     }
 
-    const exec = falcorServer.execute(data)
+    const exec = self.session.falcorServer?.execute(data)
       .subscribe(
         result => {
+          // console.log(result)
           e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {
@@ -221,6 +220,14 @@ export default function ({
         res.forEach(client => client.postMessage(JSON.stringify({ worker: 'active' })))
       })
     }))
+  })
+
+  addEventListener('offline', e => {
+    console.log('offline', e)
+  })
+
+  addEventListener('online', e => {
+    console.log('online', e)
   })
 
   const bypass = []

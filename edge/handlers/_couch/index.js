@@ -20,41 +20,32 @@ export function handler ({ req, stats, app, body, parsedBody }) {
   // if (req.url.pathname.startsWith('/_utils/')) {
   //   return finish(handleFauxton({ req, event }))
   // }
-
   // if (req.url.pathname.startsWith('/_api/_session')) {
   //   return sessionHandler({ req, stats, app, parsedBody })
   // }
 
   const href = couchHost + req.url.pathname.replace('/_api/_couch', '') + req.url.search
 
-  if (!req.url.pathname.includes('/_changes')) {
-    return fetch(href, {
-      method: req.method,
-      redirect: 'manual',
-      body, // req.raw?.body, // (req.method === 'PUT' || req.method === 'POST') ?
-      headers: {
-        ...req.headers,
-        'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
-      }
-    })
-  } else {
-    return fetch(href, {
-      method: req.method,
-      redirect: 'manual',
-      headers: {
-        ...req.headers,
-        'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
-      }
-    })
-    // const { readable, response } = await fetchStream(href, {
-    //   method: req.method,
-    //   headers: {
-    //     'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`,
-    //     ...req.headers
-    //   }
-    // })
-    // return new Response(readable, response)
-  }
+  // if (req.url.pathname.includes('/_changes')) {
+  //   // const { readable, response } = await fetchStream(href, {
+  //   //   method: req.method,
+  //   //   headers: {
+  //   //     'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`,
+  //   //     ...req.headers
+  //   //   }
+  //   // })
+  //   // return new Response(readable, response)
+  // } else {
+
+  return fetch(href, {
+    method: req.method,
+    redirect: 'manual',
+    body, // req.raw?.body
+    headers: {
+      ...req.headers,
+      'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+    }
+  })
 }
 
 // TODO: support cloudflare jwt decoding and cloudflare access features

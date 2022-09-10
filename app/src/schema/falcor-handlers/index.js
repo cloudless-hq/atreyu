@@ -1,121 +1,154 @@
 // TODO: warn Observable handlers cannot be async functions themselves
 // TODO: filter out changes of own set/ call operations
-function userDb (dbs) {
-  return dbs.entries().next().value?.[1]
-}
 
-export const _sync = ({ dbs, Observable }, [ since ]) => {
+function doSync (dbs, since, Observable) {
   let id
+  let i = 0
   function schedule (action) {
-    if (id) {
-      clearTimeout(id)
-      id = null
+    if (i < 2) {
+      i++
+      if (id) {
+        clearTimeout(id)
+        id = null
+      }
+      id = setTimeout(action, 2)
     }
-    id = setTimeout(action, 0)
   }
 
   return Observable.create(subscriber => {
-    const changes = userDb(dbs).changes({
+    // if (since) {
+    //   const changes = db.changes({
+    //     since: since,
+    //     include_docs: true
+    //   })
+
+    //   // console.trace(changes, 'oneshot', changes.listenerCount())
+    //   const { results, last_seq } = await changes
+    //   // not necesarry for single shot: changes.cancel()
+
+    //   if (results.length) {
+    //     subscriber.onNext([
+    //       { path: ['_seq'], value: { $type: 'atom', value: last_seq } },
+    //       ...results.map(change => ({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } }))
+    //     ])
+
+    //     return () => {}
+    //   }
+    // }
+
+    const changes = dbs.pouch.changes({
       since: since || 'now',
       live: true,
       include_docs: true
     })
-      .on('change', change => {
-        // { "changes": [ { "rev": "2-f0473cbda03b" } ] }
-        // console.log('falcor handler', change) // todo: debug realms with client side flags
 
-        // TODO: generic and better invalidation strategy
-        // subscriber.onNext({ path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
-        subscriber.onNext({ path: ['_seq'], value: { $type: 'atom', value: change.seq } })
-        subscriber.onNext({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } })
-        schedule(() => {
-          if (!subscriber.isStopped) {
-            subscriber.onCompleted()
-          }
-        }) // TODO: fix router to forward before complete for long running observable!
-      })
-      .on('error', err => {
-        subscriber.onError({ $type: 'error', value: err })
-      })
+    function cleanup (changesInst) {
+      changesInst.cancel()
+      changesInst.removeListener('change', changeListener)
+      changesInst.removeListener('error', errListener)
+      changesInst.removeListener('complete', complListener)
+    }
 
-    // .on('complete', function(info) {
-    //   subscriber.onCompleted()
-    // })
+    const complListener = _info => {
+      subscriber.onCompleted()
+    }
+
+    const errListener = err => {
+      subscriber.onError({ path: ['_seq'], value: { $type: 'error', value: err }})
+    }
+
+    const changeListener = change => {
+      // console.log('_sync handler change', change) // todo: debug realms with client side flags
+
+      // TODO: generic and better invalidation strategy
+      // { path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
+
+      subscriber.onNext({ path: ['_seq'], value: { $type: 'atom', value: change.seq } })
+      subscriber.onNext({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } })
+
+      schedule(() => {
+        if (!subscriber.isStopped) {
+          subscriber.onCompleted()
+        }
+      }) // TODO: fix router to forward before complete for long running observable!
+    }
+
+    changes.on('change', changeListener)
+    changes.on('error', errListener)
+    changes.on('complete', complListener)
 
     return () => {
-      changes.cancel()
+      // todo: cancel changes when no active requests for a while
+      cleanup(changes)
     }
   })
 }
 
-export async function getDocs ({ ids, event, dbs }) {
-  const paths = []
+export const _sync = ({ dbs, Observable }, [ since ]) => {
+  return dbs && doSync(dbs, since, Observable)
+}
 
-  const pouchRes = await userDb(dbs).allDocs({
+export async function getDocs ({ ids, _event, dbs }) {
+  const pouchRes = await dbs?.pouch.allDocs({
     include_docs: true,
+    conflicts: true,
     keys: ids
   })
 
   const missingIds = []
-  const byId = {}
+  const _docs = {}
 
-  pouchRes.rows.forEach(row => {
-    if (row.error === 'not_found') {
-      missingIds.push(row.key)
-    } else if (!row.error) {
-      if (row.doc) {
-        if (row.doc.chans) {
-          row.doc.chans.forEach(chan => {
-            paths.push(['contactsByChan', btoa(chan.href)])
-            contactsByChan[btoa(chan.href)] = { $type: 'ref', value: ['byId', row.id] }
-          })
-        }
-
-        paths.push(['byId', row.key])
-        byId[row.key] = {
-          $type: 'atom',
-          value: row.doc
-        }
-      } else {
+  pouchRes?.rows?.forEach(row => {
+    if (row.error || !row.doc) {
+      if (row.error !== 'not_found') {
         console.error(row)
       }
+
+      missingIds.push(row.key)
     } else {
-      console.error(row)
+      if (row.doc._conflicts) {
+        console.warn('conflicts', row.doc)
+      }
+
+      _docs[row.key] = { $type: 'atom', value: row.doc }
+
+      if (row.doc.type) {
+        _docs[row.key].$schema = { $ref: row.doc.type }
+      } else if (row.doc.types?.length === 1) {
+        _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
+      } else if (row.doc.types?.length > 1) {
+        _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => ({ '$ref': type.profile })) }
+      }
     }
   })
 
   if (missingIds.length > 0) {
-    const freshDocs = await fetch('/_api/_couch/' + userDbName + '/_all_docs?include_docs=true&attachments=true', {
+    const freshDocs = await fetch(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
       method: 'POST',
-      body: JSON.stringify({
-        'keys': missingIds
-      })
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ 'keys': missingIds })
     }).then(res => res.json())
 
-    event.waitUntil(pouch.bulkDocs(freshDocs.rows.map(row => row.doc), {
+    // event.waitUntil(
+    dbs.pouch.bulkDocs(freshDocs.rows.map(row => row.doc).filter(exists => exists), {
       new_edits: false
-    }))
+    })
+    // )
 
-    freshDocs.rows.forEach(row => {
-      // if (row.doc.chans) {
-      //   row.doc.chans.forEach(chan => {
-      //     paths.push(['contactsByChan', btoa(chan.href)])
-      //     contactsByChan[btoa(chan.href)] = { $type: 'ref', value: ['byId', row.id] }
-      //   })
-      // }
-
-      paths.push(['byId', row.id])
-      byId[row.id] = {
-        $type: 'atom',
-        value: row.doc
-      }
+    freshDocs?.rows?.forEach(row => {
+      _docs[row.id] = { $type: 'atom', value: row.doc }
     })
   }
 
   return {
-    paths,
     jsonGraph: {
       _docs
     }
   }
 }
+
+// TODO: chan support
+// doc.chans?.forEach(chan => {
+//   paths.push(['contactsByChan', btoa(chan.href)])
+//   contactsByChan[btoa(chan.href)] = { $type: 'ref', value: ['byId', row.id] }
+// })

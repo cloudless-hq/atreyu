@@ -1,10 +1,7 @@
-// vendored from https://unpkg.com/pouchdb@7.3.0/lib/index-browser.es.js
 import immediate from 'immediate';
-import { v4 } from 'uuid';
 import Md5 from 'spark-md5';
-import vuvuzela from 'vuvuzela';
+import { v4 } from 'uuid';
 import getArguments from 'argsarray';
-import inherits from 'inherits';
 import EE from 'events';
 
 function mangle(key) {
@@ -457,90 +454,80 @@ function hasLocalStorage() {
 
 // Custom nextTick() shim for browsers. In node, this will just be process.nextTick(). We
 
-inherits(Changes, EE);
+class Changes extends EE {
+  constructor() {
+    super();
 
-/* istanbul ignore next */
-function attachBrowserEvents(self) {
-  if (hasLocalStorage()) {
-    addEventListener("storage", function (e) {
-      self.emit(e.key);
-    });
+    this._listeners = {};
+
+    if (hasLocalStorage()) {
+      addEventListener("storage", function (e) {
+        this.emit(e.key);
+      });
+    }
   }
-}
 
-function Changes() {
-  EE.call(this);
-  this._listeners = {};
-
-  attachBrowserEvents(this);
-}
-Changes.prototype.addListener = function (dbName, id, db, opts) {
-  /* istanbul ignore if */
-  if (this._listeners[id]) {
-    return;
-  }
-  var self = this;
-  var inprogress = false;
-  function eventFunction() {
-    /* istanbul ignore if */
-    if (!self._listeners[id]) {
+  addListener(dbName, id, db, opts) {
+    if (this._listeners[id]) {
       return;
     }
-    if (inprogress) {
-      inprogress = 'waiting';
+    var inprogress = false;
+    var self = this;
+    function eventFunction() {
+      if (!self._listeners[id]) {
+        return;
+      }
+      if (inprogress) {
+        inprogress = 'waiting';
+        return;
+      }
+      inprogress = true;
+      var changesOpts = pick(opts, [
+        'style', 'include_docs', 'attachments', 'conflicts', 'filter',
+        'doc_ids', 'view', 'since', 'query_params', 'binary', 'return_docs'
+      ]);
+
+      function onError() {
+        inprogress = false;
+      }
+
+      db.changes(changesOpts).on('change', function (c) {
+        if (c.seq > opts.since && !opts.cancelled) {
+          opts.since = c.seq;
+          opts.onChange(c);
+        }
+      }).on('complete', function () {
+        if (inprogress === 'waiting') {
+          immediate(eventFunction);
+        }
+        inprogress = false;
+      }).on('error', onError);
+    }
+    this._listeners[id] = eventFunction;
+    this.on(dbName, eventFunction);
+  }
+
+  removeListener(dbName, id) {
+    if (!(id in this._listeners)) {
       return;
     }
-    inprogress = true;
-    var changesOpts = pick(opts, [
-      'style', 'include_docs', 'attachments', 'conflicts', 'filter',
-      'doc_ids', 'view', 'since', 'query_params', 'binary', 'return_docs'
-    ]);
+    super.removeListener(dbName, this._listeners[id]);
+    delete this._listeners[id];
+  }
 
-    /* istanbul ignore next */
-    function onError() {
-      inprogress = false;
+  notifyLocalWindows(dbName) {
+    //do a useless change on a storage thing
+    //in order to get other windows's listeners to activate
+    if (hasLocalStorage()) {
+      localStorage[dbName] = (localStorage[dbName] === "a") ? "b" : "a";
     }
-
-    db.changes(changesOpts).on('change', function (c) {
-      if (c.seq > opts.since && !opts.cancelled) {
-        opts.since = c.seq;
-        opts.onChange(c);
-      }
-    }).on('complete', function () {
-      if (inprogress === 'waiting') {
-        immediate(eventFunction);
-      }
-      inprogress = false;
-    }).on('error', onError);
   }
-  this._listeners[id] = eventFunction;
-  this.on(dbName, eventFunction);
-};
 
-Changes.prototype.removeListener = function (dbName, id) {
-  /* istanbul ignore if */
-  if (!(id in this._listeners)) {
-    return;
+  notify(dbName) {
+    this.emit(dbName);
+    this.notifyLocalWindows(dbName);
   }
-  EE.prototype.removeListener.call(this, dbName,
-    this._listeners[id]);
-  delete this._listeners[id];
-};
-
-
-/* istanbul ignore next */
-Changes.prototype.notifyLocalWindows = function (dbName) {
-  //do a useless change on a storage thing
-  //in order to get other windows's listeners to activate
-  if (hasLocalStorage()) {
-    localStorage[dbName] = (localStorage[dbName] === "a") ? "b" : "a";
-  }
-};
-
-Changes.prototype.notify = function (dbName) {
-  this.emit(dbName);
-  this.notifyLocalWindows(dbName);
-};
+}
 
 function guardedConsole(method) {
   /* istanbul ignore else */
@@ -613,24 +600,24 @@ var assign;
 
 var $inject_Object_assign = assign;
 
-inherits(PouchError, Error);
+class PouchError extends Error {
+  constructor(status, error, reason) {
+    super();
+    this.status = status;
+    this.name = error;
+    this.message = reason;
+    this.error = true;
+  }
 
-function PouchError(status, error, reason) {
-  Error.call(this, reason);
-  this.status = status;
-  this.name = error;
-  this.message = reason;
-  this.error = true;
+  toString() {
+    return JSON.stringify({
+      status: this.status,
+      name: this.name,
+      message: this.message,
+      reason: this.reason
+    });
+  }
 }
-
-PouchError.prototype.toString = function () {
-  return JSON.stringify({
-    status: this.status,
-    name: this.name,
-    message: this.message,
-    reason: this.reason
-  });
-};
 
 var UNAUTHORIZED = new PouchError(401, 'unauthorized', "Name or password is incorrect.");
 var MISSING_BULK_DOCS = new PouchError(400, 'bad_request', "Missing JSON list of 'docs'");
@@ -1491,24 +1478,6 @@ function merge(tree, path, depth) {
 }
 
 // return true if a rev exists in the rev tree, false otherwise
-function revExists(revs, rev) {
-  var toVisit = revs.slice();
-  var splitRev = rev.split('-');
-  var targetPos = parseInt(splitRev[0], 10);
-  var targetId = splitRev[1];
-
-  var node;
-  while ((node = toVisit.pop())) {
-    if (node.pos === targetPos && node.ids[0] === targetId) {
-      return true;
-    }
-    var branches = node.ids[2];
-    for (var i = 0, len = branches.length; i < len; i++) {
-      toVisit.push({pos: node.pos + 1, ids: branches[i]});
-    }
-  }
-  return false;
-}
 
 function getTrees(node) {
   return node.ids;
@@ -1573,8 +1542,6 @@ function latest(rev, metadata) {
   throw new Error('Unable to resolve latest revision for id ' + metadata.id + ', rev ' + rev);
 }
 
-inherits(Changes$1, EE);
-
 function tryCatchInChangeListener(self, change, pending, lastSeq) {
   // isolate try/catches to avoid V8 deoptimizations
   try {
@@ -1584,82 +1551,6 @@ function tryCatchInChangeListener(self, change, pending, lastSeq) {
   }
 }
 
-function Changes$1(db, opts, callback) {
-  EE.call(this);
-  var self = this;
-  this.db = db;
-  opts = opts ? clone(opts) : {};
-  var complete = opts.complete = once(function (err, resp) {
-    if (err) {
-      if (listenerCount(self, 'error') > 0) {
-        self.emit('error', err);
-      }
-    } else {
-      self.emit('complete', resp);
-    }
-    self.removeAllListeners();
-    db.removeListener('destroyed', onDestroy);
-  });
-  if (callback) {
-    self.on('complete', function (resp) {
-      callback(null, resp);
-    });
-    self.on('error', callback);
-  }
-  function onDestroy() {
-    self.cancel();
-  }
-  db.once('destroyed', onDestroy);
-
-  opts.onChange = function (change, pending, lastSeq) {
-    /* istanbul ignore if */
-    if (self.isCancelled) {
-      return;
-    }
-    tryCatchInChangeListener(self, change, pending, lastSeq);
-  };
-
-  var promise = new Promise(function (fulfill, reject) {
-    opts.complete = function (err, res) {
-      if (err) {
-        reject(err);
-      } else {
-        fulfill(res);
-      }
-    };
-  });
-  self.once('cancel', function () {
-    db.removeListener('destroyed', onDestroy);
-    opts.complete(null, {status: 'cancelled'});
-  });
-  this.then = promise.then.bind(promise);
-  this['catch'] = promise['catch'].bind(promise);
-  this.then(function (result) {
-    complete(null, result);
-  }, complete);
-
-
-
-  if (!db.taskqueue.isReady) {
-    db.taskqueue.addTask(function (failed) {
-      if (failed) {
-        opts.complete(failed);
-      } else if (self.isCancelled) {
-        self.emit('cancel');
-      } else {
-        self.validateChanges(opts);
-      }
-    });
-  } else {
-    self.validateChanges(opts);
-  }
-}
-Changes$1.prototype.cancel = function () {
-  this.isCancelled = true;
-  if (this.db.taskqueue.isReady) {
-    this.emit('cancel');
-  }
-};
 function processChange(doc, metadata, opts) {
   var changeList = [{rev: doc._rev}];
   if (opts.style === 'all_docs') {
@@ -1684,87 +1575,164 @@ function processChange(doc, metadata, opts) {
   return change;
 }
 
-Changes$1.prototype.validateChanges = function (opts) {
-  var callback = opts.complete;
-  var self = this;
-
-  /* istanbul ignore else */
-  if (PouchDB._changesFilterPlugin) {
-    PouchDB._changesFilterPlugin.validate(opts, function (err) {
+class Changes$1 extends EE {
+  constructor(db, opts, callback) {
+    super();
+    this.db = db;
+    opts = opts ? clone(opts) : {};
+    var complete = opts.complete = once((err, resp) => {
       if (err) {
-        return callback(err);
+        if (listenerCount(this, 'error') > 0) {
+          this.emit('error', err);
+        }
+      } else {
+        this.emit('complete', resp);
       }
-      self.doChanges(opts);
+      this.removeAllListeners();
+      db.removeListener('destroyed', onDestroy);
     });
-  } else {
-    self.doChanges(opts);
-  }
-};
+    if (callback) {
+      this.on('complete', function (resp) {
+        callback(null, resp);
+      });
+      this.on('error', callback);
+    }
+    const onDestroy = () => {
+      this.cancel();
+    };
+    db.once('destroyed', onDestroy);
 
-Changes$1.prototype.doChanges = function (opts) {
-  var self = this;
-  var callback = opts.complete;
-
-  opts = clone(opts);
-  if ('live' in opts && !('continuous' in opts)) {
-    opts.continuous = opts.live;
-  }
-  opts.processChange = processChange;
-
-  if (opts.since === 'latest') {
-    opts.since = 'now';
-  }
-  if (!opts.since) {
-    opts.since = 0;
-  }
-  if (opts.since === 'now') {
-    this.db.info().then(function (info) {
+    opts.onChange = (change, pending, lastSeq) => {
       /* istanbul ignore if */
-      if (self.isCancelled) {
-        callback(null, {status: 'cancelled'});
+      if (this.isCancelled) {
         return;
       }
-      opts.since = info.update_seq;
-      self.doChanges(opts);
-    }, callback);
-    return;
-  }
+      tryCatchInChangeListener(this, change, pending, lastSeq);
+    };
 
-  /* istanbul ignore else */
-  if (PouchDB._changesFilterPlugin) {
-    PouchDB._changesFilterPlugin.normalize(opts);
-    if (PouchDB._changesFilterPlugin.shouldFilter(this, opts)) {
-      return PouchDB._changesFilterPlugin.filter(this, opts);
+    var promise = new Promise(function (fulfill, reject) {
+      opts.complete = function (err, res) {
+        if (err) {
+          reject(err);
+        } else {
+          fulfill(res);
+        }
+      };
+    });
+    this.once('cancel', function () {
+      db.removeListener('destroyed', onDestroy);
+      opts.complete(null, {status: 'cancelled'});
+    });
+    this.then = promise.then.bind(promise);
+    this['catch'] = promise['catch'].bind(promise);
+    this.then(function (result) {
+      complete(null, result);
+    }, complete);
+
+
+
+    if (!db.taskqueue.isReady) {
+      db.taskqueue.addTask((failed) => {
+        if (failed) {
+          opts.complete(failed);
+        } else if (this.isCancelled) {
+          this.emit('cancel');
+        } else {
+          this.validateChanges(opts);
+        }
+      });
+    } else {
+      this.validateChanges(opts);
     }
-  } else {
-    ['doc_ids', 'filter', 'selector', 'view'].forEach(function (key) {
-      if (key in opts) {
-        guardedConsole('warn',
-          'The "' + key + '" option was passed in to changes/replicate, ' +
-          'but pouchdb-changes-filter plugin is not installed, so it ' +
-          'was ignored. Please install the plugin to enable filtering.'
-        );
+  }
+
+  cancel() {
+    this.isCancelled = true;
+    if (this.db.taskqueue.isReady) {
+      this.emit('cancel');
+    }
+  }
+
+  validateChanges(opts) {
+    var callback = opts.complete;
+
+    /* istanbul ignore else */
+    if (PouchDB._changesFilterPlugin) {
+      PouchDB._changesFilterPlugin.validate(opts, (err) => {
+        if (err) {
+          return callback(err);
+        }
+        this.doChanges(opts);
+      });
+    } else {
+      this.doChanges(opts);
+    }
+  }
+
+  doChanges(opts) {
+    var callback = opts.complete;
+
+    opts = clone(opts);
+    if ('live' in opts && !('continuous' in opts)) {
+      opts.continuous = opts.live;
+    }
+    opts.processChange = processChange;
+
+    if (opts.since === 'latest') {
+      opts.since = 'now';
+    }
+    if (!opts.since) {
+      opts.since = 0;
+    }
+    if (opts.since === 'now') {
+      this.db.info().then((info) => {
+        /* istanbul ignore if */
+        if (this.isCancelled) {
+          callback(null, {status: 'cancelled'});
+          return;
+        }
+        opts.since = info.update_seq;
+        this.doChanges(opts);
+      }, callback);
+      return;
+    }
+
+    /* istanbul ignore else */
+    if (PouchDB._changesFilterPlugin) {
+      PouchDB._changesFilterPlugin.normalize(opts);
+      if (PouchDB._changesFilterPlugin.shouldFilter(this, opts)) {
+        return PouchDB._changesFilterPlugin.filter(this, opts);
       }
-    });
-  }
+    } else {
+      ['doc_ids', 'filter', 'selector', 'view'].forEach(function (key) {
+        if (key in opts) {
+          guardedConsole('warn',
+            'The "' + key + '" option was passed in to changes/replicate, ' +
+            'but pouchdb-changes-filter plugin is not installed, so it ' +
+            'was ignored. Please install the plugin to enable filtering.'
+          );
+        }
+      });
+    }
 
-  if (!('descending' in opts)) {
-    opts.descending = false;
-  }
+    if (!('descending' in opts)) {
+      opts.descending = false;
+    }
 
-  // 0 and 1 should return 1 document
-  opts.limit = opts.limit === 0 ? 1 : opts.limit;
-  opts.complete = callback;
-  var newPromise = this.db._changes(opts);
-  /* istanbul ignore else */
-  if (newPromise && typeof newPromise.cancel === 'function') {
-    var cancel = self.cancel;
-    self.cancel = getArguments(function (args) {
-      newPromise.cancel();
-      cancel.apply(this, args);
-    });
+    // 0 and 1 should return 1 document
+    opts.limit = opts.limit === 0 ? 1 : opts.limit;
+    opts.complete = callback;
+    var newPromise = this.db._changes(opts);
+    /* istanbul ignore else */
+    if (newPromise && typeof newPromise.cancel === 'function') {
+      const cancel = this.cancel;
+      this.cancel = getArguments((args) => {
+        newPromise.cancel();
+        cancel.apply(this, args);
+      });
+    }
   }
-};
+}
 
 /*
  * A generic pouch adapter
@@ -1894,852 +1862,840 @@ function attachmentNameError(name) {
   return false;
 }
 
-inherits(AbstractPouchDB, EE);
+class AbstractPouchDB extends EE {
+  _setup() {
+    this.post = adapterFun('post', function (doc, opts, callback) {
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+      if (typeof doc !== 'object' || Array.isArray(doc)) {
+        return callback(createError(NOT_AN_OBJECT));
+      }
+      this.bulkDocs({docs: [doc]}, opts, yankError(callback, doc._id));
+    }).bind(this);
 
-function AbstractPouchDB() {
-  EE.call(this);
+    this.put = adapterFun('put', function (doc, opts, cb) {
+      if (typeof opts === 'function') {
+        cb = opts;
+        opts = {};
+      }
+      if (typeof doc !== 'object' || Array.isArray(doc)) {
+        return cb(createError(NOT_AN_OBJECT));
+      }
+      invalidIdError(doc._id);
+      if (isLocalId(doc._id) && typeof this._putLocal === 'function') {
+        if (doc._deleted) {
+          return this._removeLocal(doc, cb);
+        } else {
+          return this._putLocal(doc, cb);
+        }
+      }
 
-  // re-bind prototyped methods
-  for (var p in AbstractPouchDB.prototype) {
-    if (typeof this[p] === 'function') {
-      this[p] = this[p].bind(this);
-    }
-  }
-}
+      const putDoc = (next) => {
+        if (typeof this._put === 'function' && opts.new_edits !== false) {
+          this._put(doc, opts, next);
+        } else {
+          this.bulkDocs({docs: [doc]}, opts, yankError(next, doc._id));
+        }
+      };
 
-AbstractPouchDB.prototype.post =
-  adapterFun('post', function (doc, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  if (typeof doc !== 'object' || Array.isArray(doc)) {
-    return callback(createError(NOT_AN_OBJECT));
-  }
-  this.bulkDocs({docs: [doc]}, opts, yankError(callback, doc._id));
-});
+      if (opts.force && doc._rev) {
+        transformForceOptionToNewEditsOption();
+        putDoc(function (err) {
+          var result = err ? null : {ok: true, id: doc._id, rev: doc._rev};
+          cb(err, result);
+        });
+      } else {
+        putDoc(cb);
+      }
 
-AbstractPouchDB.prototype.put = adapterFun('put', function (doc, opts, cb) {
-  if (typeof opts === 'function') {
-    cb = opts;
-    opts = {};
-  }
-  if (typeof doc !== 'object' || Array.isArray(doc)) {
-    return cb(createError(NOT_AN_OBJECT));
-  }
-  invalidIdError(doc._id);
-  if (isLocalId(doc._id) && typeof this._putLocal === 'function') {
-    if (doc._deleted) {
-      return this._removeLocal(doc, cb);
-    } else {
-      return this._putLocal(doc, cb);
-    }
-  }
-  var self = this;
-  if (opts.force && doc._rev) {
-    transformForceOptionToNewEditsOption();
-    putDoc(function (err) {
-      var result = err ? null : {ok: true, id: doc._id, rev: doc._rev};
-      cb(err, result);
-    });
-  } else {
-    putDoc(cb);
+      function transformForceOptionToNewEditsOption() {
+        var parts = doc._rev.split('-');
+        var oldRevId = parts[1];
+        var oldRevNum = parseInt(parts[0], 10);
+
+        var newRevNum = oldRevNum + 1;
+        var newRevId = rev$$1();
+
+        doc._revisions = {
+          start: newRevNum,
+          ids: [newRevId, oldRevId]
+        };
+        doc._rev = newRevNum + '-' + newRevId;
+        opts.new_edits = false;
+      }
+    }).bind(this);
+
+    this.putAttachment = adapterFun('putAttachment', function (docId, attachmentId, rev, blob, type) {
+      var api = this;
+      if (typeof type === 'function') {
+        type = blob;
+        blob = rev;
+        rev = null;
+      }
+      // Lets fix in https://github.com/pouchdb/pouchdb/issues/3267
+      /* istanbul ignore if */
+      if (typeof type === 'undefined') {
+        type = blob;
+        blob = rev;
+        rev = null;
+      }
+      if (!type) {
+        guardedConsole('warn', 'Attachment', attachmentId, 'on document', docId, 'is missing content_type');
+      }
+
+      function createAttachment(doc) {
+        var prevrevpos = '_rev' in doc ? parseInt(doc._rev, 10) : 0;
+        doc._attachments = doc._attachments || {};
+        doc._attachments[attachmentId] = {
+          content_type: type,
+          data: blob,
+          revpos: ++prevrevpos
+        };
+        return api.put(doc);
+      }
+
+      return api.get(docId).then(function (doc) {
+        if (doc._rev !== rev) {
+          throw createError(REV_CONFLICT);
+        }
+
+        return createAttachment(doc);
+      }, function (err) {
+        // create new doc
+        /* istanbul ignore else */
+        if (err.reason === MISSING_DOC.message) {
+          return createAttachment({_id: docId});
+        } else {
+          throw err;
+        }
+      });
+    }).bind(this);
+
+    this.removeAttachment = adapterFun('removeAttachment', function (docId, attachmentId, rev, callback) {
+      this.get(docId, (err, obj) => {
+        /* istanbul ignore if */
+        if (err) {
+          callback(err);
+          return;
+        }
+        if (obj._rev !== rev) {
+          callback(createError(REV_CONFLICT));
+          return;
+        }
+        /* istanbul ignore if */
+        if (!obj._attachments) {
+          return callback();
+        }
+        delete obj._attachments[attachmentId];
+        if (Object.keys(obj._attachments).length === 0) {
+          delete obj._attachments;
+        }
+        this.put(obj, callback);
+      });
+    }).bind(this);
+
+    this.remove = adapterFun('remove', function (docOrId, optsOrRev, opts, callback) {
+      var doc;
+      if (typeof optsOrRev === 'string') {
+        // id, rev, opts, callback style
+        doc = {
+          _id: docOrId,
+          _rev: optsOrRev
+        };
+        if (typeof opts === 'function') {
+          callback = opts;
+          opts = {};
+        }
+      } else {
+        // doc, opts, callback style
+        doc = docOrId;
+        if (typeof optsOrRev === 'function') {
+          callback = optsOrRev;
+          opts = {};
+        } else {
+          callback = opts;
+          opts = optsOrRev;
+        }
+      }
+      opts = opts || {};
+      opts.was_delete = true;
+      var newDoc = {_id: doc._id, _rev: (doc._rev || opts.rev)};
+      newDoc._deleted = true;
+      if (isLocalId(newDoc._id) && typeof this._removeLocal === 'function') {
+        return this._removeLocal(doc, callback);
+      }
+      this.bulkDocs({docs: [newDoc]}, opts, yankError(callback, newDoc._id));
+    }).bind(this);
+
+    this.revsDiff = adapterFun('revsDiff', function (req, opts, callback) {
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+      var ids = Object.keys(req);
+
+      if (!ids.length) {
+        return callback(null, {});
+      }
+
+      var count = 0;
+      var missing = new ExportedMap();
+
+      function addToMissing(id, revId) {
+        if (!missing.has(id)) {
+          missing.set(id, {missing: []});
+        }
+        missing.get(id).missing.push(revId);
+      }
+
+      function processDoc(id, rev_tree) {
+        // Is this fast enough? Maybe we should switch to a set simulated by a map
+        var missingForId = req[id].slice(0);
+        traverseRevTree(rev_tree, function (isLeaf, pos, revHash, ctx,
+          opts) {
+            var rev = pos + '-' + revHash;
+            var idx = missingForId.indexOf(rev);
+            if (idx === -1) {
+              return;
+            }
+
+            missingForId.splice(idx, 1);
+            /* istanbul ignore if */
+            if (opts.status !== 'available') {
+              addToMissing(id, rev);
+            }
+          });
+
+        // Traversing the tree is synchronous, so now `missingForId` contains
+        // revisions that were not found in the tree
+        missingForId.forEach(function (rev) {
+          addToMissing(id, rev);
+        });
+      }
+
+      ids.map(function (id) {
+        this._getRevisionTree(id, function (err, rev_tree) {
+          if (err && err.status === 404 && err.message === 'missing') {
+            missing.set(id, {missing: req[id]});
+          } else if (err) {
+            /* istanbul ignore next */
+            return callback(err);
+          } else {
+            processDoc(id, rev_tree);
+          }
+
+          if (++count === ids.length) {
+            // convert LazyMap to object
+            var missingObj = {};
+            missing.forEach(function (value, key) {
+              missingObj[key] = value;
+            });
+            return callback(null, missingObj);
+          }
+        });
+      }, this);
+    }).bind(this);
+
+    // _bulk_get API for faster replication, as described in
+    // https://github.com/apache/couchdb-chttpd/pull/33
+    // At the "abstract" level, it will just run multiple get()s in
+    // parallel, because this isn't much of a performance cost
+    // for local databases (except the cost of multiple transactions, which is
+    // small). The http adapter overrides this in order
+    // to do a more efficient single HTTP request.
+    this.bulkGet = adapterFun('bulkGet', function (opts, callback) {
+      bulkGet(this, opts, callback);
+    }).bind(this);
+
+    // compact one document and fire callback
+    // by compacting we mean removing all revisions which
+    // are further from the leaf in revision tree than max_height
+    this.compactDocument = adapterFun('compactDocument', function (docId, maxHeight, callback) {
+      this._getRevisionTree(docId, (err, revTree) => {
+        /* istanbul ignore if */
+        if (err) {
+          return callback(err);
+        }
+        var height = computeHeight(revTree);
+        var candidates = [];
+        var revs = [];
+        Object.keys(height).forEach(function (rev) {
+          if (height[rev] > maxHeight) {
+            candidates.push(rev);
+          }
+        });
+
+        traverseRevTree(revTree, function (isLeaf, pos, revHash, ctx, opts) {
+          var rev = pos + '-' + revHash;
+          if (opts.status === 'available' && candidates.indexOf(rev) !== -1) {
+            revs.push(rev);
+          }
+        });
+        this._doCompaction(docId, revs, callback);
+      });
+    }).bind(this);
+
+    // compact the whole database using single document
+    // compaction
+    this.compact = adapterFun('compact', function (opts, callback) {
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+
+      opts = opts || {};
+
+      this._compactionQueue = this._compactionQueue || [];
+      this._compactionQueue.push({opts: opts, callback: callback});
+      if (this._compactionQueue.length === 1) {
+        doNextCompaction(this);
+      }
+    }).bind(this);
+
+    /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
+    this.get = adapterFun('get', function (id, opts, cb) {
+      if (typeof opts === 'function') {
+        cb = opts;
+        opts = {};
+      }
+      if (typeof id !== 'string') {
+        return cb(createError(INVALID_ID));
+      }
+      if (isLocalId(id) && typeof this._getLocal === 'function') {
+        return this._getLocal(id, cb);
+      }
+      var leaves = [];
+
+      const finishOpenRevs = () => {
+        var result = [];
+        var count = leaves.length;
+        /* istanbul ignore if */
+        if (!count) {
+          return cb(null, result);
+        }
+
+        // order with open_revs is unspecified
+        leaves.forEach((leaf) => {
+          this.get(id, {
+            rev: leaf,
+            revs: opts.revs,
+            latest: opts.latest,
+            attachments: opts.attachments,
+            binary: opts.binary
+          }, function (err, doc) {
+            if (!err) {
+              // using latest=true can produce duplicates
+              var existing;
+              for (var i = 0, l = result.length; i < l; i++) {
+                if (result[i].ok && result[i].ok._rev === doc._rev) {
+                  existing = true;
+                  break;
+                }
+              }
+              if (!existing) {
+                result.push({ok: doc});
+              }
+            } else {
+              result.push({missing: leaf});
+            }
+            count--;
+            if (!count) {
+              cb(null, result);
+            }
+          });
+        });
+      };
+
+      if (opts.open_revs) {
+        if (opts.open_revs === "all") {
+          this._getRevisionTree(id, function (err, rev_tree) {
+            /* istanbul ignore if */
+            if (err) {
+              return cb(err);
+            }
+            leaves = collectLeaves(rev_tree).map(function (leaf) {
+              return leaf.rev;
+            });
+            finishOpenRevs();
+          });
+        } else {
+          if (Array.isArray(opts.open_revs)) {
+            leaves = opts.open_revs;
+            for (var i = 0; i < leaves.length; i++) {
+              var l = leaves[i];
+              // looks like it's the only thing couchdb checks
+              if (!(typeof (l) === "string" && /^\d+-/.test(l))) {
+                return cb(createError(INVALID_REV));
+              }
+            }
+            finishOpenRevs();
+          } else {
+            return cb(createError(UNKNOWN_ERROR, 'function_clause'));
+          }
+        }
+        return; // open_revs does not like other options
+      }
+
+      return this._get(id, opts, (err, result) => {
+        if (err) {
+          err.docId = id;
+          return cb(err);
+        }
+
+        var doc = result.doc;
+        var metadata = result.metadata;
+        var ctx = result.ctx;
+
+        if (opts.conflicts) {
+          var conflicts = collectConflicts(metadata);
+          if (conflicts.length) {
+            doc._conflicts = conflicts;
+          }
+        }
+
+        if (isDeleted(metadata, doc._rev)) {
+          doc._deleted = true;
+        }
+
+        if (opts.revs || opts.revs_info) {
+          var splittedRev = doc._rev.split('-');
+          var revNo       = parseInt(splittedRev[0], 10);
+          var revHash     = splittedRev[1];
+
+          var paths = rootToLeaf(metadata.rev_tree);
+          var path = null;
+
+          for (var i = 0; i < paths.length; i++) {
+            var currentPath = paths[i];
+            var hashIndex = currentPath.ids.map(function (x) { return x.id; })
+              .indexOf(revHash);
+            var hashFoundAtRevPos = hashIndex === (revNo - 1);
+
+            if (hashFoundAtRevPos || (!path && hashIndex !== -1)) {
+              path = currentPath;
+            }
+          }
+
+          /* istanbul ignore if */
+          if (!path) {
+            err = new Error('invalid rev tree');
+            err.docId = id;
+            return cb(err);
+          }
+
+          var indexOfRev = path.ids.map(function (x) { return x.id; })
+            .indexOf(doc._rev.split('-')[1]) + 1;
+          var howMany = path.ids.length - indexOfRev;
+          path.ids.splice(indexOfRev, howMany);
+          path.ids.reverse();
+
+          if (opts.revs) {
+            doc._revisions = {
+              start: (path.pos + path.ids.length) - 1,
+              ids: path.ids.map(function (rev) {
+                return rev.id;
+              })
+            };
+          }
+          if (opts.revs_info) {
+            var pos =  path.pos + path.ids.length;
+            doc._revs_info = path.ids.map(function (rev) {
+              pos--;
+              return {
+                rev: pos + '-' + rev.id,
+                status: rev.opts.status
+              };
+            });
+          }
+        }
+
+        if (opts.attachments && doc._attachments) {
+          var attachments = doc._attachments;
+          var count = Object.keys(attachments).length;
+          if (count === 0) {
+            return cb(null, doc);
+          }
+          Object.keys(attachments).forEach((key) => {
+            this._getAttachment(doc._id, key, attachments[key], {
+              // Previously the revision handling was done in adapter.js
+              // getAttachment, however since idb-next doesnt we need to
+              // pass the rev through
+              rev: doc._rev,
+              binary: opts.binary,
+              ctx: ctx
+            }, function (err, data) {
+              var att = doc._attachments[key];
+              att.data = data;
+              delete att.stub;
+              delete att.length;
+              if (!--count) {
+                cb(null, doc);
+              }
+            });
+          });
+        } else {
+          if (doc._attachments) {
+            for (var key in doc._attachments) {
+              /* istanbul ignore else */
+              if (Object.prototype.hasOwnProperty.call(doc._attachments, key)) {
+                doc._attachments[key].stub = true;
+              }
+            }
+          }
+          cb(null, doc);
+        }
+      });
+    }).bind(this);
+
+    // TODO: I dont like this, it forces an extra read for every
+    // attachment read and enforces a confusing api between
+    // adapter.js and the adapter implementation
+    this.getAttachment = adapterFun('getAttachment', function (docId, attachmentId, opts, callback) {
+      if (opts instanceof Function) {
+        callback = opts;
+        opts = {};
+      }
+      this._get(docId, opts, (err, res) => {
+        if (err) {
+          return callback(err);
+        }
+        if (res.doc._attachments && res.doc._attachments[attachmentId]) {
+          opts.ctx = res.ctx;
+          opts.binary = true;
+          this._getAttachment(docId, attachmentId,
+                              res.doc._attachments[attachmentId], opts, callback);
+        } else {
+          return callback(createError(MISSING_DOC));
+        }
+      });
+    }).bind(this);
+
+    this.allDocs = adapterFun('allDocs', function (opts, callback) {
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+      opts.skip = typeof opts.skip !== 'undefined' ? opts.skip : 0;
+      if (opts.start_key) {
+        opts.startkey = opts.start_key;
+      }
+      if (opts.end_key) {
+        opts.endkey = opts.end_key;
+      }
+      if ('keys' in opts) {
+        if (!Array.isArray(opts.keys)) {
+          return callback(new TypeError('options.keys must be an array'));
+        }
+        var incompatibleOpt =
+          ['startkey', 'endkey', 'key'].filter(function (incompatibleOpt) {
+          return incompatibleOpt in opts;
+        })[0];
+        if (incompatibleOpt) {
+          callback(createError(QUERY_PARSE_ERROR,
+            'Query parameter `' + incompatibleOpt +
+            '` is not compatible with multi-get'
+          ));
+          return;
+        }
+        if (!isRemote(this)) {
+          allDocsKeysParse(opts);
+          if (opts.keys.length === 0) {
+            return this._allDocs({limit: 0}, callback);
+          }
+        }
+      }
+
+      return this._allDocs(opts, callback);
+    }).bind(this);
+
+    this.close = adapterFun('close', function (callback) {
+      this._closed = true;
+      this.emit('closed');
+      return this._close(callback);
+    }).bind(this);
+
+    this.info = adapterFun('info', function (callback) {
+      this._info((err, info) => {
+        if (err) {
+          return callback(err);
+        }
+        // assume we know better than the adapter, unless it informs us
+        info.db_name = info.db_name || this.name;
+        info.auto_compaction = !!(this.auto_compaction && !isRemote(this));
+        info.adapter = this.adapter;
+        callback(null, info);
+      });
+    }).bind(this);
+
+    this.id = adapterFun('id', function (callback) {
+      return this._id(callback);
+    }).bind(this);
+
+    this.bulkDocs = adapterFun('bulkDocs', function (req, opts, callback) {
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+
+      opts = opts || {};
+
+      if (Array.isArray(req)) {
+        req = {
+          docs: req
+        };
+      }
+
+      if (!req || !req.docs || !Array.isArray(req.docs)) {
+        return callback(createError(MISSING_BULK_DOCS));
+      }
+
+      for (var i = 0; i < req.docs.length; ++i) {
+        if (typeof req.docs[i] !== 'object' || Array.isArray(req.docs[i])) {
+          return callback(createError(NOT_AN_OBJECT));
+        }
+      }
+
+      var attachmentError;
+      req.docs.forEach(function (doc) {
+        if (doc._attachments) {
+          Object.keys(doc._attachments).forEach(function (name) {
+            attachmentError = attachmentError || attachmentNameError(name);
+            if (!doc._attachments[name].content_type) {
+              guardedConsole('warn', 'Attachment', name, 'on document', doc._id, 'is missing content_type');
+            }
+          });
+        }
+      });
+
+      if (attachmentError) {
+        return callback(createError(BAD_REQUEST, attachmentError));
+      }
+
+      if (!('new_edits' in opts)) {
+        if ('new_edits' in req) {
+          opts.new_edits = req.new_edits;
+        } else {
+          opts.new_edits = true;
+        }
+      }
+
+      var adapter = this;
+      if (!opts.new_edits && !isRemote(adapter)) {
+        // ensure revisions of the same doc are sorted, so that
+        // the local adapter processes them correctly (#2935)
+        req.docs.sort(compareByIdThenRev);
+      }
+
+      cleanDocs(req.docs);
+
+      // in the case of conflicts, we want to return the _ids to the user
+      // however, the underlying adapter may destroy the docs array, so
+      // create a copy here
+      var ids = req.docs.map(function (doc) {
+        return doc._id;
+      });
+
+      return this._bulkDocs(req, opts, function (err, res) {
+        if (err) {
+          return callback(err);
+        }
+        if (!opts.new_edits) {
+          // this is what couch does when new_edits is false
+          res = res.filter(function (x) {
+            return x.error;
+          });
+        }
+        // add ids for error/conflict responses (not required for CouchDB)
+        if (!isRemote(adapter)) {
+          for (var i = 0, l = res.length; i < l; i++) {
+            res[i].id = res[i].id || ids[i];
+          }
+        }
+
+        callback(null, res);
+      });
+    }).bind(this);
+
+    this.registerDependentDatabase = adapterFun('registerDependentDatabase', function (dependentDb, callback) {
+      var dbOptions = clone(this.__opts);
+      if (this.__opts.view_adapter) {
+        dbOptions.adapter = this.__opts.view_adapter;
+      }
+
+      var depDB = new this.constructor(dependentDb, dbOptions);
+
+      function diffFun(doc) {
+        doc.dependentDbs = doc.dependentDbs || {};
+        if (doc.dependentDbs[dependentDb]) {
+          return false; // no update required
+        }
+        doc.dependentDbs[dependentDb] = true;
+        return doc;
+      }
+      upsert(this, '_local/_pouch_dependentDbs', diffFun).then(function () {
+        callback(null, {db: depDB});
+      }).catch(callback);
+    }).bind(this);
+
+    this.destroy = adapterFun('destroy', function (opts, callback) {
+
+      if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+      }
+
+      var usePrefix = 'use_prefix' in this ? this.use_prefix : true;
+
+      const destroyDb = () => {
+        // call destroy method of the particular adaptor
+        this._destroy(opts, (err, resp) => {
+          if (err) {
+            return callback(err);
+          }
+          this._destroyed = true;
+          this.emit('destroyed');
+          callback(null, resp || { 'ok': true });
+        });
+      };
+
+      if (isRemote(this)) {
+        // no need to check for dependent DBs if it's a remote DB
+        return destroyDb();
+      }
+
+      this.get('_local/_pouch_dependentDbs', (err, localDoc) => {
+        if (err) {
+          /* istanbul ignore if */
+          if (err.status !== 404) {
+            return callback(err);
+          } else { // no dependencies
+            return destroyDb();
+          }
+        }
+        var dependentDbs = localDoc.dependentDbs;
+        var PouchDB = this.constructor;
+        var deletedMap = Object.keys(dependentDbs).map((name) => {
+          // use_prefix is only false in the browser
+          /* istanbul ignore next */
+          var trueName = usePrefix ?
+            name.replace(new RegExp('^' + PouchDB.prefix), '') : name;
+          return new PouchDB(trueName, this.__opts).destroy();
+        });
+        Promise.all(deletedMap).then(destroyDb, callback);
+      });
+    }).bind(this);
   }
 
-  function transformForceOptionToNewEditsOption() {
-    var parts = doc._rev.split('-');
-    var oldRevId = parts[1];
-    var oldRevNum = parseInt(parts[0], 10);
-
-    var newRevNum = oldRevNum + 1;
-    var newRevId = rev$$1();
-
-    doc._revisions = {
-      start: newRevNum,
-      ids: [newRevId, oldRevId]
+  _compact(opts, callback) {
+    var changesOpts = {
+      return_docs: false,
+      last_seq: opts.last_seq || 0
     };
-    doc._rev = newRevNum + '-' + newRevId;
-    opts.new_edits = false;
-  }
-  function putDoc(next) {
-    if (typeof self._put === 'function' && opts.new_edits !== false) {
-      self._put(doc, opts, next);
-    } else {
-      self.bulkDocs({docs: [doc]}, opts, yankError(next, doc._id));
-    }
-  }
-});
+    var promises = [];
 
-AbstractPouchDB.prototype.putAttachment =
-  adapterFun('putAttachment', function (docId, attachmentId, rev,
-                                              blob, type) {
-  var api = this;
-  if (typeof type === 'function') {
-    type = blob;
-    blob = rev;
-    rev = null;
-  }
-  // Lets fix in https://github.com/pouchdb/pouchdb/issues/3267
-  /* istanbul ignore if */
-  if (typeof type === 'undefined') {
-    type = blob;
-    blob = rev;
-    rev = null;
-  }
-  if (!type) {
-    guardedConsole('warn', 'Attachment', attachmentId, 'on document', docId, 'is missing content_type');
-  }
+    var taskId;
+    var compactedDocs = 0;
 
-  function createAttachment(doc) {
-    var prevrevpos = '_rev' in doc ? parseInt(doc._rev, 10) : 0;
-    doc._attachments = doc._attachments || {};
-    doc._attachments[attachmentId] = {
-      content_type: type,
-      data: blob,
-      revpos: ++prevrevpos
+    const onChange = (row) => {
+      this.activeTasks.update(taskId, {
+        completed_items: ++compactedDocs
+      });
+      promises.push(this.compactDocument(row.id, 0));
     };
-    return api.put(doc);
-  }
-
-  return api.get(docId).then(function (doc) {
-    if (doc._rev !== rev) {
-      throw createError(REV_CONFLICT);
-    }
-
-    return createAttachment(doc);
-  }, function (err) {
-     // create new doc
-    /* istanbul ignore else */
-    if (err.reason === MISSING_DOC.message) {
-      return createAttachment({_id: docId});
-    } else {
-      throw err;
-    }
-  });
-});
-
-AbstractPouchDB.prototype.removeAttachment =
-  adapterFun('removeAttachment', function (docId, attachmentId, rev,
-                                                 callback) {
-  var self = this;
-  self.get(docId, function (err, obj) {
-    /* istanbul ignore if */
-    if (err) {
+    const onError = (err) => {
+      this.activeTasks.remove(taskId, err);
       callback(err);
-      return;
-    }
-    if (obj._rev !== rev) {
-      callback(createError(REV_CONFLICT));
-      return;
-    }
-    /* istanbul ignore if */
-    if (!obj._attachments) {
-      return callback();
-    }
-    delete obj._attachments[attachmentId];
-    if (Object.keys(obj._attachments).length === 0) {
-      delete obj._attachments;
-    }
-    self.put(obj, callback);
-  });
-});
-
-AbstractPouchDB.prototype.remove =
-  adapterFun('remove', function (docOrId, optsOrRev, opts, callback) {
-  var doc;
-  if (typeof optsOrRev === 'string') {
-    // id, rev, opts, callback style
-    doc = {
-      _id: docOrId,
-      _rev: optsOrRev
     };
+    const onComplete = (resp) => {
+      var lastSeq = resp.last_seq;
+      Promise.all(promises).then(() => {
+        return upsert(this, '_local/compaction', (doc) => {
+          if (!doc.last_seq || doc.last_seq < lastSeq) {
+            doc.last_seq = lastSeq;
+            return doc;
+          }
+          return false; // somebody else got here first, don't update
+        });
+      }).then(() => {
+        this.activeTasks.remove(taskId);
+        callback(null, {ok: true});
+      }).catch(onError);
+    };
+
+    this.info().then((info) => {
+      taskId = this.activeTasks.add({
+        name: 'database_compaction',
+        total_items: info.update_seq - changesOpts.last_seq,
+      });
+
+      this.changes(changesOpts)
+        .on('change', onChange)
+        .on('complete', onComplete)
+        .on('error', onError);
+    });
+  }
+
+  changes(opts, callback) {
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
     }
-  } else {
-    // doc, opts, callback style
-    doc = docOrId;
-    if (typeof optsOrRev === 'function') {
-      callback = optsOrRev;
-      opts = {};
-    } else {
-      callback = opts;
-      opts = optsOrRev;
-    }
-  }
-  opts = opts || {};
-  opts.was_delete = true;
-  var newDoc = {_id: doc._id, _rev: (doc._rev || opts.rev)};
-  newDoc._deleted = true;
-  if (isLocalId(newDoc._id) && typeof this._removeLocal === 'function') {
-    return this._removeLocal(doc, callback);
-  }
-  this.bulkDocs({docs: [newDoc]}, opts, yankError(callback, newDoc._id));
-});
 
-AbstractPouchDB.prototype.revsDiff =
-  adapterFun('revsDiff', function (req, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  var ids = Object.keys(req);
+    opts = opts || {};
 
-  if (!ids.length) {
-    return callback(null, {});
+    // By default set return_docs to false if the caller has opts.live = true,
+    // this will prevent us from collecting the set of changes indefinitely
+    // resulting in growing memory
+    opts.return_docs = ('return_docs' in opts) ? opts.return_docs : !opts.live;
+
+    return new Changes$1(this, opts, callback);
   }
 
-  var count = 0;
-  var missing = new ExportedMap();
-
-  function addToMissing(id, revId) {
-    if (!missing.has(id)) {
-      missing.set(id, {missing: []});
-    }
-    missing.get(id).missing.push(revId);
+  type() {
+    return (typeof this._type === 'function') ? this._type() : this.adapter;
   }
-
-  function processDoc(id, rev_tree) {
-    // Is this fast enough? Maybe we should switch to a set simulated by a map
-    var missingForId = req[id].slice(0);
-    traverseRevTree(rev_tree, function (isLeaf, pos, revHash, ctx,
-      opts) {
-        var rev = pos + '-' + revHash;
-        var idx = missingForId.indexOf(rev);
-        if (idx === -1) {
-          return;
-        }
-
-        missingForId.splice(idx, 1);
-        /* istanbul ignore if */
-        if (opts.status !== 'available') {
-          addToMissing(id, rev);
-        }
-      });
-
-    // Traversing the tree is synchronous, so now `missingForId` contains
-    // revisions that were not found in the tree
-    missingForId.forEach(function (rev) {
-      addToMissing(id, rev);
-    });
-  }
-
-  ids.map(function (id) {
-    this._getRevisionTree(id, function (err, rev_tree) {
-      if (err && err.status === 404 && err.message === 'missing') {
-        missing.set(id, {missing: req[id]});
-      } else if (err) {
-        /* istanbul ignore next */
-        return callback(err);
-      } else {
-        processDoc(id, rev_tree);
-      }
-
-      if (++count === ids.length) {
-        // convert LazyMap to object
-        var missingObj = {};
-        missing.forEach(function (value, key) {
-          missingObj[key] = value;
-        });
-        return callback(null, missingObj);
-      }
-    });
-  }, this);
-});
-
-// _bulk_get API for faster replication, as described in
-// https://github.com/apache/couchdb-chttpd/pull/33
-// At the "abstract" level, it will just run multiple get()s in
-// parallel, because this isn't much of a performance cost
-// for local databases (except the cost of multiple transactions, which is
-// small). The http adapter overrides this in order
-// to do a more efficient single HTTP request.
-AbstractPouchDB.prototype.bulkGet =
-  adapterFun('bulkGet', function (opts, callback) {
-  bulkGet(this, opts, callback);
-});
-
-// compact one document and fire callback
-// by compacting we mean removing all revisions which
-// are further from the leaf in revision tree than max_height
-AbstractPouchDB.prototype.compactDocument =
-  adapterFun('compactDocument', function (docId, maxHeight, callback) {
-  var self = this;
-  this._getRevisionTree(docId, function (err, revTree) {
-    /* istanbul ignore if */
-    if (err) {
-      return callback(err);
-    }
-    var height = computeHeight(revTree);
-    var candidates = [];
-    var revs = [];
-    Object.keys(height).forEach(function (rev) {
-      if (height[rev] > maxHeight) {
-        candidates.push(rev);
-      }
-    });
-
-    traverseRevTree(revTree, function (isLeaf, pos, revHash, ctx, opts) {
-      var rev = pos + '-' + revHash;
-      if (opts.status === 'available' && candidates.indexOf(rev) !== -1) {
-        revs.push(rev);
-      }
-    });
-    self._doCompaction(docId, revs, callback);
-  });
-});
-
-// compact the whole database using single document
-// compaction
-AbstractPouchDB.prototype.compact =
-  adapterFun('compact', function (opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-
-  var self = this;
-  opts = opts || {};
-
-  self._compactionQueue = self._compactionQueue || [];
-  self._compactionQueue.push({opts: opts, callback: callback});
-  if (self._compactionQueue.length === 1) {
-    doNextCompaction(self);
-  }
-});
-AbstractPouchDB.prototype._compact = function (opts, callback) {
-  var self = this;
-  var changesOpts = {
-    return_docs: false,
-    last_seq: opts.last_seq || 0
-  };
-  var promises = [];
-
-  function onChange(row) {
-    promises.push(self.compactDocument(row.id, 0));
-  }
-  function onComplete(resp) {
-    var lastSeq = resp.last_seq;
-    Promise.all(promises).then(function () {
-      return upsert(self, '_local/compaction', function deltaFunc(doc) {
-        if (!doc.last_seq || doc.last_seq < lastSeq) {
-          doc.last_seq = lastSeq;
-          return doc;
-        }
-        return false; // somebody else got here first, don't update
-      });
-    }).then(function () {
-      callback(null, {ok: true});
-    }).catch(callback);
-  }
-  self.changes(changesOpts)
-    .on('change', onChange)
-    .on('complete', onComplete)
-    .on('error', callback);
-};
-
-/* Begin api wrappers. Specific functionality to storage belongs in the
-   _[method] */
-AbstractPouchDB.prototype.get = adapterFun('get', function (id, opts, cb) {
-  if (typeof opts === 'function') {
-    cb = opts;
-    opts = {};
-  }
-  if (typeof id !== 'string') {
-    return cb(createError(INVALID_ID));
-  }
-  if (isLocalId(id) && typeof this._getLocal === 'function') {
-    return this._getLocal(id, cb);
-  }
-  var leaves = [], self = this;
-
-  function finishOpenRevs() {
-    var result = [];
-    var count = leaves.length;
-    /* istanbul ignore if */
-    if (!count) {
-      return cb(null, result);
-    }
-
-    // order with open_revs is unspecified
-    leaves.forEach(function (leaf) {
-      self.get(id, {
-        rev: leaf,
-        revs: opts.revs,
-        latest: opts.latest,
-        attachments: opts.attachments,
-        binary: opts.binary
-      }, function (err, doc) {
-        if (!err) {
-          // using latest=true can produce duplicates
-          var existing;
-          for (var i = 0, l = result.length; i < l; i++) {
-            if (result[i].ok && result[i].ok._rev === doc._rev) {
-              existing = true;
-              break;
-            }
-          }
-          if (!existing) {
-            result.push({ok: doc});
-          }
-        } else {
-          result.push({missing: leaf});
-        }
-        count--;
-        if (!count) {
-          cb(null, result);
-        }
-      });
-    });
-  }
-
-  if (opts.open_revs) {
-    if (opts.open_revs === "all") {
-      this._getRevisionTree(id, function (err, rev_tree) {
-        /* istanbul ignore if */
-        if (err) {
-          return cb(err);
-        }
-        leaves = collectLeaves(rev_tree).map(function (leaf) {
-          return leaf.rev;
-        });
-        finishOpenRevs();
-      });
-    } else {
-      if (Array.isArray(opts.open_revs)) {
-        leaves = opts.open_revs;
-        for (var i = 0; i < leaves.length; i++) {
-          var l = leaves[i];
-          // looks like it's the only thing couchdb checks
-          if (!(typeof (l) === "string" && /^\d+-/.test(l))) {
-            return cb(createError(INVALID_REV));
-          }
-        }
-        finishOpenRevs();
-      } else {
-        return cb(createError(UNKNOWN_ERROR, 'function_clause'));
-      }
-    }
-    return; // open_revs does not like other options
-  }
-
-  return this._get(id, opts, function (err, result) {
-    if (err) {
-      err.docId = id;
-      return cb(err);
-    }
-
-    var doc = result.doc;
-    var metadata = result.metadata;
-    var ctx = result.ctx;
-
-    if (opts.conflicts) {
-      var conflicts = collectConflicts(metadata);
-      if (conflicts.length) {
-        doc._conflicts = conflicts;
-      }
-    }
-
-    if (isDeleted(metadata, doc._rev)) {
-      doc._deleted = true;
-    }
-
-    if (opts.revs || opts.revs_info) {
-      var splittedRev = doc._rev.split('-');
-      var revNo       = parseInt(splittedRev[0], 10);
-      var revHash     = splittedRev[1];
-
-      var paths = rootToLeaf(metadata.rev_tree);
-      var path = null;
-
-      for (var i = 0; i < paths.length; i++) {
-        var currentPath = paths[i];
-        var hashIndex = currentPath.ids.map(function (x) { return x.id; })
-          .indexOf(revHash);
-        var hashFoundAtRevPos = hashIndex === (revNo - 1);
-
-        if (hashFoundAtRevPos || (!path && hashIndex !== -1)) {
-          path = currentPath;
-        }
-      }
-
-      /* istanbul ignore if */
-      if (!path) {
-        err = new Error('invalid rev tree');
-        err.docId = id;
-        return cb(err);
-      }
-
-      var indexOfRev = path.ids.map(function (x) { return x.id; })
-        .indexOf(doc._rev.split('-')[1]) + 1;
-      var howMany = path.ids.length - indexOfRev;
-      path.ids.splice(indexOfRev, howMany);
-      path.ids.reverse();
-
-      if (opts.revs) {
-        doc._revisions = {
-          start: (path.pos + path.ids.length) - 1,
-          ids: path.ids.map(function (rev) {
-            return rev.id;
-          })
-        };
-      }
-      if (opts.revs_info) {
-        var pos =  path.pos + path.ids.length;
-        doc._revs_info = path.ids.map(function (rev) {
-          pos--;
-          return {
-            rev: pos + '-' + rev.id,
-            status: rev.opts.status
-          };
-        });
-      }
-    }
-
-    if (opts.attachments && doc._attachments) {
-      var attachments = doc._attachments;
-      var count = Object.keys(attachments).length;
-      if (count === 0) {
-        return cb(null, doc);
-      }
-      Object.keys(attachments).forEach(function (key) {
-        this._getAttachment(doc._id, key, attachments[key], {
-          // Previously the revision handling was done in adapter.js
-          // getAttachment, however since idb-next doesnt we need to
-          // pass the rev through
-          rev: doc._rev,
-          binary: opts.binary,
-          ctx: ctx
-        }, function (err, data) {
-          var att = doc._attachments[key];
-          att.data = data;
-          delete att.stub;
-          delete att.length;
-          if (!--count) {
-            cb(null, doc);
-          }
-        });
-      }, self);
-    } else {
-      if (doc._attachments) {
-        for (var key in doc._attachments) {
-          /* istanbul ignore else */
-          if (Object.prototype.hasOwnProperty.call(doc._attachments, key)) {
-            doc._attachments[key].stub = true;
-          }
-        }
-      }
-      cb(null, doc);
-    }
-  });
-});
-
-// TODO: I dont like this, it forces an extra read for every
-// attachment read and enforces a confusing api between
-// adapter.js and the adapter implementation
-AbstractPouchDB.prototype.getAttachment =
-  adapterFun('getAttachment', function (docId, attachmentId, opts, callback) {
-  var self = this;
-  if (opts instanceof Function) {
-    callback = opts;
-    opts = {};
-  }
-  this._get(docId, opts, function (err, res) {
-    if (err) {
-      return callback(err);
-    }
-    if (res.doc._attachments && res.doc._attachments[attachmentId]) {
-      opts.ctx = res.ctx;
-      opts.binary = true;
-      self._getAttachment(docId, attachmentId,
-                          res.doc._attachments[attachmentId], opts, callback);
-    } else {
-      return callback(createError(MISSING_DOC));
-    }
-  });
-});
-
-AbstractPouchDB.prototype.allDocs =
-  adapterFun('allDocs', function (opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  opts.skip = typeof opts.skip !== 'undefined' ? opts.skip : 0;
-  if (opts.start_key) {
-    opts.startkey = opts.start_key;
-  }
-  if (opts.end_key) {
-    opts.endkey = opts.end_key;
-  }
-  if ('keys' in opts) {
-    if (!Array.isArray(opts.keys)) {
-      return callback(new TypeError('options.keys must be an array'));
-    }
-    var incompatibleOpt =
-      ['startkey', 'endkey', 'key'].filter(function (incompatibleOpt) {
-      return incompatibleOpt in opts;
-    })[0];
-    if (incompatibleOpt) {
-      callback(createError(QUERY_PARSE_ERROR,
-        'Query parameter `' + incompatibleOpt +
-        '` is not compatible with multi-get'
-      ));
-      return;
-    }
-    if (!isRemote(this)) {
-      allDocsKeysParse(opts);
-      if (opts.keys.length === 0) {
-        return this._allDocs({limit: 0}, callback);
-      }
-    }
-  }
-
-  return this._allDocs(opts, callback);
-});
-
-AbstractPouchDB.prototype.changes = function (opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-
-  opts = opts || {};
-
-  // By default set return_docs to false if the caller has opts.live = true,
-  // this will prevent us from collecting the set of changes indefinitely
-  // resulting in growing memory
-  opts.return_docs = ('return_docs' in opts) ? opts.return_docs : !opts.live;
-
-  return new Changes$1(this, opts, callback);
-};
-
-AbstractPouchDB.prototype.close = adapterFun('close', function (callback) {
-  this._closed = true;
-  this.emit('closed');
-  return this._close(callback);
-});
-
-AbstractPouchDB.prototype.info = adapterFun('info', function (callback) {
-  var self = this;
-  this._info(function (err, info) {
-    if (err) {
-      return callback(err);
-    }
-    // assume we know better than the adapter, unless it informs us
-    info.db_name = info.db_name || self.name;
-    info.auto_compaction = !!(self.auto_compaction && !isRemote(self));
-    info.adapter = self.adapter;
-    callback(null, info);
-  });
-});
-
-AbstractPouchDB.prototype.id = adapterFun('id', function (callback) {
-  return this._id(callback);
-});
-
-/* istanbul ignore next */
-AbstractPouchDB.prototype.type = function () {
-  return (typeof this._type === 'function') ? this._type() : this.adapter;
-};
-
-AbstractPouchDB.prototype.bulkDocs =
-  adapterFun('bulkDocs', function (req, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-
-  opts = opts || {};
-
-  if (Array.isArray(req)) {
-    req = {
-      docs: req
-    };
-  }
-
-  if (!req || !req.docs || !Array.isArray(req.docs)) {
-    return callback(createError(MISSING_BULK_DOCS));
-  }
-
-  for (var i = 0; i < req.docs.length; ++i) {
-    if (typeof req.docs[i] !== 'object' || Array.isArray(req.docs[i])) {
-      return callback(createError(NOT_AN_OBJECT));
-    }
-  }
-
-  var attachmentError;
-  req.docs.forEach(function (doc) {
-    if (doc._attachments) {
-      Object.keys(doc._attachments).forEach(function (name) {
-        attachmentError = attachmentError || attachmentNameError(name);
-        if (!doc._attachments[name].content_type) {
-          guardedConsole('warn', 'Attachment', name, 'on document', doc._id, 'is missing content_type');
-        }
-      });
-    }
-  });
-
-  if (attachmentError) {
-    return callback(createError(BAD_REQUEST, attachmentError));
-  }
-
-  if (!('new_edits' in opts)) {
-    if ('new_edits' in req) {
-      opts.new_edits = req.new_edits;
-    } else {
-      opts.new_edits = true;
-    }
-  }
-
-  var adapter = this;
-  if (!opts.new_edits && !isRemote(adapter)) {
-    // ensure revisions of the same doc are sorted, so that
-    // the local adapter processes them correctly (#2935)
-    req.docs.sort(compareByIdThenRev);
-  }
-
-  cleanDocs(req.docs);
-
-  // in the case of conflicts, we want to return the _ids to the user
-  // however, the underlying adapter may destroy the docs array, so
-  // create a copy here
-  var ids = req.docs.map(function (doc) {
-    return doc._id;
-  });
-
-  return this._bulkDocs(req, opts, function (err, res) {
-    if (err) {
-      return callback(err);
-    }
-    if (!opts.new_edits) {
-      // this is what couch does when new_edits is false
-      res = res.filter(function (x) {
-        return x.error;
-      });
-    }
-    // add ids for error/conflict responses (not required for CouchDB)
-    if (!isRemote(adapter)) {
-      for (var i = 0, l = res.length; i < l; i++) {
-        res[i].id = res[i].id || ids[i];
-      }
-    }
-
-    callback(null, res);
-  });
-});
-
-AbstractPouchDB.prototype.registerDependentDatabase =
-  adapterFun('registerDependentDatabase', function (dependentDb,
-                                                          callback) {
-  var dbOptions = clone(this.__opts);
-  if (this.__opts.view_adapter) {
-    dbOptions.adapter = this.__opts.view_adapter;
-  }
-
-  var depDB = new this.constructor(dependentDb, dbOptions);
-
-  function diffFun(doc) {
-    doc.dependentDbs = doc.dependentDbs || {};
-    if (doc.dependentDbs[dependentDb]) {
-      return false; // no update required
-    }
-    doc.dependentDbs[dependentDb] = true;
-    return doc;
-  }
-  upsert(this, '_local/_pouch_dependentDbs', diffFun)
-    .then(function () {
-      callback(null, {db: depDB});
-    }).catch(callback);
-});
-
-AbstractPouchDB.prototype.destroy =
-  adapterFun('destroy', function (opts, callback) {
-
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-
-  var self = this;
-  var usePrefix = 'use_prefix' in self ? self.use_prefix : true;
-
-  function destroyDb() {
-    // call destroy method of the particular adaptor
-    self._destroy(opts, function (err, resp) {
-      if (err) {
-        return callback(err);
-      }
-      self._destroyed = true;
-      self.emit('destroyed');
-      callback(null, resp || { 'ok': true });
-    });
-  }
-
-  if (isRemote(self)) {
-    // no need to check for dependent DBs if it's a remote DB
-    return destroyDb();
-  }
-
-  self.get('_local/_pouch_dependentDbs', function (err, localDoc) {
-    if (err) {
-      /* istanbul ignore if */
-      if (err.status !== 404) {
-        return callback(err);
-      } else { // no dependencies
-        return destroyDb();
-      }
-    }
-    var dependentDbs = localDoc.dependentDbs;
-    var PouchDB = self.constructor;
-    var deletedMap = Object.keys(dependentDbs).map(function (name) {
-      // use_prefix is only false in the browser
-      /* istanbul ignore next */
-      var trueName = usePrefix ?
-        name.replace(new RegExp('^' + PouchDB.prefix), '') : name;
-      return new PouchDB(trueName, self.__opts).destroy();
-    });
-    Promise.all(deletedMap).then(destroyDb, callback);
-  });
-});
-
-function TaskQueue() {
-  this.isReady = false;
-  this.failed = false;
-  this.queue = [];
 }
 
-TaskQueue.prototype.execute = function () {
-  var fun;
-  if (this.failed) {
-    while ((fun = this.queue.shift())) {
-      fun(this.failed);
-    }
-  } else {
-    while ((fun = this.queue.shift())) {
-      fun();
+class TaskQueue {
+  constructor() {
+    this.isReady = false;
+    this.failed = false;
+    this.queue = [];
+  }
+
+  execute() {
+    var fun;
+    if (this.failed) {
+      while ((fun = this.queue.shift())) {
+        fun(this.failed);
+      }
+    } else {
+      while ((fun = this.queue.shift())) {
+        fun();
+      }
     }
   }
-};
 
-TaskQueue.prototype.fail = function (err) {
-  this.failed = err;
-  this.execute();
-};
-
-TaskQueue.prototype.ready = function (db) {
-  this.isReady = true;
-  this.db = db;
-  this.execute();
-};
-
-TaskQueue.prototype.addTask = function (fun) {
-  this.queue.push(fun);
-  if (this.failed) {
+  fail(err) {
+    this.failed = err;
     this.execute();
   }
-};
+
+  ready(db) {
+    this.isReady = true;
+    this.db = db;
+    this.execute();
+  }
+
+  addTask(fun) {
+    this.queue.push(fun);
+    if (this.failed) {
+      this.execute();
+    }
+  }
+}
 
 function parseAdapter(name, opts) {
   var match = name.match(/([a-z-]*):\/\/(.*)/);
@@ -2784,6 +2740,23 @@ function parseAdapter(name, opts) {
   };
 }
 
+function inherits(A, B) {
+  A.prototype = Object.create(B.prototype, {
+    constructor: { value: A }
+  });
+}
+
+function createClass(parent, init) {
+  let klass = function (...args) {
+    if (!(this instanceof klass)) {
+      return new klass(...args);
+    }
+    init.apply(this, args);
+  };
+  inherits(klass, parent);
+  return klass;
+}
+
 // OK, so here's the deal. Consider this code:
 //     var db1 = new PouchDB('foo');
 //     var db2 = new PouchDB('foo');
@@ -2813,75 +2786,77 @@ function prepareForDestruction(self) {
   self.constructor.emit('ref', self);
 }
 
-inherits(PouchDB, AbstractPouchDB);
-function PouchDB(name, opts) {
-  // In Node our test suite only tests this for PouchAlt unfortunately
-  /* istanbul ignore if */
-  if (!(this instanceof PouchDB)) {
-    return new PouchDB(name, opts);
+class PouchInternal extends AbstractPouchDB {
+  constructor(name, opts) {
+    super();
+    this._setup(name, opts);
   }
 
-  var self = this;
-  opts = opts || {};
+  _setup(name, opts) {
+    super._setup();
+    opts = opts || {};
 
-  if (name && typeof name === 'object') {
-    opts = name;
-    name = opts.name;
-    delete opts.name;
-  }
-
-  if (opts.deterministic_revs === undefined) {
-    opts.deterministic_revs = true;
-  }
-
-  this.__opts = opts = clone(opts);
-
-  self.auto_compaction = opts.auto_compaction;
-  self.prefix = PouchDB.prefix;
-
-  if (typeof name !== 'string') {
-    throw new Error('Missing/invalid DB name');
-  }
-
-  var prefixedName = (opts.prefix || '') + name;
-  var backend = parseAdapter(prefixedName, opts);
-
-  opts.name = backend.name;
-  opts.adapter = opts.adapter || backend.adapter;
-
-  self.name = name;
-  self._adapter = opts.adapter;
-  PouchDB.emit('debug', ['adapter', 'Picked adapter: ', opts.adapter]);
-
-  if (!PouchDB.adapters[opts.adapter] ||
-      !PouchDB.adapters[opts.adapter].valid()) {
-    throw new Error('Invalid Adapter: ' + opts.adapter);
-  }
-
-  if (opts.view_adapter) {
-    if (!PouchDB.adapters[opts.view_adapter] ||
-        !PouchDB.adapters[opts.view_adapter].valid()) {
-      throw new Error('Invalid View Adapter: ' + opts.view_adapter);
+    if (name && typeof name === 'object') {
+      opts = name;
+      name = opts.name;
+      delete opts.name;
     }
-  }
 
-  AbstractPouchDB.call(self);
-  self.taskqueue = new TaskQueue();
-
-  self.adapter = opts.adapter;
-
-  PouchDB.adapters[opts.adapter].call(self, opts, function (err) {
-    if (err) {
-      return self.taskqueue.fail(err);
+    if (opts.deterministic_revs === undefined) {
+      opts.deterministic_revs = true;
     }
-    prepareForDestruction(self);
 
-    self.emit('created', self);
-    PouchDB.emit('created', self.name);
-    self.taskqueue.ready(self);
-  });
+    this.__opts = opts = clone(opts);
 
+    this.auto_compaction = opts.auto_compaction;
+    this.prefix = PouchDB.prefix;
+
+    if (typeof name !== 'string') {
+      throw new Error('Missing/invalid DB name');
+    }
+
+    var prefixedName = (opts.prefix || '') + name;
+    var backend = parseAdapter(prefixedName, opts);
+
+    opts.name = backend.name;
+    opts.adapter = opts.adapter || backend.adapter;
+
+    this.name = name;
+    this._adapter = opts.adapter;
+    PouchDB.emit('debug', ['adapter', 'Picked adapter: ', opts.adapter]);
+
+    if (!PouchDB.adapters[opts.adapter] ||
+        !PouchDB.adapters[opts.adapter].valid()) {
+      throw new Error('Invalid Adapter: ' + opts.adapter);
+    }
+
+    if (opts.view_adapter) {
+      if (!PouchDB.adapters[opts.view_adapter] ||
+          !PouchDB.adapters[opts.view_adapter].valid()) {
+        throw new Error('Invalid View Adapter: ' + opts.view_adapter);
+      }
+    }
+
+    this.taskqueue = new TaskQueue();
+
+    this.adapter = opts.adapter;
+
+    PouchDB.adapters[opts.adapter].call(this, opts, (err) => {
+      if (err) {
+        return this.taskqueue.fail(err);
+      }
+      prepareForDestruction(this);
+
+      this.emit('created', this);
+      PouchDB.emit('created', this.name);
+      this.taskqueue.ready(this);
+    });
+  }
 }
+
+const PouchDB = createClass(PouchInternal, function (name, opts) {
+  PouchInternal.prototype._setup.call(this, name, opts);
+});
 
 // AbortController was introduced quite a while after fetch and
 // isnt required for PouchDB to function so polyfill if needed
@@ -2891,6 +2866,53 @@ var a = (typeof AbortController !== 'undefined')
 
 var f$1 = fetch;
 var h = Headers;
+
+class ActiveTasks {
+  constructor() {
+    this.tasks = {};
+  }
+
+  list() {
+    return Object.values(this.tasks);
+  }
+
+  add(task) {
+    const id = v4();
+    this.tasks[id] = {
+      id,
+      name: task.name,
+      total_items: task.total_items,
+      created_at: new Date().toJSON()
+    };
+    return id;
+  }
+
+  get(id) {
+    return this.tasks[id];
+  }
+
+  /* eslint-disable no-unused-vars */
+  remove(id, reason) {
+    delete this.tasks[id];
+    return this.tasks;
+  }
+
+  update(id, updatedTask) {
+    const task = this.tasks[id];
+    if (typeof task !== 'undefined') {
+      const mergedTask = {
+        id: task.id,
+        name: task.name,
+        created_at: task.created_at,
+        total_items: updatedTask.total_items || task.total_items,
+        completed_items: updatedTask.completed_items || task.completed_items,
+        updated_at: new Date().toJSON()
+      };
+      this.tasks[id] = mergedTask;
+    }
+    return this.tasks;
+  }
+}
 
 PouchDB.adapters = {};
 PouchDB.preferredAdapters = [];
@@ -2977,11 +2999,7 @@ PouchDB.plugin = function (obj) {
 };
 
 PouchDB.defaults = function (defaultOpts) {
-  function PouchAlt(name, opts) {
-    if (!(this instanceof PouchAlt)) {
-      return new PouchAlt(name, opts);
-    }
-
+  let PouchWithDefaults = createClass(PouchDB, function (name, opts) {
     opts = opts || {};
 
     if (name && typeof name === 'object') {
@@ -2990,32 +3008,32 @@ PouchDB.defaults = function (defaultOpts) {
       delete opts.name;
     }
 
-    opts = $inject_Object_assign({}, PouchAlt.__defaults, opts);
+    opts = $inject_Object_assign({}, PouchWithDefaults.__defaults, opts);
     PouchDB.call(this, name, opts);
-  }
+  });
 
-  inherits(PouchAlt, PouchDB);
-
-  PouchAlt.preferredAdapters = PouchDB.preferredAdapters.slice();
+  PouchWithDefaults.preferredAdapters = PouchDB.preferredAdapters.slice();
   Object.keys(PouchDB).forEach(function (key) {
-    if (!(key in PouchAlt)) {
-      PouchAlt[key] = PouchDB[key];
+    if (!(key in PouchWithDefaults)) {
+      PouchWithDefaults[key] = PouchDB[key];
     }
   });
 
   // make default options transitive
   // https://github.com/pouchdb/pouchdb/issues/5922
-  PouchAlt.__defaults = $inject_Object_assign({}, this.__defaults, defaultOpts);
+  PouchWithDefaults.__defaults = $inject_Object_assign({}, this.__defaults, defaultOpts);
 
-  return PouchAlt;
+  return PouchWithDefaults;
 };
 
 PouchDB.fetch = function (url, opts) {
   return f$1(url, opts);
 };
 
+PouchDB.prototype.activeTasks = PouchDB.activeTasks = new ActiveTasks();
+
 // managed automatically by set-version.js
-var version = "7.3.0";
+var version = "7.0.0-prerelease";
 
 // this would just be "return doc[field]", but fields
 // can be "deep" due to dot notation
@@ -3276,15 +3294,14 @@ function isAndInSelector(obj, isAnd) {
 //
 function massageSelector(input) {
   var result = clone(input);
-  var wasAnded = false;
-    //#7458: if $and is present in selector (at any level) merge nested $and
-    if (isAndInSelector(result, false)) {
-        result = mergeAndedSelectorsNested(result);
-        if ('$and' in result) {
-            result = mergeAndedSelectors(result['$and']);
-        }
-        wasAnded = true;
+
+  //#7458: if $and is present in selector (at any level) merge nested $and
+  if (isAndInSelector(result, false)) {
+    result = mergeAndedSelectorsNested(result);
+    if ('$and' in result) {
+      result = mergeAndedSelectors(result['$and']);
     }
+  }
 
   ['$or', '$nor'].forEach(function (orOrNor) {
     if (orOrNor in result) {
@@ -3317,20 +3334,37 @@ function massageSelector(input) {
 
     if (typeof matcher !== 'object' || matcher === null) {
       matcher = {$eq: matcher};
-    } else if (!wasAnded) {
-      // These values must be placed in an array because these operators can be used multiple times on the same field
-      // when $and is used, mergeAndedSelectors takes care of putting them into arrays, otherwise it's done here:
-      if ('$ne' in matcher) {
-        matcher.$ne = [matcher.$ne];
-      }
-      if ('$regex' in matcher) {
-        matcher.$regex = [matcher.$regex];
-      }
     }
     result[field] = matcher;
   }
 
+  normalizeArrayOperators(result);
+
   return result;
+}
+
+//
+// The $ne and $regex values must be placed in an array because these operators can be used multiple times on the same field.
+// When $and is used, mergeAndedSelectors takes care of putting some of them into arrays, otherwise it's done here.
+//
+function normalizeArrayOperators(selector) {
+  Object.keys(selector).forEach(function (field) {
+    var matcher = selector[field];
+
+    if (Array.isArray(matcher)) {
+      matcher.forEach(function (matcherItem) {
+        if (matcherItem && typeof matcherItem === 'object') {
+          normalizeArrayOperators(matcherItem);
+        }
+      });
+    } else if (field === '$ne') {
+      selector.$ne = [matcher];
+    } else if (field === '$regex') {
+      selector.$regex = [matcher];
+    } else if (matcher && typeof matcher === 'object') {
+      normalizeArrayOperators(matcher);
+    }
+  });
 }
 
 function pad(str, padWith, upToLength) {
@@ -3921,7 +3955,7 @@ var matchers = {
       return false;
     }
 
-    if (typeof docFieldValue[0] === 'object') {
+    if (typeof docFieldValue[0] === 'object' &&  docFieldValue[0] !== null) {
       return docFieldValue.some(function (val) {
         return rowFilter(val, userValue, Object.keys(userValue));
       });
@@ -3942,7 +3976,7 @@ var matchers = {
       return false;
     }
 
-    if (typeof docFieldValue[0] === 'object') {
+    if (typeof docFieldValue[0] === 'object' &&  docFieldValue[0] !== null) {
       return docFieldValue.every(function (val) {
         return rowFilter(val, userValue, Object.keys(userValue));
       });
@@ -4168,6 +4202,470 @@ PouchDB.plugin(applyChangesFilterPlugin);
 
 PouchDB.version = version;
 
+var IDB_NULL = Number.MIN_SAFE_INTEGER;
+var IDB_FALSE = Number.MIN_SAFE_INTEGER + 1;
+var IDB_TRUE = Number.MIN_SAFE_INTEGER + 2;
+
+// These are the same as bellow but without the global flag
+// we want to use RegExp.test because it's really fast, but the global flag
+// makes the regex const stateful (seriously) as it walked through all instances
+var TEST_KEY_INVALID = /^[^a-zA-Z_$]|[^a-zA-Z0-9_$]+/;
+var TEST_PATH_INVALID = /\\.|(^|\.)[^a-zA-Z_$]|[^a-zA-Z0-9_$.]+/;
+function needsSanitise(name, isPath) {
+  if (isPath) {
+    return TEST_PATH_INVALID.test(name);
+  } else {
+    return TEST_KEY_INVALID.test(name);
+  }
+}
+
+//
+// IndexedDB only allows valid JS names in its index paths, whereas JSON allows
+// for any string at all. This converts invalid JS names to valid ones, to allow
+// for them to be indexed.
+//
+// For example, "foo-bar" is a valid JSON key, but cannot be a valid JS name
+// (because that would be read as foo minus bar).
+//
+// Very high level rules for valid JS names are:
+//  - First character cannot start with a number
+//  - Otherwise all characters must be be a-z, A-Z, 0-9, $ or _.
+//  - We allow . unless the name represents a single field, as that represents
+//    a deep index path.
+//
+// This is more aggressive than it needs to be, but also simpler.
+//
+var KEY_INVALID = new RegExp(TEST_KEY_INVALID.source, 'g');
+var PATH_INVALID = new RegExp(TEST_PATH_INVALID.source, 'g');
+var SLASH = '\\'.charCodeAt(0);
+const IS_DOT = '.'.charCodeAt(0);
+
+function sanitise(name, isPath) {
+  var correctCharacters = function (match) {
+    var good = '';
+    for (var i = 0; i < match.length; i++) {
+      var code = match.charCodeAt(i);
+      // If you're sanitising a path, a slash character is there to be interpreted
+      // by whatever parses the path later as "escape the next thing".
+      //
+      // e.g., if you want to index THIS string:
+      //   {"foo": {"bar.baz": "THIS"}}
+      // Your index path would be "foo.bar\.baz".
+
+      if (code === IS_DOT && isPath && i === 0) {
+        good += '.';
+      } else if (code === SLASH && isPath) {
+        continue;
+      } else {
+        good += '_c' + code + '_';
+      }
+    }
+    return good;
+  };
+
+  if (isPath) {
+    return name.replace(PATH_INVALID, correctCharacters);
+  } else {
+    return name.replace(KEY_INVALID, correctCharacters);
+  }
+}
+
+function needsRewrite(data) {
+  for (var key of Object.keys(data)) {
+    if (needsSanitise(key)) {
+      return true;
+    } else if (data[key] === null || typeof data[key] === 'boolean') {
+      return true;
+    } else if (typeof data[key] === 'object') {
+      return needsRewrite(data[key]);
+    }
+  }
+}
+
+function rewrite(data) {
+  if (!needsRewrite(data)) {
+    return false;
+  }
+
+  var isArray = Array.isArray(data);
+  var clone = isArray
+    ? []
+    : {};
+
+  Object.keys(data).forEach(function (key) {
+    var safeKey = isArray ? key : sanitise(key);
+
+    if (data[key] === null) {
+      clone[safeKey] = IDB_NULL;
+    } else if (typeof data[key] === 'boolean') {
+      clone[safeKey] = data[key] ? IDB_TRUE : IDB_FALSE;
+    } else if (typeof data[key] === 'object') {
+      clone[safeKey] = rewrite(data[key]);
+    } else {
+      clone[safeKey] = data[key];
+    }
+  });
+
+  return clone;
+}
+
+var DOC_STORE = 'docs';
+var META_STORE = 'meta';
+
+function idbError(callback) {
+  return function (evt) {
+    var message = 'unknown_error';
+    if (evt.target && evt.target.error) {
+      message = evt.target.error.name || evt.target.error.message;
+    }
+    callback(createError(IDB_ERROR, message, evt.type));
+  };
+}
+
+function processAttachment(name, src, doc, isBinary) {
+
+  delete doc._attachments[name].stub;
+
+  if (isBinary) {
+    doc._attachments[name].data =
+      src.attachments[doc._attachments[name].digest].data;
+    return Promise.resolve();
+  }
+
+  return new Promise(function (resolve) {
+    var data = src.attachments[doc._attachments[name].digest].data;
+    readAsBinaryString(data, function (binString) {
+      doc._attachments[name].data = thisBtoa(binString);
+      delete doc._attachments[name].length;
+      resolve();
+    });
+  });
+}
+
+function rawIndexFields(ddoc, viewName) {
+  // fields are an array of either the string name of the field, or a key value
+  var fields = ddoc.views[viewName].options &&
+               ddoc.views[viewName].options.def &&
+               ddoc.views[viewName].options.def.fields || [];
+
+  // Either ['foo'] or [{'foo': 'desc'}]
+  return fields.map(function (field) {
+    if (typeof field === 'string') {
+      return field;
+    } else {
+      return Object.keys(field)[0];
+    }
+  });
+}
+
+function naturalIndexName(fields) {
+  return '_find_idx/' + fields.join('/');
+}
+
+/**
+ * Convert the fields the user gave us in the view and convert them to work for
+ * indexeddb.
+ *
+ * fields is an array of field strings. A field string could be one field:
+ *   'foo'
+ * Or it could be a json path:
+ *   'foo.bar'
+ */
+function correctIndexFields(fields) {
+  // Every index has to have deleted at the front, because when we do a query
+  // we need to filter out deleted documents.
+  return ['deleted'].concat(
+    fields.map(function (field) {
+      if (['_id', '_rev', '_deleted', '_attachments'].includes(field)) {
+        // These properties are stored at the top level without the underscore
+        return field.substr(1);
+      } else {
+        // The custom document fields are inside the `data` property
+        return 'data.' + sanitise(field, true);
+      }
+    })
+  );
+}
+
+//
+// Core PouchDB schema version. Increment this if we, as a library, want to make
+// schema changes in indexeddb. See upgradePouchDbSchema()
+//
+var POUCHDB_IDB_VERSION = 1;
+
+//
+// Functions that manage a combinate indexeddb version, by combining the current
+// time in millis that represents user migrations with a large multiplier that
+// represents PouchDB system migrations.
+//
+// This lets us use the idb version number to both represent
+// PouchDB-library-level migrations as well as "user migrations" required for
+// when design documents trigger the addition or removal of native indexes.
+//
+// Given that Number.MAX_SAFE_INTEGER = 9007199254740991
+//
+// We can easily use the largest 2-3 digits and either allow:
+//  - 900 system migrations up to 2198/02/18
+//  - or 89 system migrations up to 5050/02/14
+//
+// This impl does the former. If this code still exists after 2198 someone send my
+// decendents a Spacebook message congratulating them on their impressive genes.
+//
+// 9007199254740991 <- MAX_SAFE_INTEGER
+//   10000000000000 <- 10^13
+//    7199254740991 <- 2198-02-18T16:59:00.991Z
+//
+var versionMultiplier = Math.pow(10, 13);
+function createIdbVersion() {
+  return (versionMultiplier * POUCHDB_IDB_VERSION) + new Date().getTime();
+}
+function getPouchDbVersion(version) {
+  return Math.floor(version / versionMultiplier);
+}
+
+function maintainNativeIndexes(openReq, reject) {
+  var docStore = openReq.transaction.objectStore(DOC_STORE);
+  var ddocsReq = docStore.getAll(IDBKeyRange.bound('_design/', '_design/\uffff'));
+
+  ddocsReq.onsuccess = function (e) {
+    var results = e.target.result;
+    var existingIndexNames = Array.from(docStore.indexNames);
+
+    // NB: the only thing we're supporting here is the declared indexing
+    // fields nothing more.
+    var expectedIndexes = results.filter(function (row) {
+      return row.deleted === 0 && row.revs[row.rev].data.views;
+    }).map(function (row) {
+      return row.revs[row.rev].data;
+    }).reduce(function (indexes, ddoc) {
+      return Object.keys(ddoc.views).reduce(function (acc, viewName) {
+        var fields = rawIndexFields(ddoc, viewName);
+
+        if (fields && fields.length > 0) {
+          acc[naturalIndexName(fields)] = correctIndexFields(fields);
+        }
+
+        return acc;
+      }, indexes);
+    }, {});
+
+    var expectedIndexNames = Object.keys(expectedIndexes);
+
+    // Delete any indexes that aren't system indexes or expected
+    var systemIndexNames = ['seq'];
+    existingIndexNames.forEach(function (index) {
+      if (systemIndexNames.indexOf(index) === -1  && expectedIndexNames.indexOf(index) === -1) {
+        docStore.deleteIndex(index);
+      }
+    });
+
+    // Work out which indexes are missing and create them
+    var newIndexNames = expectedIndexNames.filter(function (ei) {
+      return existingIndexNames.indexOf(ei) === -1;
+    });
+
+    try {
+      newIndexNames.forEach(function (indexName) {
+        docStore.createIndex(indexName, expectedIndexes[indexName]);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  };
+}
+
+function upgradePouchDbSchema(db, pouchdbVersion) {
+  if (pouchdbVersion < 1) {
+    var docStore = db.createObjectStore(DOC_STORE, {keyPath : 'id'});
+    docStore.createIndex('seq', 'seq', {unique: true});
+
+    db.createObjectStore(META_STORE, {keyPath: 'id'});
+  }
+
+  // Declare more PouchDB schema changes here
+  // if (pouchdbVersion < 2) { .. }
+}
+
+function openDatabase(openDatabases, api, opts, resolve, reject) {
+  var openReq = opts.versionchanged ?
+    indexedDB.open(opts.name) :
+    indexedDB.open(opts.name, createIdbVersion());
+
+  openReq.onupgradeneeded = function (e) {
+    if (e.oldVersion > 0 && e.oldVersion < versionMultiplier) {
+      // This DB was created with the "idb" adapter, **not** this one.
+      // For now we're going to just error out here: users must manually
+      // migrate between the two. In the future, dependent on performance tests,
+      // we might silently migrate
+      throw new Error('Incorrect adapter: you should specify the "idb" adapter to open this DB');
+    } else if (e.oldVersion === 0 && e.newVersion < versionMultiplier) {
+      // Firefox still creates the database with version=1 even if we throw,
+      // so we need to be sure to destroy the empty database before throwing
+      indexedDB.deleteDatabase(opts.name);
+      throw new Error('Database was deleted while open');
+    }
+
+    var db = e.target.result;
+
+    var pouchdbVersion = getPouchDbVersion(e.oldVersion);
+    upgradePouchDbSchema(db, pouchdbVersion);
+    maintainNativeIndexes(openReq, reject);
+  };
+
+  openReq.onblocked = function (e) {
+      // AFAICT this only occurs if, after sending `onversionchange` events to
+      // all other open DBs (ie in different tabs), there are still open
+      // connections to the DB. In this code we should never see this because we
+      // close our DBs on these events, and all DB interactions are wrapped in
+      // safely re-opening the DB.
+      console.error('onblocked, this should never happen', e);
+  };
+
+  openReq.onsuccess = function (e) {
+    var idb = e.target.result;
+
+    idb.onabort = function (e) {
+      console.error('Database has a global failure', e.target.error);
+      delete openDatabases[opts.name];
+      idb.close();
+    };
+
+    idb.onversionchange = function () {
+      console.log('Database was made stale, closing handle');
+      openDatabases[opts.name].versionchanged = true;
+      idb.close();
+    };
+
+    idb.onclose = function () {
+      console.log('Database was made stale, closing handle');
+      if (opts.name in openDatabases) {
+        openDatabases[opts.name].versionchanged = true;
+      }
+    };
+
+    var metadata = {id: META_STORE};
+    var txn = idb.transaction([META_STORE], 'readwrite');
+
+    txn.oncomplete = function () {
+      resolve({idb: idb, metadata: metadata});
+    };
+
+    var metaStore = txn.objectStore(META_STORE);
+    metaStore.get(META_STORE).onsuccess = function (e) {
+      metadata = e.target.result || metadata;
+      var changed = false;
+
+      if (!('doc_count' in metadata)) {
+        changed = true;
+        metadata.doc_count = 0;
+      }
+
+      if (!('seq' in metadata)) {
+        changed = true;
+        metadata.seq = 0;
+      }
+
+      if (!('db_uuid' in metadata)) {
+        changed = true;
+        metadata.db_uuid = uuid();
+      }
+
+      if (changed) {
+        metaStore.put(metadata);
+      }
+    };
+  };
+
+  openReq.onerror = function (e) {
+    reject(e.target.error);
+  };
+}
+
+function setup (openDatabases, api, opts) {
+  if (!openDatabases[opts.name] || openDatabases[opts.name].versionchanged) {
+    opts.versionchanged = openDatabases[opts.name] &&
+                          openDatabases[opts.name].versionchanged;
+
+    openDatabases[opts.name] = new Promise(function (resolve, reject) {
+      openDatabase(openDatabases, api, opts, resolve, reject);
+    });
+  }
+
+  return openDatabases[opts.name];
+}
+
+function info (metadata, callback) {
+  callback(null, {
+    doc_count: metadata.doc_count,
+    update_seq: metadata.seq
+  });
+}
+
+function get (txn, id, opts, callback) {
+  if (txn.error) {
+    return callback(txn.error);
+  }
+
+  txn.txn.objectStore(DOC_STORE).get(id).onsuccess = function (e) {
+    var doc = e.target.result;
+    var rev;
+    if (!opts.rev) {
+      rev = (doc && doc.rev);
+    } else {
+      rev = opts.latest ? latest(opts.rev, doc) : opts.rev;
+    }
+
+    if (!doc || (doc.deleted && !opts.rev) || !(rev in doc.revs)) {
+      callback(createError(MISSING_DOC, 'missing'));
+      return;
+    }
+
+    var result = doc.revs[rev].data;
+    result._id = doc.id;
+    result._rev = rev;
+
+    // WARNING: expecting possible old format
+    // TODO: why are we passing the transaction in the context?
+    //       It's not clear we ever thread these txns usefully
+    callback(null, {
+      doc: result,
+      metadata: doc,
+      ctx: txn
+    });
+  };
+}
+
+function parseAttachment(attachment, opts, cb) {
+  if (opts.binary) {
+    return cb(null, attachment);
+  } else {
+    readAsBinaryString(attachment, function (binString) {
+      cb(null, thisBtoa(binString));
+    });
+  }
+}
+
+function getAttachment(txn, docId, attachId, _, opts, cb) {
+  if (txn.error) {
+    return cb(txn.error);
+  }
+
+  var attachment;
+
+  txn.txn.objectStore(DOC_STORE).get(docId).onsuccess = function (e) {
+    var doc = e.target.result;
+    var rev = doc.revs[opts.rev || doc.rev].data;
+    var digest = rev._attachments[attachId].digest;
+    attachment = doc.attachments[digest].data;
+  };
+
+  txn.txn.oncomplete = function () {
+    parseAttachment(attachment, opts, cb);
+  };
+
+  txn.txn.onabort = cb;
+}
+
 function toObject(array) {
   return array.reduce(function (obj, item) {
     obj[item] = true;
@@ -4320,1031 +4818,414 @@ function parseDoc(doc, newEdits, dbOpts) {
   return result;
 }
 
-function parseBase64(data) {
-  try {
-    return thisAtob(data);
-  } catch (e) {
-    var err = createError(BAD_ARG,
-      'Attachment is not a valid base64 string');
-    return {error: err};
-  }
-}
+function bulkDocs (api, req, opts, metadata, dbOpts, idbChanges, callback) {
 
-function preprocessString(att, blobType, callback) {
-  var asBinary = parseBase64(att.data);
-  if (asBinary.error) {
-    return callback(asBinary.error);
+  var txn;
+
+  // TODO: I would prefer to get rid of these globals
+  var error;
+  var results = [];
+  var docs = [];
+  var lastWriteIndex;
+
+  var revsLimit = dbOpts.revs_limit || 1000;
+  var rewriteEnabled = dbOpts.name.indexOf("-mrview-") === -1;
+  const autoCompaction = dbOpts.auto_compaction;
+
+  // We only need to track 1 revision for local documents
+  function docsRevsLimit(doc) {
+    return /^_local/.test(doc.id) ? 1 : revsLimit;
   }
 
-  att.length = asBinary.length;
-  if (blobType === 'blob') {
-    att.data = binStringToBluffer(asBinary, att.content_type);
-  } else if (blobType === 'base64') {
-    att.data = thisBtoa(asBinary);
-  } else { // binary
-    att.data = asBinary;
+  function rootIsMissing(doc) {
+    return doc.rev_tree[0].ids[1].status === 'missing';
   }
-  binaryMd5(asBinary, function (result) {
-    att.digest = 'md5-' + result;
-    callback();
-  });
-}
 
-function preprocessBlob(att, blobType, callback) {
-  binaryMd5(att.data, function (md5) {
-    att.digest = 'md5-' + md5;
-    // size is for blobs (browser), length is for buffers (node)
-    att.length = att.data.size || att.data.length || 0;
-    if (blobType === 'binary') {
-      blobToBinaryString(att.data, function (binString) {
-        att.data = binString;
-        callback();
+  function parseBase64(data) {
+    try {
+      return atob(data);
+    } catch (e) {
+      return {
+        error: createError(BAD_ARG, 'Attachment is not a valid base64 string')
+      };
+    }
+  }
+
+  // Reads the original doc from the store if available
+  // As in allDocs with keys option using multiple get calls is the fastest way
+  function fetchExistingDocs(txn, docs) {
+    var fetched = 0;
+    var oldDocs = {};
+
+    function readDone(e) {
+      if (e.target.result) {
+        oldDocs[e.target.result.id] = e.target.result;
+      }
+      if (++fetched === docs.length) {
+        processDocs$$1(txn, docs, oldDocs);
+      }
+    }
+
+    docs.forEach(function (doc) {
+      txn.objectStore(DOC_STORE).get(doc.id).onsuccess = readDone;
+    });
+  }
+
+  function revHasAttachment(doc, rev, digest) {
+    return doc.revs[rev] &&
+      doc.revs[rev].data._attachments &&
+      Object.values(doc.revs[rev].data._attachments).find(function (att) {
+        return att.digest === digest;
       });
-    } else if (blobType === 'base64') {
-      blobToBase64(att.data, function (b64) {
-        att.data = b64;
-        callback();
-      });
-    } else {
-      callback();
-    }
-  });
-}
-
-function preprocessAttachment(att, blobType, callback) {
-  if (att.stub) {
-    return callback();
-  }
-  if (typeof att.data === 'string') { // input is a base64 string
-    preprocessString(att, blobType, callback);
-  } else { // input is a blob
-    preprocessBlob(att, blobType, callback);
-  }
-}
-
-function preprocessAttachments(docInfos, blobType, callback) {
-
-  if (!docInfos.length) {
-    return callback();
   }
 
-  var docv = 0;
-  var overallErr;
+  function processDocs$$1(txn, docs, oldDocs) {
 
-  docInfos.forEach(function (docInfo) {
-    var attachments = docInfo.data && docInfo.data._attachments ?
-      Object.keys(docInfo.data._attachments) : [];
-    var recv = 0;
+    docs.forEach(function (doc, i) {
+      var newDoc;
 
-    if (!attachments.length) {
-      return done();
-    }
+      // The first document write cannot be a deletion
+      if ('was_delete' in opts && !(Object.prototype.hasOwnProperty.call(oldDocs, doc.id))) {
+        newDoc = createError(MISSING_DOC, 'deleted');
 
-    function processedAttachment(err) {
-      overallErr = err;
-      recv++;
-      if (recv === attachments.length) {
-        done();
-      }
-    }
+      // The first write of a document cannot specify a revision
+      } else if (opts.new_edits &&
+                 !Object.prototype.hasOwnProperty.call(oldDocs, doc.id) &&
+                 rootIsMissing(doc)) {
+        newDoc = createError(REV_CONFLICT);
 
-    for (var key in docInfo.data._attachments) {
-      if (Object.prototype.hasOwnProperty.call(docInfo.data._attachments, key)) {
-        preprocessAttachment(docInfo.data._attachments[key],
-          blobType, processedAttachment);
-      }
-    }
-  });
-
-  function done() {
-    docv++;
-    if (docInfos.length === docv) {
-      if (overallErr) {
-        callback(overallErr);
-      } else {
-        callback();
-      }
-    }
-  }
-}
-
-function updateDoc(revLimit, prev, docInfo, results,
-                   i, cb, writeDoc, newEdits) {
-
-  if (revExists(prev.rev_tree, docInfo.metadata.rev) && !newEdits) {
-    results[i] = docInfo;
-    return cb();
-  }
-
-  // sometimes this is pre-calculated. historically not always
-  var previousWinningRev = prev.winningRev || winningRev(prev);
-  var previouslyDeleted = 'deleted' in prev ? prev.deleted :
-    isDeleted(prev, previousWinningRev);
-  var deleted = 'deleted' in docInfo.metadata ? docInfo.metadata.deleted :
-    isDeleted(docInfo.metadata);
-  var isRoot = /^1-/.test(docInfo.metadata.rev);
-
-  if (previouslyDeleted && !deleted && newEdits && isRoot) {
-    var newDoc = docInfo.data;
-    newDoc._rev = previousWinningRev;
-    newDoc._id = docInfo.metadata.id;
-    docInfo = parseDoc(newDoc, newEdits);
-  }
-
-  var merged = merge(prev.rev_tree, docInfo.metadata.rev_tree[0], revLimit);
-
-  var inConflict = newEdits && ((
-    (previouslyDeleted && deleted && merged.conflicts !== 'new_leaf') ||
-    (!previouslyDeleted && merged.conflicts !== 'new_leaf') ||
-    (previouslyDeleted && !deleted && merged.conflicts === 'new_branch')));
-
-  if (inConflict) {
-    var err = createError(REV_CONFLICT);
-    results[i] = err;
-    return cb();
-  }
-
-  var newRev = docInfo.metadata.rev;
-  docInfo.metadata.rev_tree = merged.tree;
-  docInfo.stemmedRevs = merged.stemmedRevs || [];
-  /* istanbul ignore else */
-  if (prev.rev_map) {
-    docInfo.metadata.rev_map = prev.rev_map; // used only by leveldb
-  }
-
-  // recalculate
-  var winningRev$$1 = winningRev(docInfo.metadata);
-  var winningRevIsDeleted = isDeleted(docInfo.metadata, winningRev$$1);
-
-  // calculate the total number of documents that were added/removed,
-  // from the perspective of total_rows/doc_count
-  var delta = (previouslyDeleted === winningRevIsDeleted) ? 0 :
-    previouslyDeleted < winningRevIsDeleted ? -1 : 1;
-
-  var newRevIsDeleted;
-  if (newRev === winningRev$$1) {
-    // if the new rev is the same as the winning rev, we can reuse that value
-    newRevIsDeleted = winningRevIsDeleted;
-  } else {
-    // if they're not the same, then we need to recalculate
-    newRevIsDeleted = isDeleted(docInfo.metadata, newRev);
-  }
-
-  writeDoc(docInfo, winningRev$$1, winningRevIsDeleted, newRevIsDeleted,
-    true, delta, i, cb);
-}
-
-function rootIsMissing(docInfo) {
-  return docInfo.metadata.rev_tree[0].ids[1].status === 'missing';
-}
-
-function processDocs(revLimit, docInfos, api, fetchedDocs, tx, results,
-                     writeDoc, opts, overallCallback) {
-
-  // Default to 1000 locally
-  revLimit = revLimit || 1000;
-
-  function insertDoc(docInfo, resultsIdx, callback) {
-    // Cant insert new deleted documents
-    var winningRev$$1 = winningRev(docInfo.metadata);
-    var deleted = isDeleted(docInfo.metadata, winningRev$$1);
-    if ('was_delete' in opts && deleted) {
-      results[resultsIdx] = createError(MISSING_DOC, 'deleted');
-      return callback();
-    }
-
-    // 4712 - detect whether a new document was inserted with a _rev
-    var inConflict = newEdits && rootIsMissing(docInfo);
-
-    if (inConflict) {
-      var err = createError(REV_CONFLICT);
-      results[resultsIdx] = err;
-      return callback();
-    }
-
-    var delta = deleted ? 0 : 1;
-
-    writeDoc(docInfo, winningRev$$1, deleted, deleted, false,
-      delta, resultsIdx, callback);
-  }
-
-  var newEdits = opts.new_edits;
-  var idsToDocs = new ExportedMap();
-
-  var docsDone = 0;
-  var docsToDo = docInfos.length;
-
-  function checkAllDocsDone() {
-    if (++docsDone === docsToDo && overallCallback) {
-      overallCallback();
-    }
-  }
-
-  docInfos.forEach(function (currentDoc, resultsIdx) {
-
-    if (currentDoc._id && isLocalId(currentDoc._id)) {
-      var fun = currentDoc._deleted ? '_removeLocal' : '_putLocal';
-      api[fun](currentDoc, {ctx: tx}, function (err, res) {
-        results[resultsIdx] = err || res;
-        checkAllDocsDone();
-      });
-      return;
-    }
-
-    var id = currentDoc.metadata.id;
-    if (idsToDocs.has(id)) {
-      docsToDo--; // duplicate
-      idsToDocs.get(id).push([currentDoc, resultsIdx]);
-    } else {
-      idsToDocs.set(id, [[currentDoc, resultsIdx]]);
-    }
-  });
-
-  // in the case of new_edits, the user can provide multiple docs
-  // with the same id. these need to be processed sequentially
-  idsToDocs.forEach(function (docs, id) {
-    var numDone = 0;
-
-    function docWritten() {
-      if (++numDone < docs.length) {
-        nextDoc();
-      } else {
-        checkAllDocsDone();
-      }
-    }
-    function nextDoc() {
-      var value = docs[numDone];
-      var currentDoc = value[0];
-      var resultsIdx = value[1];
-
-      if (fetchedDocs.has(id)) {
-        updateDoc(revLimit, fetchedDocs.get(id), currentDoc, results,
-          resultsIdx, docWritten, writeDoc, newEdits);
-      } else {
-        // Ensure stemming applies to new writes as well
-        var merged = merge([], currentDoc.metadata.rev_tree[0], revLimit);
-        currentDoc.metadata.rev_tree = merged.tree;
-        currentDoc.stemmedRevs = merged.stemmedRevs || [];
-        insertDoc(currentDoc, resultsIdx, docWritten);
-      }
-    }
-    nextDoc();
-  });
-}
-
-// IndexedDB requires a versioned database structure, so we use the
-// version here to manage migrations.
-var ADAPTER_VERSION = 5;
-
-// The object stores created for each database
-// DOC_STORE stores the document meta data, its revision history and state
-// Keyed by document id
-var DOC_STORE = 'document-store';
-// BY_SEQ_STORE stores a particular version of a document, keyed by its
-// sequence id
-var BY_SEQ_STORE = 'by-sequence';
-// Where we store attachments
-var ATTACH_STORE = 'attach-store';
-// Where we store many-to-many relations
-// between attachment digests and seqs
-var ATTACH_AND_SEQ_STORE = 'attach-seq-store';
-
-// Where we store database-wide meta data in a single record
-// keyed by id: META_STORE
-var META_STORE = 'meta-store';
-// Where we store local documents
-var LOCAL_STORE = 'local-store';
-// Where we detect blob support
-var DETECT_BLOB_SUPPORT_STORE = 'detect-blob-support';
-
-function safeJsonParse(str) {
-  // This try/catch guards against stack overflow errors.
-  // JSON.parse() is faster than vuvuzela.parse() but vuvuzela
-  // cannot overflow.
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    /* istanbul ignore next */
-    return vuvuzela.parse(str);
-  }
-}
-
-function safeJsonStringify(json) {
-  try {
-    return JSON.stringify(json);
-  } catch (e) {
-    /* istanbul ignore next */
-    return vuvuzela.stringify(json);
-  }
-}
-
-function idbError(callback) {
-  return function (evt) {
-    var message = 'unknown_error';
-    if (evt.target && evt.target.error) {
-      message = evt.target.error.name || evt.target.error.message;
-    }
-    callback(createError(IDB_ERROR, message, evt.type));
-  };
-}
-
-// Unfortunately, the metadata has to be stringified
-// when it is put into the database, because otherwise
-// IndexedDB can throw errors for deeply-nested objects.
-// Originally we just used JSON.parse/JSON.stringify; now
-// we use this custom vuvuzela library that avoids recursion.
-// If we could do it all over again, we'd probably use a
-// format for the revision trees other than JSON.
-function encodeMetadata(metadata, winningRev, deleted) {
-  return {
-    data: safeJsonStringify(metadata),
-    winningRev: winningRev,
-    deletedOrLocal: deleted ? '1' : '0',
-    seq: metadata.seq, // highest seq for this doc
-    id: metadata.id
-  };
-}
-
-function decodeMetadata(storedObject) {
-  if (!storedObject) {
-    return null;
-  }
-  var metadata = safeJsonParse(storedObject.data);
-  metadata.winningRev = storedObject.winningRev;
-  metadata.deleted = storedObject.deletedOrLocal === '1';
-  metadata.seq = storedObject.seq;
-  return metadata;
-}
-
-// read the doc back out from the database. we don't store the
-// _id or _rev because we already have _doc_id_rev.
-function decodeDoc(doc) {
-  if (!doc) {
-    return doc;
-  }
-  var idx = doc._doc_id_rev.lastIndexOf(':');
-  doc._id = doc._doc_id_rev.substring(0, idx - 1);
-  doc._rev = doc._doc_id_rev.substring(idx + 1);
-  delete doc._doc_id_rev;
-  return doc;
-}
-
-// Read a blob from the database, encoding as necessary
-// and translating from base64 if the IDB doesn't support
-// native Blobs
-function readBlobData(body, type, asBlob, callback) {
-  if (asBlob) {
-    if (!body) {
-      callback(createBlob([''], {type: type}));
-    } else if (typeof body !== 'string') { // we have blob support
-      callback(body);
-    } else { // no blob support
-      callback(b64ToBluffer(body, type));
-    }
-  } else { // as base64 string
-    if (!body) {
-      callback('');
-    } else if (typeof body !== 'string') { // we have blob support
-      readAsBinaryString(body, function (binary) {
-        callback(thisBtoa(binary));
-      });
-    } else { // no blob support
-      callback(body);
-    }
-  }
-}
-
-function fetchAttachmentsIfNecessary(doc, opts, txn, cb) {
-  var attachments = Object.keys(doc._attachments || {});
-  if (!attachments.length) {
-    return cb && cb();
-  }
-  var numDone = 0;
-
-  function checkDone() {
-    if (++numDone === attachments.length && cb) {
-      cb();
-    }
-  }
-
-  function fetchAttachment(doc, att) {
-    var attObj = doc._attachments[att];
-    var digest = attObj.digest;
-    var req = txn.objectStore(ATTACH_STORE).get(digest);
-    req.onsuccess = function (e) {
-      attObj.body = e.target.result.body;
-      checkDone();
-    };
-  }
-
-  attachments.forEach(function (att) {
-    if (opts.attachments && opts.include_docs) {
-      fetchAttachment(doc, att);
-    } else {
-      doc._attachments[att].stub = true;
-      checkDone();
-    }
-  });
-}
-
-// IDB-specific postprocessing necessary because
-// we don't know whether we stored a true Blob or
-// a base64-encoded string, and if it's a Blob it
-// needs to be read outside of the transaction context
-function postProcessAttachments(results, asBlob) {
-  return Promise.all(results.map(function (row) {
-    if (row.doc && row.doc._attachments) {
-      var attNames = Object.keys(row.doc._attachments);
-      return Promise.all(attNames.map(function (att) {
-        var attObj = row.doc._attachments[att];
-        if (!('body' in attObj)) { // already processed
+      // Update the existing document
+      } else if (Object.prototype.hasOwnProperty.call(oldDocs, doc.id)) {
+        newDoc = update(txn, doc, oldDocs[doc.id]);
+        // The update can be rejected if it is an update to an existing
+        // revision, if so skip it
+        if (newDoc == false) {
           return;
         }
-        var body = attObj.body;
-        var type = attObj.content_type;
-        return new Promise(function (resolve) {
-          readBlobData(body, type, asBlob, function (data) {
-            row.doc._attachments[att] = $inject_Object_assign(
-              pick(attObj, ['digest', 'content_type']),
-              {data: data}
-            );
-            resolve();
-          });
-        });
-      }));
-    }
-  }));
-}
 
-function compactRevs(revs, docId, txn) {
+      // New document
+      } else {
+        // Ensure new documents are also stemmed
+        var merged = merge([], doc.rev_tree[0], docsRevsLimit(doc));
+        doc.rev_tree = merged.tree;
+        doc.stemmedRevs = merged.stemmedRevs;
+        newDoc = doc;
+        newDoc.isNewDoc = true;
+        newDoc.wasDeleted = doc.revs[doc.rev].deleted ? 1 : 0;
+      }
 
-  var possiblyOrphanedDigests = [];
-  var seqStore = txn.objectStore(BY_SEQ_STORE);
-  var attStore = txn.objectStore(ATTACH_STORE);
-  var attAndSeqStore = txn.objectStore(ATTACH_AND_SEQ_STORE);
-  var count = revs.length;
-
-  function checkDone() {
-    count--;
-    if (!count) { // done processing all revs
-      deleteOrphanedAttachments();
-    }
-  }
-
-  function deleteOrphanedAttachments() {
-    if (!possiblyOrphanedDigests.length) {
-      return;
-    }
-    possiblyOrphanedDigests.forEach(function (digest) {
-      var countReq = attAndSeqStore.index('digestSeq').count(
-        IDBKeyRange.bound(
-          digest + '::', digest + '::\uffff', false, false));
-      countReq.onsuccess = function (e) {
-        var count = e.target.result;
-        if (!count) {
-          // orphaned
-          attStore.delete(digest);
-        }
-      };
+      if (newDoc.error) {
+        results[i] = newDoc;
+      } else {
+        oldDocs[newDoc.id] = newDoc;
+        lastWriteIndex = i;
+        write(txn, newDoc, i);
+      }
     });
   }
 
-  revs.forEach(function (rev) {
-    var index = seqStore.index('_doc_id_rev');
-    var key = docId + "::" + rev;
-    index.getKey(key).onsuccess = function (e) {
-      var seq = e.target.result;
-      if (typeof seq !== 'number') {
-        return checkDone();
+  // Converts from the format returned by parseDoc into the new format
+  // we use to store
+  function convertDocFormat(doc) {
+
+    var newDoc = {
+      id: doc.metadata.id,
+      rev: doc.metadata.rev,
+      rev_tree: doc.metadata.rev_tree,
+      revs: doc.metadata.revs || {}
+    };
+
+    newDoc.revs[newDoc.rev] = {
+      data: doc.data,
+      deleted: doc.metadata.deleted
+    };
+
+    return newDoc;
+  }
+
+  function update(txn, doc, oldDoc) {
+
+    // Ignore updates to existing revisions
+    if ((doc.rev in oldDoc.revs) && !opts.new_edits) {
+      return false;
+    }
+
+    var isRoot = /^1-/.test(doc.rev);
+
+    // Reattach first writes after a deletion to last deleted tree
+    if (oldDoc.deleted && !doc.deleted && opts.new_edits && isRoot) {
+      var tmp = doc.revs[doc.rev].data;
+      tmp._rev = oldDoc.rev;
+      tmp._id = oldDoc.id;
+      doc = convertDocFormat(parseDoc(tmp, opts.new_edits, dbOpts));
+    }
+
+    var merged = merge(oldDoc.rev_tree, doc.rev_tree[0], docsRevsLimit(doc));
+    doc.stemmedRevs = merged.stemmedRevs;
+    doc.rev_tree = merged.tree;
+
+    // Merge the old and new rev data
+    var revs = oldDoc.revs;
+    revs[doc.rev] = doc.revs[doc.rev];
+    doc.revs = revs;
+
+    doc.attachments = oldDoc.attachments;
+
+    var inConflict = opts.new_edits && (((oldDoc.deleted && doc.deleted) ||
+       (!oldDoc.deleted && merged.conflicts !== 'new_leaf') ||
+       (oldDoc.deleted && !doc.deleted && merged.conflicts === 'new_branch') ||
+       (oldDoc.rev === doc.rev)));
+
+    if (inConflict) {
+      return createError(REV_CONFLICT);
+    }
+
+    doc.wasDeleted = oldDoc.deleted;
+
+    return doc;
+  }
+
+  function write(txn, doc, i) {
+
+    // We copy the data from the winning revision into the root
+    // of the document so that it can be indexed
+    var winningRev$$1 = winningRev(doc);
+    // rev of new doc for attachments and to return it
+    var writtenRev = doc.rev;
+    var isLocal = /^_local/.test(doc.id);
+
+    var theDoc = doc.revs[winningRev$$1].data;
+
+    const isNewDoc = doc.isNewDoc;
+
+    if (rewriteEnabled) {
+      // doc.data is what we index, so we need to clone and rewrite it, and clean
+      // it up for indexability
+      var result = rewrite(theDoc);
+      if (result) {
+        doc.data = result;
+        delete doc.data._attachments;
+      } else {
+        doc.data = theDoc;
       }
-      seqStore.delete(seq);
+    } else {
+      doc.data = theDoc;
+    }
 
-      var cursor = attAndSeqStore.index('seq')
-        .openCursor(IDBKeyRange.only(seq));
+    doc.rev = winningRev$$1;
+    // .deleted needs to be an int for indexing
+    doc.deleted = doc.revs[winningRev$$1].deleted ? 1 : 0;
 
-      cursor.onsuccess = function (event) {
-        var cursor = event.target.result;
-        if (cursor) {
-          var digest = cursor.value.digestSeq.split('::')[0];
-          possiblyOrphanedDigests.push(digest);
-          attAndSeqStore.delete(cursor.primaryKey);
-          cursor.continue();
-        } else { // done
-          checkDone();
+    // Bump the seq for every new (non local) revision written
+    // TODO: index expects a unique seq, not sure if ignoring local will
+    // work
+    if (!isLocal) {
+      doc.seq = ++metadata.seq;
+
+      var delta = 0;
+      // If its a new document, we wont decrement if deleted
+      if (doc.isNewDoc) {
+        delta = doc.deleted ? 0 : 1;
+      } else if (doc.wasDeleted !== doc.deleted) {
+        delta = doc.deleted ? -1 : 1;
+      }
+      metadata.doc_count += delta;
+    }
+    delete doc.isNewDoc;
+    delete doc.wasDeleted;
+
+    // If there have been revisions stemmed when merging trees,
+    // delete their data
+    let revsToDelete = doc.stemmedRevs || [];
+
+    if (autoCompaction && !isNewDoc) {
+      const result = compactTree(doc);
+      if (result.length) {
+        revsToDelete = revsToDelete.concat(result);
+      }
+    }
+
+    if (revsToDelete.length) {
+      revsToDelete.forEach(function (rev) { delete doc.revs[rev]; });
+    }
+
+    delete doc.stemmedRevs;
+
+    if (!('attachments' in doc)) {
+      doc.attachments = {};
+    }
+
+    if (theDoc._attachments) {
+      for (var k in theDoc._attachments) {
+        var attachment = theDoc._attachments[k];
+        if (attachment.stub) {
+          if (!(attachment.digest in doc.attachments)) {
+            error = createError(MISSING_STUB);
+            // TODO: Not sure how safe this manual abort is, seeing
+            // console issues
+            txn.abort();
+            return;
+          }
+
+          if (revHasAttachment(doc, writtenRev, attachment.digest)) {
+            doc.attachments[attachment.digest].revs[writtenRev] = true;
+          }
+
+        } else {
+
+          doc.attachments[attachment.digest] = attachment;
+          doc.attachments[attachment.digest].revs = {};
+          doc.attachments[attachment.digest].revs[writtenRev] = true;
+
+          theDoc._attachments[k] = {
+            stub: true,
+            digest: attachment.digest,
+            content_type: attachment.content_type,
+            length: attachment.length,
+            revpos: parseInt(writtenRev, 10)
+          };
         }
+      }
+    }
+
+    // Local documents have different revision handling
+    if (isLocal && doc.deleted) {
+      txn.objectStore(DOC_STORE).delete(doc.id).onsuccess = function () {
+        results[i] = {
+          ok: true,
+          id: doc.id,
+          rev: '0-0'
+        };
       };
-    };
-  });
-}
+      updateSeq(i);
+      return;
+    }
 
-function openTransactionSafely(idb, stores, mode) {
-  try {
-    return {
-      txn: idb.transaction(stores, mode)
-    };
-  } catch (err) {
-    return {
-      error: err
+    txn.objectStore(DOC_STORE).put(doc).onsuccess = function () {
+      results[i] = {
+        ok: true,
+        id: doc.id,
+        rev: writtenRev
+      };
+      updateSeq(i);
     };
   }
-}
 
-var changesHandler = new Changes();
-
-function idbBulkDocs(dbOpts, req, opts, api, idb, callback) {
-  var docInfos = req.docs;
-  var txn;
-  var docStore;
-  var bySeqStore;
-  var attachStore;
-  var attachAndSeqStore;
-  var metaStore;
-  var docInfoError;
-  var metaDoc;
-
-  for (var i = 0, len = docInfos.length; i < len; i++) {
-    var doc = docInfos[i];
-    if (doc._id && isLocalId(doc._id)) {
-      continue;
-    }
-    doc = docInfos[i] = parseDoc(doc, opts.new_edits, dbOpts);
-    if (doc.error && !docInfoError) {
-      docInfoError = doc;
+  function updateSeq(i) {
+    if (i === lastWriteIndex) {
+      txn.objectStore(META_STORE).put(metadata);
     }
   }
 
-  if (docInfoError) {
-    return callback(docInfoError);
+  function preProcessAttachment(attachment) {
+    if (attachment.stub) {
+      return Promise.resolve(attachment);
+    }
+
+    var binData;
+    if (typeof attachment.data === 'string') {
+      binData = parseBase64(attachment.data);
+      if (binData.error) {
+        return Promise.reject(binData.error);
+      }
+      attachment.data = binStringToBluffer(binData, attachment.content_type);
+    } else {
+      binData = attachment.data;
+    }
+
+    return new Promise(function (resolve) {
+      binaryMd5(binData, function (result) {
+        attachment.digest = 'md5-' + result;
+        attachment.length = binData.size || binData.length || 0;
+        resolve(attachment);
+      });
+    });
   }
 
-  var allDocsProcessed = false;
-  var docCountDelta = 0;
-  var results = new Array(docInfos.length);
-  var fetchedDocs = new ExportedMap();
-  var preconditionErrored = false;
-  var blobType = api._meta.blobSupport ? 'blob' : 'base64';
+  function preProcessAttachments() {
+    var promises = docs.map(function (doc) {
+      var data = doc.revs[doc.rev].data;
+      if (!data._attachments) {
+        return Promise.resolve(data);
+      }
+      var attachments = Object.keys(data._attachments).map(function (k) {
+        data._attachments[k].name = k;
+        return preProcessAttachment(data._attachments[k]);
+      });
 
-  preprocessAttachments(docInfos, blobType, function (err) {
-    if (err) {
-      return callback(err);
+      return Promise.all(attachments).then(function (newAttachments) {
+        var processed = {};
+        newAttachments.forEach(function (attachment) {
+          processed[attachment.name] = attachment;
+          delete attachment.name;
+        });
+        data._attachments = processed;
+        return data;
+      });
+    });
+    return Promise.all(promises);
+  }
+
+  for (var i = 0, len = req.docs.length; i < len; i++) {
+    var result;
+    // TODO: We should get rid of throwing for invalid docs, also not sure
+    // why this is needed in idb-next and not idb
+    try {
+      result = parseDoc(req.docs[i], opts.new_edits, dbOpts);
+    } catch (err) {
+      result = err;
     }
-    startTransaction();
-  });
-
-  function startTransaction() {
-
-    var stores = [
-      DOC_STORE, BY_SEQ_STORE,
-      ATTACH_STORE,
-      LOCAL_STORE, ATTACH_AND_SEQ_STORE,
-      META_STORE
-    ];
-    var txnResult = openTransactionSafely(idb, stores, 'readwrite');
-    if (txnResult.error) {
-      return callback(txnResult.error);
+    if (result.error) {
+      return callback(result);
     }
-    txn = txnResult.txn;
-    txn.onabort = idbError(callback);
-    txn.ontimeout = idbError(callback);
-    txn.oncomplete = complete;
-    docStore = txn.objectStore(DOC_STORE);
-    bySeqStore = txn.objectStore(BY_SEQ_STORE);
-    attachStore = txn.objectStore(ATTACH_STORE);
-    attachAndSeqStore = txn.objectStore(ATTACH_AND_SEQ_STORE);
-    metaStore = txn.objectStore(META_STORE);
 
-    metaStore.get(META_STORE).onsuccess = function (e) {
-      metaDoc = e.target.result;
-      updateDocCountIfReady();
-    };
+    // Ideally parseDoc would return data in this format, but it is currently
+    // shared so we need to convert
+    docs.push(convertDocFormat(result));
+  }
 
-    verifyAttachments(function (err) {
+  preProcessAttachments().then(function () {
+    api._openTransactionSafely([DOC_STORE, META_STORE], 'readwrite', function (err, _txn) {
       if (err) {
-        preconditionErrored = true;
         return callback(err);
       }
-      fetchExistingDocs();
-    });
-  }
 
-  function onAllDocsProcessed() {
-    allDocsProcessed = true;
-    updateDocCountIfReady();
-  }
+      txn = _txn;
 
-  function idbProcessDocs() {
-    processDocs(dbOpts.revs_limit, docInfos, api, fetchedDocs,
-                txn, results, writeDoc, opts, onAllDocsProcessed);
-  }
-
-  function updateDocCountIfReady() {
-    if (!metaDoc || !allDocsProcessed) {
-      return;
-    }
-    // caching the docCount saves a lot of time in allDocs() and
-    // info(), which is why we go to all the trouble of doing this
-    metaDoc.docCount += docCountDelta;
-    metaStore.put(metaDoc);
-  }
-
-  function fetchExistingDocs() {
-
-    if (!docInfos.length) {
-      return;
-    }
-
-    var numFetched = 0;
-
-    function checkDone() {
-      if (++numFetched === docInfos.length) {
-        idbProcessDocs();
-      }
-    }
-
-    function readMetadata(event) {
-      var metadata = decodeMetadata(event.target.result);
-
-      if (metadata) {
-        fetchedDocs.set(metadata.id, metadata);
-      }
-      checkDone();
-    }
-
-    for (var i = 0, len = docInfos.length; i < len; i++) {
-      var docInfo = docInfos[i];
-      if (docInfo._id && isLocalId(docInfo._id)) {
-        checkDone(); // skip local docs
-        continue;
-      }
-      var req = docStore.get(docInfo.metadata.id);
-      req.onsuccess = readMetadata;
-    }
-  }
-
-  function complete() {
-    if (preconditionErrored) {
-      return;
-    }
-
-    changesHandler.notify(api._meta.name);
-    callback(null, results);
-  }
-
-  function verifyAttachment(digest, callback) {
-
-    var req = attachStore.get(digest);
-    req.onsuccess = function (e) {
-      if (!e.target.result) {
-        var err = createError(MISSING_STUB,
-          'unknown stub attachment with digest ' +
-          digest);
-        err.status = 412;
-        callback(err);
-      } else {
-        callback();
-      }
-    };
-  }
-
-  function verifyAttachments(finish) {
-
-
-    var digests = [];
-    docInfos.forEach(function (docInfo) {
-      if (docInfo.data && docInfo.data._attachments) {
-        Object.keys(docInfo.data._attachments).forEach(function (filename) {
-          var att = docInfo.data._attachments[filename];
-          if (att.stub) {
-            digests.push(att.digest);
-          }
-        });
-      }
-    });
-    if (!digests.length) {
-      return finish();
-    }
-    var numDone = 0;
-    var err;
-
-    function checkDone() {
-      if (++numDone === digests.length) {
-        finish(err);
-      }
-    }
-    digests.forEach(function (digest) {
-      verifyAttachment(digest, function (attErr) {
-        if (attErr && !err) {
-          err = attErr;
-        }
-        checkDone();
-      });
-    });
-  }
-
-  function writeDoc(docInfo, winningRev$$1, winningRevIsDeleted, newRevIsDeleted,
-                    isUpdate, delta, resultsIdx, callback) {
-
-    docInfo.metadata.winningRev = winningRev$$1;
-    docInfo.metadata.deleted = winningRevIsDeleted;
-
-    var doc = docInfo.data;
-    doc._id = docInfo.metadata.id;
-    doc._rev = docInfo.metadata.rev;
-
-    if (newRevIsDeleted) {
-      doc._deleted = true;
-    }
-
-    var hasAttachments = doc._attachments &&
-      Object.keys(doc._attachments).length;
-    if (hasAttachments) {
-      return writeAttachments(docInfo, winningRev$$1, winningRevIsDeleted,
-        isUpdate, resultsIdx, callback);
-    }
-
-    docCountDelta += delta;
-    updateDocCountIfReady();
-
-    finishDoc(docInfo, winningRev$$1, winningRevIsDeleted,
-      isUpdate, resultsIdx, callback);
-  }
-
-  function finishDoc(docInfo, winningRev$$1, winningRevIsDeleted,
-                     isUpdate, resultsIdx, callback) {
-
-    var doc = docInfo.data;
-    var metadata = docInfo.metadata;
-
-    doc._doc_id_rev = metadata.id + '::' + metadata.rev;
-    delete doc._id;
-    delete doc._rev;
-
-    function afterPutDoc(e) {
-      var revsToDelete = docInfo.stemmedRevs || [];
-
-      if (isUpdate && api.auto_compaction) {
-        revsToDelete = revsToDelete.concat(compactTree(docInfo.metadata));
-      }
-
-      if (revsToDelete && revsToDelete.length) {
-        compactRevs(revsToDelete, docInfo.metadata.id, txn);
-      }
-
-      metadata.seq = e.target.result;
-      // Current _rev is calculated from _rev_tree on read
-      // delete metadata.rev;
-      var metadataToStore = encodeMetadata(metadata, winningRev$$1,
-        winningRevIsDeleted);
-      var metaDataReq = docStore.put(metadataToStore);
-      metaDataReq.onsuccess = afterPutMetadata;
-    }
-
-    function afterPutDocError(e) {
-      // ConstraintError, need to update, not put (see #1638 for details)
-      e.preventDefault(); // avoid transaction abort
-      e.stopPropagation(); // avoid transaction onerror
-      var index = bySeqStore.index('_doc_id_rev');
-      var getKeyReq = index.getKey(doc._doc_id_rev);
-      getKeyReq.onsuccess = function (e) {
-        var putReq = bySeqStore.put(doc, e.target.result);
-        putReq.onsuccess = afterPutDoc;
+      txn.onabort = function () {
+        callback(error || createError(UNKNOWN_ERROR, 'transaction was aborted'));
       };
-    }
+      txn.ontimeout = idbError(callback);
 
-    function afterPutMetadata() {
-      results[resultsIdx] = {
-        ok: true,
-        id: metadata.id,
-        rev: metadata.rev
+      txn.oncomplete = function () {
+        idbChanges.notify(dbOpts.name);
+        callback(null, results);
       };
-      fetchedDocs.set(docInfo.metadata.id, docInfo.metadata);
-      insertAttachmentMappings(docInfo, metadata.seq, callback);
-    }
 
-    var putReq = bySeqStore.put(doc);
-
-    putReq.onsuccess = afterPutDoc;
-    putReq.onerror = afterPutDocError;
-  }
-
-  function writeAttachments(docInfo, winningRev$$1, winningRevIsDeleted,
-                            isUpdate, resultsIdx, callback) {
-
-
-    var doc = docInfo.data;
-
-    var numDone = 0;
-    var attachments = Object.keys(doc._attachments);
-
-    function collectResults() {
-      if (numDone === attachments.length) {
-        finishDoc(docInfo, winningRev$$1, winningRevIsDeleted,
-          isUpdate, resultsIdx, callback);
-      }
-    }
-
-    function attachmentSaved() {
-      numDone++;
-      collectResults();
-    }
-
-    attachments.forEach(function (key) {
-      var att = docInfo.data._attachments[key];
-      if (!att.stub) {
-        var data = att.data;
-        delete att.data;
-        att.revpos = parseInt(winningRev$$1, 10);
-        var digest = att.digest;
-        saveAttachment(digest, data, attachmentSaved);
-      } else {
-        numDone++;
-        collectResults();
-      }
+      // We would like to use promises here, but idb sucks
+      fetchExistingDocs(txn, docs);
     });
-  }
-
-  // map seqs to attachment digests, which
-  // we will need later during compaction
-  function insertAttachmentMappings(docInfo, seq, callback) {
-
-    var attsAdded = 0;
-    var attsToAdd = Object.keys(docInfo.data._attachments || {});
-
-    if (!attsToAdd.length) {
-      return callback();
-    }
-
-    function checkDone() {
-      if (++attsAdded === attsToAdd.length) {
-        callback();
-      }
-    }
-
-    function add(att) {
-      var digest = docInfo.data._attachments[att].digest;
-      var req = attachAndSeqStore.put({
-        seq: seq,
-        digestSeq: digest + '::' + seq
-      });
-
-      req.onsuccess = checkDone;
-      req.onerror = function (e) {
-        // this callback is for a constaint error, which we ignore
-        // because this docid/rev has already been associated with
-        // the digest (e.g. when new_edits == false)
-        e.preventDefault(); // avoid transaction abort
-        e.stopPropagation(); // avoid transaction onerror
-        checkDone();
-      };
-    }
-    for (var i = 0; i < attsToAdd.length; i++) {
-      add(attsToAdd[i]); // do in parallel
-    }
-  }
-
-  function saveAttachment(digest, data, callback) {
-
-
-    var getKeyReq = attachStore.count(digest);
-    getKeyReq.onsuccess = function (e) {
-      var count = e.target.result;
-      if (count) {
-        return callback(); // already exists
-      }
-      var newAtt = {
-        digest: digest,
-        body: data
-      };
-      var putReq = attachStore.put(newAtt);
-      putReq.onsuccess = callback;
-    };
-  }
+  }).catch(function (err) {
+    callback(err);
+  });
 }
 
-// Abstraction over IDBCursor and getAll()/getAllKeys() that allows us to batch our operations
-// while falling back to a normal IDBCursor operation on browsers that don't support getAll() or
-// getAllKeys(). This allows for a much faster implementation than just straight-up cursors, because
-// we're not processing each document one-at-a-time.
-function runBatchedCursor(objectStore, keyRange, descending, batchSize, onBatch) {
-
-  if (batchSize === -1) {
-    batchSize = 1000;
-  }
-
-  // Bail out of getAll()/getAllKeys() in the following cases:
-  // 1) either method is unsupported - we need both
-  // 2) batchSize is 1 (might as well use IDBCursor)
-  // 3) descending – no real way to do this via getAll()/getAllKeys()
-
-  var useGetAll = typeof objectStore.getAll === 'function' &&
-    typeof objectStore.getAllKeys === 'function' &&
-    batchSize > 1 && !descending;
-
-  var keysBatch;
-  var valuesBatch;
-  var pseudoCursor;
-
-  function onGetAll(e) {
-    valuesBatch = e.target.result;
-    if (keysBatch) {
-      onBatch(keysBatch, valuesBatch, pseudoCursor);
-    }
-  }
-
-  function onGetAllKeys(e) {
-    keysBatch = e.target.result;
-    if (valuesBatch) {
-      onBatch(keysBatch, valuesBatch, pseudoCursor);
-    }
-  }
-
-  function continuePseudoCursor() {
-    if (!keysBatch.length) { // no more results
-      return onBatch();
-    }
-    // fetch next batch, exclusive start
-    var lastKey = keysBatch[keysBatch.length - 1];
-    var newKeyRange;
-    if (keyRange && keyRange.upper) {
-      try {
-        newKeyRange = IDBKeyRange.bound(lastKey, keyRange.upper,
-          true, keyRange.upperOpen);
-      } catch (e) {
-        if (e.name === "DataError" && e.code === 0) {
-          return onBatch(); // we're done, startkey and endkey are equal
-        }
-      }
-    } else {
-      newKeyRange = IDBKeyRange.lowerBound(lastKey, true);
-    }
-    keyRange = newKeyRange;
-    keysBatch = null;
-    valuesBatch = null;
-    objectStore.getAll(keyRange, batchSize).onsuccess = onGetAll;
-    objectStore.getAllKeys(keyRange, batchSize).onsuccess = onGetAllKeys;
-  }
-
-  function onCursor(e) {
-    var cursor = e.target.result;
-    if (!cursor) { // done
-      return onBatch();
-    }
-    // regular IDBCursor acts like a batch where batch size is always 1
-    onBatch([cursor.key], [cursor.value], cursor);
-  }
-
-  if (useGetAll) {
-    pseudoCursor = {"continue": continuePseudoCursor};
-    objectStore.getAll(keyRange, batchSize).onsuccess = onGetAll;
-    objectStore.getAllKeys(keyRange, batchSize).onsuccess = onGetAllKeys;
-  } else if (descending) {
-    objectStore.openCursor(keyRange, 'prev').onsuccess = onCursor;
-  } else {
-    objectStore.openCursor(keyRange).onsuccess = onCursor;
-  }
-}
-
-// simple shim for objectStore.getAll(), falling back to IDBCursor
-function getAll(objectStore, keyRange, onSuccess) {
-  if (typeof objectStore.getAll === 'function') {
-    // use native getAll
-    objectStore.getAll(keyRange).onsuccess = onSuccess;
-    return;
-  }
-  // fall back to cursors
-  var values = [];
-
-  function onCursor(e) {
-    var cursor = e.target.result;
-    if (cursor) {
-      values.push(cursor.value);
-      cursor.continue();
-    } else {
-      onSuccess({
-        target: {
-          result: values
-        }
-      });
-    }
-  }
-
-  objectStore.openCursor(keyRange).onsuccess = onCursor;
-}
-
-function allDocsKeys(keys, docStore, onBatch) {
+function allDocsKeys(keys, docStore, allDocsInner) {
   // It's not guaranted to be returned in right order
   var valuesBatch = new Array(keys.length);
   var count = 0;
   keys.forEach(function (key, index) {
     docStore.get(key).onsuccess = function (event) {
       if (event.target.result) {
-        valuesBatch[index] = event.target.result;
+      valuesBatch[index] = event.target.result;
       } else {
         valuesBatch[index] = {key: key, error: 'not_found'};
       }
       count++;
       if (count === keys.length) {
-        onBatch(keys, valuesBatch, {});
+        valuesBatch.forEach(function (doc) {
+            allDocsInner(doc);
+        });
       }
     };
   });
@@ -5379,7 +5260,46 @@ function createKeyRange(start, end, inclusiveEnd, key, descending) {
   return null;
 }
 
-function idbAllDocs(opts, idb, callback) {
+function handleKeyRangeError(opts, metadata, err, callback) {
+  if (err.name === "DataError" && err.code === 0) {
+    // data error, start is less than end
+    var returnVal = {
+      total_rows: metadata.doc_count,
+      offset: opts.skip,
+      rows: []
+    };
+    /* istanbul ignore if */
+    if (opts.update_seq) {
+      returnVal.update_seq = metadata.seq;
+    }
+    return callback(null, returnVal);
+  }
+  callback(createError(IDB_ERROR, err.name, err.message));
+}
+
+function allDocs (txn, metadata, opts, callback) {
+  if (txn.error) {
+    return callback(txn.error);
+  }
+
+  // TODO: Weird hack, I dont like it
+  if (opts.limit === 0) {
+    var returnVal = {
+      total_rows: metadata.doc_count,
+      offset: opts.skip,
+      rows: []
+    };
+
+    /* istanbul ignore if */
+    if (opts.update_seq) {
+      returnVal.update_seq = metadata.seq;
+    }
+    return callback(null, returnVal);
+  }
+
+  var results = [];
+  var processing = [];
+
   var start = 'startkey' in opts ? opts.startkey : false;
   var end = 'endkey' in opts ? opts.endkey : false;
   var key = 'key' in opts ? opts.key : false;
@@ -5387,1237 +5307,725 @@ function idbAllDocs(opts, idb, callback) {
   var skip = opts.skip || 0;
   var limit = typeof opts.limit === 'number' ? opts.limit : -1;
   var inclusiveEnd = opts.inclusive_end !== false;
+  var descending = 'descending' in opts && opts.descending ? 'prev' : null;
 
-  var keyRange ;
-  var keyRangeError;
+  var keyRange;
   if (!keys) {
-    keyRange = createKeyRange(start, end, inclusiveEnd, key, opts.descending);
-    keyRangeError = keyRange && keyRange.error;
-    if (keyRangeError &&
-      !(keyRangeError.name === "DataError" && keyRangeError.code === 0)) {
-      // DataError with error code 0 indicates start is less than end, so
-      // can just do an empty query. Else need to throw
-      return callback(createError(IDB_ERROR,
-        keyRangeError.name, keyRangeError.message));
+    keyRange = createKeyRange(start, end, inclusiveEnd, key, descending);
+    if (keyRange && keyRange.error) {
+      return handleKeyRangeError(opts, metadata, keyRange.error, callback);
     }
   }
 
-  var stores = [DOC_STORE, BY_SEQ_STORE, META_STORE];
+  var docStore = txn.txn.objectStore(DOC_STORE);
 
-  if (opts.attachments) {
-    stores.push(ATTACH_STORE);
+  txn.txn.oncomplete = onTxnComplete;
+
+  if (keys) {
+    return allDocsKeys(opts.keys, docStore, allDocsInner);
   }
-  var txnResult = openTransactionSafely(idb, stores, 'readonly');
-  if (txnResult.error) {
-    return callback(txnResult.error);
-  }
-  var txn = txnResult.txn;
-  txn.oncomplete = onTxnComplete;
-  txn.onabort = idbError(callback);
-  var docStore = txn.objectStore(DOC_STORE);
-  var seqStore = txn.objectStore(BY_SEQ_STORE);
-  var metaStore = txn.objectStore(META_STORE);
-  var docIdRevIndex = seqStore.index('_doc_id_rev');
-  var results = [];
-  var docCount;
-  var updateSeq;
 
-  metaStore.get(META_STORE).onsuccess = function (e) {
-    docCount = e.target.result.docCount;
-  };
+  function include_doc(row, doc) {
+    var docData = doc.revs[doc.rev].data;
 
-  /* istanbul ignore if */
-  if (opts.update_seq) {
-    getMaxUpdateSeq(seqStore, function (e) {
-      if (e.target.result && e.target.result.length > 0) {
-        updateSeq = e.target.result[0];
+    row.doc = docData;
+    row.doc._id = doc.id;
+    row.doc._rev = doc.rev;
+    if (opts.conflicts) {
+      var conflicts = collectConflicts(doc);
+      if (conflicts.length) {
+        row.doc._conflicts = conflicts;
       }
-    });
-  }
-
-  function getMaxUpdateSeq(objectStore, onSuccess) {
-    function onCursor(e) {
-      var cursor = e.target.result;
-      var maxKey = undefined;
-      if (cursor && cursor.key) {
-        maxKey = cursor.key;
-      }
-      return onSuccess({
-        target: {
-          result: [maxKey]
-        }
-      });
     }
-    objectStore.openCursor(null, 'prev').onsuccess = onCursor;
-  }
-
-  // if the user specifies include_docs=true, then we don't
-  // want to block the main cursor while we're fetching the doc
-  function fetchDocAsynchronously(metadata, row, winningRev$$1) {
-    var key = metadata.id + "::" + winningRev$$1;
-    docIdRevIndex.get(key).onsuccess =  function onGetDoc(e) {
-      row.doc = decodeDoc(e.target.result) || {};
-      if (opts.conflicts) {
-        var conflicts = collectConflicts(metadata);
-        if (conflicts.length) {
-          row.doc._conflicts = conflicts;
-        }
+    if (opts.attachments && docData._attachments) {
+      for (var name in docData._attachments) {
+        processing.push(processAttachment(name, doc, row.doc, opts.binary));
       }
-      fetchAttachmentsIfNecessary(row.doc, opts, txn);
-    };
+    }
   }
 
-  function allDocsInner(winningRev$$1, metadata) {
+  function allDocsInner(doc) {
+    if (doc.error && keys) {
+      // key was not found with "keys" requests
+      results.push(doc);
+      return true;
+    }
+
     var row = {
-      id: metadata.id,
-      key: metadata.id,
+      id: doc.id,
+      key: doc.id,
       value: {
-        rev: winningRev$$1
+        rev: doc.rev
       }
     };
-    var deleted = metadata.deleted;
+
+    var deleted = doc.deleted;
     if (deleted) {
       if (keys) {
         results.push(row);
-        // deleted docs are okay with "keys" requests
         row.value.deleted = true;
         row.doc = null;
       }
     } else if (skip-- <= 0) {
       results.push(row);
       if (opts.include_docs) {
-        fetchDocAsynchronously(metadata, row, winningRev$$1);
+        include_doc(row, doc);
+      }
+      if (--limit === 0) {
+        return false;
       }
     }
+    return true;
   }
 
-  function processBatch(batchValues) {
-    for (var i = 0, len = batchValues.length; i < len; i++) {
-      if (results.length === limit) {
-        break;
+  function onTxnComplete() {
+    Promise.all(processing).then(function () {
+      var returnVal = {
+        total_rows: metadata.doc_count,
+        offset: 0,
+        rows: results
+      };
+
+      /* istanbul ignore if */
+      if (opts.update_seq) {
+        returnVal.update_seq = metadata.seq;
       }
-      var batchValue = batchValues[i];
-      if (batchValue.error && keys) {
-        // key was not found with "keys" requests
-        results.push(batchValue);
-        continue;
-      }
-      var metadata = decodeMetadata(batchValue);
-      var winningRev$$1 = metadata.winningRev;
-      allDocsInner(winningRev$$1, metadata);
-    }
+      callback(null, returnVal);
+    });
   }
 
-  function onBatch(batchKeys, batchValues, cursor) {
-    if (!cursor) {
-      return;
+  var cursor = descending ?
+    docStore.openCursor(keyRange, descending) :
+    docStore.openCursor(keyRange);
+
+  cursor.onsuccess = function (e) {
+
+    var doc = e.target.result && e.target.result.value;
+
+    // Happens if opts does not have limit,
+    // because cursor will end normally then,
+    // when all docs are retrieved.
+    // Would not be needed, if getAll() optimization was used like in #6059
+    if (!doc) { return; }
+
+    // Skip local docs
+    if (/^_local/.test(doc.id)) {
+      return e.target.result.continue();
     }
-    processBatch(batchValues);
-    if (results.length < limit) {
+
+    var continueCursor = allDocsInner(doc);
+    if (continueCursor) {
+      e.target.result.continue();
+    }
+  };
+
+}
+
+function changes (txn, idbChanges, api, dbOpts, opts) {
+  if (txn.error) {
+    return opts.complete(txn.error);
+  }
+
+  if (opts.continuous) {
+    var id = dbOpts.name + ':' + uuid();
+    idbChanges.addListener(dbOpts.name, id, api, opts);
+    idbChanges.notify(dbOpts.name);
+    return {
+      cancel: function () {
+        // console.log('cancel', dbOpts, id)
+        idbChanges.removeListener(dbOpts.name, id);
+      }
+    };
+  }
+
+  var limit = 'limit' in opts ? opts.limit : -1;
+  if (limit === 0) {
+    limit = 1;
+  }
+
+  var store = txn.txn.objectStore(DOC_STORE).index('seq');
+
+  var filter = filterChange(opts);
+  var received = 0;
+
+  var lastSeq = opts.since || 0;
+  var results = [];
+
+  var processing = [];
+
+  function onReqSuccess(e) {
+    if (!e.target.result) { return; }
+    var cursor = e.target.result;
+    var doc = cursor.value;
+    // Overwrite doc.data, which may have been rewritten (see rewrite.js) with
+    // the clean version for that rev
+    doc.data = doc.revs[doc.rev].data;
+    doc.data._id = doc.id;
+    doc.data._rev = doc.rev;
+    if (doc.deleted) {
+      doc.data._deleted = true;
+    }
+
+    if (opts.doc_ids && opts.doc_ids.indexOf(doc.id) === -1) {
+      return cursor.continue();
+    }
+
+    // WARNING: expecting possible old format
+    var change = opts.processChange(doc.data, doc, opts);
+    change.seq = doc.seq;
+    lastSeq = doc.seq;
+    var filtered = filter(change);
+
+    // If its an error
+    if (typeof filtered === 'object') {
+      return opts.complete(filtered);
+    }
+
+    if (filtered) {
+      received++;
+      if (opts.return_docs) {
+        results.push(change);
+      }
+
+      if (opts.include_docs && opts.attachments && doc.data._attachments) {
+        var promises = [];
+        for (var name in doc.data._attachments) {
+          var p = processAttachment(name, doc, change.doc, opts.binary);
+          // We add the processing promise to 2 arrays, one tracks all
+          // the promises needed before we fire onChange, the other
+          // ensure we process all attachments before onComplete
+          promises.push(p);
+          processing.push(p);
+        }
+
+        Promise.all(promises).then(function () {
+          opts.onChange(change);
+        });
+      } else {
+        opts.onChange(change);
+      }
+    }
+    if (received !== limit) {
       cursor.continue();
     }
   }
 
-  function onGetAll(e) {
-    var values = e.target.result;
-    if (opts.descending) {
-      values = values.reverse();
-    }
-    processBatch(values);
-  }
-
-  function onResultsReady() {
-    var returnVal = {
-      total_rows: docCount,
-      offset: opts.skip,
-      rows: results
-    };
-
-    /* istanbul ignore if */
-    if (opts.update_seq && updateSeq !== undefined) {
-      returnVal.update_seq = updateSeq;
-    }
-    callback(null, returnVal);
-  }
-
   function onTxnComplete() {
-    if (opts.attachments) {
-      postProcessAttachments(results, opts.binary).then(onResultsReady);
-    } else {
-      onResultsReady();
-    }
-  }
-
-  // don't bother doing any requests if start > end or limit === 0
-  if (keyRangeError || limit === 0) {
-    return;
-  }
-  if (keys) {
-    return allDocsKeys(opts.keys, docStore, onBatch);
-  }
-  if (limit === -1) { // just fetch everything
-    return getAll(docStore, keyRange, onGetAll);
-  }
-  // else do a cursor
-  // choose a batch size based on the skip, since we'll need to skip that many
-  runBatchedCursor(docStore, keyRange, opts.descending, limit + skip, onBatch);
-}
-
-//
-// Blobs are not supported in all versions of IndexedDB, notably
-// Chrome <37 and Android <5. In those versions, storing a blob will throw.
-//
-// Various other blob bugs exist in Chrome v37-42 (inclusive).
-// Detecting them is expensive and confusing to users, and Chrome 37-42
-// is at very low usage worldwide, so we do a hacky userAgent check instead.
-//
-// content-type bug: https://code.google.com/p/chromium/issues/detail?id=408120
-// 404 bug: https://code.google.com/p/chromium/issues/detail?id=447916
-// FileReader bug: https://code.google.com/p/chromium/issues/detail?id=447836
-//
-function checkBlobSupport(txn) {
-  return new Promise(function (resolve) {
-    var blob$$1 = createBlob(['']);
-    var req = txn.objectStore(DETECT_BLOB_SUPPORT_STORE).put(blob$$1, 'key');
-
-    req.onsuccess = function () {
-      var matchedChrome = navigator.userAgent.match(/Chrome\/(\d+)/);
-      var matchedEdge = navigator.userAgent.match(/Edge\//);
-      // MS Edge pretends to be Chrome 42:
-      // https://msdn.microsoft.com/en-us/library/hh869301%28v=vs.85%29.aspx
-      resolve(matchedEdge || !matchedChrome ||
-        parseInt(matchedChrome[1], 10) >= 43);
-    };
-
-    req.onerror = txn.onabort = function (e) {
-      // If the transaction aborts now its due to not being able to
-      // write to the database, likely due to the disk being full
-      e.preventDefault();
-      e.stopPropagation();
-      resolve(false);
-    };
-  }).catch(function () {
-    return false; // error, so assume unsupported
-  });
-}
-
-function countDocs(txn, cb) {
-  var index = txn.objectStore(DOC_STORE).index('deletedOrLocal');
-  index.count(IDBKeyRange.only('0')).onsuccess = function (e) {
-    cb(e.target.result);
-  };
-}
-
-// This task queue ensures that IDB open calls are done in their own tick
-
-var running = false;
-var queue = [];
-
-function tryCode(fun, err, res, PouchDB) {
-  try {
-    fun(err, res);
-  } catch (err) {
-    // Shouldn't happen, but in some odd cases
-    // IndexedDB implementations might throw a sync
-    // error, in which case this will at least log it.
-    PouchDB.emit('error', err);
-  }
-}
-
-function applyNext() {
-  if (running || !queue.length) {
-    return;
-  }
-  running = true;
-  queue.shift()();
-}
-
-function enqueueTask(action, callback, PouchDB) {
-  queue.push(function runAction() {
-    action(function runCallback(err, res) {
-      tryCode(callback, err, res, PouchDB);
-      running = false;
-      immediate(function runNext() {
-        applyNext(PouchDB);
-      });
-    });
-  });
-  applyNext();
-}
-
-function changes(opts, api, dbName, idb) {
-  opts = clone(opts);
-
-  if (opts.continuous) {
-    var id = dbName + ':' + uuid();
-    changesHandler.addListener(dbName, id, api, opts);
-    changesHandler.notify(dbName);
-    return {
-      cancel: function () {
-        changesHandler.removeListener(dbName, id);
-      }
-    };
-  }
-
-  var docIds = opts.doc_ids && new ExportedSet(opts.doc_ids);
-
-  opts.since = opts.since || 0;
-  var lastSeq = opts.since;
-
-  var limit = 'limit' in opts ? opts.limit : -1;
-  if (limit === 0) {
-    limit = 1; // per CouchDB _changes spec
-  }
-
-  var results = [];
-  var numResults = 0;
-  var filter = filterChange(opts);
-  var docIdsToMetadata = new ExportedMap();
-
-  var txn;
-  var bySeqStore;
-  var docStore;
-  var docIdRevIndex;
-
-  function onBatch(batchKeys, batchValues, cursor) {
-    if (!cursor || !batchKeys.length) { // done
-      return;
-    }
-
-    var winningDocs = new Array(batchKeys.length);
-    var metadatas = new Array(batchKeys.length);
-
-    function processMetadataAndWinningDoc(metadata, winningDoc) {
-      var change = opts.processChange(winningDoc, metadata, opts);
-      lastSeq = change.seq = metadata.seq;
-
-      var filtered = filter(change);
-      if (typeof filtered === 'object') { // anything but true/false indicates error
-        return Promise.reject(filtered);
-      }
-
-      if (!filtered) {
-        return Promise.resolve();
-      }
-      numResults++;
-      if (opts.return_docs) {
-        results.push(change);
-      }
-      // process the attachment immediately
-      // for the benefit of live listeners
-      if (opts.attachments && opts.include_docs) {
-        return new Promise(function (resolve) {
-          fetchAttachmentsIfNecessary(winningDoc, opts, txn, function () {
-            postProcessAttachments([change], opts.binary).then(function () {
-              resolve(change);
-            });
-          });
-        });
-      } else {
-        return Promise.resolve(change);
-      }
-    }
-
-    function onBatchDone() {
-      var promises = [];
-      for (var i = 0, len = winningDocs.length; i < len; i++) {
-        if (numResults === limit) {
-          break;
-        }
-        var winningDoc = winningDocs[i];
-        if (!winningDoc) {
-          continue;
-        }
-        var metadata = metadatas[i];
-        promises.push(processMetadataAndWinningDoc(metadata, winningDoc));
-      }
-
-      Promise.all(promises).then(function (changes) {
-        for (var i = 0, len = changes.length; i < len; i++) {
-          if (changes[i]) {
-            opts.onChange(changes[i]);
-          }
-        }
-      }).catch(opts.complete);
-
-      if (numResults !== limit) {
-        cursor.continue();
-      }
-    }
-
-    // Fetch all metadatas/winningdocs from this batch in parallel, then process
-    // them all only once all data has been collected. This is done in parallel
-    // because it's faster than doing it one-at-a-time.
-    var numDone = 0;
-    batchValues.forEach(function (value, i) {
-      var doc = decodeDoc(value);
-      var seq = batchKeys[i];
-      fetchWinningDocAndMetadata(doc, seq, function (metadata, winningDoc) {
-        metadatas[i] = metadata;
-        winningDocs[i] = winningDoc;
-        if (++numDone === batchKeys.length) {
-          onBatchDone();
-        }
+    Promise.all(processing).then(function () {
+      opts.complete(null, {
+        results: results,
+        last_seq: lastSeq
       });
     });
   }
 
-  function onGetMetadata(doc, seq, metadata, cb) {
-    if (metadata.seq !== seq) {
-      // some other seq is later
-      return cb();
-    }
-
-    if (metadata.winningRev === doc._rev) {
-      // this is the winning doc
-      return cb(metadata, doc);
-    }
-
-    // fetch winning doc in separate request
-    var docIdRev = doc._id + '::' + metadata.winningRev;
-    var req = docIdRevIndex.get(docIdRev);
-    req.onsuccess = function (e) {
-      cb(metadata, decodeDoc(e.target.result));
-    };
+  var req;
+  if (opts.descending) {
+    req = store.openCursor(null, 'prev');
+  } else {
+    req = store.openCursor(IDBKeyRange.lowerBound(opts.since, true));
   }
 
-  function fetchWinningDocAndMetadata(doc, seq, cb) {
-    if (docIds && !docIds.has(doc._id)) {
-      return cb();
-    }
+  txn.txn.oncomplete = onTxnComplete;
+  req.onsuccess = onReqSuccess;
+}
 
-    var metadata = docIdsToMetadata.get(doc._id);
-    if (metadata) { // cached
-      return onGetMetadata(doc, seq, metadata, cb);
-    }
-    // metadata not cached, have to go fetch it
-    docStore.get(doc._id).onsuccess = function (e) {
-      metadata = decodeMetadata(e.target.result);
-      docIdsToMetadata.set(doc._id, metadata);
-      onGetMetadata(doc, seq, metadata, cb);
-    };
+function getRevisionTree (txn, id, callback) {
+  if (txn.error) {
+    return callback(txn.error);
   }
 
-  function finish() {
-    opts.complete(null, {
-      results: results,
-      last_seq: lastSeq
+  var req = txn.txn.objectStore(DOC_STORE).get(id);
+  req.onsuccess = function (e) {
+    if (!e.target.result) {
+      callback(createError(MISSING_DOC));
+    } else {
+      callback(null, e.target.result.rev_tree);
+    }
+  };
+}
+
+function doCompaction (txn, id, revs, callback) {
+  if (txn.error) {
+    return callback(txn.error);
+  }
+
+  var docStore = txn.txn.objectStore(DOC_STORE);
+
+  docStore.get(id).onsuccess = function (e) {
+    var doc = e.target.result;
+
+    traverseRevTree(doc.rev_tree, function (isLeaf, pos, revHash, ctx, opts) {
+      var rev = pos + '-' + revHash;
+      if (revs.indexOf(rev) !== -1) {
+        opts.status = 'missing';
+      }
     });
-  }
 
-  function onTxnComplete() {
-    if (!opts.continuous && opts.attachments) {
-      // cannot guarantee that postProcessing was already done,
-      // so do it again
-      postProcessAttachments(results).then(finish);
-    } else {
-      finish();
-    }
-  }
+    var attachments = [];
 
-  var objectStores = [DOC_STORE, BY_SEQ_STORE];
-  if (opts.attachments) {
-    objectStores.push(ATTACH_STORE);
-  }
-  var txnResult = openTransactionSafely(idb, objectStores, 'readonly');
-  if (txnResult.error) {
-    return opts.complete(txnResult.error);
-  }
-  txn = txnResult.txn;
-  txn.onabort = idbError(opts.complete);
-  txn.oncomplete = onTxnComplete;
-
-  bySeqStore = txn.objectStore(BY_SEQ_STORE);
-  docStore = txn.objectStore(DOC_STORE);
-  docIdRevIndex = bySeqStore.index('_doc_id_rev');
-
-  var keyRange = (opts.since && !opts.descending) ?
-    IDBKeyRange.lowerBound(opts.since, true) : null;
-
-  runBatchedCursor(bySeqStore, keyRange, opts.descending, limit, onBatch);
-}
-
-var cachedDBs = new ExportedMap();
-var blobSupportPromise;
-var openReqList = new ExportedMap();
-
-function IdbPouch(opts, callback) {
-  var api = this;
-
-  enqueueTask(function (thisCallback) {
-    init(api, opts, thisCallback);
-  }, callback, api.constructor);
-}
-
-function init(api, opts, callback) {
-
-  var dbName = opts.name;
-
-  var idb = null;
-  var idbGlobalFailureError = null;
-  api._meta = null;
-
-  function enrichCallbackError(callback) {
-    return function (error, result) {
-      if (error && error instanceof Error && !error.reason) {
-        if (idbGlobalFailureError) {
-          error.reason = idbGlobalFailureError;
-        }
-      }
-
-      callback(error, result);
-    };
-  }
-
-  // called when creating a fresh new database
-  function createSchema(db) {
-    var docStore = db.createObjectStore(DOC_STORE, {keyPath : 'id'});
-    db.createObjectStore(BY_SEQ_STORE, {autoIncrement: true})
-      .createIndex('_doc_id_rev', '_doc_id_rev', {unique: true});
-    db.createObjectStore(ATTACH_STORE, {keyPath: 'digest'});
-    db.createObjectStore(META_STORE, {keyPath: 'id', autoIncrement: false});
-    db.createObjectStore(DETECT_BLOB_SUPPORT_STORE);
-
-    // added in v2
-    docStore.createIndex('deletedOrLocal', 'deletedOrLocal', {unique : false});
-
-    // added in v3
-    db.createObjectStore(LOCAL_STORE, {keyPath: '_id'});
-
-    // added in v4
-    var attAndSeqStore = db.createObjectStore(ATTACH_AND_SEQ_STORE,
-      {autoIncrement: true});
-    attAndSeqStore.createIndex('seq', 'seq');
-    attAndSeqStore.createIndex('digestSeq', 'digestSeq', {unique: true});
-  }
-
-  // migration to version 2
-  // unfortunately "deletedOrLocal" is a misnomer now that we no longer
-  // store local docs in the main doc-store, but whaddyagonnado
-  function addDeletedOrLocalIndex(txn, callback) {
-    var docStore = txn.objectStore(DOC_STORE);
-    docStore.createIndex('deletedOrLocal', 'deletedOrLocal', {unique : false});
-
-    docStore.openCursor().onsuccess = function (event) {
-      var cursor = event.target.result;
-      if (cursor) {
-        var metadata = cursor.value;
-        var deleted = isDeleted(metadata);
-        metadata.deletedOrLocal = deleted ? "1" : "0";
-        docStore.put(metadata);
-        cursor.continue();
-      } else {
-        callback();
-      }
-    };
-  }
-
-  // migration to version 3 (part 1)
-  function createLocalStoreSchema(db) {
-    db.createObjectStore(LOCAL_STORE, {keyPath: '_id'})
-      .createIndex('_doc_id_rev', '_doc_id_rev', {unique: true});
-  }
-
-  // migration to version 3 (part 2)
-  function migrateLocalStore(txn, cb) {
-    var localStore = txn.objectStore(LOCAL_STORE);
-    var docStore = txn.objectStore(DOC_STORE);
-    var seqStore = txn.objectStore(BY_SEQ_STORE);
-
-    var cursor = docStore.openCursor();
-    cursor.onsuccess = function (event) {
-      var cursor = event.target.result;
-      if (cursor) {
-        var metadata = cursor.value;
-        var docId = metadata.id;
-        var local = isLocalId(docId);
-        var rev = winningRev(metadata);
-        if (local) {
-          var docIdRev = docId + "::" + rev;
-          // remove all seq entries
-          // associated with this docId
-          var start = docId + "::";
-          var end = docId + "::~";
-          var index = seqStore.index('_doc_id_rev');
-          var range = IDBKeyRange.bound(start, end, false, false);
-          var seqCursor = index.openCursor(range);
-          seqCursor.onsuccess = function (e) {
-            seqCursor = e.target.result;
-            if (!seqCursor) {
-              // done
-              docStore.delete(cursor.primaryKey);
-              cursor.continue();
-            } else {
-              var data = seqCursor.value;
-              if (data._doc_id_rev === docIdRev) {
-                localStore.put(data);
-              }
-              seqStore.delete(seqCursor.primaryKey);
-              seqCursor.continue();
-            }
-          };
-        } else {
-          cursor.continue();
-        }
-      } else if (cb) {
-        cb();
-      }
-    };
-  }
-
-  // migration to version 4 (part 1)
-  function addAttachAndSeqStore(db) {
-    var attAndSeqStore = db.createObjectStore(ATTACH_AND_SEQ_STORE,
-      {autoIncrement: true});
-    attAndSeqStore.createIndex('seq', 'seq');
-    attAndSeqStore.createIndex('digestSeq', 'digestSeq', {unique: true});
-  }
-
-  // migration to version 4 (part 2)
-  function migrateAttsAndSeqs(txn, callback) {
-    var seqStore = txn.objectStore(BY_SEQ_STORE);
-    var attStore = txn.objectStore(ATTACH_STORE);
-    var attAndSeqStore = txn.objectStore(ATTACH_AND_SEQ_STORE);
-
-    // need to actually populate the table. this is the expensive part,
-    // so as an optimization, check first that this database even
-    // contains attachments
-    var req = attStore.count();
-    req.onsuccess = function (e) {
-      var count = e.target.result;
-      if (!count) {
-        return callback(); // done
-      }
-
-      seqStore.openCursor().onsuccess = function (e) {
-        var cursor = e.target.result;
-        if (!cursor) {
-          return callback(); // done
-        }
-        var doc = cursor.value;
-        var seq = cursor.primaryKey;
-        var atts = Object.keys(doc._attachments || {});
-        var digestMap = {};
-        for (var j = 0; j < atts.length; j++) {
-          var att = doc._attachments[atts[j]];
-          digestMap[att.digest] = true; // uniq digests, just in case
-        }
-        var digests = Object.keys(digestMap);
-        for (j = 0; j < digests.length; j++) {
-          var digest = digests[j];
-          attAndSeqStore.put({
-            seq: seq,
-            digestSeq: digest + '::' + seq
-          });
-        }
-        cursor.continue();
-      };
-    };
-  }
-
-  // migration to version 5
-  // Instead of relying on on-the-fly migration of metadata,
-  // this brings the doc-store to its modern form:
-  // - metadata.winningrev
-  // - metadata.seq
-  // - stringify the metadata when storing it
-  function migrateMetadata(txn) {
-
-    function decodeMetadataCompat(storedObject) {
-      if (!storedObject.data) {
-        // old format, when we didn't store it stringified
-        storedObject.deleted = storedObject.deletedOrLocal === '1';
-        return storedObject;
-      }
-      return decodeMetadata(storedObject);
-    }
-
-    // ensure that every metadata has a winningRev and seq,
-    // which was previously created on-the-fly but better to migrate
-    var bySeqStore = txn.objectStore(BY_SEQ_STORE);
-    var docStore = txn.objectStore(DOC_STORE);
-    var cursor = docStore.openCursor();
-    cursor.onsuccess = function (e) {
-      var cursor = e.target.result;
-      if (!cursor) {
-        return; // done
-      }
-      var metadata = decodeMetadataCompat(cursor.value);
-
-      metadata.winningRev = metadata.winningRev ||
-        winningRev(metadata);
-
-      function fetchMetadataSeq() {
-        // metadata.seq was added post-3.2.0, so if it's missing,
-        // we need to fetch it manually
-        var start = metadata.id + '::';
-        var end = metadata.id + '::\uffff';
-        var req = bySeqStore.index('_doc_id_rev').openCursor(
-          IDBKeyRange.bound(start, end));
-
-        var metadataSeq = 0;
-        req.onsuccess = function (e) {
-          var cursor = e.target.result;
-          if (!cursor) {
-            metadata.seq = metadataSeq;
-            return onGetMetadataSeq();
+    revs.forEach(function (rev) {
+      if (rev in doc.revs) {
+        // Make a list of attachments that are used by the revisions being
+        // deleted
+        if (doc.revs[rev].data._attachments) {
+          for (var k in doc.revs[rev].data._attachments) {
+            attachments.push(doc.revs[rev].data._attachments[k].digest);
           }
-          var seq = cursor.primaryKey;
-          if (seq > metadataSeq) {
-            metadataSeq = seq;
-          }
-          cursor.continue();
-        };
-      }
-
-      function onGetMetadataSeq() {
-        var metadataToStore = encodeMetadata(metadata,
-          metadata.winningRev, metadata.deleted);
-
-        var req = docStore.put(metadataToStore);
-        req.onsuccess = function () {
-          cursor.continue();
-        };
-      }
-
-      if (metadata.seq) {
-        return onGetMetadataSeq();
-      }
-
-      fetchMetadataSeq();
-    };
-
-  }
-
-  api._remote = false;
-  api.type = function () {
-    return 'idb';
-  };
-
-  api._id = toPromise(function (callback) {
-    callback(null, api._meta.instanceId);
-  });
-
-  api._bulkDocs = function idb_bulkDocs(req, reqOpts, callback) {
-    idbBulkDocs(opts, req, reqOpts, api, idb, enrichCallbackError(callback));
-  };
-
-  // First we look up the metadata in the ids database, then we fetch the
-  // current revision(s) from the by sequence store
-  api._get = function idb_get(id, opts, callback) {
-    var doc;
-    var metadata;
-    var err;
-    var txn = opts.ctx;
-    if (!txn) {
-      var txnResult = openTransactionSafely(idb,
-        [DOC_STORE, BY_SEQ_STORE, ATTACH_STORE], 'readonly');
-      if (txnResult.error) {
-        return callback(txnResult.error);
-      }
-      txn = txnResult.txn;
-    }
-
-    function finish() {
-      callback(err, {doc: doc, metadata: metadata, ctx: txn});
-    }
-
-    txn.objectStore(DOC_STORE).get(id).onsuccess = function (e) {
-      metadata = decodeMetadata(e.target.result);
-      // we can determine the result here if:
-      // 1. there is no such document
-      // 2. the document is deleted and we don't ask about specific rev
-      // When we ask with opts.rev we expect the answer to be either
-      // doc (possibly with _deleted=true) or missing error
-      if (!metadata) {
-        err = createError(MISSING_DOC, 'missing');
-        return finish();
-      }
-
-      var rev;
-      if (!opts.rev) {
-        rev = metadata.winningRev;
-        var deleted = isDeleted(metadata);
-        if (deleted) {
-          err = createError(MISSING_DOC, "deleted");
-          return finish();
         }
-      } else {
-        rev = opts.latest ? latest(opts.rev, metadata) : opts.rev;
+        delete doc.revs[rev];
       }
+    });
 
-      var objectStore = txn.objectStore(BY_SEQ_STORE);
-      var key = metadata.id + '::' + rev;
-
-      objectStore.index('_doc_id_rev').get(key).onsuccess = function (e) {
-        doc = e.target.result;
-        if (doc) {
-          doc = decodeDoc(doc);
-        }
-        if (!doc) {
-          err = createError(MISSING_DOC, 'missing');
-          return finish();
-        }
-        finish();
-      };
-    };
-  };
-
-  api._getAttachment = function (docId, attachId, attachment, opts, callback) {
-    var txn;
-    if (opts.ctx) {
-      txn = opts.ctx;
-    } else {
-      var txnResult = openTransactionSafely(idb,
-        [DOC_STORE, BY_SEQ_STORE, ATTACH_STORE], 'readonly');
-      if (txnResult.error) {
-        return callback(txnResult.error);
-      }
-      txn = txnResult.txn;
-    }
-    var digest = attachment.digest;
-    var type = attachment.content_type;
-
-    txn.objectStore(ATTACH_STORE).get(digest).onsuccess = function (e) {
-      var body = e.target.result.body;
-      readBlobData(body, type, opts.binary, function (blobData) {
-        callback(null, blobData);
+    // Attachments have a list of revisions that are using them, when
+    // that list becomes empty we can delete the attachment.
+    attachments.forEach(function (digest) {
+      revs.forEach(function (rev) {
+        delete doc.attachments[digest].revs[rev];
       });
-    };
+      if (!Object.keys(doc.attachments[digest].revs).length) {
+        delete doc.attachments[digest];
+      }
+    });
+
+    docStore.put(doc);
   };
 
-  api._info = function idb_info(callback) {
-    var updateSeq;
-    var docCount;
-
-    var txnResult = openTransactionSafely(idb, [META_STORE, BY_SEQ_STORE], 'readonly');
-    if (txnResult.error) {
-      return callback(txnResult.error);
-    }
-    var txn = txnResult.txn;
-    txn.objectStore(META_STORE).get(META_STORE).onsuccess = function (e) {
-      docCount = e.target.result.docCount;
-    };
-    txn.objectStore(BY_SEQ_STORE).openCursor(null, 'prev').onsuccess = function (e) {
-      var cursor = e.target.result;
-      updateSeq = cursor ? cursor.key : 0;
-    };
-
-    txn.oncomplete = function () {
-      callback(null, {
-        doc_count: docCount,
-        update_seq: updateSeq,
-        // for debugging
-        idb_attachment_format: (api._meta.blobSupport ? 'binary' : 'base64')
-      });
-    };
-  };
-
-  api._allDocs = function idb_allDocs(opts, callback) {
-    idbAllDocs(opts, idb, enrichCallbackError(callback));
-  };
-
-  api._changes = function idbChanges(opts) {
-    return changes(opts, api, dbName, idb);
-  };
-
-  api._close = function (callback) {
-    // https://developer.mozilla.org/en-US/docs/IndexedDB/IDBDatabase#close
-    // "Returns immediately and closes the connection in a separate thread..."
-    idb.close();
-    cachedDBs.delete(dbName);
+  txn.txn.oncomplete = function () {
     callback();
   };
+}
 
-  api._getRevisionTree = function (docId, callback) {
-    var txnResult = openTransactionSafely(idb, [DOC_STORE], 'readonly');
-    if (txnResult.error) {
-      return callback(txnResult.error);
-    }
-    var txn = txnResult.txn;
-    var req = txn.objectStore(DOC_STORE).get(docId);
-    req.onsuccess = function (event) {
-      var doc = decodeMetadata(event.target.result);
-      if (!doc) {
-        callback(createError(MISSING_DOC));
-      } else {
-        callback(null, doc.rev_tree);
-      }
+function destroy (dbOpts, openDatabases, idbChanges, callback) {
+
+  idbChanges.removeAllListeners(dbOpts.name);
+
+  function doDestroy() {
+    var req = indexedDB.deleteDatabase(dbOpts.name);
+    req.onsuccess = function () {
+      delete openDatabases[dbOpts.name];
+      callback(null, {ok: true});
     };
-  };
+  }
 
-  // This function removes revisions of document docId
-  // which are listed in revs and sets this document
-  // revision to to rev_tree
-  api._doCompaction = function (docId, revs, callback) {
-    var stores = [
-      DOC_STORE,
-      BY_SEQ_STORE,
-      ATTACH_STORE,
-      ATTACH_AND_SEQ_STORE
-    ];
-    var txnResult = openTransactionSafely(idb, stores, 'readwrite');
-    if (txnResult.error) {
-      return callback(txnResult.error);
+  // If the database is open we need to close it
+  if (dbOpts.name in openDatabases) {
+    openDatabases[dbOpts.name].then(function (res) {
+      res.idb.close();
+      doDestroy();
+    });
+  } else {
+    doDestroy();
+  }
+
+}
+
+// Adapted from
+// https://github.com/pouchdb/pouchdb/blob/master/packages/node_modules/pouchdb-find/src/adapters/local/find/query-planner.js#L20-L24
+// This could change / improve in the future?
+var COUCH_COLLATE_LO = null;
+var COUCH_COLLATE_HI = '\uffff'; // actually used as {"\uffff": {}}
+
+// Adapted from: https://www.w3.org/TR/IndexedDB/#compare-two-keys
+// Importantly, *there is no upper bound possible* in idb. The ideal data
+// structure an infintely deep array:
+//   var IDB_COLLATE_HI = []; IDB_COLLATE_HI.push(IDB_COLLATE_HI)
+// But IDBKeyRange is not a fan of shenanigans, so I've just gone with 12 layers
+// because it looks nice and surely that's enough!
+var IDB_COLLATE_LO = Number.NEGATIVE_INFINITY;
+var IDB_COLLATE_HI = [[[[[[[[[[[[]]]]]]]]]]]];
+
+//
+// TODO: this should be made offical somewhere and used by AllDocs / get /
+// changes etc as well.
+//
+function externaliseRecord(idbDoc) {
+  var doc = idbDoc.revs[idbDoc.rev].data;
+  doc._id = idbDoc.id;
+  doc._rev = idbDoc.rev;
+  if (idbDoc.deleted) {
+    doc._deleted = true;
+  }
+
+  return doc;
+}
+
+/**
+ * Generates a keyrange based on the opts passed to query
+ *
+ * The first key is always 0, as that's how we're filtering out deleted entries.
+ */
+function generateKeyRange(opts) {
+  function defined(obj, k) {
+    return obj[k] !== void 0;
+  }
+
+  // Converts a valid CouchDB key into a valid IndexedDB one
+  function convert(key, exact) {
+    // The first item in every native index is doc.deleted, and we always want
+    // to only search documents that are not deleted.
+    // "foo" -> [0, "foo"]
+    var filterDeleted = [0].concat(key);
+
+    return filterDeleted.map(function (k) {
+      // null, true and false are not indexable by indexeddb. When we write
+      // these values we convert them to these constants, and so when we
+      // query for them we need to convert the query also.
+      if (k === null && exact) {
+        // for non-exact queries we treat null as a collate property
+        // see `if (!exact)` block below
+        return IDB_NULL;
+      } else if (k === true) {
+        return IDB_TRUE;
+      } else if (k === false) {
+        return IDB_FALSE;
+      }
+
+      if (!exact) {
+        // We get passed CouchDB's collate low and high values, so for non-exact
+        // ranged queries we're going to convert them to our IDB equivalents
+        if (k === COUCH_COLLATE_LO) {
+          return IDB_COLLATE_LO;
+        } else if (Object.prototype.hasOwnProperty.call(k, COUCH_COLLATE_HI)) {
+          return IDB_COLLATE_HI;
+        }
+      }
+
+      return k;
+    });
+  }
+
+  // CouchDB and so PouchdB defaults to true. We need to make this explicit as
+  // we invert these later for IndexedDB.
+  if (!defined(opts, 'inclusive_end')) {
+    opts.inclusive_end = true;
+  }
+  if (!defined(opts, 'inclusive_start')) {
+    opts.inclusive_start = true;
+  }
+
+  if (opts.descending) {
+    // Flip before generating. We'll check descending again later when performing
+    // an index request
+    var realEndkey = opts.startkey,
+        realInclusiveEnd = opts.inclusive_start;
+
+    opts.startkey = opts.endkey;
+    opts.endkey = realEndkey;
+    opts.inclusive_start = opts.inclusive_end;
+    opts.inclusive_end = realInclusiveEnd;
+  }
+
+  try {
+    if (defined(opts, 'key')) {
+      return IDBKeyRange.only(convert(opts.key, true));
     }
-    var txn = txnResult.txn;
 
-    var docStore = txn.objectStore(DOC_STORE);
+    if (defined(opts, 'startkey') && !defined(opts, 'endkey')) {
+      // lowerBound, but without the deleted docs.
+      // [1] is the start of the deleted doc range, and we don't want to include then.
+      return IDBKeyRange.bound(
+        convert(opts.startkey), [1],
+        !opts.inclusive_start, true
+      );
+    }
 
-    docStore.get(docId).onsuccess = function (event) {
-      var metadata = decodeMetadata(event.target.result);
-      traverseRevTree(metadata.rev_tree, function (isLeaf, pos,
-                                                         revHash, ctx, opts) {
-        var rev = pos + '-' + revHash;
-        if (revs.indexOf(rev) !== -1) {
-          opts.status = 'missing';
+    if (!defined(opts, 'startkey') && defined(opts, 'endkey')) {
+      return IDBKeyRange.upperBound(convert(opts.endkey), !opts.inclusive_end);
+    }
+
+    if (defined(opts, 'startkey') && defined(opts, 'endkey')) {
+      return IDBKeyRange.bound(
+        convert(opts.startkey),    convert(opts.endkey),
+        !opts.inclusive_start, !opts.inclusive_end
+      );
+    }
+
+    return IDBKeyRange.only([0]);
+  } catch (err) {
+    console.error('Could not generate keyRange', err, opts);
+    throw Error('Could not generate key range with ' + JSON.stringify(opts));
+  }
+}
+
+function getIndexHandle(pdb, fields, reject) {
+  var indexName = naturalIndexName(fields);
+
+  return new Promise(function (resolve) {
+    pdb._openTransactionSafely([DOC_STORE], 'readonly', function (err, txn) {
+      if (err) {
+        return idbError(reject)(err);
+      }
+
+      txn.onabort = idbError(reject);
+      txn.ontimeout = idbError(reject);
+
+      var existingIndexNames = Array.from(txn.objectStore(DOC_STORE).indexNames);
+
+      if (existingIndexNames.indexOf(indexName) === -1) {
+        // The index is missing, force a db restart and try again
+        pdb._freshen()
+          .then(function () { return getIndexHandle(pdb, fields, reject); })
+          .then(resolve);
+      } else {
+        resolve(txn.objectStore(DOC_STORE).index(indexName));
+      }
+    });
+  });
+}
+
+// In theory we should return something like the doc example below, but find
+// only needs rows: [{doc: {...}}], so I think we can just not bother for now
+// {
+//   "offset" : 0,
+//   "rows": [{
+//     "id": "doc3",
+//     "key": "Lisa Says",
+//     "value": null,
+//     "doc": {
+//       "_id": "doc3",
+//       "_rev": "1-z",
+//       "title": "Lisa Says"
+//     }
+//   }],
+//   "total_rows" : 4
+// }
+function query(idb, signature, opts) {
+  // At this stage, in the current implementation, find has already gone through
+  // and determined if the index already exists from PouchDB's perspective (eg
+  // there is a design doc for it).
+  //
+  // If we find that the index doesn't exist this means we have to close and
+  // re-open the DB to correct indexes before proceeding, at which point the
+  // index should exist.
+
+  var pdb = this;
+
+  // Assumption, there will be only one /, between the design document name
+  // and the view name.
+  var parts = signature.split('/');
+
+  return new Promise(function (resolve, reject) {
+    pdb.get('_design/' + parts[0]).then(function (ddoc) {
+      var fields = rawIndexFields(ddoc, parts[1]);
+      if (!fields) {
+        throw new Error('ddoc ' + ddoc._id +' with view ' + parts[1] +
+          ' does not have map.options.def.fields defined.');
+      }
+
+      var skip = opts.skip;
+      var limit = Number.isInteger(opts.limit) && opts.limit;
+
+      return getIndexHandle(pdb, fields, reject)
+        .then(function (indexHandle) {
+          var keyRange = generateKeyRange(opts);
+          var req = indexHandle.openCursor(keyRange, opts.descending ? 'prev' : 'next');
+
+          var rows = [];
+          req.onerror = idbError(reject);
+          req.onsuccess = function (e) {
+            var cursor = e.target.result;
+
+            if (!cursor || limit === 0) {
+              return resolve({
+                rows: rows
+              });
+            }
+
+            if (skip) {
+              cursor.advance(skip);
+              skip = false;
+              return;
+            }
+
+            if (limit) {
+              limit = limit - 1;
+            }
+
+            rows.push({doc: externaliseRecord(cursor.value)});
+            cursor.continue();
+          };
+        });
+      })
+      .catch(reject);
+  });
+
+}
+
+function viewCleanup() {
+  // I'm not sure we have to do anything here.
+  //
+  // One option is to just close and re-open the DB, which performs the same
+  // action. The only reason you'd want to call this is if you deleted a bunch
+  // of indexes and wanted the space back immediately.
+  //
+  // Otherwise index cleanup happens when:
+  //  - A DB is opened
+  //  - A find query is performed against an index that doesn't exist but should
+
+  return Promise.resolve();
+}
+
+// deno-lint-ignore-file
+
+var ADAPTER_NAME = 'indexeddb';
+
+// TODO: Constructor should be capitalised
+var idbChanges = new Changes();
+
+// A shared list of database handles
+var openDatabases = {};
+
+function IdbPouch(dbOpts, callback) {
+
+  if (dbOpts.view_adapter) {
+    console.log('Please note that the indexeddb adapter manages _find indexes itself, therefore it is not using your specified view_adapter');
+  }
+
+  var api = this;
+  var metadata = {};
+
+  // Wrapper that gives you an active DB handle. You probably want $t.
+  var $ = function (fun) {
+    return function () {
+      var args = Array.prototype.slice.call(arguments);
+      setup(openDatabases, api, dbOpts).then(function (res) {
+        metadata = res.metadata;
+        args.unshift(res.idb);
+        fun.apply(api, args);
+      }).catch(function (err) {
+        var last = args.pop();
+        if (typeof last === 'function') {
+          last(err);
+        } else {
+          console.error(err);
         }
       });
-      compactRevs(revs, docId, txn);
-      var winningRev$$1 = metadata.winningRev;
-      var deleted = metadata.deleted;
-      txn.objectStore(DOC_STORE).put(
-        encodeMetadata(metadata, winningRev$$1, deleted));
-    };
-    txn.onabort = idbError(callback);
-    txn.oncomplete = function () {
-      callback();
     };
   };
+  // the promise version of $
+  var $p = function (fun) {
+    return function () {
+      var args = Array.prototype.slice.call(arguments);
 
+      return setup(openDatabases, api, dbOpts).then(function (res) {
+        metadata = res.metadata;
+        args.unshift(res.idb);
 
-  api._getLocal = function (id, callback) {
-    var txnResult = openTransactionSafely(idb, [LOCAL_STORE], 'readonly');
-    if (txnResult.error) {
-      return callback(txnResult.error);
-    }
-    var tx = txnResult.txn;
-    var req = tx.objectStore(LOCAL_STORE).get(id);
-
-    req.onerror = idbError(callback);
-    req.onsuccess = function (e) {
-      var doc = e.target.result;
-      if (!doc) {
-        callback(createError(MISSING_DOC));
-      } else {
-        delete doc['_doc_id_rev']; // for backwards compat
-        callback(null, doc);
-      }
+        return fun.apply(api, args);
+      });
     };
   };
+  // Wrapper that gives you a safe transaction handle. It's important to use
+  // this instead of opening your own transaction from a db handle got from $,
+  // because in the time between getting the db handle and opening the
+  // transaction it may have been invalidated by index changes.
+  var $t = function (fun, stores, mode, changes$$1) {
+    stores = stores || [DOC_STORE];
+    mode = mode || 'readonly';
 
-  api._putLocal = function (doc, opts, callback) {
-    if (typeof opts === 'function') {
-      callback = opts;
-      opts = {};
-    }
-    delete doc._revisions; // ignore this, trust the rev
-    var oldRev = doc._rev;
-    var id = doc._id;
-    if (!oldRev) {
-      doc._rev = '0-1';
-    } else {
-      doc._rev = '0-' + (parseInt(oldRev.split('-')[1], 10) + 1);
-    }
+    return function () {
+      var args = Array.prototype.slice.call(arguments);
+      var txn = {};
+      const prom = setup(openDatabases, api, dbOpts).then(function (res) {
+        metadata = res.metadata;
+        txn.txn = res.idb.transaction(stores, mode);
+      }).catch(function (err) {
+        console.error('Failed to establish transaction safely');
+        console.error(err);
+        txn.error = err;
+      }).then(function () {
+        args.unshift(txn);
+        return fun.apply(api, args);
+      });
 
-    var tx = opts.ctx;
-    var ret;
-    if (!tx) {
-      var txnResult = openTransactionSafely(idb, [LOCAL_STORE], 'readwrite');
-      if (txnResult.error) {
-        return callback(txnResult.error);
-      }
-      tx = txnResult.txn;
-      tx.onerror = idbError(callback);
-      tx.oncomplete = function () {
-        if (ret) {
-          callback(null, ret);
-        }
-      };
-    }
-
-    var oStore = tx.objectStore(LOCAL_STORE);
-    var req;
-    if (oldRev) {
-      req = oStore.get(id);
-      req.onsuccess = function (e) {
-        var oldDoc = e.target.result;
-        if (!oldDoc || oldDoc._rev !== oldRev) {
-          callback(createError(REV_CONFLICT));
-        } else { // update
-          var req = oStore.put(doc);
-          req.onsuccess = function () {
-            ret = {ok: true, id: doc._id, rev: doc._rev};
-            if (opts.ctx) { // return immediately
-              callback(null, ret);
+      if (changes$$1) {
+        prom.cancel = () => {
+          prom.then(res => {
+            if (res && typeof res.cancel === 'function') {
+              res.cancel();
             }
-          };
-        }
-      };
-    } else { // new doc
-      req = oStore.add(doc);
-      req.onerror = function (e) {
-        // constraint error, already exists
-        callback(createError(REV_CONFLICT));
-        e.preventDefault(); // avoid transaction abort
-        e.stopPropagation(); // avoid transaction onerror
-      };
-      req.onsuccess = function () {
-        ret = {ok: true, id: doc._id, rev: doc._rev};
-        if (opts.ctx) { // return immediately
-          callback(null, ret);
-        }
-      };
-    }
-  };
-
-  api._removeLocal = function (doc, opts, callback) {
-    if (typeof opts === 'function') {
-      callback = opts;
-      opts = {};
-    }
-    var tx = opts.ctx;
-    if (!tx) {
-      var txnResult = openTransactionSafely(idb, [LOCAL_STORE], 'readwrite');
-      if (txnResult.error) {
-        return callback(txnResult.error);
-      }
-      tx = txnResult.txn;
-      tx.oncomplete = function () {
-        if (ret) {
-          callback(null, ret);
-        }
-      };
-    }
-    var ret;
-    var id = doc._id;
-    var oStore = tx.objectStore(LOCAL_STORE);
-    var req = oStore.get(id);
-
-    req.onerror = idbError(callback);
-    req.onsuccess = function (e) {
-      var oldDoc = e.target.result;
-      if (!oldDoc || oldDoc._rev !== doc._rev) {
-        callback(createError(MISSING_DOC));
-      } else {
-        oStore.delete(id);
-        ret = {ok: true, id: id, rev: '0-0'};
-        if (opts.ctx) { // return immediately
-          callback(null, ret);
-        }
+          });
+        };
+        return prom
       }
     };
+  };
+
+  api._openTransactionSafely = function (stores, mode, callback) {
+    $t(function (txn, callback) {
+      callback(txn.error, txn.txn);
+    }, stores, mode)(callback);
+  };
+
+  api._remote = false;
+  api.type = function () { return ADAPTER_NAME; };
+
+  api._id = $(function (_, cb) {
+    cb(null, metadata.db_uuid);
+  });
+
+  api._info = $(function (_, cb) {
+    return info(metadata, cb);
+  });
+
+  api._get = $t(get);
+
+  api._bulkDocs = $(function (_, req, opts, callback) {
+    bulkDocs(api, req, opts, metadata, dbOpts, idbChanges, callback);
+  });
+
+  api._allDocs = $t(function (txn, opts, cb) {
+    allDocs(txn, metadata, opts, cb);
+  });
+
+  api._getAttachment = $t(getAttachment);
+
+  api._changes = $t(function (txn, opts) {
+    return changes(txn, idbChanges, api, dbOpts, opts);
+  }, null, null, true);
+
+  api._getRevisionTree = $t(getRevisionTree);
+  api._doCompaction = $t(doCompaction, [DOC_STORE], 'readwrite');
+
+  api._customFindAbstractMapper = {
+    query: $p(query),
+    viewCleanup: $p(viewCleanup)
   };
 
   api._destroy = function (opts, callback) {
-    changesHandler.removeAllListeners(dbName);
-
-    //Close open request for "dbName" database to fix ie delay.
-    var openReq = openReqList.get(dbName);
-    if (openReq && openReq.result) {
-      openReq.result.close();
-      cachedDBs.delete(dbName);
-    }
-    var req = indexedDB.deleteDatabase(dbName);
-
-    req.onsuccess = function () {
-      //Remove open request from the list.
-      openReqList.delete(dbName);
-      if (hasLocalStorage() && (dbName in localStorage)) {
-        delete localStorage[dbName];
-      }
-      callback(null, { 'ok': true });
-    };
-
-    req.onerror = idbError(callback);
+    return destroy(dbOpts, openDatabases, idbChanges, callback);
   };
 
-  var cached = cachedDBs.get(dbName);
+  api._close = $(function (db, cb) {
+    delete openDatabases[dbOpts.name];
+    db.close();
+    cb();
+  });
 
-  if (cached) {
-    idb = cached.idb;
-    api._meta = cached.global;
-    return immediate(function () {
-      callback(null, api);
-    });
-  }
-
-  var req = indexedDB.open(dbName, ADAPTER_VERSION);
-  openReqList.set(dbName, req);
-
-  req.onupgradeneeded = function (e) {
-    var db = e.target.result;
-    if (e.oldVersion < 1) {
-      return createSchema(db); // new db, initial schema
-    }
-    // do migrations
-
-    var txn = e.currentTarget.transaction;
-    // these migrations have to be done in this function, before
-    // control is returned to the event loop, because IndexedDB
-
-    if (e.oldVersion < 3) {
-      createLocalStoreSchema(db); // v2 -> v3
-    }
-    if (e.oldVersion < 4) {
-      addAttachAndSeqStore(db); // v3 -> v4
-    }
-
-    var migrations = [
-      addDeletedOrLocalIndex, // v1 -> v2
-      migrateLocalStore,      // v2 -> v3
-      migrateAttsAndSeqs,     // v3 -> v4
-      migrateMetadata         // v4 -> v5
-    ];
-
-    var i = e.oldVersion;
-
-    function next() {
-      var migration = migrations[i - 1];
-      i++;
-      if (migration) {
-        migration(txn, next);
-      }
-    }
-
-    next();
-  };
-
-  req.onsuccess = function (e) {
-
-    idb = e.target.result;
-
-    idb.onversionchange = function () {
-      idb.close();
-      cachedDBs.delete(dbName);
-    };
-
-    idb.onabort = function (e) {
-      guardedConsole('error', 'Database has a global failure', e.target.error);
-      idbGlobalFailureError = e.target.error;
-      idb.close();
-      cachedDBs.delete(dbName);
-    };
-
-    // Do a few setup operations (in parallel as much as possible):
-    // 1. Fetch meta doc
-    // 2. Check blob support
-    // 3. Calculate docCount
-    // 4. Generate an instanceId if necessary
-    // 5. Store docCount and instanceId on meta doc
-
-    var txn = idb.transaction([
-      META_STORE,
-      DETECT_BLOB_SUPPORT_STORE,
-      DOC_STORE
-    ], 'readwrite');
-
-    var storedMetaDoc = false;
-    var metaDoc;
-    var docCount;
-    var blobSupport;
-    var instanceId;
-
-    function completeSetup() {
-      if (typeof blobSupport === 'undefined' || !storedMetaDoc) {
-        return;
-      }
-      api._meta = {
-        name: dbName,
-        instanceId: instanceId,
-        blobSupport: blobSupport
-      };
-
-      cachedDBs.set(dbName, {
-        idb: idb,
-        global: api._meta
+  // Closing and re-opening the DB re-generates native indexes
+  api._freshen = function () {
+    return new Promise(function (resolve) {
+      api._close(function () {
+        $(resolve)();
       });
-      callback(null, api);
-    }
-
-    function storeMetaDocIfReady() {
-      if (typeof docCount === 'undefined' || typeof metaDoc === 'undefined') {
-        return;
-      }
-      var instanceKey = dbName + '_id';
-      if (instanceKey in metaDoc) {
-        instanceId = metaDoc[instanceKey];
-      } else {
-        metaDoc[instanceKey] = instanceId = uuid();
-      }
-      metaDoc.docCount = docCount;
-      txn.objectStore(META_STORE).put(metaDoc);
-    }
-
-    //
-    // fetch or generate the instanceId
-    //
-    txn.objectStore(META_STORE).get(META_STORE).onsuccess = function (e) {
-      metaDoc = e.target.result || { id: META_STORE };
-      storeMetaDocIfReady();
-    };
-
-    //
-    // countDocs
-    //
-    countDocs(txn, function (count) {
-      docCount = count;
-      storeMetaDocIfReady();
     });
-
-    //
-    // check blob support
-    //
-    if (!blobSupportPromise) {
-      // make sure blob support is only checked once
-      blobSupportPromise = checkBlobSupport(txn);
-    }
-
-    blobSupportPromise.then(function (val) {
-      blobSupport = val;
-      completeSetup();
-    });
-
-    // only when the metadata put transaction has completed,
-    // consider the setup done
-    txn.oncomplete = function () {
-      storedMetaDoc = true;
-      completeSetup();
-    };
-    txn.onabort = idbError(callback);
   };
 
-  req.onerror = function (e) {
-    var msg = e.target.error && e.target.error.message;
-
-    if (!msg) {
-      msg = 'Failed to open indexedDB, are you in private browsing mode?';
-    } else if (msg.indexOf("stored database is a higher version") !== -1) {
-      msg = new Error('This DB was created with the newer "indexeddb" adapter, but you are trying to open it with the older "idb" adapter');
-    }
-
-    guardedConsole('error', msg);
-    callback(createError(IDB_ERROR, msg));
-  };
+  // TODO: this setTimeout seems nasty, if its needed lets
+  // figure out / explain why
+  setTimeout(function () {
+    callback(null, api);
+  });
 }
 
+// TODO: this isnt really valid permanently, just being lazy to start
 IdbPouch.valid = function () {
-  // Following #7085 buggy idb versions (typically Safari < 10.1) are
-  // considered valid.
-
-  // On Firefox SecurityError is thrown while referencing indexedDB if cookies
-  // are not allowed. `typeof indexedDB` also triggers the error.
-  try {
-    // some outdated implementations of IDB that appear on Samsung
-    // and HTC Android devices <4.4 are missing IDBKeyRange
-    return typeof indexedDB !== 'undefined' && typeof IDBKeyRange !== 'undefined';
-  } catch (e) {
-    return false;
-  }
+  return true;
 };
 
-function IDBPouch (PouchDB) {
-  PouchDB.adapter('idb', IdbPouch, true);
+function IndexedDbPouch (PouchDB) {
+  PouchDB.adapter(ADAPTER_NAME, IdbPouch, true);
 }
 
 // dead simple promise pool, inspired by https://github.com/timdp/es6-promise-pool
@@ -6671,6 +6079,8 @@ function pool(promiseFactories, limit) {
     runNextBatch();
   });
 }
+
+// deno-lint-ignore-file
 
 var CHANGES_BATCH_SIZE = 25;
 var MAX_SIMULTANEOUS_REVS = 50;
@@ -6776,9 +6186,12 @@ function genUrl(opts, path) {
 }
 
 function paramsToStr(params) {
-  return '?' + Object.keys(params).map(function (k) {
-    return k + '=' + encodeURIComponent(params[k]);
-  }).join('&');
+  const paramKeys = Object.keys(params);
+  if (paramKeys.length === 0) {
+    return '';
+  }
+
+  return '?' + paramKeys.map(key => key + '=' + encodeURIComponent(params[key])).join('&');
 }
 
 function shouldCacheBust(opts) {
@@ -6799,11 +6212,11 @@ function HttpPouch(opts, callback) {
 
   var host = getHost(opts.name, opts);
   var dbUrl = genDBUrl(host, '');
+  var dbId;
 
   opts = clone(opts);
 
   var ourFetch = function (url, options) {
-
     options = options || {};
     options.headers = options.headers || new h();
 
@@ -6842,7 +6255,6 @@ function HttpPouch(opts, callback) {
   }
 
   function fetchJSON(url, options, callback) {
-
     var result = {};
 
     options = options || {};
@@ -6903,25 +6315,27 @@ function HttpPouch(opts, callback) {
       return setupPromise;
     }
 
-    setupPromise = fetchJSON(dbUrl).catch(function (err) {
-      if (err && err.status && err.status === 404) {
-        // Doesnt exist, create it
-        explainError(404, 'PouchDB is just detecting if the remote exists.');
-        return fetchJSON(dbUrl, {method: 'PUT'});
-      } else {
+    setupPromise = fetchJSON(dbUrl)
+      .catch(err => {
+        if (err && err.status && err.status === 404) {
+          // Doesnt exist, create it
+          explainError(404, 'PouchDB is just detecting if the remote exists.');
+          return fetchJSON(dbUrl, {method: 'PUT'});
+        } else {
+          return Promise.reject(err);
+        }
+      })
+      .catch(err => {
+        // If we try to create a database that already exists, skipped in
+        // istanbul since its catching a race condition.
+        /* istanbul ignore if */
+        if (err && err.status && err.status === 412) {
+          return true;
+        }
         return Promise.reject(err);
-      }
-    }).catch(function (err) {
-      // If we try to create a database that already exists, skipped in
-      // istanbul since its catching a race condition.
-      /* istanbul ignore if */
-      if (err && err.status && err.status === 412) {
-        return true;
-      }
-      return Promise.reject(err);
-    });
+      });
 
-    setupPromise.catch(function () {
+    setupPromise.catch(() => {
       setupPromise = null;
     });
 
@@ -6939,17 +6353,25 @@ function HttpPouch(opts, callback) {
     return 'http';
   };
 
-  api.id = adapterFun$$1('id', function (callback) {
-    ourFetch(genUrl(host, '')).then(function (response) {
-      return response.json();
-    }).catch(function () {
-      return {};
-    }).then(function (result) {
-      // Bad response or missing `uuid` should not prevent ID generation.
-      var uuid$$1 = (result && result.uuid) ?
-          (result.uuid + host.db) : genDBUrl(host, '');
-      callback(null, uuid$$1);
-    });
+  let pendingDbId;
+  api.id = adapterFun$$1('id', callback => {
+    if (pendingDbId) {
+      pendingDbId.then(() => {
+        callback(null, dbId);
+      });
+    } else if (dbId) {
+      callback(null, dbId);
+    } else {
+      pendingDbId = ourFetch(genUrl(host, ''))
+        .then(res => res.json())
+        .catch(() => ({}))
+        .then(result => {
+          // Bad response or missing `uuid` should not prevent ID generation.
+          dbId = (result && result.uuid) ? (result.uuid + host.db) : dbUrl;
+          pendingDbId = null;
+          callback(null, dbId);
+        });
+    }
   });
 
   // Sends a POST request to the host calling the couchdb _compact function
@@ -7270,7 +6692,10 @@ function HttpPouch(opts, callback) {
     }).then(function (blob) {
       // TODO: also remove
       if (typeof process !== 'undefined' && !process.browser) {
-        blob.type = contentType;
+        var typeFieldDescriptor = Object.getOwnPropertyDescriptor(blob.__proto__, 'type');
+        if (!typeFieldDescriptor || typeFieldDescriptor.set) {
+          blob.type = contentType;
+        }
       }
       callback(null, blob);
     }).catch(function (err) {
@@ -7412,6 +6837,10 @@ function HttpPouch(opts, callback) {
       params.startkey = JSON.stringify(opts.startkey);
     }
 
+    if (opts.partition) {
+      params.partition = opts.partition;
+    }
+
     if (opts.end_key) {
       opts.endkey = opts.end_key;
     }
@@ -7502,7 +6931,7 @@ function HttpPouch(opts, callback) {
     }
 
     if (opts.continuous) {
-      params.feed = 'longpoll';
+      params.feed = opts.sse ? 'eventsource' : 'longpoll';
     }
 
     if (opts.seq_interval) {
@@ -7607,9 +7036,23 @@ function HttpPouch(opts, callback) {
       }
 
       // Get the changes
-      setup().then(function () {
-        return fetchJSON(url, fetchOpts, callback);
-      }).catch(callback);
+      if (opts.continuous && opts.sse) {
+        setup().then(function () {
+          const changes = new EventSource(url, { withCredentials: true });
+          changes.addEventListener('error', callback);
+          changes.addEventListener('message', e => {
+            const change = JSON.parse(e.data);
+            callback(null, { results: [change], last_seq: change.seq });
+          });
+          fetchOpts.signal.addEventListener('abort', () => {
+            changes.close();
+          });
+        }).catch(callback);
+      } else {
+        setup().then(function () {
+          return fetchJSON(url, fetchOpts, callback);
+        }).catch(callback);
+      }
     };
 
     // If opts.since exists, get all the changes from the sequence
@@ -7671,7 +7114,7 @@ function HttpPouch(opts, callback) {
         (res && raw_results_length < batchSize) ||
         (opts.descending);
 
-      if ((opts.continuous && !(limit && leftToFetch <= 0)) || !finished) {
+      if ((opts.continuous && opts.sse && !(limit && leftToFetch <= 0)) || !finished) ; else if ((opts.continuous && !(limit && leftToFetch <= 0)) || !finished) {
         // Queue a call to fetch again with the newest sequence number
         immediate(function () { fetchData(lastFetchedSeq, fetched); });
       } else {
@@ -7736,41 +7179,44 @@ function HttpPouch$1 (PouchDB) {
   PouchDB.adapter('https', HttpPouch, false);
 }
 
-function QueryParseError(message) {
-  this.status = 400;
-  this.name = 'query_parse_error';
-  this.message = message;
-  this.error = true;
-  try {
-    Error.captureStackTrace(this, QueryParseError);
-  } catch (e) {}
+class QueryParseError extends Error {
+  constructor(message) {
+    super();
+    this.status = 400;
+    this.name = 'query_parse_error';
+    this.message = message;
+    this.error = true;
+    try {
+      Error.captureStackTrace(this, QueryParseError);
+    } catch (e) {}
+  }
 }
 
-inherits(QueryParseError, Error);
-
-function NotFoundError(message) {
-  this.status = 404;
-  this.name = 'not_found';
-  this.message = message;
-  this.error = true;
-  try {
-    Error.captureStackTrace(this, NotFoundError);
-  } catch (e) {}
+class NotFoundError extends Error {
+  constructor(message) {
+    super();
+    this.status = 404;
+    this.name = 'not_found';
+    this.message = message;
+    this.error = true;
+    try {
+      Error.captureStackTrace(this, NotFoundError);
+    } catch (e) {}
+  }
 }
 
-inherits(NotFoundError, Error);
-
-function BuiltInError(message) {
-  this.status = 500;
-  this.name = 'invalid_value';
-  this.message = message;
-  this.error = true;
-  try {
-    Error.captureStackTrace(this, BuiltInError);
-  } catch (e) {}
+class BuiltInError extends Error {
+  constructor(message) {
+    super();
+    this.status = 500;
+    this.name = 'invalid_value';
+    this.message = message;
+    this.error = true;
+    try {
+      Error.captureStackTrace(this, BuiltInError);
+    } catch (e) {}
+  }
 }
-
-inherits(BuiltInError, Error);
 
 function promisedCallback(promise, callback) {
   if (callback) {
@@ -7902,20 +7348,24 @@ function evalFunctionWithEval(func, emit) {
  */
 
 
-function TaskQueue$1() {
-  this.promise = new Promise(function (fulfill) {fulfill(); });
+class TaskQueue$1 {
+  constructor() {
+    this.promise = new Promise(function (fulfill) {fulfill(); });
+  }
+
+  add(promiseFactory) {
+    this.promise = this.promise.catch(function () {
+      // just recover
+    }).then(function () {
+      return promiseFactory();
+    });
+    return this.promise;
+  }
+
+  finish() {
+    return this.promise;
+  }
 }
-TaskQueue$1.prototype.add = function (promiseFactory) {
-  this.promise = this.promise.catch(function () {
-    // just recover
-  }).then(function () {
-    return promiseFactory();
-  });
-  return this.promise;
-};
-TaskQueue$1.prototype.finish = function () {
-  return this.promise;
-};
 
 function stringify(input) {
   if (!input) {
@@ -8027,7 +7477,7 @@ function isGenOne(changes) {
   return changes.length === 1 && /^1-/.test(changes[0].rev);
 }
 
-function emitError(db, e) {
+function emitError(db, e, data) {
   try {
     db.emit('error', e);
   } catch (err) {
@@ -8036,7 +7486,7 @@ function emitError(db, e) {
       'You can debug this error by doing:\n' +
       'myDatabase.on(\'error\', function (err) { debugger; });\n' +
       'Please double-check your map/reduce function.');
-    guardedConsole('error', e);
+    guardedConsole('error', e, data);
   }
 }
 
@@ -8074,7 +7524,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     try {
       fun(doc);
     } catch (e) {
-      emitError(db, e);
+      emitError(db, e, {fun: fun, doc: doc});
     }
   }
 
@@ -8086,7 +7536,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     try {
       return {output : fun(keys, values, rereduce)};
     } catch (e) {
-      emitError(db, e);
+      emitError(db, e, {fun: fun, keys: keys, values: values, rereduce: rereduce});
       return {error: e};
     }
   }
@@ -8223,6 +7673,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     addHttpParam('descending', opts, params);
     addHttpParam('group', opts, params);
     addHttpParam('group_level', opts, params);
+    addHttpParam('partition', opts, params);
     addHttpParam('skip', opts, params);
     addHttpParam('stale', opts, params);
     addHttpParam('conflicts', opts, params);
@@ -8470,6 +7921,8 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     // bind the emit function once
     var mapResults;
     var doc;
+    var taskId;
+
 
     function emit(key, value) {
       var output = {id: doc._id, key: normalizeKey(key)};
@@ -8484,6 +7937,15 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     var mapFun = mapper(view.mapFun, emit);
 
     var currentSeq = view.seq || 0;
+
+    function createTask() {
+      return view.sourceDB.info().then(function (info) {
+        taskId = view.sourceDB.activeTasks.add({
+          name: 'view_indexing',
+          total_items: info.update_seq - currentSeq,
+        });
+      });
+    }
 
     function processChange(docIdsToChangesAndEmits, seq) {
       return function () {
@@ -8527,6 +7989,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
         indexed_docs: indexed_docs
       };
       view.sourceDB.emit('indexing', progress);
+      view.sourceDB.activeTasks.update(taskId, {completed_items: indexed_docs});
 
       if (results.length < opts.changes_batch_size) {
         return;
@@ -8573,10 +8036,15 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
       return indexableKeysToKeyValues;
     }
 
-    return processNextBatch().then(function () {
+    return createTask().then(function () {
+      return processNextBatch();
+    }).then(function () {
       return queue.finish();
     }).then(function () {
       view.seq = currentSeq;
+      view.sourceDB.activeTasks.remove(taskId);
+    }).catch(function (err) {
+      view.sourceDB.activeTasks.remove(taskId, err);
     });
   }
 
@@ -9050,17 +8518,17 @@ function ddocValidator(ddoc, viewName) {
 var localDocName = 'mrviews';
 var abstract = createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator);
 
-function query(fun, opts, callback) {
+function query$1(fun, opts, callback) {
   return abstract.query.call(this, fun, opts, callback);
 }
 
-function viewCleanup(callback) {
+function viewCleanup$1(callback) {
   return abstract.viewCleanup.call(this, callback);
 }
 
 var mapreduce = {
-  query: query,
-  viewCleanup: viewCleanup
+  query: query$1,
+  viewCleanup: viewCleanup$1
 };
 
 function isGenOne$1(rev) {
@@ -9247,6 +8715,8 @@ function getDocs(src, target, diffs, state) {
     .then(returnResult);
 }
 
+// deno-lint-ignore-file
+
 var CHECKPOINT_VERSION = 1;
 var REPLICATOR = "pouchdb";
 // This is an arbitrary number to limit the
@@ -9318,46 +8788,115 @@ function updateCheckpoint(db, id, checkpoint, session, returnValue) {
   });
 }
 
-function Checkpointer(src, target, id, returnValue, opts) {
-  this.src = src;
-  this.target = target;
-  this.id = id;
-  this.returnValue = returnValue;
-  this.opts = opts || {};
-}
-
-Checkpointer.prototype.writeCheckpoint = function (checkpoint, session) {
-  var self = this;
-  return this.updateTarget(checkpoint, session).then(function () {
-    return self.updateSource(checkpoint, session);
-  });
-};
-
-Checkpointer.prototype.updateTarget = function (checkpoint, session) {
-  if (this.opts.writeTargetCheckpoint) {
-    return updateCheckpoint(this.target, this.id, checkpoint,
-      session, this.returnValue);
-  } else {
-    return Promise.resolve(true);
+class CheckpointerInternal {
+  constructor(src, target, id, returnValue, opts) {
+    this.src = src;
+    this.target = target;
+    this.id = id;
+    this.returnValue = returnValue;
+    this.opts = opts || {};
   }
-};
 
-Checkpointer.prototype.updateSource = function (checkpoint, session) {
-  if (this.opts.writeSourceCheckpoint) {
+  writeCheckpoint(checkpoint, session) {
     var self = this;
-    return updateCheckpoint(this.src, this.id, checkpoint,
-      session, this.returnValue)
-      .catch(function (err) {
-        if (isForbiddenError(err)) {
-          self.opts.writeSourceCheckpoint = false;
-          return true;
+    return this.updateTarget(checkpoint, session).then(function () {
+      return self.updateSource(checkpoint, session);
+    });
+  }
+
+  updateTarget(checkpoint, session) {
+    if (this.opts.writeTargetCheckpoint) {
+      return updateCheckpoint(this.target, this.id, checkpoint,
+        session, this.returnValue);
+    } else {
+      return Promise.resolve(true);
+    }
+  }
+
+  updateSource(checkpoint, session) {
+    if (this.opts.writeSourceCheckpoint) {
+      var self = this;
+      return updateCheckpoint(this.src, this.id, checkpoint,
+        session, this.returnValue)
+        .catch(function (err) {
+          if (isForbiddenError(err)) {
+            self.opts.writeSourceCheckpoint = false;
+            return true;
+          }
+          throw err;
+        });
+    } else {
+      return Promise.resolve(true);
+    }
+  }
+
+  getCheckpoint() {
+    var self = this;
+    var since = self.opts.since || LOWEST_SEQ;
+
+    if (self.opts && self.opts.writeSourceCheckpoint && !self.opts.writeTargetCheckpoint) {
+      return self.src.get(self.id).then(function (sourceDoc) {
+        return sourceDoc.last_seq || since;
+      }).catch(function (err) {
+        /* istanbul ignore if */
+        if (err.status !== 404) {
+          throw err;
+        }
+        return since;
+      });
+    }
+
+    return self.target.get(self.id).then(function (targetDoc) {
+      if (self.opts && self.opts.writeTargetCheckpoint && !self.opts.writeSourceCheckpoint) {
+        return targetDoc.last_seq || since;
+      }
+
+      return self.src.get(self.id).then(function (sourceDoc) {
+        // Since we can't migrate an old version doc to a new one
+        // (no session id), we just go with the lowest seq in this case
+        /* istanbul ignore if */
+        if (targetDoc.version !== sourceDoc.version) {
+          return since;
+        }
+
+        var version;
+        if (targetDoc.version) {
+          version = targetDoc.version.toString();
+        } else {
+          version = "undefined";
+        }
+
+        if (version in comparisons) {
+          return comparisons[version](targetDoc, sourceDoc, since);
+        }
+        /* istanbul ignore next */
+        return since;
+      }, function (err) {
+        if (err.status === 404 && targetDoc.last_seq) {
+          return self.src.put({
+            _id: self.id,
+            last_seq: since
+          }).then(function () {
+            return since;
+          }, function (err) {
+            if (isForbiddenError(err)) {
+              self.opts.writeSourceCheckpoint = false;
+              return targetDoc.last_seq;
+            }
+            /* istanbul ignore next */
+            return since;
+          });
         }
         throw err;
       });
-  } else {
-    return Promise.resolve(true);
+    }).catch(function (err) {
+      if (err.status !== 404) {
+        throw err;
+      }
+      return since;
+    });
   }
-};
+}
 
 var comparisons = {
   "undefined": function (targetDoc, sourceDoc) {
@@ -9368,82 +8907,17 @@ var comparisons = {
     /* istanbul ignore next */
     return 0;
   },
-  "1": function (targetDoc, sourceDoc) {
+  "1": function (targetDoc, sourceDoc, since) {
     // This is the comparison function ported from CouchDB
-    return compareReplicationLogs(sourceDoc, targetDoc).last_seq;
+    return compareReplicationLogs(sourceDoc, targetDoc, since).last_seq;
   }
 };
 
-Checkpointer.prototype.getCheckpoint = function () {
-  var self = this;
-
-  if (self.opts && self.opts.writeSourceCheckpoint && !self.opts.writeTargetCheckpoint) {
-    return self.src.get(self.id).then(function (sourceDoc) {
-      return sourceDoc.last_seq || LOWEST_SEQ;
-    }).catch(function (err) {
-      /* istanbul ignore if */
-      if (err.status !== 404) {
-        throw err;
-      }
-      return LOWEST_SEQ;
-    });
-  }
-
-  return self.target.get(self.id).then(function (targetDoc) {
-    if (self.opts && self.opts.writeTargetCheckpoint && !self.opts.writeSourceCheckpoint) {
-      return targetDoc.last_seq || LOWEST_SEQ;
-    }
-
-    return self.src.get(self.id).then(function (sourceDoc) {
-      // Since we can't migrate an old version doc to a new one
-      // (no session id), we just go with the lowest seq in this case
-      /* istanbul ignore if */
-      if (targetDoc.version !== sourceDoc.version) {
-        return LOWEST_SEQ;
-      }
-
-      var version;
-      if (targetDoc.version) {
-        version = targetDoc.version.toString();
-      } else {
-        version = "undefined";
-      }
-
-      if (version in comparisons) {
-        return comparisons[version](targetDoc, sourceDoc);
-      }
-      /* istanbul ignore next */
-      return LOWEST_SEQ;
-    }, function (err) {
-      if (err.status === 404 && targetDoc.last_seq) {
-        return self.src.put({
-          _id: self.id,
-          last_seq: LOWEST_SEQ
-        }).then(function () {
-          return LOWEST_SEQ;
-        }, function (err) {
-          if (isForbiddenError(err)) {
-            self.opts.writeSourceCheckpoint = false;
-            return targetDoc.last_seq;
-          }
-          /* istanbul ignore next */
-          return LOWEST_SEQ;
-        });
-      }
-      throw err;
-    });
-  }).catch(function (err) {
-    if (err.status !== 404) {
-      throw err;
-    }
-    return LOWEST_SEQ;
-  });
-};
 // This checkpoint comparison is ported from CouchDBs source
 // they come from here:
 // https://github.com/apache/couchdb-couch-replicator/blob/master/src/couch_replicator.erl#L863-L906
 
-function compareReplicationLogs(srcDoc, tgtDoc) {
+function compareReplicationLogs(srcDoc, tgtDoc, since) {
   if (srcDoc.session_id === tgtDoc.session_id) {
     return {
       last_seq: srcDoc.last_seq,
@@ -9451,10 +8925,10 @@ function compareReplicationLogs(srcDoc, tgtDoc) {
     };
   }
 
-  return compareReplicationHistory(srcDoc.history, tgtDoc.history);
+  return compareReplicationHistory(srcDoc.history, tgtDoc.history, since);
 }
 
-function compareReplicationHistory(sourceHistory, targetHistory) {
+function compareReplicationHistory(sourceHistory, targetHistory, since) {
   // the erlang loop via function arguments is not so easy to repeat in JS
   // therefore, doing this as recursion
   var S = sourceHistory[0];
@@ -9464,7 +8938,7 @@ function compareReplicationHistory(sourceHistory, targetHistory) {
 
   if (!S || targetHistory.length === 0) {
     return {
-      last_seq: LOWEST_SEQ,
+      last_seq: since,
       history: []
     };
   }
@@ -9486,7 +8960,7 @@ function compareReplicationHistory(sourceHistory, targetHistory) {
     };
   }
 
-  return compareReplicationHistory(sourceRest, targetRest);
+  return compareReplicationHistory(sourceRest, targetRest, since);
 }
 
 function hasSessionId(sessionId, history) {
@@ -9506,6 +8980,13 @@ function hasSessionId(sessionId, history) {
 
 function isForbiddenError(err) {
   return typeof err.status === 'number' && Math.floor(err.status / 100) === 4;
+}
+
+function Checkpointer(src, target, id, returnValue, opts) {
+  if (!(this instanceof CheckpointerInternal)) {
+    return new CheckpointerInternal(src, target, id, returnValue, opts);
+  }
+  return Checkpointer;
 }
 
 var STARTING_BACK_OFF = 0;
@@ -9585,6 +9066,8 @@ function generateReplicationId(src, target, opts) {
   });
 }
 
+// deno-lint-ignore-file
+
 function replicate(src, target, opts, returnValue, result) {
   var batches = [];               // list of batches to be processed
   var currentBatch;               // the batch currently being processed
@@ -9596,6 +9079,10 @@ function replicate(src, target, opts, returnValue, result) {
   var writingCheckpoint = false;  // true while checkpoint is being written
   var changesCompleted = false;   // true when all changes received
   var replicationCompleted = false; // true when replication has completed
+  // initial_last_seq is the state of the source db before
+  // replication started, and it is _not_ updated during
+  // replication or used anywhere else, as opposed to last_seq
+  var initial_last_seq = 0;
   var last_seq = 0;
   var continuous = opts.continuous || opts.live || false;
   var batch_size = opts.batch_size || 100;
@@ -9609,6 +9096,7 @@ function replicate(src, target, opts, returnValue, result) {
   var changedDocs = [];
   // Like couchdb, every replication gets a unique session id
   var session = uuid();
+  var taskId;
 
   result = result || {
     ok: true,
@@ -9627,17 +9115,17 @@ function replicate(src, target, opts, returnValue, result) {
       return Promise.resolve();
     }
     return generateReplicationId(src, target, opts).then(function (res) {
-      repId = res;
+      returnValue.replicationId = repId = res;
 
       var checkpointOpts = {};
       if (opts.checkpoint === false) {
-        checkpointOpts = { writeSourceCheckpoint: false, writeTargetCheckpoint: false };
+        checkpointOpts = { writeSourceCheckpoint: false, writeTargetCheckpoint: false, since: opts.since };
       } else if (opts.checkpoint === 'source') {
-        checkpointOpts = { writeSourceCheckpoint: true, writeTargetCheckpoint: false };
+        checkpointOpts = { writeSourceCheckpoint: true, writeTargetCheckpoint: false, since: opts.since };
       } else if (opts.checkpoint === 'target') {
-        checkpointOpts = { writeSourceCheckpoint: false, writeTargetCheckpoint: true };
+        checkpointOpts = { writeSourceCheckpoint: false, writeTargetCheckpoint: true, since: opts.since };
       } else {
-        checkpointOpts = { writeSourceCheckpoint: true, writeTargetCheckpoint: true };
+        checkpointOpts = { writeSourceCheckpoint: true, writeTargetCheckpoint: true, since: opts.since };
       }
 
       checkpointer = new Checkpointer(src, target, repId, returnValue, checkpointOpts);
@@ -9694,12 +9182,13 @@ function replicate(src, target, opts, returnValue, result) {
     });
   }
 
-  function finishBatch() {
+  async function finishBatch () {
     if (currentBatch.error) {
       throw new Error('There was a problem getting docs.');
     }
     result.last_seq = last_seq = currentBatch.seq;
     var outResult = clone(result);
+
     if (changedDocs.length) {
       outResult.docs = changedDocs;
       // Attach 'pending' property if server supports it (CouchDB 2.0+)
@@ -9710,9 +9199,30 @@ function replicate(src, target, opts, returnValue, result) {
       }
       returnValue.emit('change', outResult);
     }
+
     writingCheckpoint = true;
-    return checkpointer.writeCheckpoint(currentBatch.seq,
-        session).then(function () {
+
+    var task = src.activeTasks.get(taskId);
+    if (!currentBatch || !task) {
+      return;
+    }
+
+    var completed = task.completed_items || 0;
+
+    let total_items;
+    if (typeof initial_last_seq === 'number') {
+      const info = await src.info();
+      if (typeof info.update_seq === 'number') {
+        total_items = info.update_seq - initial_last_seq;
+      }
+    }
+
+    src.activeTasks.update(taskId, {
+      completed_items: completed + currentBatch.changes.length,
+      total_items
+    });
+
+    return checkpointer.writeCheckpoint(currentBatch.seq, session).then(() => {
       returnValue.emit('checkpoint', { 'checkpoint': currentBatch.seq });
       writingCheckpoint = false;
       /* istanbul ignore if */
@@ -9768,7 +9278,7 @@ function replicate(src, target, opts, returnValue, result) {
       return;
     }
     if (batches.length === 0) {
-      processPendingBatch(true);
+      processPendingBatch({ immediate: true });
       return;
     }
     currentBatch = batches.shift();
@@ -9784,7 +9294,7 @@ function replicate(src, target, opts, returnValue, result) {
   }
 
 
-  function processPendingBatch(immediate$$1) {
+  function processPendingBatch({ immediate: immediate$$1 }) {
     if (pendingBatch.changes.length === 0) {
       if (batches.length === 0 && !currentBatch) {
         if ((continuous && changesOpts.live) || changesCompleted) {
@@ -9852,6 +9362,8 @@ function replicate(src, target, opts, returnValue, result) {
     result.last_seq = last_seq;
     replicationCompleted = true;
 
+    src.activeTasks.remove(taskId, fatalError);
+
     if (fatalError) {
       // need to extend the error because Firefox considers ".result" read-only
       fatalError = createError(fatalError);
@@ -9873,7 +9385,6 @@ function replicate(src, target, opts, returnValue, result) {
     }
   }
 
-
   function onChange(change, pending, lastSeq) {
     /* istanbul ignore if */
     if (returnValue.cancelled) {
@@ -9887,13 +9398,20 @@ function replicate(src, target, opts, returnValue, result) {
 
     var filter = filterChange(opts)(change);
     if (!filter) {
+      // update processed items count by 1
+      var task = src.activeTasks.get(taskId);
+      if (task) {
+        // we can assume that task exists here? shouldn't be deleted by here.
+        var completed = task.completed_items || 0;
+        src.activeTasks.update(taskId, {completed_items: ++completed});
+      }
       return;
     }
     pendingBatch.seq = change.seq || lastSeq;
     pendingBatch.changes.push(change);
     returnValue.emit('checkpoint', { 'pending_batch': pendingBatch.seq });
     immediate(function () {
-      processPendingBatch(batches.length === 0 && changesOpts.live);
+      processPendingBatch({ immediate: batches.length === 0 && changesOpts.live });
     });
   }
 
@@ -9907,12 +9425,18 @@ function replicate(src, target, opts, returnValue, result) {
 
     // if no results were returned then we're done,
     // else fetch more
-    if (changes.results.length > 0) {
+    const done = changes.results.length < batch_size;
+
+    if (!done) {
       changesOpts.since = changes.results[changes.results.length - 1].seq;
       getChanges();
-      processPendingBatch(true);
+      processPendingBatch({ immediate: true });
     } else {
-
+      // process the last partial batch
+      if (changes.results.length) {
+        changesOpts.since = changes.results[changes.results.length - 1].seq;
+        processPendingBatch({ immediate: true });
+      }
       var complete = function () {
         if (continuous) {
           changesOpts.live = true;
@@ -9920,14 +9444,13 @@ function replicate(src, target, opts, returnValue, result) {
         } else {
           changesCompleted = true;
         }
-        processPendingBatch(true);
+        processPendingBatch({ immediate: true});
       };
 
       // update the checkpoint so we start from the right seq next time
       if (!currentBatch && changes.results.length === 0) {
         writingCheckpoint = true;
-        checkpointer.writeCheckpoint(changes.last_seq,
-            session).then(function () {
+        checkpointer.writeCheckpoint(changes.last_seq, session).then(() => {
           writingCheckpoint = false;
           result.last_seq = last_seq = changes.last_seq;
           complete();
@@ -9985,6 +9508,23 @@ function replicate(src, target, opts, returnValue, result) {
     }
   }
 
+  async function createTask (checkpoint) {
+    const info = await src.info();
+
+    let total_items;
+    if (typeof info.update_seq === 'number') {
+      total_items = typeof opts.since === 'undefined' ?
+      info.update_seq - checkpoint :
+      info.update_seq;
+    }
+
+    taskId = src.activeTasks.add({
+      name: `${continuous ? 'continuous ' : ''}replication from ${info.db_name}` ,
+      total_items,
+    });
+
+    return checkpoint;
+  }
 
   function startChanges() {
     initCheckpointer().then(function () {
@@ -9993,9 +9533,11 @@ function replicate(src, target, opts, returnValue, result) {
         completeReplication();
         return;
       }
-      return checkpointer.getCheckpoint().then(function (checkpoint) {
+      return checkpointer.getCheckpoint().then(createTask).then((checkpoint) => {
         last_seq = checkpoint;
+        initial_last_seq = checkpoint;
         changesOpts = {
+          live: opts.sse && opts.skipInitialBatch,
           since: last_seq,
           limit: batch_size,
           batch_size: batch_size,
@@ -10014,6 +9556,9 @@ function replicate(src, target, opts, returnValue, result) {
         }
         if ('heartbeat' in opts) {
           changesOpts.heartbeat = opts.heartbeat;
+        }
+        if (opts.sse) {
+          changesOpts.sse = opts.sse;
         }
         if ('timeout' in opts) {
           changesOpts.timeout = opts.timeout;
@@ -10055,73 +9600,56 @@ function replicate(src, target, opts, returnValue, result) {
     returnValue._addedListeners = true;
   }
 
-  if (typeof opts.since === 'undefined') {
-    startChanges();
-  } else {
-    initCheckpointer().then(function () {
-      writingCheckpoint = true;
-      return checkpointer.writeCheckpoint(opts.since, session);
-    }).then(function () {
-      writingCheckpoint = false;
-      /* istanbul ignore if */
-      if (returnValue.cancelled) {
-        completeReplication();
-        return;
-      }
-      last_seq = opts.since;
-      startChanges();
-    }).catch(onCheckpointError);
-  }
+  startChanges();
 }
 
 // We create a basic promise so the caller can cancel the replication possibly
 // before we have actually started listening to changes etc
-inherits(Replication, EE);
-function Replication() {
-  EE.call(this);
-  this.cancelled = false;
-  this.state = 'pending';
-  var self = this;
-  var promise = new Promise(function (fulfill, reject) {
-    self.once('complete', fulfill);
-    self.once('error', reject);
-  });
-  self.then = function (resolve, reject) {
-    return promise.then(resolve, reject);
-  };
-  self.catch = function (reject) {
-    return promise.catch(reject);
-  };
-  // As we allow error handling via "error" event as well,
-  // put a stub in here so that rejecting never throws UnhandledError.
-  self.catch(function () {});
+class Replication extends EE {
+  constructor() {
+    super();
+    this.cancelled = false;
+    this.state = 'pending';
+    const promise = new Promise((fulfill, reject) => {
+      this.once('complete', fulfill);
+      this.once('error', reject);
+    });
+    this.then = function (resolve, reject) {
+      return promise.then(resolve, reject);
+    };
+    this.catch = function (reject) {
+      return promise.catch(reject);
+    };
+    // As we allow error handling via "error" event as well,
+    // put a stub in here so that rejecting never throws UnhandledError.
+    this.catch(function () {});
+  }
+
+  cancel() {
+    this.cancelled = true;
+    this.state = 'cancelled';
+    this.emit('cancel');
+  }
+
+  ready(src, target) {
+    if (this._readyCalled) {
+      return;
+    }
+    this._readyCalled = true;
+  
+    const onDestroy = () => {
+      this.cancel();
+    };
+    src.once('destroyed', onDestroy);
+    target.once('destroyed', onDestroy);
+    function cleanup() {
+      src.removeListener('destroyed', onDestroy);
+      target.removeListener('destroyed', onDestroy);
+    }
+    this.once('complete', cleanup);
+    this.once('error', cleanup);
+  }
 }
-
-Replication.prototype.cancel = function () {
-  this.cancelled = true;
-  this.state = 'cancelled';
-  this.emit('cancel');
-};
-
-Replication.prototype.ready = function (src, target) {
-  var self = this;
-  if (self._readyCalled) {
-    return;
-  }
-  self._readyCalled = true;
-
-  function onDestroy() {
-    self.cancel();
-  }
-  src.once('destroyed', onDestroy);
-  target.once('destroyed', onDestroy);
-  function cleanup() {
-    src.removeListener('destroyed', onDestroy);
-    target.removeListener('destroyed', onDestroy);
-  }
-  self.once('complete', cleanup);
-  self.once('error', cleanup);
-};
 
 function toPouch(db, opts) {
   var PouchConstructor = opts.PouchConstructor;
@@ -10160,7 +9688,6 @@ function replicateWrapper(src, target, opts, callback) {
   return replicateRet;
 }
 
-inherits(Sync, EE);
 function sync(src, target, opts, callback) {
   if (typeof opts === 'function') {
     callback = opts;
@@ -10177,197 +9704,217 @@ function sync(src, target, opts, callback) {
   return new Sync(src, target, opts, callback);
 }
 
-function Sync(src, target, opts, callback) {
-  var self = this;
-  this.canceled = false;
+class Sync extends EE {
+  constructor(src, target, opts, callback) {
+    super();
+    this.canceled = false;
 
-  var optsPush = opts.push ? $inject_Object_assign({}, opts, opts.push) : opts;
-  var optsPull = opts.pull ? $inject_Object_assign({}, opts, opts.pull) : opts;
+    const optsPush = opts.push ? $inject_Object_assign({}, opts, opts.push) : opts;
+    const optsPull = opts.pull ? $inject_Object_assign({}, opts, opts.pull) : opts;
 
-  this.push = replicateWrapper(src, target, optsPush);
-  this.pull = replicateWrapper(target, src, optsPull);
+    this.push = replicateWrapper(src, target, optsPush);
+    this.pull = replicateWrapper(target, src, optsPull);
 
-  this.pushPaused = true;
-  this.pullPaused = true;
+    this.pushPaused = true;
+    this.pullPaused = true;
 
-  function pullChange(change) {
-    self.emit('change', {
-      direction: 'pull',
-      change: change
-    });
-  }
-  function pushChange(change) {
-    self.emit('change', {
-      direction: 'push',
-      change: change
-    });
-  }
-  function pushDenied(doc) {
-    self.emit('denied', {
-      direction: 'push',
-      doc: doc
-    });
-  }
-  function pullDenied(doc) {
-    self.emit('denied', {
-      direction: 'pull',
-      doc: doc
-    });
-  }
-  function pushPaused() {
-    self.pushPaused = true;
-    /* istanbul ignore if */
-    if (self.pullPaused) {
-      self.emit('paused');
-    }
-  }
-  function pullPaused() {
-    self.pullPaused = true;
-    /* istanbul ignore if */
-    if (self.pushPaused) {
-      self.emit('paused');
-    }
-  }
-  function pushActive() {
-    self.pushPaused = false;
-    /* istanbul ignore if */
-    if (self.pullPaused) {
-      self.emit('active', {
-        direction: 'push'
+    const pullChange = (change) => {
+      this.emit('change', {
+        direction: 'pull',
+        change: change
       });
-    }
-  }
-  function pullActive() {
-    self.pullPaused = false;
-    /* istanbul ignore if */
-    if (self.pushPaused) {
-      self.emit('active', {
-        direction: 'pull'
+    };
+    const pushChange = (change) => {
+      this.emit('change', {
+        direction: 'push',
+        change: change
       });
-    }
-  }
-
-  var removed = {};
-
-  function removeAll(type) { // type is 'push' or 'pull'
-    return function (event, func) {
-      var isChange = event === 'change' &&
-        (func === pullChange || func === pushChange);
-      var isDenied = event === 'denied' &&
-        (func === pullDenied || func === pushDenied);
-      var isPaused = event === 'paused' &&
-        (func === pullPaused || func === pushPaused);
-      var isActive = event === 'active' &&
-        (func === pullActive || func === pushActive);
-
-      if (isChange || isDenied || isPaused || isActive) {
-        if (!(event in removed)) {
-          removed[event] = {};
-        }
-        removed[event][type] = true;
-        if (Object.keys(removed[event]).length === 2) {
-          // both push and pull have asked to be removed
-          self.removeAllListeners(event);
-        }
+    };
+    const pushDenied = (doc) => {
+      this.emit('denied', {
+        direction: 'push',
+        doc: doc
+      });
+    };
+    const pullDenied = (doc) => {
+      this.emit('denied', {
+        direction: 'pull',
+        doc: doc
+      });
+    };
+    const pushPaused = () => {
+      this.pushPaused = true;
+      /* istanbul ignore if */
+      if (this.pullPaused) {
+        this.emit('paused');
       }
     };
-  }
-
-  if (opts.live) {
-    this.push.on('complete', self.pull.cancel.bind(self.pull));
-    this.pull.on('complete', self.push.cancel.bind(self.push));
-  }
-
-  function addOneListener(ee, event, listener) {
-    if (ee.listeners(event).indexOf(listener) == -1) {
-      ee.on(event, listener);
-    }
-  }
-
-  this.on('newListener', function (event) {
-    if (event === 'change') {
-      addOneListener(self.pull, 'change', pullChange);
-      addOneListener(self.push, 'change', pushChange);
-    } else if (event === 'denied') {
-      addOneListener(self.pull, 'denied', pullDenied);
-      addOneListener(self.push, 'denied', pushDenied);
-    } else if (event === 'active') {
-      addOneListener(self.pull, 'active', pullActive);
-      addOneListener(self.push, 'active', pushActive);
-    } else if (event === 'paused') {
-      addOneListener(self.pull, 'paused', pullPaused);
-      addOneListener(self.push, 'paused', pushPaused);
-    }
-  });
-
-  this.on('removeListener', function (event) {
-    if (event === 'change') {
-      self.pull.removeListener('change', pullChange);
-      self.push.removeListener('change', pushChange);
-    } else if (event === 'denied') {
-      self.pull.removeListener('denied', pullDenied);
-      self.push.removeListener('denied', pushDenied);
-    } else if (event === 'active') {
-      self.pull.removeListener('active', pullActive);
-      self.push.removeListener('active', pushActive);
-    } else if (event === 'paused') {
-      self.pull.removeListener('paused', pullPaused);
-      self.push.removeListener('paused', pushPaused);
-    }
-  });
-
-  this.pull.on('removeListener', removeAll('pull'));
-  this.push.on('removeListener', removeAll('push'));
-
-  var promise = Promise.all([
-    this.push,
-    this.pull
-  ]).then(function (resp) {
-    var out = {
-      push: resp[0],
-      pull: resp[1]
+    const pullPaused = () => {
+      this.pullPaused = true;
+      /* istanbul ignore if */
+      if (this.pushPaused) {
+        this.emit('paused');
+      }
     };
-    self.emit('complete', out);
-    if (callback) {
-      callback(null, out);
-    }
-    self.removeAllListeners();
-    return out;
-  }, function (err) {
-    self.cancel();
-    if (callback) {
-      // if there's a callback, then the callback can receive
-      // the error event
-      callback(err);
-    } else {
-      // if there's no callback, then we're safe to emit an error
-      // event, which would otherwise throw an unhandled error
-      // due to 'error' being a special event in EventEmitters
-      self.emit('error', err);
-    }
-    self.removeAllListeners();
-    if (callback) {
-      // no sense throwing if we're already emitting an 'error' event
-      throw err;
-    }
-  });
+    const pushActive = () => {
+      this.pushPaused = false;
+      /* istanbul ignore if */
+      if (this.pullPaused) {
+        this.emit('active', {
+          direction: 'push'
+        });
+      }
+    };
+    const pullActive = () => {
+      this.pullPaused = false;
+      /* istanbul ignore if */
+      if (this.pushPaused) {
+        this.emit('active', {
+          direction: 'pull'
+        });
+      }
+    };
+    const pullCheckpoint = checkpoint => {
+      this.emit('checkpoint', {
+        direction: 'pull',
+        checkpoint: checkpoint
+      });
+    };
+    const pushCheckpoint = checkpoint => {
+      this.emit('checkpoint', {
+        direction: 'push',
+        checkpoint: checkpoint
+      });
+    };
 
-  this.then = function (success, err) {
-    return promise.then(success, err);
-  };
+    let removed = {};
 
-  this.catch = function (err) {
-    return promise.catch(err);
-  };
-}
+    const removeAll = (type) => { // type is 'push' or 'pull'
+      return (event, func) => {
+        const isChange = event === 'change' &&
+          (func === pullChange || func === pushChange);
+        const isDenied = event === 'denied' &&
+          (func === pullDenied || func === pushDenied);
+        const isPaused = event === 'paused' &&
+          (func === pullPaused || func === pushPaused);
+        const isActive = event === 'active' &&
+          (func === pullActive || func === pushActive);
 
-Sync.prototype.cancel = function () {
-  if (!this.canceled) {
-    this.canceled = true;
-    this.push.cancel();
-    this.pull.cancel();
+        if (isChange || isDenied || isPaused || isActive) {
+          if (!(event in removed)) {
+            removed[event] = {};
+          }
+          removed[event][type] = true;
+          if (Object.keys(removed[event]).length === 2) {
+            // both push and pull have asked to be removed
+            this.removeAllListeners(event);
+          }
+        }
+      };
+    };
+
+    if (opts.live) {
+      this.push.on('complete', this.pull.cancel.bind(this.pull));
+      this.pull.on('complete', this.push.cancel.bind(this.push));
+    }
+
+    function addOneListener(ee, event, listener) {
+      if (ee.listeners(event).indexOf(listener) == -1) {
+        ee.on(event, listener);
+      }
+    }
+
+    this.on('newListener', function (event) {
+      if (event === 'change') {
+        addOneListener(this.pull, 'change', pullChange);
+        addOneListener(this.push, 'change', pushChange);
+      } else if (event === 'denied') {
+        addOneListener(this.pull, 'denied', pullDenied);
+        addOneListener(this.push, 'denied', pushDenied);
+      } else if (event === 'active') {
+        addOneListener(this.pull, 'active', pullActive);
+        addOneListener(this.push, 'active', pushActive);
+      } else if (event === 'paused') {
+        addOneListener(this.pull, 'paused', pullPaused);
+        addOneListener(this.push, 'paused', pushPaused);
+      } else if (event === 'checkpoint') {
+        addOneListener(this.pull, 'checkpoint', pullCheckpoint);
+        addOneListener(this.push, 'checkpoint', pushCheckpoint);
+      }
+    });
+
+    this.on('removeListener', function (event) {
+      if (event === 'change') {
+        this.pull.removeListener('change', pullChange);
+        this.push.removeListener('change', pushChange);
+      } else if (event === 'denied') {
+        this.pull.removeListener('denied', pullDenied);
+        this.push.removeListener('denied', pushDenied);
+      } else if (event === 'active') {
+        this.pull.removeListener('active', pullActive);
+        this.push.removeListener('active', pushActive);
+      } else if (event === 'paused') {
+        this.pull.removeListener('paused', pullPaused);
+        this.push.removeListener('paused', pushPaused);
+      } else if (event === 'checkpoint') {
+        this.pull.removeListener('checkpoint', pullCheckpoint);
+        this.push.removeListener('pcheckpoint', pushCheckpoint);
+      }
+    });
+
+    this.pull.on('removeListener', removeAll('pull'));
+    this.push.on('removeListener', removeAll('push'));
+
+    const promise = Promise.all([
+      this.push,
+      this.pull
+    ]).then((resp) => {
+      const out = {
+        push: resp[0],
+        pull: resp[1]
+      };
+      this.emit('complete', out);
+      if (callback) {
+        callback(null, out);
+      }
+      this.removeAllListeners();
+      return out;
+    }, (err) => {
+      this.cancel();
+      if (callback) {
+        // if there's a callback, then the callback can receive
+        // the error event
+        callback(err);
+      } else {
+        // if there's no callback, then we're safe to emit an error
+        // event, which would otherwise throw an unhandled error
+        // due to 'error' being a special event in EventEmitters
+        this.emit('error', err);
+      }
+      this.removeAllListeners();
+      if (callback) {
+        // no sense throwing if we're already emitting an 'error' event
+        throw err;
+      }
+    });
+
+    this.then = function (success, err) {
+      return promise.then(success, err);
+    };
+
+    this.catch = function (err) {
+      return promise.catch(err);
+    };
   }
-};
+
+  cancel() {
+    if (!this.canceled) {
+      this.canceled = true;
+      this.push.cancel();
+      this.pull.cancel();
+    }
+  }
+}
 
 function replication(PouchDB) {
   PouchDB.replicate = replicateWrapper;
@@ -10395,11 +9942,9 @@ function replication(PouchDB) {
   };
 }
 
-PouchDB.plugin(IDBPouch)
+PouchDB.plugin(IndexedDbPouch)
   .plugin(HttpPouch$1)
   .plugin(mapreduce)
   .plugin(replication);
-
-// Pull from src because pouchdb-node/pouchdb-browser themselves
 
 export default PouchDB;

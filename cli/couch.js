@@ -69,7 +69,8 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     // TODO: handle updates
     if (createDb) {
       try {
-        dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
+      console.log('  seeding base docs to database')
+      dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
       } catch (_err) { /* ignore */ }
     }
 
@@ -96,6 +97,8 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       headers,
       method: 'POST'
     })
+
+    // TODO: handle errors and updates
 
     let clean = true
     if (!updtRes.ok) {

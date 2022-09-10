@@ -1,5 +1,8 @@
 // eslint-disable-next-line no-restricted-imports
-import { Router, Observable } from '../../build/deps/falcor.js' // @graphistry/
+import { Observable } from '../../build/deps/falcor-observable.js' // @graphistry ?
+// eslint-disable-next-line no-restricted-imports
+import { Router } from '../../build/deps/falcor-router.js' // @graphistry ?
+
 import { urlLogger } from '../lib/url-logger.js'
 import * as systemHandlers from '../schema/falcor-handlers/index.js'
 import req from '../lib/req.js'
@@ -15,63 +18,43 @@ export function falcorTags (routes) {
   return routes
 }
 
-function getHandler (con) {
-  if (con.handler) {
-    return con.handler
-  } else if (con.operationId) {
-    return systemHandlers[con.operationId]
-  }
-}
-
 export function toFalcorRoutes (schema) {
-  const routes = []
+  // The first case in 13 years that the semicolon was actually necessary!! (but only due to the bundler) :D
+  const routes = [];
 
-  // The first case in 10 years that the semicolon was actually necessary!! (but only due to the bundler) :D
-  ;([...Object.entries(schema.paths)]).forEach(([path, { get, call, set }]) => {
+  [...Object.entries(schema.paths)].forEach(([path, handlerArgs]) => {
     const handlers = {}
 
-    /* eslint-disable functional/no-this-expression */
-    if (get && get.tags?.includes('falcor')) {
-      handlers.get = function () {
-        const path = [ ...arguments[0] ]
-
-        arguments[0].dbs = this.dbs
-        arguments[0].userId = this.userId
-        arguments[0].Observable = this.Observable
-        arguments[0].req = this.req
-
-        const getRes = get.handler(...arguments)
-
-        if (getRes.value && !getRes.path) {
-          getRes.path = path
+    Object.entries(handlerArgs).forEach(([handlerType, handlerConf]) => {
+      if (handlerConf.tags?.includes('falcor')) {
+        if (!['get', 'set', 'call'].includes(handlerType)) {
+          console.error('unsupported falcor handler type ' + handlerType)
         }
 
-        return getRes
-      }
-    }
+        const handler = handlerConf.handler || (handlerConf.operationId && systemHandlers[handlerConf.operationId])
 
-    if (set && set.tags?.includes('falcor')) {
-      handlers.set = function () {
-        arguments[0].dbs = this.dbs
-        arguments[0].userId = this.userId
-        arguments[0].Observable = this.Observable
-        arguments[0].req = this.req
-        return set.handler(...arguments)
-      }
-    }
+        handlers[handlerType] = function () {
+          const path = arguments[0].length ? [ ...arguments[0] ] : [ arguments[0] ]
 
-    if (call && call.tags?.includes('falcor')) {
-      const handler = getHandler(call)
+          /* eslint-disable functional/no-this-expression */
+          arguments[0].dbs = this.dbs
+          arguments[0].userId = this.userId
+          arguments[0].Observable = this.Observable
+          arguments[0].req = this.req
+          /* eslint-enable functional/no-this-expression */
 
-      handlers.call = function () {
-        arguments[0].dbs = this.dbs
-        arguments[0].userId = this.userId
-        arguments[0].Observable = this.Observable
-        arguments[0].req = this.req
-        return handler(...arguments)
+          const getRes = handler(...arguments)
+
+          if (handlerType === 'get') {
+            if (getRes.value && !getRes.path) {
+              getRes.path = path
+            }
+          }
+
+          return getRes
+        }
       }
-    }
-    /* eslint-enable functional/no-this-expression */
+    })
 
     if (Object.keys(handlers).length > 0) {
       routes.push({
@@ -86,7 +69,6 @@ export function toFalcorRoutes (schema) {
 
 function find (map, pathString) {
   for ([key, value] of map.entries()) {
-    // console.log(pathString.replaceAll('[', '').replaceAll(']', ''), key.replaceAll('[', '').replaceAll(']', ''))
     if (pathString.replaceAll('[', '').replaceAll(']', '').startsWith(key.replaceAll('[', '').replaceAll(']', ''))) {
       return value
     }
@@ -152,7 +134,7 @@ export function makeRouter (dataRoutes) {
                   duration = route.end && route.start ? route.end - route.start : 0
                   urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body })
                 } else {
-                  urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body: e.results[i].value.jsonGraph || e.results[i].value.value })
+                  urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body: e.results[i]?.value.jsonGraph || e.results[i]?.value.value })
                 }
 
                 i++
@@ -162,7 +144,7 @@ export function makeRouter (dataRoutes) {
               if (e.routes.length < 1) {
                 missing = true
               }
-              paths = e.callPath || e.jsonGraphEnvelope.paths
+              const paths = e.callPath || e.jsonGraphEnvelope.paths
               const body = e.jsonGraphEnvelope || e.results.map(res => res.value.jsonGraph || res.value.value)
               urlLogger({ missing, method: e.method.toUpperCase(), url: `falcor://${JSON.stringify(paths)}`, body, duration, args: e.args })
             }

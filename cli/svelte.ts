@@ -13,7 +13,7 @@ export default async function ({
   dev = true,
   sveltePath = '/svelte'
 }: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
-  const startTime = Date.now()
+  // const startTime = Date.now()
   const compNames: {[key: string]: boolean} = {}
 
   const deps: Record<string, {files: string[],stats: string[][]}> = {}
@@ -277,7 +277,7 @@ export default async function ({
     console.log(`    ${green('emitted:')} ` + 'app/build/base.css')
   }
 
-  const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
+  // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
   // console.log('')
   return newBuildRes

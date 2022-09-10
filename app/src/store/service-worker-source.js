@@ -1,4 +1,4 @@
-import { Observable } from '/_ayu/src/deps/falcor.js'
+import { Observable } from '/_ayu/src/deps/falcor-observable.js'
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {
@@ -10,21 +10,24 @@ class ServiceWorkerSource {
 
     this._worker.postMessage(JSON.stringify([-1, 'hello mike' ]))
 
-    navigator.serviceWorker.onmessage = e => {
-      const { id, error, value, done, hello} = JSON.parse(e.data)
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data.startsWith('navigate:')) {
+        return
+      }
+      const { id, error, value, done, hello } = JSON.parse(e.data)
 
       if (hello) {
         // delete after timeout to not crash a message that was the reason for waking the worker...
         // TODO: find better solution?
         setTimeout(() => {
-          Object.values(this._inflight).forEach(stale => stale('service worker restarted while waiting...'))
+          Object.values(this._inflight).forEach(stale => stale('service worker restarted...'))
         }, 800)
       } else if (typeof this._inflight[id] === 'function') {
         this._inflight[id](error, value, done)
       } else {
         console.log(e.data)
       }
-    }
+    })
 
     if (wake) {
       this._waker = setInterval(() => {

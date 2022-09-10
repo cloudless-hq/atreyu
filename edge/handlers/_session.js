@@ -1,13 +1,13 @@
 // import { authHeaders } from '../couchdb/helpers'
 // import maybeSetupUser from './setup'
 import { getEnv } from '/_env.js'
+import doReq from '../lib/req.js'
+// eslint-disable-next-line no-restricted-imports
+import { escapeId } from '../../app/src/lib/helpers.js'
 
-let denoLocal = false
-try {
-  denoLocal = !!self.Deno
-} catch (_e) { /* ignore */ }
+const { _couchKey, _couchSecret, couchHost, env, folderHash, auth_domain, appName } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'folderHash', 'auth_domain', 'appName'])
 
-const { env, folderHash, auth_domain } = getEnv(['env', 'folderHash', 'auth_domain'])
+const denoLocal = typeof self !== 'undefined' && !!self.Deno
 
 // function setCookie (name, value, days) {
 //     let d = new Date
@@ -21,31 +21,37 @@ function getCookie (name, cookieString = '') {
   return v ? v[2] : null
 }
 
-
 // TODO: create database if not existing
 
-export function handler ({ req, stats, parsedBody, app }) {
+export async function handler ({ req, stats, parsedBody, app }) {
   let jwt
-
-  const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
-  if (denoLocal && !req.headers['cf-access-jwt-assertion'] && authCookie) {
+  let country = ''
+  if (denoLocal && !req.headers['cf-access-jwt-assertion']) {
+    const authCookie = getCookie('CF_Authorization', req.headers['cookie'])
     jwt = authCookie
+    const res = await fetch('https://workers.cloudflare.com/cf.json')
+    if (res.ok) {
+      const json = await res.json()
+      country = json.country
+    }
   } else {
     jwt = req.headers['cf-access-jwt-assertion']
+    country = req.headers['cf-ipcountry']
   }
 
-  let payload = {}
+  let jwtPayload = {}
   if (jwt) {
-    payload = JSON.parse(atob(jwt.split('.')[1]))
+    jwtPayload = JSON.parse(atob(jwt.split('.')[1]))
   }
-
-  // if (!payload.email && payload.common_name) {
-  //   payload.email = payload.common_name + '@' + orgId
-  // }
 
   if (req.url.search.startsWith('?login')) {
+    // 'cookie: CF_Authorization=<user-token>' https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
+    // "name": "Jan Johannes"
+    // TODO: how to do org support on cf access?
+    // idp: Data from your identity provider.
+    // user_uuid: The ID of the user.
     const params = new URLSearchParams(req.url.search)
-    if (payload.email) {
+    if (jwtPayload.email) {
       return new Response(JSON.stringify({}), {
         status: 302,
         headers: {
@@ -70,19 +76,62 @@ export function handler ({ req, stats, parsedBody, app }) {
       }
     })
   } else if (req.url.search.startsWith('?dev_login')) {
-    // console.log(parsedBody)
-    // {
-    //   email: "dev_user@localhost",
-    //   org: "",
-    //   saveToDevice: "on",
-    //   sessionName: "Google Chrome on macOS",
-    //   raw: "email=dev_user%40localhost&org=&saveToDevice=on&sessionName=Google+Chrome+on+macOS"
-    // }
     if (!denoLocal) {
       return new Response('forbidden', { status: 403 })
     }
+    // TODO: if allready logged in, logout?
+    const newOrg = parsedBody?.org
+    const newEmail = parsedBody?.email
+    const existingSessionId = parsedBody?.sessionId
+
+    let newSessionDoc = {
+      sessionName: parsedBody?.sessionName,
+      org: parsedBody?.org,
+      email: parsedBody?.email,
+      title: `${parsedBody?.email}${parsedBody?.org ? ' (' + parsedBody?.org + ')' : ''}`,
+      country,
+      created: Date.now(),
+      stats,
+      loginCount: 0,
+      type: 'session'
+      // todo: move to dev version of stats
+      // `${json.city} ${json.country} ${json.asOrganization} ${json.colo}`longitude, latitude
+      // "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+      // saveToDevice: "on"
+    }
+
+    const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
+
+    if (existingSessionId) {
+      const { json: existingSessionDoc } = await doReq(`${couchHost}/${dbName}/${existingSessionId}`, {
+        headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}
+      })
+      if (existingSessionDoc) {
+        // TODO: error if any value changed or doc is unavailable
+        newSessionDoc = existingSessionDoc
+      }
+    }
+
+    newSessionDoc.lastLogin = Date.now()
+    newSessionDoc.loginCount++
+
+    if (!newSessionDoc.startSeq) {
+      const { json: { update_seq }} = await doReq(`${couchHost}/${dbName}`, {headers:{'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}})
+      newSessionDoc.startSeq = update_seq
+    }
+
     const params = new URLSearchParams(req.url.search)
-    const devJwt = 'dev.' + btoa(JSON.stringify({ email: parsedBody.email, dev_mock: true }))
+    const newSessionId = existingSessionId || 'system:' + crypto.randomUUID()
+
+    await doReq(`${couchHost}/${dbName}/${newSessionId}`, {
+      method: 'PUT',
+      body: newSessionDoc,
+      headers: {
+        'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+      }
+    })
+
+    const devJwt = 'dev.' + btoa(JSON.stringify({ email: newEmail, dev_mock: true, org: newOrg, sessionId: newSessionId }))
 
     return new Response(JSON.stringify({}), {
       status: 302,
@@ -98,10 +147,10 @@ export function handler ({ req, stats, parsedBody, app }) {
 
     const headers = { 'Cache-Control': 'must-revalidate' }
 
-    if (payload.dev_mock) {
+    if (jwtPayload.dev_mock) {
       headers['Location'] = `/_ayu/accounts/${params.get('continue') ? '?continue=' + encodeURIComponent(params.get('continue')) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
-    } else if (payload.email) {
+    } else if (jwtPayload.email) {
       headers['Location'] = `https://${auth_domain}/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
@@ -116,37 +165,31 @@ export function handler ({ req, stats, parsedBody, app }) {
   }
 
   // TODO: delete account and database
-
-  // const dbUrl = `${dbHost}/user_${userId}`
-  // const sessionsUrl = `${dbUrl}/_design/ntr/_view/lastSeen_by_userId?reduce=false`
-  // const sessions = await req(sessionsUrl, {
-  //   method: 'GET',
-  //   headers: await authHeaders({ userId })
-  // })
-  // const sessionsBody = await sessions.json()
+  // const sessionsUrl = `${`${dbHost}/user_${userId}`}/_design/ntr/_view/lastSeen_by_userId?reduce=false`
+  // const sessions = await req(sessionsUrl)
   // const setupRes = await maybeSetupUser({
   //   dbUrl,
   //   email,
   //   userId,
-  //   sessionsBody
-  // })
+  //   sessions
 
   return new Response(JSON.stringify({
-    userId: payload.email || null,
+    userId: jwtPayload.email,
+    email: jwtPayload.email,
+    org: jwtPayload.org,
     env,
     appName: app.appName,
-
     appHash: folderHash,
 
+    sessionId: jwtPayload.sessionId,
+
     // roles: [],
-    // email,
-    country: req.headers['cf-ipcountry'],
+    country,
 
-    expiry: payload.exp,
-    issued: payload.iat,
+    expiry: jwtPayload.exp,
+    issued: jwtPayload.iat,
 
-    cfAccessSessionId: payload.nonce,
-    cfAccessUserId: payload.sub,
+    cfAccessUserId: jwtPayload.sub,
 
     edgeVersion: stats.edgeVersion
 
