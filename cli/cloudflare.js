@@ -1,5 +1,5 @@
 export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs }) {
-  const startTime = Date.now()
+  // const startTime = Date.now()
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return

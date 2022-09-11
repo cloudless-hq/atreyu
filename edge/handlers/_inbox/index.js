@@ -46,6 +46,6 @@ export default function ({ req, _event, stats, finish }) {
 
 // if (req.url.hostname.startsWith('inbox.')) {
 //   return event.respondWith(
-//     inboxHandler({ req, event, stats: stats.get(), finish })
+//     inboxHandler({ req, event, stats, finish })
 //   )
 // }

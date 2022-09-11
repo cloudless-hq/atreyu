@@ -28,151 +28,165 @@ async function getApps () {
   return (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
 }
 
+let cfData = {}
+fetch('https://workers.cloudflare.com/cf.json').then(async res => {
+  const json = await res.json()
+
+  cfData = {
+    longitude: json.longitude,
+    latitude: json.latitude,
+    country: json.country,
+    colo: json.colo,
+    city: json.city,
+    asOrganization: json.asOrganization
+  }
+})
+
 const workers = {}
 const configs = {}
 const schemas = {}
 let apps = []
-startWorker(async arg => {
-  const {
-    req
-    // stats,
-    // parsedBody,
-    // event,
-    // wait
-  } = arg
 
-  const localhostMatch = req.url.hostname.split('.localhost')
+startWorker({
+  handler: async arg => {
+    const { req } = arg
 
-  const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName || cwd
-  const appKey = env === 'prod' ? appName : appName + '_' + env
+    const localhostMatch = req.url.hostname.split('.localhost')
 
-  apps = (await getApps()) || []
+    const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName || cwd
+    const appKey = env === 'prod' ? appName : appName + '_' + env
 
-  const app = apps.find(app => app.Name === appKey)
+    apps = (await getApps()) || []
 
-  if (!app) {
-    return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
-  }
+    const app = apps.find(app => app.Name === appKey)
 
-  const ayuHash = apps.find(app => app.Name === 'atreyu_dev').Hash // TODO only use dev for ayudev execution
-  app.ayuHash = ayuHash
-  app.appName = appName
-  arg.app = app // TODO find generic solution for local and cf, seperate local envs into processes
+    if (!app) {
+      return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
+    }
 
-  if (!schemas[appKey] || schemas[appKey].appHash !== app.Hash) {
-    try {
-      const schema = (await Promise.any([
-        import(ipfsGateway + `/ipfs/${app.Hash}/schema/index.js`),
-        import(ipfsGateway + `/ipfs/${app.Hash}/schema.js`)
-      ])).schema
+    const ayuHash = apps.find(app => app.Name === 'atreyu_dev').Hash // TODO only use dev for ayudev execution
+    app.ayuHash = ayuHash
+    app.appName = appName
+    arg.app = app // TODO find generic solution for local and cf, seperate local envs into processes
+    arg.stats.app = app
+    arg.event.request.cf = cfData
+    arg.req.raw.cf = cfData // should be set by reference but check
 
-      if (typeof schema === 'function') {
-        schemas[appKey] = { data: schema({ defaultPaths, addPathTags }), appHash: app.Hash }
-      } else {
-        schemas[appKey] = { data: schema, appHash: app.Hash }
-      }
-    } catch (_err) {
-      console.warn(`  could not load schemas for ${appKey}, using defaults`)
-      // TODO: make generic fallback for cloudflare and local
-      schemas[appKey] = {
-        data: {
-          paths: {
-            '/*': {
-              get: {
-                tags: [ 'edge' ],
-                operationId: '_ipfs'
+    if (!schemas[appKey] || schemas[appKey].appHash !== app.Hash) {
+      try {
+        const schema = (await Promise.any([
+          import(ipfsGateway + `/ipfs/${app.Hash}/schema/index.js`),
+          import(ipfsGateway + `/ipfs/${app.Hash}/schema.js`)
+        ])).schema
+
+        if (typeof schema === 'function') {
+          schemas[appKey] = { data: schema({ defaultPaths, addPathTags }), appHash: app.Hash }
+        } else {
+          schemas[appKey] = { data: schema, appHash: app.Hash }
+        }
+      } catch (_err) {
+        console.warn(`  could not load schemas for ${appKey}, using defaults`)
+        // TODO: make generic fallback for cloudflare and local
+        schemas[appKey] = {
+          data: {
+            paths: {
+              '/*': {
+                get: {
+                  tags: [ 'edge' ],
+                  operationId: '_ipfs'
+                }
               }
             }
+          },
+          appHash: app.Hash
+        }
+      }
+    }
+
+    const handlers = {}
+    Object.entries(schemas[appKey].data.paths).forEach(([path, value]) => {
+      Object.entries(value).forEach(([method, {operationId, tags, handler}]) => {
+        if (tags?.includes('edge')) {
+          if (!handlers[method]) {
+            handlers[method] = []
           }
-        },
-        appHash: app.Hash
-      }
-    }
-  }
-
-  const handlers = {}
-  Object.entries(schemas[appKey].data.paths).forEach(([path, value]) => {
-    Object.entries(value).forEach(([method, {operationId, tags, handler}]) => {
-      if (tags?.includes('edge')) {
-        if (!handlers[method]) {
-          handlers[method] = []
+          handlers[method].push({path, operationId, handler})
         }
-        handlers[method].push({path, operationId, handler})
-      }
+      })
     })
-  })
 
-  // sort by path length and match more specific to less specific order more similar to cloudflare prio matching
-  Object.keys(handlers).forEach(method => {
-    handlers[method] = handlers[method].sort((first, second) => {
-      return second.path.length - first.path.length
-    } )
-  })
+    // sort by path length and match more specific to less specific order more similar to cloudflare prio matching
+    Object.keys(handlers).forEach(method => {
+      handlers[method] = handlers[method].sort((first, second) => {
+        return second.path.length - first.path.length
+      } )
+    })
 
-  let workerName
-  const method = req.method.toLowerCase()
-  if (handlers[method]) {
-    for (let i = 0; i < handlers[method].length; i++) {
-      if (handlers[method][i].path.endsWith('*')) {
-        if (req.url.pathname.startsWith(handlers[method][i].path.slice(0, -1))) {
-          workerName = handlers[method][i].operationId
-          break
-        }
-      } else {
-        if (req.url.pathname === handlers[method][i].path) {
-          workerName = handlers[method][i].operationId
-          break
+    let workerName
+    const method = req.method.toLowerCase()
+    if (handlers[method]) {
+      for (let i = 0; i < handlers[method].length; i++) {
+        if (handlers[method][i].path.endsWith('*')) {
+          if (req.url.pathname.startsWith(handlers[method][i].path.slice(0, -1))) {
+            workerName = handlers[method][i].operationId
+            break
+          }
+        } else {
+          if (req.url.pathname === handlers[method][i].path) {
+            workerName = handlers[method][i].operationId
+            break
+          }
         }
       }
     }
-  }
 
-  // TODO: stat page for worker status
+    // TODO: stat page for worker status
 
-  if (workerName) {
-    if (!configs[appKey]) {
-      // console.log({appKey})
-      configs[appKey] = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
-    }
-    if (!configs[appKey]?.repo) {
-      console.error(`called edge function without environment app: ${appKey}, worker: ${workerName}`)
-      return new Response('Error', { status: 500 })
-    }
-
-    // todo: how to handle this reliably and less ugly?
-    // setEnv(configs[appKey])
-    const workerKey = `${workerName}__${appKey}`
-
-    if (!workers[workerKey] || workers[workerKey].appHash !== app.Hash) {
-      Deno.env.set('appKey', appKey)
-      let base = []
-      let filename
-      if (workerName.startsWith('_')) {
-        base = [configs[appKey].appPath, 'edge', 'build'] // [import.meta.url.replace('file://', ''), '..' ]
-        filename = `${workerName}.js` // `build or handlers/${workerName}/index.js`
-      } else {
-        base = [configs[appKey].appPath, 'edge', 'build']
-        filename = workerName
+    if (workerName) {
+      if (!configs[appKey]) {
+        // console.log({appKey})
+        configs[appKey] = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
+      }
+      if (!configs[appKey]?.repo) {
+        console.error(`called edge function without environment app: ${appKey}, worker: ${workerName}`)
+        return new Response('Error', { status: 500 })
       }
 
-      const codePath = join(...base, filename)
-      const denoCodePath = codePath.replace('.js', '.d.js')
+      // todo: how to handle this reliably and less ugly?
+      // setEnv(configs[appKey])
+      const workerKey = `${workerName}__${appKey}`
 
-      try {
-        const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
-        if (fileHash !== workers[workerKey]?.fileHash) {
-          console.log(`  ${workers[workerKey] ? 're' : ''}loading worker script: ` + workerKey)
+      if (!workers[workerKey] || workers[workerKey].appHash !== app.Hash) {
+        Deno.env.set('appKey', appKey)
+        let base = []
+        let filename
+        if (workerName.startsWith('_')) {
+          base = [configs[appKey].appPath, 'edge', 'build'] // [import.meta.url.replace('file://', ''), '..' ]
+          filename = `${workerName}.js` // `build or handlers/${workerName}/index.js`
+        } else {
+          base = [configs[appKey].appPath, 'edge', 'build']
+          filename = workerName
         }
 
-        workers[workerKey] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
-      } catch (err) {
-        console.error('  could not load edge worker: ' + workerKey, err)
-      }
-    }
+        const codePath = join(...base, filename)
+        const denoCodePath = codePath.replace('.js', '.d.js')
 
-    return workers[workerKey].code.handler(arg)
-  } else {
-    console.log(`${req.method} ${req.url}`)
-    return new Response('No matches found in schema: ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain'} })
+        try {
+          const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${configs[appKey].repo} ${denoCodePath}`.split(' ')], false)).split(' ')
+          if (fileHash !== workers[workerKey]?.fileHash) {
+            console.log(`  ${workers[workerKey] ? 're' : ''}loading worker script: ` + workerKey)
+          }
+
+          workers[workerKey] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
+        } catch (err) {
+          console.error('  could not load edge worker: ' + workerKey, err)
+        }
+      }
+
+      return workers[workerKey].code.handler(arg)
+    } else {
+      console.log(`${req.method} ${req.url}`)
+      return new Response('No matches found in schema: ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain'} })
+    }
   }
 })

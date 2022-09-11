@@ -1,5 +1,5 @@
 /* global fetch, Headers, btoa, MIXPANEL_TOKEN */
-export default async function ({ req, stats }) {
+export default function ({ req, stats }) {
 
   const adNetwork = req.url.searchParams.get('utm_medium')
   let adSource = ''

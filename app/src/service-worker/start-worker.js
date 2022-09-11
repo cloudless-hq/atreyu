@@ -35,9 +35,7 @@ export default function ({
     clear () {
       self.session.value = null
       self.session.falcorServer = null // TODO: check if needs destroy or cleanup
-      self.session.dbs?.sync.cancel()
-      self.session.dbs?.pouch.close()
-      self.session.dbs?.couch.close()
+      self.session.dbs?.clear()
       self.session.dbs = null
       self.session.loaded = false
     },

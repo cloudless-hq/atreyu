@@ -2,7 +2,7 @@
   "name": "atreyu-deno",
   "scripts": {
     "build": "rollup -c ./rollup.config.js",
-    "lint": "npx eslint '**/*.{js,svelte,ts}'"
+    "lint": "eslint '**/*.{js,svelte,ts}'"
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "22.0.2",

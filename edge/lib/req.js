@@ -125,14 +125,18 @@ export default async function req (url, { method, body, headers: headersArg = {}
     error: res.error
   }
 
+  headers.set('traceId', event?._traceId)
   headers.set('referer', 'todo')
-  headers.set('traceId', 'todo')
   headers.set('host', 'todo')
 
   if (!wasCached) {
     waitUntil(log({
-      stats: event?.stats,
+      stats: event?._stats,
+      traceId: event?._traceId,
       req: {
+        raw: {
+          cf: event?.request.cf
+        },
         method,
         url: new URL(url),
         headers: Object.fromEntries(headers.entries())

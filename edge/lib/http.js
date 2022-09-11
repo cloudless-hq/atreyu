@@ -60,16 +60,13 @@ export async function fetchStream (url, reqConf) {
   return { response, readable, reader, writable, writer, write }
 }
 
-export async function bodyParser ({ event, clone }) {
-  if (event.request.method !== 'POST' && event.request.method !== 'PUT') {
-    return {}
-  }
+export async function bodyParser (request, { clone } = {}) {
   let req
 
   if (clone) {
-    req = event.request.clone()
+    req = request.clone()
   } else {
-    req = event.request
+    req = request
   }
 
   const contentType = req.headers.get('content-type')
@@ -82,11 +79,11 @@ export async function bodyParser ({ event, clone }) {
     } catch (_err) {
       ret = { error: 'invalid json', text }
     }
-    return { parsedBody: ret, body: text }
+    return { parsedBody: ret, text }
   }
   if (contentType === 'application/x-www-form-urlencoded') {
-    const body = await req.text()
-    const bodyParts = body.split('&')
+    const text = await req.text()
+    const bodyParts = text.split('&')
     const bodyObj = {}
     bodyParts.forEach(part => {
       const i = part.indexOf('=')
@@ -94,28 +91,12 @@ export async function bodyParser ({ event, clone }) {
       const value = part.substring(i + 1)
       bodyObj[key] = decodeURIComponent(value.replace(/\+/g, ' '))
     })
-    bodyObj.raw = body
-    return { parsedBody: bodyObj, body }
+
+    return { parsedBody: bodyObj, text }
   }
   const text = await req.text()
-  return (text && text.length > 0) ? { text, body: text } : {}
-}
 
-export function parseReq (req) {
-  const url = new URL(req.url)
-  const reqHeaders = [...req.headers]
-  const reqHeaderObj = {}
-  reqHeaders.forEach(ent => {
-    reqHeaderObj[ent[0]] = ent[1]
-  })
-
-  return {
-    raw: req,
-    method: req.method,
-    headers: reqHeaderObj,
-    params: Object.fromEntries(url.searchParams.entries()),
-    url
-  }
+  return { text }
 }
 
 // TODO: security Headers

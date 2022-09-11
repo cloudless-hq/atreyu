@@ -5,7 +5,7 @@ import { urlLogger } from '../../app/src/lib/url-logger.js'
 let envConf
 
 // TODO fix funciton call signature to json payload
-export default async function ({ req, body, res, response, stats, duration = null }) {
+export default async function ({ req, body, res, response, stats, duration = null, traceId }) {
   if (!envConf) {
     envConf = getEnv(['_ELASTIC_AUTH', 'ELASTIC_URL', 'env'])
   }
@@ -47,11 +47,14 @@ export default async function ({ req, body, res, response, stats, duration = nul
   delete req.headers['cookie']
 
   let location
-  const statsVal = stats?.get()
-  if (!isNaN(parseFloat(statsVal?.cf?.latitude)) && !isNaN(parseFloat(statsVal?.cf?.longitude))) {
-    location = {
-      lat: parseFloat(statsVal?.cf?.latitude),
-      lon: parseFloat(statsVal?.cf?.longitude)
+  let cf
+  if (req.raw.cf) {
+    cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined }
+    if (!isNaN(parseFloat(cf?.latitude)) && !isNaN(parseFloat(cf?.longitude))) {
+      location = {
+        lat: parseFloat(cf?.latitude),
+        lon: parseFloat(cf?.longitude)
+      }
     }
   }
 
@@ -64,8 +67,10 @@ export default async function ({ req, body, res, response, stats, duration = nul
     body: JSON.stringify({
       time: (new Date()).toISOString(),
 
-      stats: statsVal,
+      traceId,
 
+      stats,
+      cf,
       duration,
 
       method: req.method,

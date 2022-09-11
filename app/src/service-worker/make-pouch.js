@@ -94,5 +94,11 @@ export default async function ({
     }
   }
 
-  return { pouch, couch, sync }
+  function clear () {
+    sync.cancel()
+    pouch.close()
+    couch.close()
+  }
+
+  return { pouch, couch, sync, clear }
 }

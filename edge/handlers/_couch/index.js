@@ -8,7 +8,7 @@ import { getEnv } from '/_env.js'
 
 const { _couchKey, _couchSecret, couchHost } = getEnv(['_couchKey', '_couchSecret', 'couchHost'])
 
-export function handler ({ req, stats, app, body, parsedBody }) {
+export function handler ({ req, text }) {
   // TODO: use our own fauxton release instead of cloudant one
   // import handleFauxton from './fauxton'
   // if (req.url.pathname === '/_utils') {
@@ -40,7 +40,7 @@ export function handler ({ req, stats, app, body, parsedBody }) {
   return fetch(href, {
     method: req.method,
     redirect: 'manual',
-    body, // req.raw?.body
+    body: text, // TODO: req.raw?.body ?
     headers: {
       ...req.headers,
       'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
@@ -62,7 +62,7 @@ export function handler ({ req, stats, app, body, parsedBody }) {
 //   // if (tokenResult.valid) {
 //     return fetch(url, {
 //       method: req.method,
-//       body: (req.method === 'PUT' || req.method === 'POST') ? req.raw.body : null,
+//       body: req.raw.body || null,
 //       // headers: await authHeaders({ userId }) // req.headers
 //     })
 //   // }
@@ -71,3 +71,9 @@ export function handler ({ req, stats, app, body, parsedBody }) {
 //     headers: {}
 //   })
 // }
+
+export default {
+	async fetch (req, env, { waitUntil, passThroughOnException }) {
+    // TODO
+  }
+}

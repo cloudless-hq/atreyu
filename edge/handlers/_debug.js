@@ -1,5 +1,5 @@
 export function handler ({ stats, app }) {
-  const newResponse = new Response(JSON.stringify({ stats: stats.get(), app }), {
+  const newResponse = new Response(JSON.stringify({ stats, app }), {
     status: 200,
     statusText: 'OK',
     headers: {

@@ -31,7 +31,7 @@ export async function handler ({ req, app, waitUntil }) {
 
   if (path.startsWith('/ayu@')) {
     if (path.startsWith('/ayu@latest')) {
-      // return (new Response(JSON.stringify({ version: app.version, hash: app.rootFolderHash }), {
+      // return (new Response(JSON.stringify({ version: app.ayuVersion, hash: app.rootFolderHash }), {
       //   status: 200,
       //   statusText: 'OK',
       //   headers: {
@@ -47,7 +47,7 @@ export async function handler ({ req, app, waitUntil }) {
     } else {
       const pathArray = path.replace('/ayu@', '').split('/')
       const version = pathArray.shift()
-      if (version === app.version) {
+      if (version === app.ayuVersion) {
         reqHash = app.rootFolderHash + (pathArray.length ? '/' + pathArray.join('/') : '')
         ipfsPath = `/ipfs/${reqHash}`
         url = ipfsGateway + ipfsPath
