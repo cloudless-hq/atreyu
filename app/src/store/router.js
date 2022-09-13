@@ -36,7 +36,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
     } = hrefOverride ? new URL(hrefOverride) : window.location
 
     // , ...(new URLSearchParams(hash.split().replaceAll('?', '&')).entries())
-    const params = Object.fromEntries([...(new URLSearchParams(search.replaceAll('?', '&')).entries())])
+    const query = Object.fromEntries([...(new URLSearchParams(search.replaceAll('?', '&')).entries())])
 
     const pathParts = pathname.split('/').filter(pathPart => pathPart !== '')
     const matchedRoutes = []
@@ -151,7 +151,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
     })
 
     const allData = {
-      params,
+      query,
       hash,
       host,
       hostname,

@@ -54,7 +54,7 @@ async function compile ({ input, appName, workerName, output, buildName, publish
   if (publish) {
     await build({
       entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
-      plugins: [ esbuildPlugin({local: false, input, atreyuPath}) ],
+      plugins: [ esbuildPlugin({ local: false, input, atreyuPath }) ],
       outfile: output,
       ...buildSettings
     }).catch(err => console.error(err))
@@ -63,7 +63,7 @@ async function compile ({ input, appName, workerName, output, buildName, publish
   const buildRes = await build({
     entryPoints: [input],
     plugins: [ esbuildPlugin({ local: true, input, atreyuPath }) ],
-    outfile: output.replace('.js', '.d.js'),
+    outfile: output.replace('.js', '.deno.js'),
     ...buildSettings
   }).catch(err => console.error(err))
 
@@ -78,7 +78,7 @@ async function compile ({ input, appName, workerName, output, buildName, publish
 
 const deps = {}
 export async function buildEdge ({ workers, buildName, batch = [], clean, publish }) {
-  const startTime = Date.now()
+  // const startTime = Date.now()
   const projectFolder = Deno.cwd()
   const appName = basename(projectFolder)
   const buildPath = join(projectFolder, 'edge/build')

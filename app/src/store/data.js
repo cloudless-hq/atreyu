@@ -45,7 +45,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     source: source || undefined,
     maxSize: maxSize || 500000,
     collectRatio: collectRatio || 0.75,
-    maxRetries: maxRetries || 0,
+    maxRetries: maxRetries || 1, // todo 0 requires fix in falcor due to falsy check
     // _useServerPaths: true,
     cache,
     scheduler: frameScheduler, // this is the internal scheduler, default to immediate

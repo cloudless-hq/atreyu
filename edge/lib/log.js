@@ -49,7 +49,7 @@ export default async function ({ req, body, res, response, stats, duration = nul
   let location
   let cf
   if (req.raw.cf) {
-    cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined }
+    cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined }
     if (!isNaN(parseFloat(cf?.latitude)) && !isNaN(parseFloat(cf?.longitude))) {
       location = {
         lat: parseFloat(cf?.latitude),

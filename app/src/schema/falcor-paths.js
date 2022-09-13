@@ -15,17 +15,41 @@ export default {
     }
   },
 
-  '_session[{keys:keys}]': {
+  '_sessions': {
     get: {
-      handler: ({ _keys }) => {
+      handler: async ({ dbs, session: { org, userId } }) => {
+        const sessionName = userId + (org ? ` (${org})` : '')
+
+        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
+          partition: 'system',
+          reduce: false,
+          include_docs: true,
+          startkey: [ 'session', sessionName],
+          endkey: ['session', sessionName, {}]
+        })
+
         return {
           jsonGraph: {
-            _session: self.session.value
+            _sessions: { $type: 'atom', value: sessions }
           }
         }
       }
     }
   },
+
+  // // fetch(`/_api/_couch/${loggedInDbName}/${session.sessionId}`)
+  '_session[{keys:keys}]': {
+    get: {
+      handler: ({ _keys, session }) => {
+        return {
+          jsonGraph: {
+            _session: session
+          }
+        }
+      }
+    }
+  },
+
   '_hash': {
     get: {
       handler: () => {
@@ -81,7 +105,7 @@ export default {
   // },
   '_docs.create': {
     call: {
-      handler: async ({ dbs, _userId, _Observable }, [ docs ]) => {
+      handler: async ({ dbs, session, _Observable }, [ docs ]) => {
         const result = await dbs.pouch.bulkDocs(docs.map(doc => {
           doc.changes = [{ userId: session.value.userId, action: 'created', date: Date.now() }]
           return doc

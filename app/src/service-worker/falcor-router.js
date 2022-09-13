@@ -34,11 +34,9 @@ export function toFalcorRoutes (schema) {
         const handler = handlerConf.handler || (handlerConf.operationId && systemHandlers[handlerConf.operationId])
 
         handlers[handlerType] = function () {
-          const path = arguments[0].length ? [ ...arguments[0] ] : [ arguments[0] ]
-
           /* eslint-disable functional/no-this-expression */
           arguments[0].dbs = this.dbs
-          arguments[0].userId = this.userId
+          arguments[0].session = this.session
           arguments[0].Observable = this.Observable
           arguments[0].req = this.req
           /* eslint-enable functional/no-this-expression */
@@ -47,7 +45,7 @@ export function toFalcorRoutes (schema) {
 
           if (handlerType === 'get') {
             if (getRes.value && !getRes.path) {
-              getRes.path = path
+              getRes.path = arguments[0].length ? [ ...arguments[0] ] : [ arguments[0] ]
             }
           }
 
@@ -77,7 +75,7 @@ function find (map, pathString) {
 
 export function makeRouter (dataRoutes) {
   class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
-    constructor ({ userId, dbs }) {
+    constructor ({ session, dbs }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
         debug: false,
@@ -153,7 +151,7 @@ export function makeRouter (dataRoutes) {
       })
 
       /* eslint-disable functional/no-this-expression */
-      this.userId = userId
+      this.session = session
       this.dbs = dbs
       this.req = req
       this.Observable = Observable

@@ -46,7 +46,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
     const headers = { 'Cache-Control': 'must-revalidate' }
 
     if (jwtPayload.dev_mock) {
-      headers['Location'] = `/_ayu/accounts/${req.params.continue ? '?continue=' + encodeURIComponent(req.params.continue) : ''}`
+      headers['Location'] = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (jwtPayload.email) {
       headers['Location'] = `https://${auth_domain}/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
@@ -65,20 +65,20 @@ export async function handler ({ req, stats, parsedBody, app }) {
   // TODO: how to do org support on cf access?
   const org = jwtPayload.org || ''
 
-  const cf = req.raw.cf
+  const cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined }
 
   if (req.url.search.startsWith('?login')) {
     // cookie: CF_Authorization= https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
     // name: Jan Johannes, idp: Data from your identity provider, user_uuid: The ID of the user.
     if (jwtPayload.email) {
-      const newSessionId = await ensureSession({ email: jwtPayload.email, app, stats, cf, useSessionId: sessionId })
+      const newSessionId = await ensureSession({ email: jwtPayload.email, app, cf, useSessionId: sessionId })
 
       return new Response(null, {
         status: 302,
         headers: {
           'Cache-Control': 'must-revalidate',
-          'Set-Cookie': `AYU_SESSION_ID=${newSessionId}; Path=/; HttpOnly; Version=1;`,
-          'Location': req.params.continue || '/'
+          'Set-Cookie': `AYU_SESSION_ID=${newSessionId}; Path=/; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
+          'Location': req.query.continue || '/'
         }
       })
     }
@@ -87,7 +87,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': '/_ayu/accounts/' + (req.params.continue ? `?continue=${encodeURIComponent(req.params.continue)}` : '')
+        'Location': '/_ayu/accounts/' + (req.query.continue ? `?continue=${encodeURIComponent(req.query.continue)}` : '')
       }
     })
   }
@@ -105,7 +105,6 @@ export async function handler ({ req, stats, parsedBody, app }) {
       sessionName: parsedBody?.sessionName,
       useSessionId: parsedBody?.sessionId,
       app,
-      stats,
       cf
     })
 
@@ -115,8 +114,8 @@ export async function handler ({ req, stats, parsedBody, app }) {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': req.params.continue || '/' ,
-        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; HttpOnly; Version=1;`
+        'Location': req.query.continue || '/' ,
+        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
       }
     })
   }
@@ -149,7 +148,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
   })
 }
 
-async function ensureSession ({ useSessionId, email, org, sessionName, app, stats, cf }) {
+async function ensureSession ({ useSessionId, email, org, sessionName, app, cf }) {
   const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
 
   let newSessionDoc
@@ -174,7 +173,6 @@ async function ensureSession ({ useSessionId, email, org, sessionName, app, stat
       email: email,
       title: `${email}${org ? ' (' + org + ')' : ''}`,
       created: Date.now(),
-      stats,
       cf,
       app,
       loginCount: 0,

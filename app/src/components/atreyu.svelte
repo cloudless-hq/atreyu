@@ -48,6 +48,15 @@ $: {
   }
 }
 
+// can force deregestering service worker:
+// navigator.serviceWorker.getRegistrations().then(function (registrations) {
+//     //returns installed service workers
+//     if (registrations.length) {
+//       for(let registration of registrations) {
+//         registration.unregister();
+//       }
+//     }
+//   })
 // else {
 // versionTooltip = `Build: "${settingsDoc.buildName$}"
 // Atreyu  Version: "${settingsDoc.version$}"

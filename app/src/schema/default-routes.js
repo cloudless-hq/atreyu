@@ -35,11 +35,13 @@ export default {
   //     operationId: '_bypass'
   //   }
   // },
-  '/_ayu/accounts*': {
-    get: {
-      operationId: '_bypass' // '_accounts'
-    }
-  },
+
+  // TODO: not required anymore?
+  // '/_ayu/accounts*': {
+  //   get: {
+  //     operationId: '_bypass' // '_accounts'
+  //   }
+  // },
 
   // '/_api/_feed/*': {
   //   get: {

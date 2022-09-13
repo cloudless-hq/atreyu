@@ -31,3 +31,5 @@ export { build, transform } from 'https://deno.land/x/esbuild@v0.14.51/mod.js'
 
 export { default as WindiProcessor } from 'https://esm.sh/windicss@3.5.4'
 export { HTMLParser, CSSParser } from 'https://esm.sh/windicss@3.5.4/utils/parser' // ClassParser
+
+export { default as Ajv } from 'https://esm.sh/ajv@8.11.0'

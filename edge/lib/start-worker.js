@@ -3,7 +3,7 @@ import { bodyParser } from './http.js'
 import { getWait } from './wait.js'
 // import apm from './apm.js'
 
-export default ({ handler, module, app }) => {
+export default ({ handler, _module, app }) => {
   // module: {
   //    async fetch (req, env, { waitUntil, passThroughOnException }) {
   //    }
@@ -28,7 +28,7 @@ export default ({ handler, module, app }) => {
       raw: event.request,
       method: event.request.method,
       headers: Object.fromEntries(event.request.headers.entries()),
-      params: Object.fromEntries(url.searchParams.entries()),
+      query: Object.fromEntries(url.searchParams.entries()),
       url
     }
 

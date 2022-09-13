@@ -91,7 +91,7 @@ export default function ({
           clientDesignDocs: newDbConf[clientDbName]
         })
 
-        self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, userId: newSession.userId })
+        self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
 
         if (newSession.userId && !self.session.loaded) {
           redirectOtherClients = 'continue'
@@ -105,17 +105,17 @@ export default function ({
 
         const clientNavigations = clientsRes.map(client => {
           const url = new URL(client.url)
-          const params = new URLSearchParams(url.search)
+          const query = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
             if (url.pathname.startsWith('/_ayu/accounts')) {
-              return client.postMessage('navigate:' + (params.get('continue') || '/'))
+              return client.postMessage('navigate:' + (query.get('continue') || '/'))
               // client.navigate().catch(err => console.error(err))
             }
           } else {
             let cont = ''
             if (url.pathname.length > 1 || url.hash || url.search > 0) {
-              if (params.get('continue')) {
-                cont = params.get('continue')
+              if (query.get('continue')) {
+                cont = query.get('continue')
               } else {
                 cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
               }
