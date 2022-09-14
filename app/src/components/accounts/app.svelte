@@ -5,40 +5,23 @@
   // import Confirmation from './confirmation.svelte.js'
   import UserSwitcher from './user-switcher.svelte.js'
 	import makeRouterStore from '/_ayu/src/store/router.js'
-  import data from '/_ayu/src/store/data.js'
-
   const router = makeRouterStore()
 
 	import { fade } from '/svelte/transition'
 
   $: newUser = ($router.hash === '#new')
 
-  let userDbs
-
-  let logedInData
+  let localDbNames
   let dataUsage
-  let loggedInDbName
-  let session = {}
-  async function init () {
+  async function loadLocalDbs () {
     try {
       const dbs = await indexedDB.databases()
-      userDbs = dbs
+      localDbNames = dbs
         .filter(({ name }) => name?.startsWith('_ayu_') && !name?.includes('-mrview'))
         .map(({ name }) => name?.replace('_ayu_', ''))
     } catch (err) {
        console.error(err)
-       userDbs = []
-    }
-    const sessionRes = await fetch('/_api/_session')
-    if (sessionRes.ok) {
-      session = await sessionRes.json()
-    }
-    loggedInDbName = session.userId ? session.env + '__' + session.appName : ''
-
-    let couchInfo
-    if (loggedInDbName) {
-      couchInfo = await (await fetch('/_api/_couch/' + loggedInDbName)).json()
-      logedInData = { couchInfo, session }
+       localDbNames = []
     }
 
     const { quota, usage, usageDetails } = await navigator.storage.estimate()
@@ -55,19 +38,23 @@
       localDocs
     }
   }
+  if ($router.hash !== '#/sessions') {
+    loadLocalDbs()
+  }
 
-  init()
 
   let userData
-  function loginUser ({ sessionId, email, org }) {
+  function doLoginUser ({ sessionId, email, org }) {
     userData = { sessionId, email, org }
   }
 </script>
 
-<style>
+<style lang="postcss">
+  :global(body) {
+    @apply bg-gray-100;
+  }
 	.app {
 		text-align: center;
-    height: 100%;
 	}
   .storage-footer {
     bottom: 0;
@@ -75,20 +62,33 @@
     margin-bottom: 16px;
     font-size: 13px;
     margin-right: 21px;
-    color: #ffffff91;
+    color: rgba(65, 65, 65, 0.569);
     right: 0;
     text-align: right;
   }
 </style>
 
+<div style="
+    position: fixed;
+    z-index: 100000;
+    height: 63px;
+    width: 100vw;
+    background: rgb(255 255 255 / 67%);
+    backdrop-filter: saturate(180%) blur(5px);
+    border-bottom: 1px solid #00000017;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+">
+</div>
+
 <div class="app antialiased font-sans bg-gray-100" transition:fade="{{ duration: 250}}">
-  {#if $router.hash === '#/sessions' && logedInData}
-    <Sessions {loggedInDbName} {session} />
+  {#if $router.hash === '#/sessions'}
+    <Sessions />
   {:else}
-    {#if userDbs && (userDbs?.length === 0 || userData || newUser)}
+    {#if localDbNames && (localDbNames?.length === 0 || userData || newUser)}
       <Login {userData} />
-    {:else if userDbs}
-      <UserSwitcher {userDbs} {logedInData} {loginUser} />
+    {:else if localDbNames}
+      <UserSwitcher {localDbNames} {doLoginUser} />
     {/if}
   {/if}
 

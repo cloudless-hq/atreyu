@@ -1,33 +1,48 @@
 <script>
-  export let loggedInDbName
-  export let session
+  import data from '/_ayu/src/store/data.js'
+  import { fromNow, formatTime } from '/_ayu/src/lib/helpers.js'
 
-  let sessions = []
-  fetch(`/_api/_couch/${loggedInDbName}/${session.sessionId}`).then(async res => {
-    const sessionDoc = await res.json()
-
-    const sessionsRes = await fetch(`/_api/_couch/${loggedInDbName}/_design/ayu_main/_view/by_type_and_title?partition=system&reduce=false&include_docs=true&start_key=["session","${sessionDoc.title}"]&end_key=["session","${sessionDoc.title}",{}]`)
-    sessions = (await sessionsRes.json()).rows
-  })
 </script>
-<div class="py-10">
+
+<style>
+   .last-login .from-now, .last-login:hover .time-format {
+    display: inline-block;
+  }
+  .last-login:hover .from-now, .last-login .time-format {
+    display: none;
+  }
+</style>
+
+<div class="py-10 pt-24">
   <div class="mx-auto max-w-7xl px-4 sm:px-8 lg:px-10">
     <div class="grid grid-cols-1 gap-4">
 
-    {#each sessions as session}
-      <!-- {session.doc.lastLogin}
-      {session.doc.loginCount}
-      {session.doc.userAgent} -->
-        <div class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
+    {#each $data._sessions$ as session}
+      <!--
+      {session.loginCount}
+      {session.userAgent} country -->
+        <div class="relative flex items-center space-x-6 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
           <div class="flex-shrink-0">
-            <svg class="h-10 w-10 rounded-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 209.4 12.47 165.6 34.27 127.1L144.1 318.3C166 357.5 207.9 384 256 384C270.3 384 283.1 381.7 296.8 377.4L220.5 509.6C95.9 492.3 0 385.3 0 256zM365.1 321.6C377.4 302.4 384 279.1 384 256C384 217.8 367.2 183.5 340.7 160H493.4C505.4 189.6 512 222.1 512 256C512 397.4 397.4 511.1 256 512L365.1 321.6zM477.8 128H256C193.1 128 142.3 172.1 130.5 230.7L54.19 98.47C101 38.53 174 0 256 0C350.8 0 433.5 51.48 477.8 128V128zM168 256C168 207.4 207.4 168 256 168C304.6 168 344 207.4 344 256C344 304.6 304.6 344 256 344C207.4 344 168 304.6 168 256z"/></svg>
+            <svg class="h-10 w-10 rounded-full fill-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 209.4 12.47 165.6 34.27 127.1L144.1 318.3C166 357.5 207.9 384 256 384C270.3 384 283.1 381.7 296.8 377.4L220.5 509.6C95.9 492.3 0 385.3 0 256zM365.1 321.6C377.4 302.4 384 279.1 384 256C384 217.8 367.2 183.5 340.7 160H493.4C505.4 189.6 512 222.1 512 256C512 397.4 397.4 511.1 256 512L365.1 321.6zM477.8 128H256C193.1 128 142.3 172.1 130.5 230.7L54.19 98.47C101 38.53 174 0 256 0C350.8 0 433.5 51.48 477.8 128V128zM168 256C168 207.4 207.4 168 256 168C304.6 168 344 207.4 344 256C344 304.6 304.6 344 256 344C207.4 344 168 304.6 168 256z"/></svg>
           </div>
 
-          <div class="min-w-0 flex-1">
+          <div class="min-w-0">
             <a href="#sdf" class="focus:outline-none">
               <span class="absolute inset-0" aria-hidden="true"></span>
-              <p class="text-sm font-medium text-gray-900">Created: {session.doc.created}</p>
-              <p class="truncate text-sm text-gray-500">{session.doc.sessionName} ({session.doc.country})</p>
+
+              <div class="text-sm text-left font-medium text-gray-900">
+                <div class="last-login">Last Login:
+                  <div class="from-now">{fromNow(session.lastLogin)}</div>
+                  <div class="time-format">{formatTime(session.lastLogin)}</div>
+                </div>
+
+                <div class="last-login">Created:
+                  <div class="from-now">{fromNow(session.created)}</div>
+                  <div class="time-format">{formatTime(session.created)}</div>
+                </div>
+              </div>
+
+              <p class="truncate text-left text-sm text-gray-500">{session.sessionName} ({session.country})</p>
             </a>
           </div>
         </div>

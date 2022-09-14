@@ -30,7 +30,30 @@ export default {
 
         return {
           jsonGraph: {
-            _sessions: { $type: 'atom', value: sessions }
+            _sessions: { $type: 'atom', value: sessions.map(row => row.doc).sort((a, b) => b.lastLogin - a.lastLogin) }
+          }
+        }
+      }
+    }
+  },
+
+  '_pouch': {
+    get: {
+      handler: async ({ dbs }) => {
+        return {
+          jsonGraph: {
+            _pouch: { $type: 'atom', value:  await dbs.pouch.info() }
+          }
+        }
+      }
+    }
+  },
+  '_couch': {
+    get: {
+      handler: async ({ dbs }) => {
+        return {
+          jsonGraph: {
+            _couch: { $type: 'atom', value:  await dbs.couch.info() }
           }
         }
       }

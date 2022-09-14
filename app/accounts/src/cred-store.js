@@ -17,3 +17,5 @@ if (creds?.id) {
   }
   location.href = '/'
 }
+
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/verify

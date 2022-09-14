@@ -1,10 +1,9 @@
 <script>
   import User from './user.svelte.js'
-
-  export let logedInData
-  export let userDbs = []
-  export let loginUser
-  // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/verify
+  import data from '/_ayu/src/store/data.js'
+  export let localDbNames = []
+  export let doLoginUser
+  // FIXME: handle changing session ids and sync ids
 </script>
 
 <style>
@@ -72,7 +71,7 @@
     border-radius: 5px;
     box-shadow: 3px 3px 8px 3px rgba(0, 0, 0, 0.2);
   } */
-  svg {
+  .picture svg {
     width: 100%;
     height: 100%;
     fill: #858585;
@@ -80,10 +79,14 @@
   }
 </style>
 
-<div class="userswitcher">
-  {#each userDbs as userDb}
+<div class="userswitcher pt-24">
+  {#each localDbNames as localDbName}
     <div class="usercontainer">
-      <User {userDb} {loginUser} {logedInData} />
+      {#if localDbName === $data._pouch.db_name$}
+        <User {localDbName} {doLoginUser} pouchInfo={$data._pouch$} couchInfo={$data._couch$} />
+      {:else}
+        <User {localDbName} {doLoginUser} />
+      {/if}
     </div>
   {/each}
 

@@ -9,5 +9,5 @@ export default {
 }
 
 export const runConf = {
-  'yarn build': { globs: [ 'app/src/deps/**'] }
+  'pnpm build': { globs: [ 'app/src/deps/**'] }
 }

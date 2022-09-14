@@ -58,8 +58,8 @@ export default async function ({
     .on('error', err => {
       console.error(err)
     })
-    .on('paused', (a) => {
-      console.info('replication paused', a)
+    .on('paused', () => {
+      console.info('replication paused')
     })
     .on('active', ({ _direction }) => {
       init?.()

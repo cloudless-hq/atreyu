@@ -1,53 +1,56 @@
 <script>
   import PouchDB from '/_ayu/build/deps/pouchdb.js'
   import { formatBytes, fromNow, formatTime } from '/_ayu/src/lib/helpers.js'
+  import data from '/_ayu/src/store/data.js'
   PouchDB.prefix = '_ayu_'
 
-  export let userDb
-  export let logedInData
-  export let loginUser
+  export let localDbName
+  export let doLoginUser
+  export let pouchInfo = null
+  export let couchInfo = null
+
+  let isLoggedIn = !!pouchInfo
   let open
   let user = {}
 
-  // sizes.active (number) – The size of live data inside the database, in bytes.
-  // sizes.external (number) – The uncompressed size of database contents in bytes.
-  // sizes.file (number) – The size of the database file on disk in bytes. Views indexes are not included in the calculation.
-  // console.log('active', formatBytes(couchInfo.sizes.active))
-  // console.log('external', formatBytes(couchInfo.sizes.external))
-  // console.log('file', formatBytes(couchInfo.sizes.file))
+  // $data._session.userId$
+  // $data._couch$
+  // $: console.log($data._pouch$)
+  // db_name: "dev_user(64)localhost__jan__closr__"
+  // doc_count: 112
+  // update_seq: 206
+  // 'active', formatBytes(couchInfo.sizes.active)) // The size of live data inside the database, in bytes.
+  // 'external', formatBytes(couchInfo.sizes.external)) The uncompressed size of database contents in bytes.
+  // 'file', formatBytes(couchInfo.sizes.file)) // The size of the database file on disk in bytes. Views indexes are not included in the calculation.
 
-  let isLoggedIn = false
-  let sessionId
-  $: {
-    // FIXME: changing session id
-    // console.log(logedInData, sessionId)
-    if (sessionId && logedInData?.session.sessionId === sessionId) {
-      isLoggedIn = true
-    }
-  }
-
+  let sessionId = ''
   async function init () {
-    const pouch = new PouchDB(userDb)
-    sessionId = (await pouch.get('_local/ayu')).sessionId
-    const sessionDoc = await pouch.get(sessionId)
-    const pullDoc = await pouch.get(sessionDoc.replications.pull)
-    const pushDoc = await pouch.get(sessionDoc.replications.push)
-    const pouchInfo = await pouch.info()
-
-    console.log(pullDoc, sessionDoc)
+    // let pullDoc
+    let pushDoc
+    let sessionDoc
+    if (!pouchInfo) {
+      const pouch = new PouchDB(localDbName)
+      sessionId = (await pouch.get('_local/ayu')).sessionId
+      sessionDoc = await pouch.get(sessionId)
+      // pullDoc = await pouch.get(sessionDoc.replications.pull)
+      pushDoc = await pouch.get(sessionDoc.replications.push)
+      pouchInfo = await pouch.info()
+    } else {
+      sessionId = await $data._session.sessionId.$promise
+      sessionDoc = await $data._docs[sessionId].$promise
+      // pullDoc = await $data._docs[sessionDoc.replications.pull].$promise
+      pushDoc = await $data._docs[sessionDoc.replications.push].$promise
+    }
 
     user = {
-      id: pouch.name,
       username: sessionDoc.email,
       org: sessionDoc.org,
       notifications: 0,
-      docs: {
-        pouch: pouchInfo.doc_count
-      },
       unsynced: pouchInfo.update_seq - pushDoc.last_seq,
       sessionCreated: sessionDoc.created,
       lastLogin: sessionDoc.lastLogin
     }
+    open = isLoggedIn
   }
   init()
 
@@ -55,6 +58,55 @@
     alert('your local data is removed from this device (but not really')
   }
 </script>
+
+<div class="user" class:open>
+  <div class="details">
+    <div class="picture" on:click={() => { isLoggedIn ? window.navigation.navigate('/') : doLoginUser({ sessionId, email: user.username, org: user.org }) }} rel="no-preload">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M224 256c70.7 0 128-57.31 128-128s-57.3-128-128-128C153.3 0 96 57.31 96 128S153.3 256 224 256zM274.7 304H173.3C77.61 304 0 381.6 0 477.3c0 19.14 15.52 34.67 34.66 34.67h378.7C432.5 512 448 496.5 448 477.3C448 381.6 370.4 304 274.7 304z"/></svg>
+    </div>
+
+    <h2 class="name" class:open on:click={() => { open = true }}>{user.username}{user.org ? ` (${user.org})` : ''}</h2>
+
+    {#if open}
+      <div class="data">
+        <div class="notifications">
+          <i class="fas fa-globe"></i>
+          local: {pouchInfo.doc_count} docs<br>
+          {isLoggedIn && couchInfo?.sizes ? `remote: ${couchInfo.doc_count} docs, ${formatBytes(couchInfo.sizes.file)}` : ''}
+        </div>
+      </div>
+
+      <div class="unsynced {user.unsynced ? 'has-unsynced' : ''}">
+        <p>
+          <i class="fas fa-exclamation-triangle"></i>
+          {user.unsynced} unsynced local changes
+        </p>
+      </div>
+
+      <div class="data">
+        <div class="last-login">session startet:
+          <div class="from-now">{fromNow(user.sessionCreated)}</div>
+          <div class="time-format">{formatTime(user.sessionCreated)}</div>
+        </div>
+
+        <div class="last-login">last login:
+          <div class="from-now">{fromNow(user.lastLogin)}</div>
+          <div class="time-format">{formatTime(user.lastLogin)}</div>
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <button class="btn-remove" on:click={accountRemoveHandler}>remove account from this device</button>
+</div>
+
+<!-- {const pw = new PasswordCredential({
+  id: 'jan2',
+  data: 'sdfsdf',
+  password: 'pas sdfsdfsdf sd fsdf sdf sdfwe r23422 3 3dfwefsdf +sword',
+  name: '#Ksdflsdfwe12, Cloudant: jan',
+  iconURL: "https://cloud.ibm.com/cache/8c7-1137334920/api/v6/img/favicon.png"
+})} -->
 
 <style>
   .user {
@@ -96,10 +148,10 @@
   }
   .unsynced {
     background-color: rgb(179, 179, 179);
-    color: white;
   }
   .has-unsynced {
     background-color: rgb(197, 73, 73);
+    color: white;
   }
   .unsynced > p {
     padding: 10px 0;
@@ -113,7 +165,6 @@
     background-color: #dc3545;
     padding: 10px 20px;
     border: none;
-    color: white;
     font-weight: 600;
     margin-bottom: -23px;
     position: absolute;
@@ -132,7 +183,6 @@
     font-weight: 200;
     margin: auto;
     padding-top: 37px;
-    color: white;
     transition: all ease-in-out .2s;
     font-size: 23px;
   }
@@ -152,52 +202,3 @@
     display: none;
   }
 </style>
-
-<div class="user" class:open>
-  <div class="details">
-    <div class="picture" on:click={() => { isLoggedIn ? window.navigation.navigate('/') : loginUser({ sessionId, email: user.username, org: user.org }) }} rel="no-preload">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M224 256c70.7 0 128-57.31 128-128s-57.3-128-128-128C153.3 0 96 57.31 96 128S153.3 256 224 256zM274.7 304H173.3C77.61 304 0 381.6 0 477.3c0 19.14 15.52 34.67 34.66 34.67h378.7C432.5 512 448 496.5 448 477.3C448 381.6 370.4 304 274.7 304z"/></svg>
-    </div>
-
-    <h2 class="name" class:open on:click={() => { open = true }}>{user.username}{user.org ? ` (${user.org})` : ''}</h2>
-
-    {#if open}
-      <div class="data">
-        <div class="notifications">
-          <i class="fas fa-globe"></i>
-          local: {user.docs.pouch} docs<br>
-          {isLoggedIn ? `remote: ${logedInData.couchInfo.doc_count} docs, ${formatBytes(logedInData.couchInfo.sizes.file)}` : ''}
-        </div>
-      </div>
-
-      <div class="unsynced {user.unsynced ? 'has-unsynced' : ''}">
-        <p>
-          <i class="fas fa-exclamation-triangle"></i>
-          {user.unsynced} unsynced local changes
-        </p>
-      </div>
-
-      <div class="data">
-        <div class="last-login">session startet:
-          <div class="from-now">{fromNow(user.sessionCreated)}</div>
-          <div class="time-format">{formatTime(user.sessionCreated)}</div>
-        </div>
-
-        <div class="last-login">last login:
-          <div class="from-now">{fromNow(user.lastLogin)}</div>
-          <div class="time-format">{formatTime(user.lastLogin)}</div>
-        </div>
-      </div>
-    {/if}
-  </div>
-
-  <button class="btn-remove" on:click={accountRemoveHandler}>remove account from this device</button>
-</div>
-
-<!-- {const pw = new PasswordCredential({
-  id: 'jan2',
-  data: 'sdfsdf',
-  password: 'pas sdfsdfsdf sd fsdf sdf sdfwe r23422 3 3dfwefsdf +sword',
-  name: '#Ksdflsdfwe12, Cloudant: jan',
-  iconURL: "https://cloud.ibm.com/cache/8c7-1137334920/api/v6/img/favicon.png"
-})} -->

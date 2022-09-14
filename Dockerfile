@@ -33,6 +33,7 @@ ENV DENO_DIR=${DENO_INSTALL}/.cache/deno
 # node 16 (https://github.com/nodesource/distributions/blob/master/README.md#deb)
 RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
 RUN apt-get install -y nodejs
+RUN npm install -g pnpm
 RUN npm install -g yarn
 
 COPY . /root/atreyu
@@ -49,13 +50,13 @@ RUN deno install \
 --allow-env \
 --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org,deno.land,c3b0b243-4f69-4cb1-9ece-1b0561a67cee-bluemix.cloudant.com,cdn.skypack.dev \
 --allow-write=/tmp,"$HOME"/.atreyu,./,"$DENO_DIR",/root/.cache/deno,/root/.cache/esbuild \
---allow-run=ipfs,kill,npx,`command -v deno`,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.14.51 \
+--allow-run=ipfs,kill,npx,`command -v deno`,pnpm,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.14.51 \
 --no-check \
 --unstable \
 -n ayu \
 -f /root/atreyu/cli/mod.js
 
-RUN cd /root/atreyu && yarn && yarn build
+RUN cd /root/atreyu && pnpm install && pnpm run build
 
 # install IPFS (https://docs.ipfs.io/install/command-line/#official-distributions)
 RUN cd /root && wget https://dist.ipfs.io/go-ipfs/v${IPFS_VERSION}/go-ipfs_v${IPFS_VERSION}_linux-amd64.tar.gz

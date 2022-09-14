@@ -117,5 +117,5 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
   // console.log('')
-  return { files: {} } // emits[], newEmits[], deps: []
+  return { files: {} }
 }
