@@ -55,7 +55,7 @@ export async function add ({
     ipfsGatewayPort: port = 80,
     ipfsApi: ipfsApi = 'http://127.0.0.1:5001'
   } = config
-  const startTime = Date.now()
+  // const startTime = Date.now()
 
   // TODO: default to short_name from app manifest.json
   const name = basename(Deno.cwd())

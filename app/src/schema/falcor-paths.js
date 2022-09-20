@@ -130,7 +130,7 @@ export default {
     call: {
       handler: async ({ dbs, session, _Observable }, [ docs ]) => {
         const result = await dbs.pouch.bulkDocs(docs.map(doc => {
-          doc.changes = [{ userId: session.value.userId, action: 'created', date: Date.now() }]
+          doc.changes = [{ userId: session.userId, action: 'created', date: Date.now() }]
           return doc
         }))
 
@@ -150,11 +150,11 @@ export default {
   //           value.changes = []
   //         }
   //         if (value.deleted) {
-  //           value.changes.push({ userId: session.value.userId, action: 'deleted',  date: Date.now() })
+  //           value.changes.push({ userId: session.userId, action: 'deleted',  date: Date.now() })
   //         } else if (!value._rev) {
-  //           value.changes.push({ userId: session.value.userId, action: 'created',  date: Date.now() })
+  //           value.changes.push({ userId: session.userId, action: 'created',  date: Date.now() })
   //         } else {
-  //           value.changes.push({ userId: session.value.userId, action: 'updated',  date: Date.now() })
+  //           value.changes.push({ userId: session.userId, action: 'updated',  date: Date.now() })
   //         }
   //         return value
   //       }))
@@ -217,7 +217,7 @@ export default {
       operationId: 'getDocs'
     },
     set: {
-      handler: async ({ _docs, dbs, _userId }) => {
+      handler: async ({ _docs, dbs, session }) => {
         const result = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
           if (!value.changes) {
             value.changes = []
@@ -225,15 +225,15 @@ export default {
 
           if (value.changes.length > 12) {
             value.changes.splice(2, value.changes.length - 4)
-            value.changes.push({ userId: session.value.userId, action: 'aggregated', date: Date.now() })
+            value.changes.push({ userId: session.userId, action: 'aggregated', date: Date.now() })
           }
 
           if (value.deleted) {
-            value.changes.push({ userId: session.value.userId, action: 'deleted', date: Date.now() })
+            value.changes.push({ userId: session.userId, action: 'deleted', date: Date.now() })
           } else if (!value._rev) {
-            value.changes.push({ userId: session.value.userId, action: 'created', date: Date.now() })
+            value.changes.push({ userId: session.userId, action: 'created', date: Date.now() })
           } else {
-            value.changes.push({ userId: session.value.userId, action: 'updated', date: Date.now() })
+            value.changes.push({ userId: session.userId, action: 'updated', date: Date.now() })
           }
 
           return value
