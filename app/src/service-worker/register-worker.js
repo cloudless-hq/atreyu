@@ -28,7 +28,23 @@ export default async function registerWorker (workerPath, loaded) {
     await navigator.serviceWorker.ready
     console.log('ServiceWorker ready, allready installed')
     loaded(regs[0])
+    reg = regs[0]
   }
+
+  // requires app installation
+  // reg.periodicSync.unregister('periodic waky waky')
+  // if (reg.periodicSync) {
+  //   try {
+  //     const tags = await reg.periodicSync.getTags()
+  //     if (!tags.includes('periodic waky waky')) {
+  //       await reg.periodicSync.register('periodic waky waky', {
+  //         minInterval: 30 * 60 * 1000 // 30 mins
+  //       })
+  //     }
+  //   } catch (err) {
+  //     console.log('Periodic Sync could not be registered!', err)
+  //   }
+  // }
 
   navigator.serviceWorker.addEventListener('message', async e => {
     if (e.data === '{"worker":"active"}') {

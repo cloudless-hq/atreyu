@@ -33,3 +33,5 @@ export { default as WindiProcessor } from 'https://esm.sh/windicss@3.5.4'
 export { HTMLParser, CSSParser } from 'https://esm.sh/windicss@3.5.4/utils/parser' // ClassParser
 
 export { default as Ajv } from 'https://esm.sh/ajv@8.11.0'
+
+export { default as ajvStandaloneCode } from 'https://esm.sh/ajv@8.11.0/dist/standalone'

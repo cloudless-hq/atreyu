@@ -10,7 +10,7 @@
       document.loginForm.submit()
     }
     if ('storage' in navigator && 'estimate' in navigator.storage) {
-      const {usage, quota} = await navigator.storage.estimate()
+      const {usage, quota} = await navigator.storage.estimate?.()
 
       if(quota < 1200000000){
         isIncognito = true

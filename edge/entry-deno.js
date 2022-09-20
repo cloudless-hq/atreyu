@@ -3,8 +3,7 @@ import startWorker from './lib/start-worker.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
 import { exec } from '../cli/helpers.ts'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { exec as execSchema } from './lib/schema.js'
-
+import {makeSubSchema} from './lib/schema.js'
 const ajv = new Ajv({ coerceTypes: true, useDefaults: true })
 
 // TODO: use config and args from cli
@@ -98,7 +97,7 @@ startWorker({
 
       const edgeHandlers = {}
       Object.entries(appData[appKey].schema.paths).forEach(([path, value]) => {
-        Object.entries(value).forEach(([method, {operationId, tags, handler, parameters, requestBody}]) => {
+        Object.entries(value).forEach(([method, {operationId, tags, handler, parameters, _requestBody}]) => {
           if (method === 'parameters') {
             // TODO: implement
             console.error('parameters only supported on path level instead of method')
@@ -108,24 +107,14 @@ startWorker({
             if (!edgeHandlers[method]) {
               edgeHandlers[method] = []
             }
+
+            // parsedBody: {},
             edgeHandlers[method].push({
               path,
               operationId,
               handler,
-
-              // TODO: move to global validation of headers object? handle required
-              // {
-              //   "type": "object",
-              //   "properties": {
-              //     "a": { "type": "string" }
-              //   },
-              //   "required": ["a", "b"]
-              // }
-              parameters: parameters?.map(param => {
-                param.validate = ajv.compile(param.schema)
-                return param
-              }),
-              requestBody
+              paramsValidation: parameters && ajv.compile(makeSubSchema(parameters))
+              // requestBody: bodyValidation
             })
           }
         })
@@ -142,7 +131,7 @@ startWorker({
     }
 
     let workerName
-    let subSchema
+    let paramsValidation
     const handlers = appData[appKey].edgeHandlers
     const method = req.method.toLowerCase()
     if (handlers[method]) {
@@ -150,19 +139,15 @@ startWorker({
         if (handlers[method][i].path.endsWith('*')) {
           if (req.url.pathname.startsWith(handlers[method][i].path.slice(0, -1))) {
             workerName = handlers[method][i].operationId
-            subSchema = {
-              parameters: handlers[method][i].parameters,
-              requestBody: handlers[method][i].requestBody
-            }
+            paramsValidation = handlers[method][i].paramsValidation
+            // requestBody: handlers[method][i].requestBody
             break
           }
         } else {
           if (req.url.pathname === handlers[method][i].path) {
             workerName = handlers[method][i].operationId
-            subSchema = {
-              parameters: handlers[method][i].parameters,
-              requestBody: handlers[method][i].requestBody
-            }
+            paramsValidation = handlers[method][i].paramsValidation
+            // requestBody: handlers[method][i].requestBody
             break
           }
         }
@@ -211,12 +196,11 @@ startWorker({
       }
     }
 
-    if (subSchema?.parameters || subSchema?.requestBody ) {
-      const { _params, errors } = execSchema(arg, subSchema, appData[appKey].schema) // errors
-      if (errors?.length) {
-        return new Response(JSON.stringify(errors), { status: 400, headers: { 'content-type': 'application/json' }})
+    // TODO parsing params and handle requestBody
+    if (paramsValidation ) {
+      if (!paramsValidation({ headers: arg.req.headers })) {
+        return new Response(JSON.stringify(paramsValidation.errors), { status: 400, headers: { 'content-type': 'application/json' }})
       }
-      // TODO parsing arg.params = params
     }
 
     return workers[workerKey].code.handler(arg)

@@ -26,7 +26,7 @@ type onLoadcallbackFun = (arg: pathConf) => Promise<{ contents: string | Uint8Ar
 type lifecycleFun = (arg: callbackArg, arg2: callbackFun | onLoadcallbackFun) => pathConf
 
 
-export default ({ local, input, atreyuPath }: { local: boolean, input: string, atreyuPath: string }) => ({
+export default ({ local, input, atreyuPath, paramsValidation }: { local: boolean, input: string, atreyuPath: string, paramsValidation: string }) => ({
   name: 'atreyu',
 
   setup: ({ onResolve, onLoad, initialOptions }: {onResolve: lifecycleFun, onLoad: lifecycleFun, initialOptions: { loader?: Record<string, string>} }) => {
@@ -39,6 +39,12 @@ export default ({ local, input, atreyuPath }: { local: boolean, input: string, a
       }},
       handler: { filter: /^\/\_handler\.js/, fun: () => {
         return toPathObj(input)
+      }},
+      validation: { filter: /^\/\_validation\.js/, fun: () => {
+        return {
+          contents: paramsValidation || 'export default function validate () { return true }',
+          loader: 'js'
+        }
       }},
       edge: { filter: /^\/\_edge\//, fun: ({ path }: pathConf) => {
         return toPathObj(path.replace('/_edge', atreyuPath + '/edge/'))
@@ -56,6 +62,10 @@ export default ({ local, input, atreyuPath }: { local: boolean, input: string, a
 
     onResolve({ filter: /^https?:\// }, ({ path }: pathConf) => {
       return { path, namespace: 'http-import' }
+    })
+
+    onResolve({ filter: pathConf.validation.filter }, ({ path }: pathConf) => {
+      return { path, namespace: 'ajv' }
     })
 
     onResolve({ filter: /.*/, namespace: 'http-import' }, ({ path, importer }: pathConf) => {
@@ -94,5 +104,7 @@ export default ({ local, input, atreyuPath }: { local: boolean, input: string, a
     onResolve({filter: pathConf.env.filter }, pathConf.env.fun)
     onResolve({filter: pathConf.kvs.filter }, pathConf.kvs.fun)
     onResolve({filter: pathConf.handler.filter}, pathConf.handler.fun)
+
+    onLoad({filter: pathConf.validation.filter, namespace: 'ajv'}, pathConf.validation.fun)
   }
 })

@@ -1,6 +1,6 @@
 import startWorker from './lib/start-worker.js'
 import { handler } from '/_handler.js'
-import { schema } from '/_schema.js'
+import paramsValidation from '/_validation.js'
 import { getEnv } from '/_env.js'
 const { env, folderHash, appName, ayuVersion, rootFolderHash, ayuHash } = getEnv(['env', 'folderHash', 'appName', 'ayuVersion', 'rootFolderHash', 'ayuHash'])
 
@@ -20,10 +20,9 @@ startWorker({
   handler: async (arg) => {
     arg.app = app
 
-    if (schema?.parameters || schema?.requestBody ) {
-      const { _params, errors } = execSchema(arg, subSchema, appData[appKey].schema)
-      if (errors?.length) {
-        return new Response(JSON.stringify(errors), { status: 400, headers: { 'content-type': 'application/json' }})
+    if (paramsValidation) {
+      if (!paramsValidation({ headers: arg.req.headers })) {
+        return new Response(JSON.stringify(paramsValidation.errors), { status: 400, headers: { 'content-type': 'application/json' }})
       }
     }
 

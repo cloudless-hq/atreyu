@@ -90,7 +90,7 @@ export default function ({
           preload: newDbConf.preload,
           clientDesignDocs: newDbConf[clientDbName]
         })
-
+        console.log('making falcor server')
         self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
 
         if (newSession.userId && !self.session.loaded) {
@@ -165,9 +165,13 @@ export default function ({
   }
   setInterval(purgeClients, 2000)
 
+  // self.addEventListener('periodicsync', (event) => {
+  //   console.log(event)
+  // })
+
   addEventListener('message', async e => {
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-      self.session.pendingInit = self.session.refresh({ where: 'falcor', data: e.data }).then()
+      self.session.pendingInit = self.session.refresh({ where: 'falcor', data: e.data }).catch(err => console.error(err))
     }
     if (self.session.pendingInit) {
       await self.session.pendingInit
@@ -186,10 +190,13 @@ export default function ({
       return
     }
 
-    const exec = self.session.falcorServer?.execute(data)
+    if (!self.session.falcorServer) {
+      return e.source.postMessage(JSON.stringify({ id: reqId, error: 'no falcor server session active' }))
+    }
+
+    const exec = self.session.falcorServer.execute(data)
       .subscribe(
         result => {
-          // console.log(result)
           e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {

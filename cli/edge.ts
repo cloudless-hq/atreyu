@@ -1,14 +1,22 @@
-import { join, basename, build } from '../deps-deno.ts'
+import { join, basename, build, Ajv, ajvStandaloneCode } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
 import esbuildPlugin from './esbuild-plugin.ts'
+import {makeSubSchema} from '../edge/lib/schema.js'
 
+const ajv = new Ajv({ coerceTypes: true, useDefaults: true, code: { source: true, esm: true }})
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
 export function buildWorkerConfig (schema: any) {
   const workers: Record<string, unknown> = {}
 
   Object.entries(schema.paths).forEach(([path, conf]) => {
-    Object.entries(conf).forEach(([_method, { tags, operationId }]) => {
+    Object.entries(conf).forEach(([method, { tags, operationId, parameters }]) => {
+      if (method === 'parameters') {
+        // TODO: implement
+        console.error('parameters only supported on path level instead of method')
+        return
+      }
+
       if (tags?.includes('edge')) {
         const workerName = operationId.replace('.js', '').replaceAll('/', '__')
         if (!workers[workerName]) {
@@ -26,10 +34,13 @@ export function buildWorkerConfig (schema: any) {
           filename = operationId
         }
 
+        workers[workerName].paramsValidation = parameters && ajvStandaloneCode(ajv, ajv.compile(makeSubSchema(parameters)))
         workers[workerName].codePath = join(...base, filename)
 
         if (workers[workerName].routes) {
-          workers[workerName].routes.push(path)
+          if (!workers[workerName].routes.includes(path)) {
+            workers[workerName].routes.push(path)
+          }
         } else {
           workers[workerName].routes = [path]
         }
@@ -50,11 +61,11 @@ const buildSettings = {
   target: 'esnext',
   platform: 'neutral'
 }
-async function compile ({ input, appName, workerName, output, buildName, publish }) {
+async function compile ({ input, appName, workerName, output, buildName, paramsValidation, publish }) {
   if (publish) {
     await build({
       entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
-      plugins: [ esbuildPlugin({ local: false, input, atreyuPath }) ],
+      plugins: [ esbuildPlugin({ local: false, input, atreyuPath, paramsValidation }) ],
       outfile: output,
       ...buildSettings
     }).catch(err => console.error(err))
@@ -62,7 +73,7 @@ async function compile ({ input, appName, workerName, output, buildName, publish
 
   const buildRes = await build({
     entryPoints: [input],
-    plugins: [ esbuildPlugin({ local: true, input, atreyuPath }) ],
+    plugins: [ esbuildPlugin({ local: true, input, atreyuPath, paramsValidation }) ],
     outfile: output.replace('.js', '.deno.js'),
     ...buildSettings
   }).catch(err => console.error(err))
@@ -101,11 +112,11 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
     })
   }
 
-  await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath }]) => {
+  await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath, paramsValidation }]) => {
     const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
     console.log(`    building edge-worker: ${workerLogPath}`)
 
-    const newDeps = await compile({ input: codePath, appName, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
+    const newDeps = await compile({ input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 
     newDeps.forEach(newDep => {
       if (!deps[newDep]) {

@@ -3,7 +3,7 @@
   import Login from './login.svelte.js'
   import Sessions from './sessions.svelte.js'
   // import Confirmation from './confirmation.svelte.js'
-  import UserSwitcher from './user-switcher.svelte.js'
+  import Manage from './manage.svelte'
 	import makeRouterStore from '/_ayu/src/store/router.js'
   const router = makeRouterStore()
 
@@ -24,18 +24,19 @@
        localDbNames = []
     }
 
-    const { quota, usage, usageDetails } = await navigator.storage.estimate()
+    if (typeof navigator.storage.estimate === 'function') {
+      const { quota, usage, usageDetails } = await navigator.storage?.estimate()
+      const percent = Math.floor((usage / quota) * 100)
+      const localFiles = formatBytes(usageDetails.caches + usageDetails.serviceWorkerRegistrations)
+      const localDocs = formatBytes(usageDetails.indexedDB)
 
-    const percent = Math.floor((usage / quota) * 100)
-    const localFiles = formatBytes(usageDetails.caches + usageDetails.serviceWorkerRegistrations)
-    const localDocs = formatBytes(usageDetails.indexedDB)
-
-    dataUsage = {
-      quota,
-      usage,
-      percent,
-      localFiles,
-      localDocs
+      dataUsage = {
+        quota,
+        usage,
+        percent,
+        localFiles,
+        localDocs
+      }
     }
   }
   if ($router.hash !== '#/sessions') {
@@ -58,7 +59,7 @@
 	}
   .storage-footer {
     bottom: 0;
-    position: absolute;
+    position: fixed;
     margin-bottom: 16px;
     font-size: 13px;
     margin-right: 21px;
@@ -75,6 +76,7 @@
     width: 100vw;
     background: rgb(255 255 255 / 67%);
     backdrop-filter: saturate(180%) blur(5px);
+    -webkit-backdrop-filter: saturate(180%) blur(5px);
     border-bottom: 1px solid #00000017;
     backface-visibility: hidden;
     transform: translateZ(0);
@@ -88,7 +90,7 @@
     {#if localDbNames && (localDbNames?.length === 0 || userData || newUser)}
       <Login {userData} />
     {:else if localDbNames}
-      <UserSwitcher {localDbNames} {doLoginUser} />
+      <Manage {localDbNames} {doLoginUser} />
     {/if}
   {/if}
 

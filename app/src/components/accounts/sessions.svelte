@@ -18,19 +18,19 @@
     <div class="grid grid-cols-1 gap-4">
 
     {#each $data._sessions$ as session}
-      <!--
-      {session.loginCount}
-      {session.userAgent} country -->
-        <div class="relative flex items-center space-x-6 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
-          <div class="flex-shrink-0">
-            <svg class="h-10 w-10 rounded-full fill-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 209.4 12.47 165.6 34.27 127.1L144.1 318.3C166 357.5 207.9 384 256 384C270.3 384 283.1 381.7 296.8 377.4L220.5 509.6C95.9 492.3 0 385.3 0 256zM365.1 321.6C377.4 302.4 384 279.1 384 256C384 217.8 367.2 183.5 340.7 160H493.4C505.4 189.6 512 222.1 512 256C512 397.4 397.4 511.1 256 512L365.1 321.6zM477.8 128H256C193.1 128 142.3 172.1 130.5 230.7L54.19 98.47C101 38.53 174 0 256 0C350.8 0 433.5 51.48 477.8 128V128zM168 256C168 207.4 207.4 168 256 168C304.6 168 344 207.4 344 256C344 304.6 304.6 344 256 344C207.4 344 168 304.6 168 256z"/></svg>
-          </div>
+      <!-- {session.userAgent} -->
+        <div class="relative flex group items-center space-x-20 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
 
           <div class="min-w-0">
-            <a href="#sdf" class="focus:outline-none">
-              <span class="absolute inset-0" aria-hidden="true"></span>
+            <div class="flex-shrink-0 inline-block mb-[5px] mr-4 ">
+              <svg class="h-10 w-10 rounded-full fill-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 209.4 12.47 165.6 34.27 127.1L144.1 318.3C166 357.5 207.9 384 256 384C270.3 384 283.1 381.7 296.8 377.4L220.5 509.6C95.9 492.3 0 385.3 0 256zM365.1 321.6C377.4 302.4 384 279.1 384 256C384 217.8 367.2 183.5 340.7 160H493.4C505.4 189.6 512 222.1 512 256C512 397.4 397.4 511.1 256 512L365.1 321.6zM477.8 128H256C193.1 128 142.3 172.1 130.5 230.7L54.19 98.47C101 38.53 174 0 256 0C350.8 0 433.5 51.48 477.8 128V128zM168 256C168 207.4 207.4 168 256 168C304.6 168 344 207.4 344 256C344 304.6 304.6 344 256 344C207.4 344 168 304.6 168 256z"/></svg>
+            </div>
 
-              <div class="text-sm text-left font-medium text-gray-900">
+            <a href="#sdf" class="focus:outline-none inline-block">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              <p class="truncate text-left font-medium text-sm text-gray-900">Session Name: {session.sessionName}</p>
+
+              <div class="text-sm text-left text-gray-500">
                 <div class="last-login">Last Login:
                   <div class="from-now">{fromNow(session.lastLogin)}</div>
                   <div class="time-format">{formatTime(session.lastLogin)}</div>
@@ -41,10 +41,23 @@
                   <div class="time-format">{formatTime(session.created)}</div>
                 </div>
               </div>
-
-              <p class="truncate text-left text-sm text-gray-500">{session.sessionName} ({session.country})</p>
             </a>
           </div>
+
+          <div class="min-w-0">
+            <p class="truncate text-left text-sm text-gray-500">Logins: {session.loginCount}</p>
+            <p class="truncate text-left text-sm text-gray-500">Location: {session.cf?.city}, {session.cf?.country}</p>
+            <p class="truncate text-left text-sm text-gray-500">System: Chrome (en) on Mac</p>
+          </div>
+
+          {#if session._id === $data._session.sessionId$}
+            <span class="absolute top-2 right-2 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">current session</span>
+          {/if}
+
+          <button title="Delete Session" class="absolute right-3 invisible group-hover:visible m-1 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Remove">
+            <span class="sr-only">Remove</span>
+            <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+          </button>
         </div>
     {/each}
 
