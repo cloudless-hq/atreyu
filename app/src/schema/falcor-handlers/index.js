@@ -88,11 +88,11 @@ export const _sync = ({ dbs, Observable }, [ since ]) => {
   return dbs && doSync(dbs, since, Observable)
 }
 
-export async function getDocs ({ ids, _event, dbs }) {
+export async function getDocs ({ ids, _event, dbs, req }) {
   const pouchRes = await dbs?.pouch.allDocs({
     include_docs: true,
     conflicts: true,
-    keys: ids
+    keys: ids.filter(id => id)
   })
 
   const missingIds = []
@@ -123,14 +123,13 @@ export async function getDocs ({ ids, _event, dbs }) {
   })
 
   if (missingIds.length > 0) {
-    const freshDocs = await fetch(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
-      method: 'POST',
+    const freshDocs = await req(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ 'keys': missingIds })
-    }).then(res => res.json())
+      body: { 'keys': missingIds }
+    })
 
     // event.waitUntil(
-    dbs.pouch.bulkDocs(freshDocs.rows.map(row => row.doc).filter(exists => exists), {
+    freshDocs?.rows?.length && dbs.pouch.bulkDocs(freshDocs.rows.map(row => row.doc).filter(exists => exists), {
       new_edits: false
     })
     // )

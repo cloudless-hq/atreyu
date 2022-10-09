@@ -10,7 +10,17 @@ export default async function ({
 }) {
   PouchDB.prefix = '_ayu_'
   const pouch = new PouchDB(clientDbName)
-  const couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`)
+  const couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
+    fetch: (url, opts) => {
+      return PouchDB.fetch(url, opts).then(res => {
+        if (res.redirected || res.type === 'opaqueredirect') {
+          self.session?.refresh()
+        }
+        return res
+      })
+    },
+    skip_setup: true
+  })
 
   const sessionDoc = await couch.get(sessionId)
   await pouch.put({ _id: '_local/ayu', sessionId }).catch(() => {})

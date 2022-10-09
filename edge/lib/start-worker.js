@@ -56,12 +56,12 @@ export default ({ handler, _module, app }) => {
 
             waitUntil(log({ req, response, stats, body: text, duration, traceId }))
 
-            try {
-              // FIXME: cloudant requests have immutable headers?
-              response.headers.set('server-timing', 'edge;dur=' + duration)
-            } catch (_e) {
-              // console.log('header immutable', response, req.url.href)
-            }
+            // try {
+            //   // FIXME: requests have immutable headers
+            //   response.headers.set('server-timing', 'edge;dur=' + duration)
+            // } catch (_e) {
+            //   // console.log('header immutable', response, req.url.href)
+            // }
 
             return response
           })

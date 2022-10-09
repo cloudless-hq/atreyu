@@ -2,14 +2,20 @@
 // TODO: refactor split update logic and ui
 import data from '/_ayu/src/store/data.js'
 
+// FIxME: check existing timeouts and cancel to prevent double sync?
 let seq
+let timeout
 export let doSync = async (dataProxy) => {
   try {
     seq = (await dataProxy._sync(seq))?.json?._seq || seq
   } catch (err) {
     console.log(err)
   } finally {
-    setTimeout(() => {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    timeout = setTimeout(() => {
+      timeout = null
       doSync(dataProxy)
     }, 100)
   }
@@ -32,7 +38,7 @@ let _updating = localStorage.getItem('_updating')
 $: {
   if ($data._session.userId$) {
     // the reactive check to ask for updates and reload while the page is open
-    const settingsDoc = $data._docs[settingsDocId + '$']
+    const settingsDoc = $data._docs[settingsDocId].$
 
     if (settingsDoc && !$data._hash$loading) {
       latestHash = settingsDoc.folderHash
@@ -70,17 +76,25 @@ $: {
 //   }
 // }
 
+window.addEventListener('pageshow', e => {
+  // page was restored from the bfcache, sync is broken and needs to be re-initialized
+  if (e.persisted) {
+    init()
+  }
+})
+
 // the initial update check to auto install updates on fresh load and preload the required data
 async function init () {
   const userId = await $data._session.userId$promise
   // const appHash = await $data._session.userId$promise
 
   if (userId) {
+    // FIXME: breaks on navigating back from account app/ sesssions screen
     doSync($data, data.falcor)
 
     const [settingsDoc, installedHash] = await Promise.all([
-      $data._docs[settingsDocId + '$promise'],
-      $data._hash$promise
+      $data._docs[settingsDocId ].$promise,
+      $data._hash.$promise
     ])
 
     if (settingsDoc?.folderHash) {

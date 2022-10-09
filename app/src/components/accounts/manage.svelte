@@ -138,11 +138,10 @@
       </li>
     {/each}
 
-
     <li class="group relative col-span-1 flex flex-col text-center" style="min-width: 240px;">
       <div class="flex flex-1 flex-col pb-8 justify-center">
         <div class="relative cursor-pointer mx-auto h-32 w-32 flex-shrink-0 rounded-full" style="height: 65px; width: 65px; background: #e5e5e5; fill: #858585; padding: 16px;">
-          <a href="#new" rel="no-preload" style="fill: #858585;">
+          <a href="#new" rel="no-preload" class="-mt-1" style="fill: #858585;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M432 256c0 17.69-14.33 32.01-32 32.01H256v144c0 17.69-14.33 31.99-32 31.99s-32-14.3-32-31.99v-144H48c-17.67 0-32-14.32-32-32.01s14.33-31.99 32-31.99H192v-144c0-17.69 14.33-32.01 32-32.01s32 14.32 32 32.01v144h144C417.7 224 432 238.3 432 256z"/></svg>
           </a>
         </div>

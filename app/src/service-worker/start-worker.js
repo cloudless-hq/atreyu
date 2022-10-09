@@ -168,6 +168,13 @@ export default function ({
   // self.addEventListener('periodicsync', (event) => {
   //   console.log(event)
   // })
+  // self.addEventListener('sync', event => {
+  //   console.log(event)
+  // })
+  // TODO when and where to register the sync ?
+  // navigator.serviceWorker.ready.then(swRegistration => {
+  //   return swRegistration.sync.register('myFirstSync')
+  // })
 
   addEventListener('message', async e => {
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
