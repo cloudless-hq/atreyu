@@ -123,11 +123,9 @@ export async function getDocs ({ ids, _event, dbs, req }) {
   })
 
   if (missingIds.length > 0) {
-    const freshDocs = await req(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
-      headers: { 'content-type': 'application/json' },
+    const { json: freshDocs } = await req(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
       body: { 'keys': missingIds }
     })
-
     // event.waitUntil(
     freshDocs?.rows?.length && dbs.pouch.bulkDocs(freshDocs.rows.map(row => row.doc).filter(exists => exists), {
       new_edits: false
