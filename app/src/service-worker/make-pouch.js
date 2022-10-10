@@ -18,8 +18,8 @@ export default async function ({
         }
         return res
       })
-    },
-    skip_setup: true
+    }
+    // skip_setup: true TODO: this breaks startup why?
   })
 
   const sessionDoc = await couch.get(sessionId)

@@ -62,7 +62,7 @@ export default function ({
       let redirectOtherClients = null
 
       let newSession
-      const sessionReq = await fetch('/_api/_session', { redirect: 'manual' })
+      const sessionReq = await fetch('/_api/_session', { redirect: 'manual' }).catch(error => ({ ok: false, error }))
       if (sessionReq.ok) {
         newSession = await sessionReq.json()
       }
@@ -198,6 +198,7 @@ export default function ({
     }
 
     if (!self.session.falcorServer) {
+      self.session.logout()
       return e.source.postMessage(JSON.stringify({ id: reqId, error: 'no falcor server session active' }))
     }
 
