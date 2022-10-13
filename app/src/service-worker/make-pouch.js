@@ -12,12 +12,18 @@ export default async function ({
   const pouch = new PouchDB(clientDbName)
   const couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
     fetch: (url, opts) => {
+      opts.redirect = 'error'
+      opts.headers.set('X-Requested-With', 'XMLHttpRequest')
       return PouchDB.fetch(url, opts).then(res => {
-        if (res.redirected || res.type === 'opaqueredirect') {
+        if (res.status === 401 || res.redirected || res.type === 'opaqueredirect') {
           self.session?.refresh()
         }
         return res
       })
+      // .catch(error => {
+      //   console.error({error})
+      //   return Promise.reject(error)
+      // })
     }
     // skip_setup: true TODO: this breaks startup why?
   })
@@ -69,14 +75,14 @@ export default async function ({
       console.error(err)
     })
     .on('paused', () => {
-      console.info('replication paused')
+      // console.info('replication paused')
     })
     .on('active', ({ _direction }) => {
       init?.()
     })
 
   let init = () => {
-    console.log('initting changes session doc')
+    // console.log('initting changes session doc')
     if (sync.pull.replicationId && sync.push.replicationId) {
       let updateReplications = false
       if (sessionDoc.replications) {
@@ -93,7 +99,7 @@ export default async function ({
       }
 
       if (!sessionDoc.replications || updateReplications) {
-        console.log('writing replications to session...')
+        // console.log('writing replications to session...')
         sessionDoc.replications = {
           pull: sync.pull.replicationId,
           push: sync.push.replicationId

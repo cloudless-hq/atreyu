@@ -49,7 +49,8 @@ export async function handler ({ req, stats, parsedBody, app }) {
       headers['Location'] = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (jwtPayload.email) {
-      headers['Location'] = `https://${auth_domain}/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin)}`
+      const base = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
+      headers['Location'] = `/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin + base)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
       headers['Location'] = `/_ayu/accounts/?login`
@@ -69,7 +70,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
 
   if (req.url.search.startsWith('?login')) {
     // cookie: CF_Authorization= https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
-    // name: Jan Johannes, idp: Data from your identity provider, user_uuid: The ID of the user.
+    // name: Ja Joh, idp: Data from your identity provider, user_uuid: The ID of the user.
     if (jwtPayload.email) {
       const newSessionId = await ensureSession({ email: jwtPayload.email, app, cf, useSessionId: sessionId })
 

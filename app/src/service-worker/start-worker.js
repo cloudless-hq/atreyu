@@ -62,7 +62,12 @@ export default function ({
       let redirectOtherClients = null
 
       let newSession
-      const sessionReq = await fetch('/_api/_session', { redirect: 'manual' }).catch(error => ({ ok: false, error }))
+      const sessionReq = await fetch('/_api/_session', {
+        redirect: 'error',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }).catch(error => ({ ok: false, error }))
       if (sessionReq.ok) {
         newSession = await sessionReq.json()
       }
@@ -90,7 +95,7 @@ export default function ({
           preload: newDbConf.preload,
           clientDesignDocs: newDbConf[clientDbName]
         })
-        console.log('making falcor server')
+        // console.log('making falcor server')
         self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
 
         if (newSession.userId && !self.session.loaded) {
@@ -198,7 +203,7 @@ export default function ({
     }
 
     if (!self.session.falcorServer) {
-      self.session.logout()
+      self.session.refresh()
       return e.source.postMessage(JSON.stringify({ id: reqId, error: 'no falcor server session active' }))
     }
 

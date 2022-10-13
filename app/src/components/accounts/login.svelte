@@ -34,14 +34,12 @@
 <style>
   .login {
     background: white;
-
   }
   .login-form {
     max-width: 80%;
     margin: auto;
     position: relative;
-    top: 35%;
-    transform: translateY(-50%);
+    top: 30%;
   }
   .login-input {
     border: solid 1px rgba(0, 0, 0, .1);
@@ -52,8 +50,8 @@
   .input {
     border: none;
     display: inline-block;
-    padding: 10px;
-    width: 100%;
+    padding: 8px;
+    width: 87%;
   }
   .icon{
     padding: 10px;
@@ -73,11 +71,9 @@
   .title {
     color: #707070;
     font-weight: 200;
+    margin-bottom: 10px;
+    font-size: 19px;
   }
-  /* .label{
-    color: #707070;
-    font-size: 10px;
-  } */
   .hidden {
     visibility: hidden;
   }

@@ -118,7 +118,8 @@
             {/if}
           </div>
 
-          <h3 class="mt-6 text-sm font-medium text-gray-900 whitespace-nowrap">{account.username}{account.org ? ` (${account.org})` : ''}</h3>
+          <h3 class="mt-6 text-sm font-medium text-gray-900">{account.username}{account.org ? ` (${account.org})` : ''}</h3>
+
           <dl class="mt-1 flex flex-grow flex-col justify-between">
             <dt class="sr-only">Storage Info</dt>
             <dd title={account.couchInfo?.sizes ? `Taking up ${formatBytes(account.couchInfo.sizes.file)} on remote db server` : ''} class="text-sm text-gray-500 whitespace-nowrap">
@@ -128,7 +129,7 @@
             <dt class="sr-only">Time Audit</dt>
             <dd class="mt-3 text-sm text-gray-500 whitespace-nowrap">
               <div title="{formatTime(account.lastLogin)}">last login: {fromNow(account.lastLogin, timestamp)}<br></div>
-              <div title="{formatTime(account.sessionCreated)}">account added: {fromNow(account.sessionCreated, timestamp)}</div>
+              <div title="{formatTime(account.sessionCreated)}">added: {fromNow(account.sessionCreated, timestamp)}</div>
           </dl>
         </div>
 
@@ -142,7 +143,7 @@
       <div class="flex flex-1 flex-col pb-8 justify-center">
         <div class="relative cursor-pointer mx-auto h-32 w-32 flex-shrink-0 rounded-full" style="height: 65px; width: 65px; background: #e5e5e5; fill: #858585; padding: 16px;">
           <a href="#new" rel="no-preload" class="-mt-1" style="fill: #858585;">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M432 256c0 17.69-14.33 32.01-32 32.01H256v144c0 17.69-14.33 31.99-32 31.99s-32-14.3-32-31.99v-144H48c-17.67 0-32-14.32-32-32.01s14.33-31.99 32-31.99H192v-144c0-17.69 14.33-32.01 32-32.01s32 14.32 32 32.01v144h144C417.7 224 432 238.3 432 256z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 20 448 512"><path d="M432 256c0 17.69-14.33 32.01-32 32.01H256v144c0 17.69-14.33 31.99-32 31.99s-32-14.3-32-31.99v-144H48c-17.67 0-32-14.32-32-32.01s14.33-31.99 32-31.99H192v-144c0-17.69 14.33-32.01 32-32.01s32 14.32 32 32.01v144h144C417.7 224 432 238.3 432 256z"/></svg>
           </a>
         </div>
 

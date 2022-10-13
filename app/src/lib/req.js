@@ -18,6 +18,8 @@ export default async function req (url, { method, body, headers: headersArg = {}
     headers.set('content-type', 'application/json')
   }
 
+  headers.set('X-Requested-With', 'XMLHttpRequest')
+
   if (body && headers.get('content-type') === 'application/json') {
     body = JSON.stringify(body)
   }
@@ -58,7 +60,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
         error: res.error,
         redirect: res.redirected || res.type === 'opaqueredirect'
       }
-      if (retried.redirect) {
+      if (retried.redirect || res.status === 401) {
         self.session?.refresh()
       }
       await sleepRandom()
@@ -114,7 +116,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
     error: res.error
   }
 
-  if (baseResponse.redirect) {
+  if (baseResponse.redirect || res.status === 401) {
     self.session?.refresh()
   }
 

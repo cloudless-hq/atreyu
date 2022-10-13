@@ -1,7 +1,7 @@
 import { join, green, build } from '../deps-deno.ts'
 import esbuildPlugin from './esbuild-plugin.ts'
 export default async function ({ batch, buildRes, clean } = {}) {
-  const startTime = Date.now()
+  // const startTime = Date.now()
   const fileName = `service-worker.js`
   const appFolder = join(Deno.cwd(), 'app')
   const swPath = join(appFolder, fileName)

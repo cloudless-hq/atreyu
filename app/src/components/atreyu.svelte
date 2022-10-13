@@ -1,7 +1,7 @@
 <script>
 // TODO: refactor split update logic and ui
 import data from '/_ayu/src/store/data.js'
-
+import DevMenu from './dev-menu.svelte'
 // FIxME: check existing timeouts and cancel to prevent double sync?
 let seq
 let timeout
@@ -269,3 +269,5 @@ async function doUpdate ({ auto, silent }) {
     </div>
   {/if}
 {/if}
+
+<DevMenu />

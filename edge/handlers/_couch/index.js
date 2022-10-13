@@ -39,7 +39,7 @@ export function handler ({ req, text }) {
 
   return fetch(href, {
     method: req.method,
-    redirect: 'manual',
+    // redirect: 'error', error not supported, manual?
     body: text, // TODO: req.raw?.body ?
     headers: {
       ...req.headers,

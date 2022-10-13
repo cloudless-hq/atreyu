@@ -13,7 +13,7 @@ const onIdle = window.requestIdleCallback || function (cb) {
   cb({ timeRemaining: function () { return 41 } })
 }
 
-export default function (schema = {paths: {}, fallback: true}, { preloadDisabled, _preloadDefault } = {}) {
+export default function (schema = {paths: {}, fallback: true}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'none', _preloadDefault } = {}) {
   const routes = []
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
@@ -22,7 +22,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
     }
   })
 
-  function routerState ({ hrefOverride, preload, updateRoute } = {}) {
+  function routerState ({ hrefOverride, preload, continued, updateRoute } = {}) {
     const {
       search,
       hash,
@@ -184,7 +184,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
       }
     }
 
-    urlLogger({ missing, method: preload ? 'PRELOAD' : 'GET', url: 'window://' + href, body: allData })
+    urlLogger({ missing, continued, method: preload ? 'PRELOAD' : 'GET', url: 'window://' + href, body: allData })
 
     if (page) {
       if (!components[page]) {
@@ -249,12 +249,13 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
       })}, 70)
   }
 
-  const finished = new Set()
   const primary = new Set()
   const secondary = new Set()
-  let preloaderInstance
-  const newDiv = document.createElement('div')
-  newDiv.style = 'display: none;'
+  const instances = new Map()
+  const pending = new Set()
+  const finished = new Set()
+
+  // TODO: migrate this to propper task queue
   async function doIdleWork (endTime) {
     let todo
     let isSecondary = false
@@ -265,6 +266,7 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
       todo = primary
     }
 
+    let currentHref
     for (const href of todo) {
       // console.log(href)
       if (finished.has(href)) {
@@ -272,22 +274,29 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
         continue
       }
 
-      const preloadRouterState = routerState({ hrefOverride: href, preload: true })
-      // console.log(preloadRouterState, finished, primary, secondary)
+      // console.log({href, secondary: [...secondary], primary: [...primary], todo: [...todo], finished: [...finished]})
 
+      const preloadRouterState = routerState({ hrefOverride: href, preload: true, continued: pending.has(href) })
+
+      // console.log(preloadRouterState, finished, primary, secondary)
       // console.log(preloadRouterState, preloadRouterState._error, preloadRouterState._pending?.then, !!preloadRouterState._pending?.then)
+
       if (preloadRouterState._pending?.then) {
         await preloadRouterState._pending
       }
 
+      // handle routes without page component or with errors
       if (!preloadRouterState._page || preloadRouterState._error) {
         finished.add(href)
         todo.delete(href)
-        // console.log(finished, todo)
         continue
       }
+
       // console.log('start', endTime - Date.now())
+
+      // only if there is enough time after loading the compnent file do we instantiate
       if ((endTime > Date.now() + 20)) {
+        // console.log('finished2', href)
         finished.add(href)
         todo.delete(href)
 
@@ -297,29 +306,36 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
         })
 
         try {
-          preloaderInstance = new preloadRouterState._component({ target: newDiv, context: new Map([['router', preloadRouterStore]]) })
+          const newDiv = document.createElement('div')
+          newDiv.style = 'display: none;'
+          currentHref = href
+          instances.set(href, new preloadRouterState._component({ target: newDiv, context: new Map([['router', preloadRouterStore]]) }))
         } catch (err) {
           console.error('could not preload the component for: ' + href, err, preloadRouterState._component)
         }
-        break
+      } else {
+        pending.add(href)
       }
+
+      break
     }
     // console.log('instance', endTime - Date.now())
 
-    if (primary.size > 0 || secondary.size > 0) {
-      awaitIdle(endTime => {
+    awaitIdle(endTime => {
+      // console.log(instances.get(currentHref))
+      if (currentHref) {
         if (!isSecondary) {
-          getLinks(newDiv).forEach(link => secondary.add(link)) // pagePreloader
+          getLinks(instances.get(currentHref).$$.root).forEach(link => secondary.add(link))
         }
-        preloaderInstance?.$destroy()
-        preloaderInstance = null
-        // console.log('destroyed', endTime - Date.now())
+        instances.get(currentHref)?.$destroy()
+        instances.delete(currentHref)
+      }
+
+      // console.log('destroyed', endTime - Date.now())
+      if (primary.size > 0 || secondary.size > 0 || instances.size > 0) {
         doIdleWork(endTime)
-      })
-    } else {
-      preloaderInstance?.$destroy()
-      preloaderInstance = null
-    }
+      }
+    })
   }
 
   const routerStore = readable({}, set => {

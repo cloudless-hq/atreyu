@@ -1,5 +1,16 @@
-export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsConf, body, duration, res, richConsole = true }) {
+export function urlLogger ({ missing, continued, scope, method, url, origUrl, cached, corsConf, body, duration, res, richConsole = true, verbose }) {
   let badgeColor = ''
+
+  // console.log(url, origUrl, scope)
+  if (!verbose) {
+    if (cached && !missing && method === 'GET' && scope === 'ipfs') {
+      return
+    }
+
+    if (continued) {
+      return
+    }
+  }
 
   if (richConsole) {
     badgeColor = 'grey'
@@ -16,6 +27,8 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
       badgeColor = 'rgb(174, 12, 226)'
     } else if (method === 'CALL') {
       badgeColor = 'rgb(236 124 248)'
+    } else if (method === 'PRELOAD') {
+      badgeColor = '#6ad4f6'
     }
   }
 
@@ -35,7 +48,7 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
     displayUrl = url
   }
 
-  let edgeWorker = scope?.endsWith('edge-worker')
+  const edgeWorker = scope?.endsWith('edge-worker')
 
   /* eslint-disable no-console */
   if (richConsole) {
@@ -71,6 +84,10 @@ export function urlLogger ({ missing, scope, method, url, origUrl, cached, corsC
 
   if (typeof duration !== 'undefined') {
     console.log(`duration: ${duration}ms`)
+  }
+
+  if (continued) {
+    console.info('continued processing of previous request')
   }
 
   if (body) {

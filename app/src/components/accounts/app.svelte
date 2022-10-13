@@ -69,7 +69,7 @@
   }
 </style>
 
-<div style="
+<!-- <div style="
     position: fixed;
     z-index: 100000;
     height: 63px;
@@ -81,7 +81,7 @@
     backface-visibility: hidden;
     transform: translateZ(0);
 ">
-</div>
+</div> -->
 
 <div class="app antialiased font-sans bg-gray-100" transition:fade="{{ duration: 250}}">
   {#if $router.hash === '#/sessions'}
