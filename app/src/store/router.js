@@ -13,7 +13,7 @@ const onIdle = window.requestIdleCallback || function (cb) {
   cb({ timeRemaining: function () { return 41 } })
 }
 
-export default function (schema = {paths: {}, fallback: true}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'none', _preloadDefault } = {}) {
+export default function (schema = {paths: {}, fallback: true}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'false', _preloadDefault } = {}) {
   const routes = []
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {

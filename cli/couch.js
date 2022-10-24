@@ -13,7 +13,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     'Content-Type': 'application/json'
   }
 
-  const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
+  const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
   const _id = `system:ayu_settings`
 
@@ -44,33 +44,37 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
     }
 
     if (createDb) {
-      await fetch(`${couchHost}/${dbName}?partitioned=true`, {
-        headers,
-        method: 'PUT'
-      })
-
-      await fetch(`${couchHost}/${dbName}/_security`, {
-        headers,
-        method: 'PUT',
-        body: JSON.stringify({
-          'cloudant': {
-            'nobody': [],
-            [_couchKey]: [
-              '_reader',
-              '_writer',
-              '_admin'
-            ]
-          }
+      try {
+        await fetch(`${couchHost}/${dbName}?partitioned=true`, {
+          headers,
+          method: 'PUT'
         })
-      })
+
+        await fetch(`${couchHost}/${dbName}/_security`, {
+          headers,
+          method: 'PUT',
+          body: JSON.stringify({
+            'cloudant': {
+              'nobody': [],
+              [_couchKey]: [
+                '_reader',
+                '_writer',
+                '_admin'
+              ]
+            }
+          })
+        })
+      } catch (err) {
+        console.error(err)
+      }
     }
 
     let dbSeeds = []
     // TODO: handle updates
     if (createDb) {
       try {
-      console.log('  seeding base docs to database')
-      dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
+        console.log('  seeding base docs to database')
+        dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
       } catch (_err) { /* ignore */ }
     }
 

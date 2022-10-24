@@ -29,9 +29,9 @@ let newHash = null
 let updating = false
 const settingsDocId = 'system:ayu_settings'
 
-let _silent = localStorage.getItem('_silent')
-let _updateImmediate = localStorage.getItem('_updateImmediate')
-let _updating = localStorage.getItem('_updating')
+let _silent = localStorage.getItem('ayu_updateSilent')
+let _updateImmediate = localStorage.getItem('ayu_updateImmediate')
+let _updating = localStorage.getItem('ayu_updating')
 
 // TODO: full support for long running observables to avoid this loop
 
@@ -129,16 +129,16 @@ if (_updating) {
 }
 function closeUpdated () {
   updated = false
-  localStorage.removeItem('_updating')
+  localStorage.removeItem('ayu_updating')
 }
 
 async function doUpdate ({ auto, silent }) {
   if (silent) {
-    localStorage.setItem('_silent', true)
+    localStorage.setItem('ayu_updateSilent', true)
   }
 
   if (auto) {
-    localStorage.setItem('_updateImmediate', true)
+    localStorage.setItem('ayu_updateImmediate', true)
   }
   if (_updating === newHash) {
     newHash = null
@@ -146,7 +146,7 @@ async function doUpdate ({ auto, silent }) {
   if (!newHash) {
     return
   }
-  localStorage.setItem('_updating', newHash)
+  localStorage.setItem('ayu_updating', newHash)
 
   updated = false
   updating = true

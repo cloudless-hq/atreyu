@@ -100,7 +100,7 @@
       {#if dataUsage.percent > 1}
         Available: {formatBytes(dataUsage.quota)}, Total Used: {formatBytes(dataUsage.usage)} ({dataUsage.percent} %)
       {/if}
-      Files: {dataUsage.localFiles}, DBs: {dataUsage.localDocs}
+      Files: {dataUsage.localFiles}, Data: {dataUsage.localDocs}
     </div>
   {/if}
 </div>

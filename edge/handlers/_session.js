@@ -27,7 +27,7 @@ function getCookie (name, cookieString = '') {
 
 // TODO: create database if not existing
 
-export async function handler ({ req, stats, parsedBody, app }) {
+export async function handler ({ req, stats, app }) {
   let jwt
   if (denoLocal && !req.headers['cf-access-jwt-assertion']) {
     jwt = getCookie('CF_Authorization', req.headers['cookie'])
@@ -40,8 +40,6 @@ export async function handler ({ req, stats, parsedBody, app }) {
     jwtPayload = JSON.parse(atob(jwt.split('.')[1]))
   }
 
-  const sessionId = denoLocal ? jwtPayload.sessionId : getCookie('AYU_SESSION_ID', req.headers['cookie'])
-
   if (req.url.search.startsWith('?logout')) { // req.method === 'delete' for deletion session doc?
     const headers = { 'Cache-Control': 'must-revalidate' }
 
@@ -52,6 +50,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
       const base = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
       headers['Location'] = `/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin + base)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
       headers['Location'] = `/_ayu/accounts/?login`
       // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
@@ -63,60 +62,72 @@ export async function handler ({ req, stats, parsedBody, app }) {
     })
   }
 
-  // TODO: how to do org support on cf access?
-  const org = jwtPayload.org || ''
+  let curSessionId
+  let curOrg
+  if (denoLocal) {
+    curSessionId = jwtPayload.sessionId
+    curOrg = jwtPayload.org
+  } else {
+    const sessionId = getCookie('AYU_SESSION_ID', req.headers['cookie'])
+    const sessionIdParts = (sessionId && sessionId.split('__')) || []
 
-  const cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined }
+    curSessionId = sessionIdParts[0]
+    curOrg = sessionIdParts[1]
+  }
+
+  const cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined, clientAcceptEncoding: undefined, tlsVersion: undefined, httpProtocol: undefined }
 
   if (req.url.search.startsWith('?login')) {
-    // cookie: CF_Authorization= https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
+    if (!jwtPayload.email && !req.query?.email) {
+      return new Response('forbidden', { status: 403 })
+    }
+
+    // TODO: if allready logged in, logout or error
+    // https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
     // name: Ja Joh, idp: Data from your identity provider, user_uuid: The ID of the user.
-    if (jwtPayload.email) {
-      const newSessionId = await ensureSession({ email: jwtPayload.email, app, cf, useSessionId: sessionId })
+
+    const newSession = {
+      email: denoLocal ? req.query.email : jwtPayload.email,
+      useSessionId: denoLocal ? req.query.sessionId : curSessionId,
+
+      // TODO: validate org and setup user/org association
+      org: req.query.org,
+      sessionName: req.query.sessionName,
+
+      app,
+      cf
+    }
+
+    const newSessionId = await ensureSession(newSession)
+
+    if (denoLocal) {
+      // NOTE: deno local is a fake test login with zero validation!
+
+      const devJwt = 'dev.' + btoa(JSON.stringify({
+        dev_mock: true,
+
+        email: newSession.email,
+        org: newSession.org,
+        sessionId: newSessionId
+      }))
 
       return new Response(null, {
         status: 302,
         headers: {
           'Cache-Control': 'must-revalidate',
-          'Set-Cookie': `AYU_SESSION_ID=${newSessionId}; Path=/; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
-          'Location': req.query.continue || '/'
+          'Location': req.query.continue || '/' ,
+          'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
         }
       })
     }
 
+    // is logged in after redirect back from cf access, just need to set session id cookie and redirect back
     return new Response(null, {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Location': '/_ayu/accounts/' + (req.query.continue ? `?continue=${encodeURIComponent(req.query.continue)}` : '')
-      }
-    })
-  }
-
-  if (req.url.search.startsWith('?dev_login')) {
-    if (!denoLocal) {
-      return new Response('forbidden', { status: 403 })
-    }
-    // TODO: if allready logged in, logout?
-    const newOrg = parsedBody?.org
-    const newEmail = parsedBody?.email
-    const newSessionId = await ensureSession({
-      email: parsedBody?.email,
-      org: parsedBody?.org,
-      sessionName: parsedBody?.sessionName,
-      useSessionId: parsedBody?.sessionId,
-      app,
-      cf
-    })
-
-    const devJwt = 'dev.' + btoa(JSON.stringify({ email: newEmail, dev_mock: true, org: newOrg, sessionId: newSessionId }))
-
-    return new Response(null, {
-      status: 302,
-      headers: {
-        'Cache-Control': 'must-revalidate',
-        'Location': req.query.continue || '/' ,
-        'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
+        'Set-Cookie': `AYU_SESSION_ID=${newSessionId}${newSession.org ? '__' + newSession.org : ''}; Path=/; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
+        'Location': req.query.continue || '/'
       }
     })
   }
@@ -129,12 +140,12 @@ export async function handler ({ req, stats, parsedBody, app }) {
   return new Response(JSON.stringify({
     userId: jwtPayload.email,
     email: jwtPayload.email,
-    org,
+    org: curOrg,
     env,
     appName: app.appName,
     appHash: folderHash,
 
-    sessionId,
+    sessionId: curSessionId,
 
     // roles: [],
     cf,
@@ -150,7 +161,7 @@ export async function handler ({ req, stats, parsedBody, app }) {
 }
 
 async function ensureSession ({ useSessionId, email, org, sessionName, app, cf }) {
-  const dbName = env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName)
+  const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
   let newSessionDoc
 

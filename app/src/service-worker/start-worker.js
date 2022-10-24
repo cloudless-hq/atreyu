@@ -113,7 +113,8 @@ export default function ({
           const query = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
             if (url.pathname.startsWith('/_ayu/accounts')) {
-              return client.postMessage('navigate:' + (query.get('continue') || '/'))
+              client.postMessage('navigate:' + (query.get('continue') || '/'))
+              return waitForNavigation(client)
               // client.navigate().catch(err => console.error(err))
             }
           } else {
@@ -122,14 +123,15 @@ export default function ({
               if (query.get('continue')) {
                 cont = query.get('continue')
               } else {
-                cont = `&continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
+                cont = `continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
               }
             }
             if (!url.pathname.startsWith('/_ayu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
-              const url = `/_api/_session?login${cont}`
-              console.log('redirecting other clients', url, newSession, client)
+              const url = `/_ayu/accounts/?${cont}` // `/_api/_session?login${cont}`
+              console.log('redirecting client', url, newSession, client)
 
-              return client.postMessage('navigate:' + url)
+              client.postMessage('navigate:' + url)
+              return waitForNavigation(client)
               // after safari support: client.navigate().catch(err => console.error(err))
             }
           }
@@ -150,6 +152,23 @@ export default function ({
     // send clients hello message on startup to know pending requests need to be restarted
     res.forEach(client => client.postMessage(JSON.stringify({ hello: 'joe' })))
   })
+
+  // just assume the client navigated away if the id disappears
+  async function waitForNavigation (targetClient, tries = 20) {
+    const curClients = await clients.matchAll()
+    // console.log(curClients.map(e => ([e.id, e.url])), targetClient.id, targetClient.url, tries)
+
+    if (curClients.find(client => client.id === targetClient.id)) {
+      if (tries) {
+        await (new Promise(resolve => setTimeout(resolve, 500)))
+        return waitForNavigation(targetClient, tries - 1)
+      } else {
+        console.error('could not navigate client ', targetClient)
+        return false
+      }
+    }
+    return true
+  }
 
   const pending = {}
   function purgeClients () {
@@ -176,17 +195,29 @@ export default function ({
   // self.addEventListener('sync', event => {
   //   console.log(event)
   // })
-  // TODO when and where to register the sync ?
   // navigator.serviceWorker.ready.then(swRegistration => {
   //   return swRegistration.sync.register('myFirstSync')
   // })
 
   addEventListener('message', async e => {
+    // TODO either expl. split refresh() into login and db / falcor setup or merge this behind one call + await
+    if (self.session.pendingInit) {
+      await self.session.pendingInit
+      // console.log('done pendingini1', self.session)
+    }
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-      self.session.pendingInit = self.session.refresh({ where: 'falcor', data: e.data }).catch(err => console.error(err))
+      self.session.pendingInit = self.session.refresh()
+      await self.session.pendingInit
+      // console.log('done session inini', self.session)
+    }
+    if (!self.session.falcorServer && !self.session.pendingInit) {
+      self.session.pendingInit = self.session.refresh()
+      await self.session.pendingInit
+      // console.log('done falcorini', self.session)
     }
     if (self.session.pendingInit) {
       await self.session.pendingInit
+      // console.log('done pendingini2', self.session)
     }
 
     const data = JSON.parse(e.data)
@@ -203,8 +234,9 @@ export default function ({
     }
 
     if (!self.session.falcorServer) {
-      self.session.refresh()
-      return e.source.postMessage(JSON.stringify({ id: reqId, error: 'no falcor server session active' }))
+      // really logged out not just expired or not fully inited
+      //   self.session.refresh()
+      return e.source.postMessage(JSON.stringify({ id: reqId, error: 'logged out / no falcor server session active' }))
     }
 
     const exec = self.session.falcorServer.execute(data)
@@ -240,13 +272,12 @@ export default function ({
     }))
   })
 
-  addEventListener('offline', e => {
-    console.log('offline', e)
-  })
-
-  addEventListener('online', e => {
-    console.log('online', e)
-  })
+  // .addEventListener('offline', e => {
+  //   console.log('offline', e)
+  // })
+  // .addEventListener('online', e => {
+  //   console.log('online', e)
+  // })
 
   const bypass = []
   // let corsConf
@@ -303,9 +334,9 @@ export default function ({
       // corsHandler({ event, url, corsConf })
     }
 
-    if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-      self.session.pendingInit = self.session.refresh({ where: 'fetch', data: event.request.url })
-    }
+    // if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
+    //   self.session.pendingInit = self.session.refresh()
+    // }
 
     if (event.request.method !== 'GET') {
       return

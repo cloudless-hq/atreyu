@@ -55,11 +55,14 @@ export default async function registerWorker (workerPath, loaded) {
     if (e.data === '{"worker":"active"}') {
       // this onlye needs , { once: true } after safari supports client.navigate
       await navigator.serviceWorker.ready
-      console.log('ServiceWorker ready after activate')
+      console.log('ServiceWorker started')
       loaded(reg)
     } else if (e.data.startsWith('navigate:')) {
       // Fox until safari support client.navigate()
-      window.location.href = e.data.replace('navigate:', '')
+
+      const href = e.data.replace('navigate:', '')
+      console.log('navigating tab to ' + href)
+      window.location.href = href
       // TODO handle logout, cleanup etc
     }
   })
