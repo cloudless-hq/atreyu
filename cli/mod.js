@@ -53,13 +53,13 @@ rollBuildMeta()
 
 const {
   _,
+  appFolder = 'app',
   output,
   online,
   help,
   kill,
   once,
   version,
-  name,
   env: envFlag,
   port = '80',
   pin,
@@ -80,6 +80,7 @@ if (Object.keys(rest).length) {
 
 const ignore = [
   '**/.git/**',
+  '.git/**',
   '**/**.build.css',
   'node_modules/**',
   '**/node_modules/**',
@@ -128,14 +129,14 @@ const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
 
 // TODO: unify with other schema loader which allows also schema.js
-async function loadEdgeSchema () {
+async function loadEdgeSchema ({ appFolder }) {
   // TODO: support implicit endpoints folder routs
   let schema
   // NOTE: workaround because Promise.any() crashed deno when both promises fail
   const schemaImports = await Promise.all([
-    import('file:' + projectPath + `/app/schema/index.js`)
+    import('file:' + projectPath + `/${appFolder}/schema/index.js`)
       .catch(error => ({ error })),
-    import('file:' + projectPath + `/app/schema.js`)
+    import('file:' + projectPath + `/${appFolder}/schema.js`)
       .catch(error => ({ error }))
   ])
 
@@ -270,7 +271,7 @@ switch (cmd) {
     break
 
   case 'dev':
-    edgeSchema = await loadEdgeSchema()
+    edgeSchema = await loadEdgeSchema({ appFolder })
     // console.log(edgeSchema)
     let buildRes = []
     async function devBuild ({ batch, clean } = {}) {
@@ -287,6 +288,7 @@ switch (cmd) {
       buildRes = await Promise.all([
         buildSvelte({
           input: _[1],
+          appFolder,
           buildRes,
           batch,
           clean,
@@ -296,6 +298,7 @@ switch (cmd) {
 
         buildServiceWorker({
           batch,
+          appFolder,
           buildRes,
           clean
         }),
@@ -322,17 +325,17 @@ switch (cmd) {
       await Promise.all(runs)
 
       const { appFolderHash } = await addIpfs({
-        input: _[1],
+        appFolder,
         repo: repo || homeConfPath,
         clean,
         pin,
         batch,
         buildEmits,
-        name,
+        verbose,
         env,
         config
       })
-      await couchUpdt({ appFolderHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb: clean && resetAppDb, force })
+      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb: clean && resetAppDb, force })
     }
 
     if (!noStart) {
@@ -355,7 +358,7 @@ switch (cmd) {
 
   case 'publish':
     console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
-    edgeSchema = await loadEdgeSchema()
+    edgeSchema = await loadEdgeSchema({ appFolder })
 
     if (!noStart) {
       await doStart()
@@ -366,13 +369,14 @@ switch (cmd) {
     await Promise.all([
       buildSvelte({
         input: _[1],
+        appFolder,
         output,
         clean: true,
         dev: false,
         sveltePath
       }),
 
-      buildServiceWorker({clean: true})
+      buildServiceWorker({clean: true, appFolder})
     ])
 
     // const startTime = Date.now()
@@ -387,12 +391,12 @@ switch (cmd) {
 
     // TODO: warn and exit ipfs publishing on allready running offline node
     const { appFolderHash, rootFolderHash, fileList, ayuHash } = await addIpfs({
-      input: _[1],
+      appFolder,
       repo: repo || homeConfPath,
-      name,
       pin,
       clean: true,
       env,
+      verbose,
       config,
       publish: true
     })
@@ -401,7 +405,7 @@ switch (cmd) {
 
     await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs})
 
-    await couchUpdt({ appFolderHash, rootFolderHash, ayuHash, buildColor, config, name, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
+    await couchUpdt({ appFolderHash, rootFolderHash, ayuHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
     await stopAll()
     Deno.exit()
     break
@@ -443,17 +447,7 @@ switch (cmd) {
 //   break
 // case 'build:svelte':
 //   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-//   buildSvelte({
-//     input: _[1],
-//     output,
-//     sveltePath
-//   })
+//   buildSvelte()
 //   break
 // case 'add':
-//   addIpfs({
-//     input: _[1],
-//     repo: repo || homeConfPath,
-//     name,
-//     env,
-//     config
-//   })
+//   addIpfs()

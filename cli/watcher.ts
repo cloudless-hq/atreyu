@@ -1,6 +1,6 @@
-import { globToRegExp } from '../deps-deno.ts'
+import { globToRegExp, join } from '../deps-deno.ts'
 
-export async function watch ({ watchPath, ignore, handler }: {watchPath: string, ignore: string[], handler: CallableFunction}) {
+export async function watch ({ watchPath, ignore, handler }: { watchPath: string, ignore: string[], handler: CallableFunction }) {
   const watcher = Deno.watchFs(watchPath, { recursive: true }) // deps handle seperately?
   const ignoreRegex = ignore.map(glob => globToRegExp(glob, { globstar: true }))
 
@@ -41,7 +41,7 @@ export async function watch ({ watchPath, ignore, handler }: {watchPath: string,
 
   let timer
   for await (const event of watcher) {
-    const cleanedPaths: string[] = event.paths.map(change => change.replace(Deno.cwd(), ''))
+    const cleanedPaths: string[] = event.paths.map(change => change.replace(join(Deno.cwd(), './'), ''))
     const filteredPaths = cleanedPaths.filter(path => {
       // console.log(ignoreRegex, path)
       return !ignoreRegex.find(regx => regx.test(path))

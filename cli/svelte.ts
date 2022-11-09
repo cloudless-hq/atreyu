@@ -5,15 +5,19 @@ import { collectWindiClasses, makeGlobalWindi, windiParse } from './windi.ts'
 
 const globalStyles: {[key: string]: string} = {}
 export default async function ({
-  input = [ 'app/src' ],
+  appFolder,
+  input,
   batch,
   clean,
   // buildRes,
   // output,
   dev = true,
   sveltePath = '/svelte'
-}: { input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
+}: { appFolder: string, input: string[], batch: string[], clean: boolean, dev: boolean, sveltePath: string }) {
   // const startTime = Date.now()
+  if (!input) {
+    input = [ `${appFolder}/src` ]
+  }
   const compNames: {[key: string]: boolean} = {}
 
   const deps: Record<string, {files: string[],stats: string[][]}> = {}
@@ -264,7 +268,7 @@ export default async function ({
     await Promise.all(input.map(inp => compileFolder(inp)))
   }
 
-  const baseStylePath = 'app/build/base.css'
+  const baseStylePath = `${appFolder}/build/base.css`
   const baseStyleContent = makeGlobalWindi(!dev) + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join('\n')
   if (baseStyleContent.length > 1) {
     await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), baseStyleContent)
@@ -274,7 +278,7 @@ export default async function ({
       deps: []
     }
 
-    console.log(`    ${green('emitted:')} ` + 'app/build/base.css')
+    console.log(`    ${green('emitted:')} ` + `${appFolder}/build/base.css`)
   }
 
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10

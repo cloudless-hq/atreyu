@@ -1,11 +1,11 @@
 import { join, green, build } from '../deps-deno.ts'
 import esbuildPlugin from './esbuild-plugin.ts'
-export default async function ({ batch, buildRes, clean } = {}) {
+export default async function ({ appFolder, batch, buildRes, clean } = {}) {
   // const startTime = Date.now()
   const fileName = `service-worker.js`
-  const appFolder = join(Deno.cwd(), 'app')
-  const swPath = join(appFolder, fileName)
-  const projectPath = join('app', fileName)
+  const appFolderAbs = join(Deno.cwd(), appFolder)
+  const swPath = join(appFolderAbs, fileName)
+  const projectPath = join(appFolder, fileName)
 
   const newBuildRes = {
     files: {}
@@ -46,7 +46,7 @@ export default async function ({ batch, buildRes, clean } = {}) {
     format: 'esm', // iife
     // keepNames: true,
     platform: 'browser',
-    outfile: `${appFolder}/service-worker.bundle.js`
+    outfile: `${appFolderAbs}/service-worker.bundle.js`
   }).catch(e => { console.error(e) })
 
   // if (warnings.length > 0) {

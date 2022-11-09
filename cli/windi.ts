@@ -6,7 +6,7 @@ const windiProcessor = new WindiProcessor()
 let windiConf
 try {
   windiConf = (await import('file://' + join('/', Deno.cwd(), 'windi.config.js'))).default
-} catch (_e) { }
+} catch (_e) { /* noop */}
 
 windiProcessor.loadConfig(windiConf)
 

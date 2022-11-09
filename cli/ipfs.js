@@ -40,7 +40,7 @@ export function execIpfs (cmd, repo, silent) {
 }
 
 export async function add ({
-  input = 'app',
+  appFolder,
   repo,
   clean,
   pin: pinToService,
@@ -48,6 +48,7 @@ export async function add ({
   buildEmits,
   publish,
   env,
+  verbose,
   config = {}
 }) {
   // TODO: LIBP2P_FORCE_PNET?
@@ -138,6 +139,10 @@ export async function add ({
 
   const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js `
   async function doAdd (fName) {
+    if (verbose) {
+      console.log('  ipfs cmd: ' + addCommand + fName)
+    }
+
     if (fName.endsWith('/')) {
       const rootHash = (await ipfs(addCommand + fName)).replace('\n', '')
       return { rootHash, ...await ls(rootHash) }
@@ -194,9 +199,9 @@ export async function add ({
   }
 
   try {
-    await Deno.stat(input)
+    await Deno.stat(appFolder)
   } catch (_e) {
-    console.warn(`  ${input} not found, skipping ipfs...`)
+    console.warn(`  ${appFolder} not found, skipping ipfs...`)
     return
   }
 
@@ -204,14 +209,14 @@ export async function add ({
   let newRootHash
   const watchRes = {}
   if (clean) {
-    console.log('  ➕ adding folder to ipfs: ' + input)
-    const addResult = await doAdd(input + '/')
+    console.log('  ➕ adding folder to ipfs: ' + appFolder)
+    const addResult = await doAdd(appFolder + '/')
     ipfsMap = addResult.map
     newRootHash = addResult.rootHash
   } else {
     const changedFiles = ([...batch, ...buildEmits])
       .map(file => join('./', file))
-      .filter(file => file.startsWith(input))
+      .filter(file => file.startsWith(appFolder))
       .filter(file => {
         try {
           Deno.statSync(file)
@@ -270,11 +275,11 @@ export async function add ({
       return
     }
   } else {
-    await Promise.all(Object.entries(watchRes).map(([file]) => ipfs(`files rm ${join('/', 'apps', pinName, file.replace('app', ''))}`, {silent: true})))
-    await Promise.all(Object.entries(watchRes).map(([file, hash]) => ipfs(`files cp /ipfs/${hash} ${join('/', 'apps', pinName, file.replace('app', ''))}`)))
+    await Promise.all(Object.entries(watchRes).map(([file]) => ipfs(`files rm ${join('/', 'apps', pinName, file.replace(appFolder, ''))}`, {silent: true})))
+    await Promise.all(Object.entries(watchRes).map(([file, hash]) => ipfs(`files cp /ipfs/${hash} ${join('/', 'apps', pinName, file.replace(appFolder, ''))}`)))
   }
 
-  // console.log(await (await fetch(ipfsApi + `/api/v0/files/write?arg=/apps/${input}/ipfs-map.json&truncate=true&create=true`, {
+  // console.log(await (await fetch(ipfsApi + `/api/v0/files/write?arg=/apps/${appFolder}/ipfs-map.json&truncate=true&create=true`, {
   //   method: 'POST',
   //   headers: {
   //     'Content-Type': 'multipart/form-data'
@@ -296,9 +301,9 @@ export async function add ({
   const { fileList, map } = await ls(preHash)
 
   ipfsMap = map
-  Deno.writeTextFileSync(input + '/ipfs-map.json', JSON.stringify(ipfsMap, null, 2))
+  Deno.writeTextFileSync(appFolder + '/ipfs-map.json', JSON.stringify(ipfsMap, null, 2))
 
-  const mapRes = await doAdd(input + '/ipfs-map.json')
+  const mapRes = await doAdd(appFolder + '/ipfs-map.json')
 
   await fetch(ipfsApi + `/api/v0/files/rm?arg=/apps/${pinName}/ipfs-map.json`, {method: 'POST'}).catch(_err => {})
 

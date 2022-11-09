@@ -105,7 +105,7 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
   }
   console.log( `  compiling edge to: edge/build`)
 
-  let affectedWorkers = []
+  let affectedWorkers: string[] = []
   if (!clean) {
     batch.forEach(change => {
       affectedWorkers = affectedWorkers.concat(deps[change])
