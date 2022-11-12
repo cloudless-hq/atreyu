@@ -1,10 +1,13 @@
 import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/helpers.js'
 
-export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force, ayuHash }) {
+export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force, ayuHash, verbose }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
 
   if (!couchHost || !__couchAdminKey) {
+    if (verbose || (couchHost !== __couchAdminKey)) {
+      console.log('  skipping not configured db setup')
+    }
     return
   }
 
@@ -34,7 +37,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
           method: 'DELETE'
         })
         if (!deleteRes.ok) {
-          console.error('  🛑 ' + await deleteRes.text())
+          console.error('  🛑 ' + (await deleteRes.text()))
           Deno.exit(1)
         }
         createDb = true

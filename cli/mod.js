@@ -335,7 +335,7 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb: clean && resetAppDb, force })
+      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, verbose, env, resetAppDb: clean && resetAppDb, force })
     }
 
     if (!noStart) {
