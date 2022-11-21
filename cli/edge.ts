@@ -1,9 +1,8 @@
-import { join, basename, build, Ajv, ajvStandaloneCode } from '../deps-deno.ts'
+import { join, basename, build } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
 import esbuildPlugin from './esbuild-plugin.ts'
-import {makeSubSchema} from '../edge/lib/schema.js'
+import { makeValidator } from '../edge/lib/schema.js'
 
-const ajv = new Ajv({ coerceTypes: true, useDefaults: true, code: { source: true, esm: true }})
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
 export function buildWorkerConfig (schema: any) {
@@ -34,7 +33,9 @@ export function buildWorkerConfig (schema: any) {
           filename = operationId
         }
 
-        workers[workerName].paramsValidation = parameters && ajvStandaloneCode(ajv, ajv.compile(makeSubSchema(parameters)))
+        workers[workerName].paramsValidation = makeValidator({
+          params: parameters, standalone: true
+        })
         workers[workerName].codePath = join(...base, filename)
 
         if (workers[workerName].routes) {
@@ -118,6 +119,7 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
 
     const newDeps = await compile({ input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 
+    // NOTE: obsolete deps are not removed until restart
     newDeps.forEach(newDep => {
       if (!deps[newDep]) {
         deps[newDep] = []
@@ -128,5 +130,17 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
   // console.log('')
+
   return { files: {} }
 }
+
+// TODO: return
+//   "files": {
+//     "app/service-worker.js": {
+//       "emits": [
+//         "app/service-worker.bundle.js",
+//         "app/service-worker.bundle.js.map"
+//       ],
+//       "newEmits": [],
+//       "deps": [
+//         "/atreyu/app/src/schema/helpers.js"

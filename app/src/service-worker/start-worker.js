@@ -1,8 +1,10 @@
 import ipfsHandler from './handlers/ipfs.js'
-// import corsHandler from './handlers/cors.js'
+import proxyHandler from './handlers/proxy.js'
+
 import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../lib/helpers.js'
+import { parse, match } from '../lib/routing.js'
 
 // TODO: support addtional dataSources like apollo
 
@@ -10,16 +12,11 @@ export default function ({
   dbConf,
   dataSources,
   schema,
-  originWhitelist = []
+  originWhitelist,
+  handlers: appHandlers
 }) {
-
   if (dataSources) {
     console.warn('Additional data sources not implemented yet.')
-  }
-
-  if (schema.servers) {
-    // TODO: parse schema for severs and set env according to origin
-    console.warn('currently only dev and prod environments supported')
   }
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
@@ -189,6 +186,12 @@ export default function ({
   }
   setInterval(purgeClients, 2000)
 
+  // .addEventListener('offline', e => {
+  //   console.log('offline', e)
+  // })
+  // .addEventListener('online', e => {
+  //   console.log('online', e)
+  // })
   // self.addEventListener('periodicsync', (event) => {
   //   console.log(event)
   // })
@@ -203,21 +206,17 @@ export default function ({
     // TODO either expl. split refresh() into login and db / falcor setup or merge this behind one call + await
     if (self.session.pendingInit) {
       await self.session.pendingInit
-      // console.log('done pendingini1', self.session)
     }
     if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
       self.session.pendingInit = self.session.refresh()
       await self.session.pendingInit
-      // console.log('done session inini', self.session)
     }
     if (!self.session.falcorServer && !self.session.pendingInit) {
       self.session.pendingInit = self.session.refresh()
       await self.session.pendingInit
-      // console.log('done falcorini', self.session)
     }
     if (self.session.pendingInit) {
       await self.session.pendingInit
-      // console.log('done pendingini2', self.session)
     }
 
     const data = JSON.parse(e.data)
@@ -229,7 +228,7 @@ export default function ({
     }
 
     if (reqId === -1) {
-      // hello message and heartbeat
+      // ignore hello message and heartbeat
       return
     }
 
@@ -272,52 +271,45 @@ export default function ({
     }))
   })
 
-  // .addEventListener('offline', e => {
-  //   console.log('offline', e)
-  // })
-  // .addEventListener('online', e => {
-  //   console.log('online', e)
-  // })
 
-  const bypass = []
-  // let corsConf
-  Object.entries(schema.paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([_method, { operationId, tags }]) => {
-      if (operationId === '_cors') {
-        corsConf = {
-          server: path.replace('*', ''),
-          mode: 'proxy'
-        }
-      } else if (operationId === '_bypass') {
-        bypass.push(path)
-      } else if (tags?.includes('edge') && !tags?.includes('service-worker')) {
-        bypass.push(path)
-      }
-    })
-  })
+  const handlerConf = parse(schema, ['service-worker'])
+  console.log({ schema, handlerConf, appHandlers })
 
+  // FIXME: implement same matching logic from specific to unspecific as in edge route matching!
   // TODO: add navigation preloadoing for interesting routes, also possibly use it for couch syncing by setting header to seq
   addEventListener('fetch', event => {
     // TODO: handle forced login routes for fetch, currently all window fetches are public, only service worker can do authenticated subrequests and expose via falcor
-    let url = new URL(event.request.url)
-    const origUrl = new URL(event.request.url)
+    const url = new URL(event.request.url)
+    const req = {
+      raw: event.request,
+      method: event.request.method,
+      headers: Object.fromEntries(event.request.headers.entries()),
+      query: Object.fromEntries(url.searchParams.entries()),
+      url
+    }
 
-    const bypassing = bypass.filter(path => {
-      if (path.endsWith('*')) {
-        if (url.pathname.startsWith(path.replace('*', ''))) {
-          return true
-        }
-      } else {
-        if (path === url.pathname) {
-          return true
-        }
-      }
-    })
+    const matched = match(req, handlerConf)
+    // console.log(url.href, matched)
 
-    // allowing non http url schemses is to prevent browser plugins from breaking
-    if (bypassing.length > 0 || !(['http:', 'https:']).includes(url.protocol)) {
+    // allowing non http url schemes to prevent browser plugins from breaking
+    if (!(['http:', 'https:']).includes(url.protocol)) {
       console.info('bypassing: ' + url.href)
       return
+    }
+    if (matched.operationId === '_bypass') {
+      // console.info('bypassing: ' + url.href)
+      return
+    }
+
+    if (url.origin !== location.origin) {
+      // custom handling for cors requests
+      if (originWhitelist && !originWhitelist.includes(url.origin)) {
+        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
+      } else if (originWhitelist) {
+        return event.respondWith(proxyHandler({ event, req }))
+      } else {
+        return
+      }
     }
 
     if (url.pathname === '/_api/_logout') {
@@ -325,34 +317,34 @@ export default function ({
       return event.respondWith(new Response('OK'))
     }
 
-    if (url.origin !== location.origin) {
-      if (!originWhitelist.includes(url.origin)) {
-        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
-      } else {
-        return
-      }
-      // corsHandler({ event, url, corsConf })
-    }
-
-    // if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-    //   self.session.pendingInit = self.session.refresh()
-    // }
-
-    if (event.request.method !== 'GET') {
-      return
-    }
-
-    url = rewrite(url)
-
     // TODO: support registration.scope and non hash based client side routing
     // if (routes.includes(url.pathname)) {
     //   url.pathname = '/'
     // }
+    // TODO: support auth system without falcor server?
+    // if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
+    //   self.session.pendingInit = self.session.refresh()
+    // }
+    // TODO: actually handle and error non matching methods, if not configured in schema
+    // if (event.request.method !== 'GET') {
+    //   return
+    // }
+    let handlerRes
+    if (matched.operationId === '_ipfs') {
+      handlerRes = ipfsHandler({ event, url: rewrite(new URL(event.request.url)), origUrl: url })
+    } else if (matched.operationId === '_proxy') {
+      return event.respondWith(proxyHandler({ event, req }))
+    } else if (matched.operationId) {
+      handlerRes = appHandlers[matched.operationId]({ event, req })
+    } else if (matched.handler) {
+      handlerRes = matched.handler({ event, req })
+    }
 
-    return event.respondWith(ipfsHandler({ event, url, origUrl }))
+    return event.respondWith(handlerRes)
   })
 }
 
+// TODO: only applies to ipfs handler, so move there
 // TODO: preload /manifest.json resources and other reqired resources for offline refresh and usage
 function rewrite (url) {
   if (url.pathname.endsWith('/')) {

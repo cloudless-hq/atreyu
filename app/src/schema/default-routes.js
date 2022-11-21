@@ -23,12 +23,6 @@ export default {
   //     operationId: '_debug'
   //   }
   // },
-  // '/_cors/*': {
-  //   get: {
-  //     tags: [ 'edge', 'service-worker' ],
-  //     operationId: '_cors'
-  //   }
-  // },
   // codespace support TODO: remove
   // '/signin*': {
   //   get: {

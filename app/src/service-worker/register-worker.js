@@ -1,5 +1,6 @@
-export default async function registerWorker (workerPath, loaded) {
+export default async function registerWorker (workerPath, loaded, reloadAfterInstall) {
   let regs
+  let firstStart = false
   try {
     regs = await navigator.serviceWorker.getRegistrations()
   } catch (err) {
@@ -22,6 +23,7 @@ export default async function registerWorker (workerPath, loaded) {
 
   let reg
   if (regs.length === 0) {
+    firstStart = true
     reg = await navigator.serviceWorker.register(workerPath, {
       updateViaCache: 'all',
       scope: '/'
@@ -55,8 +57,16 @@ export default async function registerWorker (workerPath, loaded) {
     if (e.data === '{"worker":"active"}') {
       // this onlye needs , { once: true } after safari supports client.navigate
       await navigator.serviceWorker.ready
-      console.log('ServiceWorker started')
-      loaded(reg)
+      console.log('ServiceWorker started', {reloadAfterInstall, firstStart})
+      if (firstStart && reloadAfterInstall) {
+        if (!window.location.search) {
+          window.location.reload()
+        } else {
+          window.location.href = window.location.search
+        }
+      } else {
+        loaded(reg)
+      }
     } else if (e.data.startsWith('navigate:')) {
       // Fox until safari support client.navigate()
 

@@ -1,10 +1,10 @@
-import { join, basename, Ajv } from '../deps-deno.ts'
+import { join, basename } from '../deps-deno.ts'
+import { makeValidator } from './lib/schema.js'
 import startWorker from './lib/start-worker.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
+import { parse, match } from '../app/src/lib/routing.js'
 import { exec } from '../cli/helpers.ts'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import {makeSubSchema} from './lib/schema.js'
-const ajv = new Ajv({ coerceTypes: true, useDefaults: true })
 
 // TODO: use config and args from cli
 const ipfsGateway = 'http://127.0.0.1:8080'
@@ -50,7 +50,7 @@ startWorker({
     apps = (await getApps()) || []
 
     const app = apps.find(app => app.Name === appKey)
-
+    console.log(app)
     if (!app) {
       return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
     }
@@ -95,64 +95,13 @@ startWorker({
         }
       }
 
-      const edgeHandlers = {}
-      Object.entries(appData[appKey].schema.paths).forEach(([path, value]) => {
-        Object.entries(value).forEach(([method, {operationId, tags, handler, parameters, _requestBody}]) => {
-          if (method === 'parameters') {
-            // TODO: implement
-            console.error('parameters only supported on path level instead of method')
-            return
-          }
-          if (tags?.includes('edge')) {
-            if (!edgeHandlers[method]) {
-              edgeHandlers[method] = []
-            }
-
-            // parsedBody: {},
-            edgeHandlers[method].push({
-              path,
-              operationId,
-              handler,
-              paramsValidation: parameters && ajv.compile(makeSubSchema(parameters))
-              // requestBody: bodyValidation
-            })
-          }
-        })
-      })
-
-      // sort by path length and match more specific to less specific order more similar to cloudflare prio matching
-      Object.keys(edgeHandlers).forEach(method => {
-        edgeHandlers[method] = edgeHandlers[method].sort((first, second) => {
-          return second.path.length - first.path.length
-        } )
-      })
-
-      appData[appKey].edgeHandlers = edgeHandlers
+      appData[appKey].edgeHandlers = parse(appData[appKey].schema, [ 'edge' ], makeValidator)
     }
 
-    let workerName
-    let paramsValidation
-    const handlers = appData[appKey].edgeHandlers
-    const method = req.method.toLowerCase()
-    if (handlers[method]) {
-      for (let i = 0; i < handlers[method].length; i++) {
-        if (handlers[method][i].path.endsWith('*')) {
-          if (req.url.pathname.startsWith(handlers[method][i].path.slice(0, -1))) {
-            workerName = handlers[method][i].operationId
-            paramsValidation = handlers[method][i].paramsValidation
-            // requestBody: handlers[method][i].requestBody
-            break
-          }
-        } else {
-          if (req.url.pathname === handlers[method][i].path) {
-            workerName = handlers[method][i].operationId
-            paramsValidation = handlers[method][i].paramsValidation
-            // requestBody: handlers[method][i].requestBody
-            break
-          }
-        }
-      }
-    }
+    const {
+      operationId: workerName,
+      paramsValidation
+    } = match(req, appData[appKey].edgeHandlers)
 
     if (!workerName) {
       console.warn(`${req.method} ${req.url}`)
@@ -160,8 +109,11 @@ startWorker({
     }
 
     if (!appData[appKey].config) {
-      // console.log({appKey})
-      appData[appKey].config = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
+      try {
+        appData[appKey].config = JSON.parse(Deno.readTextFileSync(homeDir + `/.atreyu/${appKey}.json`))
+      } catch (err) {
+        console.error({err, appKey, path: homeDir + `/.atreyu/${appKey}.json` })
+      }
     }
     if (!appData[appKey]?.config?.repo) {
       console.error(`called edge function without environment app: ${appKey}, worker: ${workerName}`)
@@ -169,6 +121,9 @@ startWorker({
     }
 
     const workerKey = `${workerName}__${appKey}`
+
+    console.log(workerKey, workers[workerKey])
+
     if (!workers[workerKey] || workers[workerKey].appHash !== app.Hash) {
       Deno.env.set('appKey', appKey)
       let base = []
