@@ -50,7 +50,7 @@ startWorker({
     apps = (await getApps()) || []
 
     const app = apps.find(app => app.Name === appKey)
-    console.log(app)
+    // console.log(app)
     if (!app) {
       return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
     }
@@ -67,10 +67,7 @@ startWorker({
 
     if (!appData[appKey]?.schema || appData[appKey].appHash !== app.Hash) {
       try {
-        const schema = (await Promise.any([
-          import(ipfsGateway + `/ipfs/${app.Hash}/schema/index.js`),
-          import(ipfsGateway + `/ipfs/${app.Hash}/schema.js`)
-        ])).schema
+        const schema = (await import(ipfsGateway + `/ipfs/${app.Hash}/schema/main.js`)).schema
 
         if (typeof schema === 'function') {
           appData[appKey] = { schema: schema({ defaultPaths, addPathTags }), appHash: app.Hash }
@@ -122,7 +119,7 @@ startWorker({
 
     const workerKey = `${workerName}__${appKey}`
 
-    console.log(workerKey, workers[workerKey])
+    // console.log(workerKey, workers[workerKey])
 
     if (!workers[workerKey] || workers[workerKey].appHash !== app.Hash) {
       Deno.env.set('appKey', appKey)

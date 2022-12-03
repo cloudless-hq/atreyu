@@ -70,7 +70,7 @@ export async function bodyParser (request, { clone } = {}) {
   }
 
   const contentType = req.headers.get('content-type')
-  if (contentType === 'application/json') {
+  if (contentType === 'application/json' || contentType === 'application/csp-report') {
     let text
     let ret
     try {

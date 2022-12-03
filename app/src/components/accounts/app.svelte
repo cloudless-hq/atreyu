@@ -3,6 +3,7 @@
   import Login from './login.svelte.js'
   import Sessions from './sessions.svelte.js'
   // import Confirmation from './confirmation.svelte.js'
+  import UserMenu from '/_ayu/src/components/user-menu.svelte'
   import Manage from './manage.svelte'
 	import makeRouterStore from '/_ayu/src/store/router.js'
   const router = makeRouterStore()
@@ -48,6 +49,17 @@
   function doLoginUser ({ sessionId, email, org }) {
     userData = { sessionId, email, org }
   }
+
+  let view = ''
+  $: {
+    if ($router.hash === '#/sessions') {
+      view = 'sessions'
+    } else if (localDbNames && (localDbNames?.length === 0 || userData || newUser)) {
+      view = 'login'
+    } else if (localDbNames) {
+      view = 'accounts'
+    }
+  }
 </script>
 
 <style lang="postcss">
@@ -57,6 +69,10 @@
 	.app {
 		text-align: center;
 	}
+  .logo {
+    height: 57%;
+    margin: 13px;
+  }
   .storage-footer {
     bottom: 0;
     position: fixed;
@@ -67,9 +83,7 @@
     right: 0;
     text-align: right;
   }
-</style>
-
-<!-- <div style="
+  :global(.ayu-header) {
     position: fixed;
     z-index: 100000;
     height: 63px;
@@ -80,18 +94,22 @@
     border-bottom: 1px solid #00000017;
     backface-visibility: hidden;
     transform: translateZ(0);
-">
-</div> -->
+  }
+</style>
+
+<div class="ayu-header">
+  <img class="logo" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
+
+  <UserMenu></UserMenu>
+</div>
 
 <div class="app antialiased font-sans bg-gray-100" transition:fade="{{ duration: 250}}">
-  {#if $router.hash === '#/sessions'}
+  {#if view === 'sessions'}
     <Sessions />
-  {:else}
-    {#if localDbNames && (localDbNames?.length === 0 || userData || newUser)}
-      <Login {userData} />
-    {:else if localDbNames}
-      <Manage {localDbNames} {doLoginUser} />
-    {/if}
+  {:else if view === 'login' }
+    <Login {userData} />
+  {:else if view === 'accounts'}
+    <Manage {localDbNames} {doLoginUser} />
   {/if}
 
   {#if dataUsage}

@@ -45,15 +45,15 @@ export async function handler ({ req, stats, app }) {
 
     if (jwtPayload.dev_mock) {
       headers['Location'] = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
-      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
     } else if (jwtPayload.email) {
       const base = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
       headers['Location'] = `/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin + base)}`
-      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
-      headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     } else {
       headers['Location'] = `/_ayu/accounts/?login`
-      // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
     }
 
     return new Response('', {
@@ -116,7 +116,7 @@ export async function handler ({ req, stats, app }) {
         headers: {
           'Cache-Control': 'must-revalidate',
           'Location': req.query.continue || '/' ,
-          'Set-Cookie': `CF_Authorization=${devJwt}; Path=/; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
+          'Set-Cookie': `CF_Authorization=${devJwt}; Path=/_api; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
         }
       })
     }
@@ -126,7 +126,7 @@ export async function handler ({ req, stats, app }) {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Set-Cookie': `AYU_SESSION_ID=${newSessionId}${newSession.org ? '__' + newSession.org : ''}; Path=/; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
+        'Set-Cookie': `AYU_SESSION_ID=${newSessionId}${newSession.org ? '__' + newSession.org : ''}; Path=/_api; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
         'Location': req.query.continue || '/'
       }
     })

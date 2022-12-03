@@ -6,7 +6,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
 
   if (!couchHost || !__couchAdminKey) {
     if (verbose || (couchHost !== __couchAdminKey)) {
-      console.log('  skipping not configured db setup')
+      console.log('  no couch admin credentials configured in ayu.config.js, skipping db setup')
     }
     return
   }
@@ -78,6 +78,8 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       try {
         console.log('  seeding base docs to database')
         dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
+        // const currentVersions = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, { body: <ids>, headers })).json()
+        // console.log(currentVersions)
       } catch (_err) { /* ignore */ }
     }
 

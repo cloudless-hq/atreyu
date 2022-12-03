@@ -12,7 +12,7 @@ const sleepRandom = () => {
   return sleep(ms)
 }
 
-export default async function req (url, { method, body, headers: headersArg = {}, ttl, cacheKey, cacheNs, raw: rawArg } = {}) {
+export default async function req (url, { method, body, headers: headersArg = {}, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
   const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'
@@ -62,7 +62,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
   const reqStart = Date.now()
   const wasCached = !!res
   if (!wasCached) {
-    res = await fetch(url, { method, body, headers }).catch(fetchError => ({ ok: false, error: fetchError }))
+    res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
 
     if (!res.ok) {
       retried = {
@@ -73,7 +73,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
         redirect: res.redirected
       }
       await sleepRandom()
-      res = await fetch(url, { method, body, headers }).catch(fetchError => ({ ok: false, error: fetchError }))
+      res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
     }
 
     if (res.ok && cacheNs) {

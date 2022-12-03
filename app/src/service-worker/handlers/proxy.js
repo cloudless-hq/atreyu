@@ -33,22 +33,26 @@ export default async function ({ req, _key, event }) {
       req.url.port = location.port
     }
     req.headers['x-via'] = 'ayu-sw-proxy'
-    res = await fetch(req.url.href, { headers: req.headers })
+    res = await fetch(req.url.href, { body: req.body, method: req.method, headers: req.headers, redirect: 'manual' })
 
+    // console.log(res)
     if (res?.redirected) {
-      if (res?.url.contains('cloudflareaccess.com/cdn-cgi')) {
+      // console.log(res?.url)
+      if (res?.url?.contains?.('cloudflareaccess.com/cdn-cgi')) {
         return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
       }
-      return new Response('redirect error', {status: 500})
+      // return new Response('Redirect Error', {status: 500})
     }
-    if (!res?.ok) {
+    if (res.type === 'opaqueredirect') {
+      console.log('forwarding opaque redirect to window')
+    } else if (!res?.ok) {
       console.error(req.url.href, res)
     } else {
       // event.waitUntil(cache.put(key, res.clone()))
     }
-  } catch (e) {
-    console.error('error caching request', e)
-    res = new Response('Error', {status: 500})
+  } catch (err) {
+    console.error('sw request request error', err)
+    res = new Response('Error', { status: 500 })
   }
 
   return res

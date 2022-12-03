@@ -1,12 +1,23 @@
-import { join, WindiProcessor, CSSParser } from '../deps-deno.ts' // HTMLParser, ClassParser
+import { join, WindiProcessor, CSSParser, WindiForms } from '../deps-deno.ts' // HTMLParser, ClassParser
 
 const windiClasses = new Set()
 const windiProcessor = new WindiProcessor()
 
 let windiConf
+let resetsConf = 'include'
 try {
   windiConf = (await import('file://' + join('/', Deno.cwd(), 'windi.config.js'))).default
-} catch (_e) { /* noop */}
+  if (!windiConf.plugins) {
+    windiConf.plugins = [ WindiForms ]
+  } else {
+    windiConf.plugins.push(WindiForms)
+  }
+  if (typeof windiConf.resets !== 'undefined') {
+    resetsConf = windiConf.resets
+  }
+} catch (_e) {
+  windiConf = { plugins: [ WindiForms ] }
+}
 
 windiProcessor.loadConfig(windiConf)
 
@@ -37,11 +48,20 @@ export function makeGlobalWindi (minify: boolean) {
       styles = styles.extend(styleSheet, APPEND)
     }
   })
-  styles = styles?.extend(resets, APPEND)
+
+  const resetsString = resets.build(MINIFY)
+  const stylesString = styles?.sort().build(MINIFY) || ''
+
+  // if (resetsConf === 'include') {
+  //   // styles = styles?.extend(resets, APPEND)
+  // }
 
   // const ast = new ClassParser(htmlClasses).parse()
 
-  return styles?.sort().build(MINIFY) || ''
+  return {
+    styles: (resetsConf === 'include') ? (resetsString + '\n\n' + stylesString) : stylesString,
+    resets: (resetsConf === 'external') ? resetsString : ''
+  }
 }
 
 export function collectWindiClasses (html: string) {

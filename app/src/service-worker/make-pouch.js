@@ -9,7 +9,7 @@ export default async function ({
   preload
 }) {
   PouchDB.prefix = '_ayu_'
-  const pouch = new PouchDB(clientDbName)
+  const pouch = new PouchDB(clientDbName, { revs_limit: 200, auto_compaction: true })
   const couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
     fetch: (url, opts) => {
       opts.redirect = 'error'
@@ -44,6 +44,7 @@ export default async function ({
     skipInitialBatch: true, // TODO: setup depending on time since last login?
     retry: true,
     heartbeat: 2500,
+    batch_size: 50,
     conflicts: true, // TODO
     pull: {
       since: sessionDoc.startSeq,

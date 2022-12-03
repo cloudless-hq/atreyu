@@ -5,18 +5,24 @@ import makePouch from './make-pouch.js'
 import makeFalcorServer from './falcor-server.js'
 import { escapeId } from '../lib/helpers.js'
 import { parse, match } from '../lib/routing.js'
+import { addPathTags } from '../schema/helpers.js'
+import defaultPaths from '../schema/default-routes.js'
 
 // TODO: support addtional dataSources like apollo
 
 export default function ({
-  dbConf,
+  dbConf = {},
   dataSources,
   schema,
-  originWhitelist,
+  proxiedDomains,
   handlers: appHandlers
-}) {
+} = {}) {
   if (dataSources) {
     console.warn('Additional data sources not implemented yet.')
+  }
+  // TODO: gobally precompile schema on build time
+  if (typeof schema === 'function') {
+    schema = schema({ defaultPaths, addPathTags })
   }
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
@@ -82,8 +88,10 @@ export default function ({
         } else {
           newDbConf = dbConf
         }
-        const clientDbName = newDbConf.clientDbName
-        const serverDbName = newDbConf.serverDbName
+
+        // (pouchdb prefix allready ayu_)
+        const clientDbName = escapeId(newSession.userId + '__' + newSession.env + '__' + newSession.appName + ( newSession.org ? '__' + newSession.org : '__'))
+        const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
 
         self.session.dbs = await makePouch({
           clientDbName,
@@ -92,6 +100,7 @@ export default function ({
           preload: newDbConf.preload,
           clientDesignDocs: newDbConf[clientDbName]
         })
+
         // console.log('making falcor server')
         self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
 
@@ -110,7 +119,9 @@ export default function ({
           const query = new URLSearchParams(url.search)
           if (redirectOtherClients === 'continue') {
             if (url.pathname.startsWith('/_ayu/accounts')) {
-              client.postMessage('navigate:' + (query.get('continue') || '/'))
+              const navMessage = 'navigate:' + (query.get('continue') || '/')
+              client.postMessage(navMessage)
+              client._ayu_lastNavMessage = navMessage
               return waitForNavigation(client)
               // client.navigate().catch(err => console.error(err))
             }
@@ -118,7 +129,7 @@ export default function ({
             let cont = ''
             if (url.pathname.length > 1 || url.hash || url.search > 0) {
               if (query.get('continue')) {
-                cont = query.get('continue')
+                cont = `continue=${query.get('continue')}`
               } else {
                 cont = `continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
               }
@@ -303,10 +314,10 @@ export default function ({
 
     if (url.origin !== location.origin) {
       // custom handling for cors requests
-      if (originWhitelist && !originWhitelist.includes(url.origin)) {
-        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
-      } else if (originWhitelist) {
+      if (proxiedDomains && (proxiedDomains === '*' || proxiedDomains.includes(url.origin))) {
         return event.respondWith(proxyHandler({ event, req }))
+      } else if (proxiedDomains) {
+        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
       } else {
         return
       }

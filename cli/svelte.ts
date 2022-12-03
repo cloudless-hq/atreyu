@@ -54,8 +54,10 @@ export default async function ({
 
     console.log('  compiling svelte templates:', join(inFolder, '/'))
 
-    const files = batch ? batch.map(fname => fname.substring(1, fname.length)).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
+    const files = batch ? batch.map(fname => fname.startsWith('/') ? fname.substring(1, fname.length) : fname).filter(fname => fname.startsWith(inFolder)) : await recursiveReaddir(inFolder)
 
+    // TODO: multithreading support
+    // console.log({batch, mapped: batch?.map(fname => fname.substring(1, fname.length)), files, inFolder})
     const fileCompilers = files.map(async file => {
       const subPath = file.replace(inFolder, '')
       const newEmits = []
@@ -69,6 +71,45 @@ export default async function ({
 
       // if (file.endsWith('.css')) {
       // }
+
+      // let sveltePlugin = {
+      //   name: 'svelte',
+      //   setup (build) {
+      //     let svelte = require('svelte/compiler')
+      //     build.onLoad({ filter: /\.svelte$/ }, async (args) => {
+      //       let convertMessage = ({ message, start, end }) => {
+      //         let location
+      //         if (start && end) {
+      //           let lineText = source.split(/\r\n|\r|\n/g)[start.line - 1]
+      //           let lineEnd = start.line === end.line ? end.column : lineText.length
+      //           location = {
+      //             file: filename,
+      //             line: start.line,
+      //             column: start.column,
+      //             length: lineEnd - start.column,
+      //             lineText,
+      //           }
+      //         }
+      //         return { text: message, location }
+      //       }
+      //       const source = await fs.promises.readFile(args.path, 'utf8')
+      //       const filename = path.relative(process.cwd(), args.path)
+      //       try {
+      //         let { js, warnings } = svelte.compile(source, { filename })
+      //         let contents = js.code + `//# sourceMappingURL=` + js.map.toUrl()
+      //         return { contents, warnings: warnings.map(convertMessage) }
+      //       } catch (err) {
+      //         return { errors: [ convertMessage(err) ] }
+      //       }
+      //     })
+      //   }
+      // }
+      // build({
+      //   entryPoints: ['app.js'],
+      //   bundle: true,
+      //   outfile: 'out.js',
+      //   plugins: [sveltePlugin],
+      // })
 
       if (file.endsWith('.ts')) {
         await build({ // const { metafile } =
@@ -217,12 +258,19 @@ export default async function ({
         //   )
         // }
 
+        const replacements = {
+          'svelte/animate': `'/_ayu/build/deps/svelte-animate.js'`,
+          'svelte': `'/_ayu/build/deps/svelte-internal.js'`,
+          'svelte/transition': `'/_ayu/build/deps/svelte-transition.js'`,
+          'svelte/store': `'/_ayu/build/deps/svelte-store.js'`,
+          'svelte/internal': `'/_ayu/build/deps/svelte-internal.js'`
+        }
+
         comp.js.code = comp.js.code
-          .replaceAll(/[",']\/?svelte\/animate[",']/ig, `'/_ayu/build/deps/svelte-animate.js'`)
-          .replaceAll(/[",']\/?svelte\/transition[",']/ig, `'/_ayu/build/deps/svelte-transition.js'`)
-          .replaceAll(/[",']\/?svelte\/internal[",']/ig, `'/_ayu/build/deps/svelte-internal.js'`)
-          .replaceAll(/[",']\/?svelte\/store[",']/ig, `'/_ayu/build/deps/svelte-store.js'`)
-          .replaceAll(/[",']\/?svelte[",']/ig, `'/_ayu/build/deps/svelte-internal.js'`)
+          .replace(/["']\/?svelte\/?(?:store|animate|transition|internal)?["']/g, (matched: string) => {
+            const cleaned = matched.slice(1,-1)
+            return `${replacements[cleaned.startsWith('/') ? cleaned.slice(1) : cleaned]}`
+          })
           .concat('\n/*# sourceMappingURL=./' + basename(subPath) + '.js.map */')
 
         await Promise.all([
@@ -269,7 +317,11 @@ export default async function ({
   }
 
   const baseStylePath = `${appFolder}/build/base.css`
-  const baseStyleContent = makeGlobalWindi(!dev) + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join('\n')
+  const resetStylePath = `${appFolder}/build/resets.css`
+
+  const { styles: wStyles, resets: wResets } = makeGlobalWindi(!dev)
+
+  const baseStyleContent = wStyles + Object.entries(globalStyles).map(([filename, content]) => `\n\n/* ${filename} */\n${content}\n`).join('\n')
   if (baseStyleContent.length > 1) {
     await Deno.writeTextFile(join(Deno.cwd(), baseStylePath), baseStyleContent)
     newBuildRes.files[baseStylePath] = {
@@ -277,8 +329,17 @@ export default async function ({
       newEmits: [baseStylePath],
       deps: []
     }
+    console.log(`    ${green('emitted:')} ` + baseStylePath)
 
-    console.log(`    ${green('emitted:')} ` + `${appFolder}/build/base.css`)
+    if (wResets) {
+      await Deno.writeTextFile(join(Deno.cwd(), resetStylePath), wResets)
+      newBuildRes.files[resetStylePath] = {
+        emits: [resetStylePath],
+        newEmits: [resetStylePath],
+        deps: []
+      }
+      console.log(`    ${green('emitted:')} ` + resetStylePath)
+    }
   }
 
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10

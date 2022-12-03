@@ -3,6 +3,8 @@ import { readable } from '../../build/deps/svelte-store.js'
 // eslint-disable-next-line no-restricted-imports
 import { Route, merge } from '../../build/deps/util.js'
 import { urlLogger } from '../lib/url-logger.js'
+import { addPathTags } from '../schema/helpers.js'
+import defaultPaths from '../schema/default-routes.js'
 
 // TODO: data saver mode respect for preloader
 
@@ -13,8 +15,11 @@ const onIdle = window.requestIdleCallback || function (cb) {
   cb({ timeRemaining: function () { return 41 } })
 }
 
-export default function (schema = {paths: {}, fallback: true}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'false', _preloadDefault } = {}) {
+export default function ({ schema = {paths: {}, fallback: true}, dataStore } = {}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'false', _preloadDefault } = {}) {
   const routes = []
+  if (typeof schema === 'function') {
+    schema = schema({ defaultPaths, addPathTags })
+  }
 
   ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
     if (get && get.tags?.includes('window')) {
@@ -309,7 +314,10 @@ export default function (schema = {paths: {}, fallback: true}, { preloadDisabled
           const newDiv = document.createElement('div')
           newDiv.style = 'display: none;'
           currentHref = href
-          instances.set(href, new preloadRouterState._component({ target: newDiv, context: new Map([['router', preloadRouterStore]]) }))
+          instances.set(href, new preloadRouterState._component({
+            target: newDiv,
+            context: new Map([['ayu', { router: preloadRouterStore, data: dataStore }]])
+          }))
         } catch (err) {
           console.error('could not preload the component for: ' + href, err, preloadRouterState._component)
         }

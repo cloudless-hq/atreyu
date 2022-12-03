@@ -130,24 +130,15 @@ const appKey = env === 'prod' ? appName : appName + '_' + env
 
 // TODO: unify with other schema loader which allows also schema.js
 async function loadEdgeSchema ({ appFolder }) {
-  // TODO: support implicit endpoints folder routs
-  let schema
-  // NOTE: workaround because Promise.any() crashed deno when both promises fail
-  const schemaImports = await Promise.all([
-    import('file:' + projectPath + `/${appFolder}/schema/index.js`)
-      .catch(error => ({ error })),
-    import('file:' + projectPath + `/${appFolder}/schema.js`)
-      .catch(error => ({ error }))
-  ])
-
-  schema = schemaImports.filter(schemaImport => !schemaImport.error)?.[0]?.schema
+  // TODO: support implicit endpoints folder routes
+  let schema = (await import('file:' + projectPath + `/${appFolder}/schema/main.js`).catch(error => ({ error })))?.schema
 
   if (typeof schema === 'function') {
     schema = schema({ defaultPaths, addPathTags })
   }
 
   if (!schema) {
-    console.warn('  could not load schmea, falling back to default') // verbose schemaImports
+    console.warn('  could not load schema, falling back to default') // verbose schemaImports
 
     schema = {
       paths: {
@@ -307,6 +298,10 @@ switch (cmd) {
       ])
 
       let buildEmits = buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] )
+
+      // console.log(JSON.stringify(buildRes, null, 2))
+
+      // console.log(buildEmits)
 
       const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
         const regx = globs.map(glob => globToRegExp(glob))

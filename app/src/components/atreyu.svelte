@@ -168,6 +168,65 @@ async function doUpdate ({ auto, silent }) {
 // Updated notification with expansion to show changes and changed files, version numbers etc.
 </script>
 
+<style lang="postcss">
+  /* atreyu update notification theming */
+  .ayu-update-notification {
+    z-index: 1000000;
+    @apply fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start;
+  }
+  .ayu-update-notification .btn {
+    @apply bg-white rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+  }
+  .ayu-update-notification .secondary.btn {
+    @apply text-gray-700 hover:text-gray-500;
+  }
+  .ayu-update-notification .primary.btn {
+    @apply text-primary-600 hover:text-primary-500;
+  }
+  .ayu-update-notification .wrapper1 {
+    @apply w-full flex flex-col items-center space-y-4 sm:items-end;
+  }
+  .ayu-update-notification .wrapper2 {
+    @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden;
+  }
+  .ayu-update-notification .wrapper3 {
+    @apply p-4;
+  }
+  .ayu-update-notification .wrapper4 {
+    @apply flex items-start;
+  }
+  .ayu-update-notification .btns {
+    @apply mt-3 flex space-x-7;
+  }
+  .ayu-update-notification .title {
+    @apply text-sm font-medium text-gray-900;
+  }
+  .ayu-update-notification .subtitle {
+    @apply mt-1 text-sm text-gray-500;
+  }
+  .ayu-update-notification .content {
+    @apply ml-3 w-0 flex-1 pt-0.5;
+  }
+  .ayu-update-notification .icon {
+    @apply flex-shrink-0;
+  }
+  .ayu-update-notification .svg-green {
+    @apply h-6 w-6 text-green-400;
+  }
+  .ayu-update-notification .build-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-gray-100 text-gray-800;
+  }
+  .ayu-update-notification .close-btn-wrapper {
+    @apply ml-4 flex-shrink-0 flex;
+  }
+  .ayu-update-notification .close-btn {
+    @apply bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+  }
+  .ayu-update-notification .close-svg {
+    @apply h-5 w-5;
+  }
+</style>
+
 <svelte:body on:mousedown|passive={closeUpdateNotification}  />
 
 {#if newHash && !updating}

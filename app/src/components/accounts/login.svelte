@@ -54,6 +54,10 @@
     if (sessionName) {
       loginData.sessionName = sessionName
     }
+    const cont = (new URLSearchParams(location.search)).get('continue')
+    if (cont) {
+      loginData.continue = cont
+    }
 
     let searchParams = new URLSearchParams(loginData)
     let loginUrl = `/_api/_session?login&${searchParams.toString()}`

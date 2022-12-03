@@ -1,4 +1,5 @@
-export default async function registerWorker (workerPath, loaded, reloadAfterInstall) {
+export default async function startWorker ({ reloadAfterInstall } = {}) {
+  const workerPath = '/service-worker.bundle.js'
   let regs
   let firstStart = false
   try {
@@ -8,7 +9,7 @@ export default async function registerWorker (workerPath, loaded, reloadAfterIns
     location.reload()
   }
   if (regs.length !== 1) {
-    console.log(regs.length + ' worker registrations')
+    console.log(regs.length + ' worker registrations', regs)
   }
 
   if (navigator.serviceWorker.controller && navigator.serviceWorker.controller.state) {
@@ -17,47 +18,15 @@ export default async function registerWorker (workerPath, loaded, reloadAfterIns
     } else {
       // todo: unify with getRegistrations logic
       // move to top?
-      // return loaded() ?
+      // return ?
     }
   }
 
-  let reg
-  if (regs.length === 0) {
-    firstStart = true
-    reg = await navigator.serviceWorker.register(workerPath, {
-      updateViaCache: 'all',
-      scope: '/'
-    })
-
-    console.log('ServiceWorker registred')
-    // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
-  } else {
-    await navigator.serviceWorker.ready
-    // console.log('ServiceWorker ready, allready installed')
-    loaded(regs[0])
-    reg = regs[0]
-  }
-
-  // requires app installation
-  // reg.periodicSync.unregister('periodic waky waky')
-  // if (reg.periodicSync) {
-  //   try {
-  //     const tags = await reg.periodicSync.getTags()
-  //     if (!tags.includes('periodic waky waky')) {
-  //       await reg.periodicSync.register('periodic waky waky', {
-  //         minInterval: 30 * 60 * 1000 // 30 mins
-  //       })
-  //     }
-  //   } catch (err) {
-  //     console.log('Periodic Sync could not be registered!', err)
-  //   }
-  // }
-
+  let loaded = () => { console.log('worker restarted') }
   navigator.serviceWorker.addEventListener('message', async e => {
     if (e.data === '{"worker":"active"}') {
-      // this onlye needs , { once: true } after safari supports client.navigate
       await navigator.serviceWorker.ready
-      console.log('ServiceWorker started', {reloadAfterInstall, firstStart})
+      console.log('ServiceWorker start', {reloadAfterInstall, firstStart})
       if (firstStart && reloadAfterInstall) {
         if (!window.location.search) {
           window.location.reload()
@@ -76,4 +45,37 @@ export default async function registerWorker (workerPath, loaded, reloadAfterIns
       // TODO handle logout, cleanup etc
     }
   })
+
+  let reg
+  if (regs.length === 0) {
+    firstStart = true
+    reg = await navigator.serviceWorker.register(workerPath, {
+      updateViaCache: 'all',
+      scope: '/'
+    })
+
+    console.log('ServiceWorker registred')
+    // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
+    return new Promise(resolve => { loaded = resolve })
+  } else {
+    await navigator.serviceWorker.ready
+    // console.log('ServiceWorker ready, allready installed')
+    reg = regs[0]
+    return regs[0]
+  }
+
+  // requires app installation
+  // reg.periodicSync.unregister('periodic waky waky')
+  // if (reg.periodicSync) {
+  //   try {
+  //     const tags = await reg.periodicSync.getTags()
+  //     if (!tags.includes('periodic waky waky')) {
+  //       await reg.periodicSync.register('periodic waky waky', {
+  //         minInterval: 30 * 60 * 1000 // 30 mins
+  //       })
+  //     }
+  //   } catch (err) {
+  //     console.log('Periodic Sync could not be registered!', err)
+  //   }
+  // }
 }
