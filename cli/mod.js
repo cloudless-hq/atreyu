@@ -63,6 +63,7 @@ const {
   env: envFlag,
   port = '80',
   pin,
+  clean,
   noStart,
   resetKvs,
   repo,
@@ -252,9 +253,9 @@ if (!['update', 'version', 'help', 'info'].includes(cmd) && config.atreyuVersion
   Deno.exit(1)
 }
 
-async function resetDir (outputTarget, clean) {
+async function resetDir (outputTarget, doClean) {
   try {
-    if (clean) {
+    if (doClean) {
       console.log('  🐘 recreating:', outputTarget)
       await Deno.remove(outputTarget, { recursive: true })
     }
@@ -282,7 +283,7 @@ switch (cmd) {
     edgeSchema = await loadEdgeSchema({ appFolder })
     // console.log(edgeSchema)
     let buildRes = []
-    async function devBuild ({ batch, clean } = {}) {
+    async function devBuild ({ batch, clean: doClean } = {}) {
       const newConf = await loadConfig(env, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
@@ -296,14 +297,14 @@ switch (cmd) {
       let buildEmits = []
 
       const outputTarget = join(input, '..', 'build')
-      await resetDir(outputTarget, clean)
+      await resetDir(outputTarget, doClean)
 
       const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
         const regx = globs.map(glob => globToRegExp(glob))
 
         const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
 
-        if (clean || matchArray(buildEmits) || matchArray(batch)) {
+        if (doClean || matchArray(buildEmits) || matchArray(batch)) {
           console.log(`  ▶️  running ${command}...`)
           await exec(command.split(' '))
           if (emits) {
@@ -322,7 +323,7 @@ switch (cmd) {
           extraAppEntryPoints: newConf?.extraAppEntryPoints,
           buildRes,
           batch,
-          clean,
+          clean: doClean,
           output,
           sveltePath
         }),
@@ -331,10 +332,10 @@ switch (cmd) {
           batch,
           appFolder,
           buildRes,
-          clean
+          clean: doClean
         }),
 
-        buildEdge({ workers: edgeSchema, buildName, batch, clean, buildRes })
+        buildEdge({ workers: edgeSchema, buildName, batch, clean: doClean, buildRes })
       ])
 
       buildEmits = buildEmits.concat(buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] ))
@@ -346,7 +347,7 @@ switch (cmd) {
       const { appFolderHash } = await addIpfs({
         appFolder,
         repo: repo || homeConfPath,
-        clean,
+        clean: doClean,
         pin,
         batch,
         buildEmits,
