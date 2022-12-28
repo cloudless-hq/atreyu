@@ -29,15 +29,16 @@ export function escapeId (baseString, doc) {
   return result
 }
 
-export function formatBytes (bytes) {
-  const units = [ 'B', 'KB', 'MB', 'GB' ]
+export function formatBytes (bytes, pad) {
+  const units = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PT' ]
   let dim = 0
   let n = parseInt(bytes, 10) || 0
 
   while (n >= 1024 && ++dim) {
     n = n / 1024
   }
-  return n.toFixed(n < 10 && dim > 0 ? 1 : 0) + ' ' + units[dim]
+  const number = n.toFixed(n < 10 && dim > 0 ? 1 : 0)
+  return (pad ? number.padEnd(pad, ' ') : (number + ' ')) + units[dim]
 }
 
 export function fromNow (timestamp) {

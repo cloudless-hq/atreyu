@@ -24,7 +24,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
     headers.set('content-type', 'application/json')
   }
 
-  if (body && headers.get('content-type') === 'application/json') {
+  if (body && headers.get('content-type') === 'application/json' && (typeof body !== 'string')) {
     body = JSON.stringify(body)
   }
 
@@ -62,19 +62,22 @@ export default async function req (url, { method, body, headers: headersArg = {}
   const reqStart = Date.now()
   const wasCached = !!res
   if (!wasCached) {
+    // console.log({ url, method, body, headers, length: body?.length })
     res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
+    // console.log(res)
 
-    if (!res.ok) {
-      retried = {
-        status: res.status,
-        statusText: res.statusText,
-        text: res.text ? await res.text() : undefined,
-        error: res.error,
-        redirect: res.redirected
-      }
-      await sleepRandom()
-      res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
-    }
+    // if (!res.ok) { // FIXME: only on certain errors!!, disable option
+    //   console.log(res)
+    //   retried = {
+    //     status: res.status,
+    //     statusText: res.statusText,
+    //     text: res.text ? await res.text() : undefined,
+    //     error: res.error,
+    //     redirect: res.redirected
+    //   }
+    //   await sleepRandom()
+    //   res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
+    // }
 
     if (res.ok && cacheNs) {
       waitUntil((async () => {
@@ -125,9 +128,12 @@ export default async function req (url, { method, body, headers: headersArg = {}
     error: res.error
   }
 
-  headers.set('traceId', event?._traceId)
-  headers.set('referer', 'todo')
-  headers.set('host', 'todo')
+  if (event?._traceId) {
+    headers.set('traceId', event?._traceId)
+  }
+
+  // headers.set('referer', 'todo')
+  // headers.set('host', 'todo')
 
   if (!wasCached) {
     waitUntil(log({

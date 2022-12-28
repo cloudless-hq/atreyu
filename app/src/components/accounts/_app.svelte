@@ -1,7 +1,7 @@
 <script>
   import { formatBytes } from '/_ayu/src/lib/helpers.js'
-  import Login from './login.svelte.js'
-  import Sessions from './sessions.svelte.js'
+  import Login from './login.svelte'
+  import Sessions from './sessions.svelte'
   // import Confirmation from './confirmation.svelte.js'
   import UserMenu from '/_ayu/src/components/user-menu.svelte'
   import Manage from './manage.svelte'
@@ -70,8 +70,7 @@
 		text-align: center;
 	}
   .logo {
-    height: 57%;
-    margin: 13px;
+    height: 35px;
   }
   .storage-footer {
     bottom: 0;
@@ -97,10 +96,10 @@
   }
 </style>
 
-<div class="ayu-header">
-  <img class="logo" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
+<div class="ayu-header flex items-center">
+  <img class="logo sm:px-6 lg:px-8 left-0 absolute" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
 
-  <UserMenu></UserMenu>
+  <UserMenu class="sm:px-6 lg:px-8 right-0 absolute" />
 </div>
 
 <div class="app antialiased font-sans bg-gray-100" transition:fade="{{ duration: 250}}">

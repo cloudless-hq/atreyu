@@ -1,4 +1,4 @@
-import { writable, get } from '/_ayu/src/deps/svelte-store.js'
+import { writable, get } from '/_ayu/build/deps/svelte-store.js'
 
 /**
  * From https://svelte.dev/repl/7be28cb8b6364f88bc5e441739fb3da8?version=3.24.0

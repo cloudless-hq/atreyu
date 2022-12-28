@@ -1,4 +1,4 @@
-import { Observable } from '/_ayu/src/deps/falcor-observable.js'
+import { Observable } from '/_ayu/build/deps/falcor-observable.js'
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {
@@ -8,7 +8,7 @@ class ServiceWorkerSource {
     this._id = 0 // Identifier used to correlate each Request to each response
     this._waker
 
-    this._worker.postMessage(JSON.stringify([-1, 'hello mike' ]))
+    this._worker?.postMessage(JSON.stringify([-1, 'hello mike' ]))
 
     navigator.serviceWorker.addEventListener('message', e => {
       if (e.data.startsWith('navigate:')) {

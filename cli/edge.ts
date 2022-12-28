@@ -1,6 +1,6 @@
 import { join, basename, build } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
-import esbuildPlugin from './esbuild-plugin.ts'
+import esbuildPlugin, { parseMetafile } from './esbuild-plugin.ts'
 import { makeValidator } from '../edge/lib/schema.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
@@ -64,12 +64,14 @@ const buildSettings = {
 }
 async function compile ({ input, appName, workerName, output, buildName, paramsValidation, publish }) {
   if (publish) {
-    await build({
+    const { metafile } = await build({
       entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
       plugins: [ esbuildPlugin({ local: false, input, atreyuPath, paramsValidation }) ],
       outfile: output,
       ...buildSettings
-    }).catch(err => console.error(err))
+    }).catch(() => {/* ignore */})
+
+    parseMetafile(metafile)
   }
 
   const buildRes = await build({
@@ -77,7 +79,9 @@ async function compile ({ input, appName, workerName, output, buildName, paramsV
     plugins: [ esbuildPlugin({ local: true, input, atreyuPath, paramsValidation }) ],
     outfile: output.replace('.js', '.deno.js'),
     ...buildSettings
-  }).catch(err => console.error(err))
+  }).catch(/* ignore */) // err => console.error(err)
+
+  parseMetafile(buildRes.metafile)
 
   return Object.keys(buildRes.metafile.inputs).map(path => {
     if (path.includes('/_ayu/')) {
@@ -115,7 +119,7 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
 
   await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath, paramsValidation }]) => {
     const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
-    console.log(`    building edge-worker: ${workerLogPath}`)
+    // console.log(`    building edge-worker: ${workerLogPath}`)
 
     const newDeps = await compile({ input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 

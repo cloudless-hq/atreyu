@@ -27,7 +27,7 @@ export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/v1
 
 export { parse } from 'https://deno.land/std@0.126.0/flags/mod.ts'
 
-export { build, transform } from 'https://deno.land/x/esbuild@v0.14.51/mod.js'
+export { build, transform } from 'https://deno.land/x/esbuild@v0.15.17/mod.js'
 
 export { default as WindiForms } from 'https://cdn.skypack.dev/windicss@3.5.6/plugin/forms'
 

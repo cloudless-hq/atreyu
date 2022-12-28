@@ -50,7 +50,7 @@ RUN deno install \
 --allow-env \
 --allow-net=127.0.0.1:5001,localhost,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org,deno.land,c3b0b243-4f69-4cb1-9ece-1b0561a67cee-bluemix.cloudant.com,cdn.skypack.dev \
 --allow-write=/tmp,"$HOME"/.atreyu,./,"$DENO_DIR",/root/.cache/deno,/root/.cache/esbuild \
---allow-run=ipfs,kill,npx,`command -v deno`,pnpm,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.14.51 \
+--allow-run=ipfs,kill,npx,`command -v deno`,pnpm,yarn,/root/.cache/esbuild/bin/esbuild-linux-64@0.15.17 \
 --no-check \
 --unstable \
 -n ayu \

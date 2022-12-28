@@ -5,7 +5,7 @@ import { sleepRandom } from './helpers.js'
 
 // TODO: handle logout detection and service worker integration!!!
 // TODO: integrate base features with edge/lib/req.js
-export default async function req (url, { method, body, headers: headersArg = {}, raw: rawArg, retry = true, redirect = 'manual' } = {}) {
+export default async function req (url, { method, body, headers: headersArg = {}, raw: rawArg, retry = false, redirect = 'manual' } = {}) {
   // TODO: ttl, cacheKey, cacheNs,
   // const { waitUntil, event } = getWait()
   if (!method) {
@@ -52,6 +52,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
   if (!wasCached) {
     res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
 
+    // FIXME: do not retry redirects etc that are also not ok
     if (!res.ok && retry) {
       retried = {
         status: res.status,
@@ -62,6 +63,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
       }
       if (retried.redirect || res.status === 401) {
         self.session?.refresh()
+        // FIXME: abort here
       }
       await sleepRandom()
       res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))

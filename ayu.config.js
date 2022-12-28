@@ -11,3 +11,5 @@ export default {
 export const runConf = {
   'pnpm build': { globs: [ 'app/src/deps/**'] }
 }
+
+export const extraAppEntryPoints = [ 'app/src/accounts-main.js' ]

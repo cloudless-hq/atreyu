@@ -187,8 +187,9 @@ async function doUpdate ({ auto, silent }) {
     @apply w-full flex flex-col items-center space-y-4 sm:items-end;
   }
   .ayu-update-notification .wrapper2 {
-    @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden;
+    @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto overflow-hidden;
   }
+  /* ring-1 ring-black ring-opacity-5 */
   .ayu-update-notification .wrapper3 {
     @apply p-4;
   }
@@ -220,8 +221,9 @@ async function doUpdate ({ auto, silent }) {
     @apply ml-4 flex-shrink-0 flex;
   }
   .ayu-update-notification .close-btn {
-    @apply bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+    @apply bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500;
   }
+  /* focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 */
   .ayu-update-notification .close-svg {
     @apply h-5 w-5;
   }

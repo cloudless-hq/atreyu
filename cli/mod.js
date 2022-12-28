@@ -123,7 +123,9 @@ try {
   Deno.mkdirSync(homeConfPath)
 }
 
-let { config = {}, runConf = {}, env } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
+// TODO: dont always clean completely?
+
+let { config = {}, runConf = {}, env, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
 
 const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
@@ -250,6 +252,21 @@ if (!['update', 'version', 'help', 'info'].includes(cmd) && config.atreyuVersion
   Deno.exit(1)
 }
 
+async function resetDir (outputTarget, clean) {
+  try {
+    if (clean) {
+      console.log('  🐘 recreating:', outputTarget)
+      await Deno.remove(outputTarget, { recursive: true })
+    }
+  } catch (_e) { /* ignore */ }
+
+  try {
+    await Deno.mkdir(join(outputTarget), { recursive: true })
+  } catch (_e) { /* ignore */ }
+}
+
+const input = _[1] || `${appFolder}/src`
+
 switch (cmd) {
   case 'version':
     console.log(ayuVersion)
@@ -276,10 +293,33 @@ switch (cmd) {
       // todo: fix import path in local worker wrapper?
       Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
 
+      let buildEmits = []
+
+      const outputTarget = join(input, '..', 'build')
+      await resetDir(outputTarget, clean)
+
+      const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
+        const regx = globs.map(glob => globToRegExp(glob))
+
+        const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
+
+        if (clean || matchArray(buildEmits) || matchArray(batch)) {
+          console.log(`  ▶️  running ${command}...`)
+          await exec(command.split(' '))
+          if (emits) {
+            buildEmits = buildEmits.concat(emits)
+          }
+        }
+      })())
+
+      await Promise.all(runs)
+
       buildRes = await Promise.all([
         buildSvelte({
-          input: _[1],
+          input,
           appFolder,
+          outputTarget,
+          extraAppEntryPoints: newConf?.extraAppEntryPoints,
           buildRes,
           batch,
           clean,
@@ -297,27 +337,11 @@ switch (cmd) {
         buildEdge({ workers: edgeSchema, buildName, batch, clean, buildRes })
       ])
 
-      let buildEmits = buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] )
+      buildEmits = buildEmits.concat(buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] ))
 
       // console.log(JSON.stringify(buildRes, null, 2))
 
       // console.log(buildEmits)
-
-      const runs = Object.entries(runConf).map(([command, { globs, emits }]) => (async () => {
-        const regx = globs.map(glob => globToRegExp(glob))
-
-        const matchArray = arr => arr.find(entr => regx.find(regx => regx.test(entr)))
-
-        if (clean || matchArray(buildEmits) || matchArray(batch)) {
-          console.log(`  ▶️  running ${command}...`)
-          await exec(command.split(' '))
-          if (emits) {
-            buildEmits = buildEmits.concat(emits)
-          }
-        }
-      })())
-
-      await Promise.all(runs)
 
       const { appFolderHash } = await addIpfs({
         appFolder,
@@ -361,9 +385,21 @@ switch (cmd) {
 
     Deno.writeTextFileSync( join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
 
+    const outputTarget = join(input, '..', 'build')
+    await resetDir(outputTarget, clean)
+
+    // const startTime = Date.now()
+    const runs = Object.entries(runConf).map(([command]) => (async () => { // unused? , { globs }
+      console.log(`  ▶️  running ${command}...`)
+      await exec(command.split(' '))
+    })())
+    await Promise.all(runs)
+
     await Promise.all([
       buildSvelte({
-        input: _[1],
+        extraAppEntryPoints,
+        input,
+        outputTarget,
         appFolder,
         output,
         clean: true,
@@ -374,12 +410,6 @@ switch (cmd) {
       buildServiceWorker({clean: true, appFolder})
     ])
 
-    // const startTime = Date.now()
-    const runs = Object.entries(runConf).map(([command]) => (async () => { // unused? , { globs }
-      console.log(`  ▶️  running ${command}...`)
-      await exec(command.split(' '))
-    })())
-    await Promise.all(runs)
     // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
     // duration && console.log('  ' + duration + 's')
     // console.log('')

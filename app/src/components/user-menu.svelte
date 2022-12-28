@@ -37,7 +37,7 @@
   }
 </style>
 
-<div class="fixed top-3 right-3">
+<div class="{$$props.class}">
   <Menu let:open>
     <button slot="menu-button" type="button" active={open} class="max-w-xs bg-white flex items-center text-sm rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-primary-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
       <span class="inline-block h-8 w-8 rounded-full overflow-hidden bg-gray-100">
@@ -53,7 +53,7 @@
       out:trans="{{ duration: 75, addClasses: 'menu-out', removeClasses: 'menu-in' }}"
 
       class:glass
-      class="origin-top-right bg-white mt-2 absolute z-50 right-3 w-48 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus-visible:outline-none transition ease-out transform duration-200 opacity-0 scale-95"
+      class="origin-top-right bg-white mt-2 absolute z-50 right-3 w-48 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus-visible:outline-none transition ease-out transform duration-200 opacity-0 scale-95 mr-5"
       role="menu"
       aria-orientation="vertical"
       aria-labelledby="user-menu-button"

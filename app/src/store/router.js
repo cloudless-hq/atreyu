@@ -193,7 +193,7 @@ export default function ({ schema = {paths: {}, fallback: true}, dataStore } = {
 
     if (page) {
       if (!components[page]) {
-        allData._pending = import(`/src/pages/${page}.svelte`)
+        allData._pending = import(`/build/pages/${page}/_page.js`)
           .then(comp => {
             components[page] = comp.default
             allData._component = comp.default
@@ -204,7 +204,9 @@ export default function ({ schema = {paths: {}, fallback: true}, dataStore } = {
           .catch(err => {
             allData._error = err
             if (!allData._errorComponent) {
-              return import(`/src/pages/_error.svelte`)
+              const currentErrorCop = null // TODO
+              const fallBackErrComp = `/build/pages/_error.js`
+              return import(currentErrorCop || fallBackErrComp)
                 .then(errComp => {
                   allData._errorComponent = errComp.default
                 })

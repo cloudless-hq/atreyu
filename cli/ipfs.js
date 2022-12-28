@@ -137,7 +137,7 @@ export async function add ({
     }
   }
 
-  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js `
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js --ignore=*.svelte --ignore=*.ts `
   async function doAdd (fName) {
     if (verbose) {
       console.log('  ipfs cmd: ' + addCommand + fName)
@@ -228,6 +228,9 @@ export async function add ({
 
     if (changedFiles.length > 0) {
       console.log(`  ➕ adding ${changedFiles.length} new files to ipfs...`)
+      if (verbose) {
+        console.log(changedFiles)
+      }
       const watchUpdt = changedFiles
         .map(file => doAdd(file))
 

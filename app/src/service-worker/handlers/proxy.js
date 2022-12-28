@@ -27,20 +27,37 @@ export default async function ({ req, _key, event }) {
   try {
     // TODO use whitelisting or THIRD SHIELD PROXY, headers, methods, cookies etc.
     if (req.url.origin !== location.origin) {
-      req.headers['forwarded'] = `host=${req.url.host}; proto=${req.url.protocol}; port=${req.url.port}`
+      req.headers['forwarded'] = `host=${req.url.host}; proto=${req.url.protocol}` + (req.url.port ? `; port=${req.url.port}` : '')
       req.url.host = location.host
       req.url.protocol = location.protocol
       req.url.port = location.port
     }
     req.headers['x-via'] = 'ayu-sw-proxy'
-    res = await fetch(req.url.href, { body: req.body, method: req.method, headers: req.headers, redirect: 'manual' })
+    // console.log(req)
+    let body = null
+    if (req.raw.body) {
+      body = await req.raw.blob()
+    }
+
+    // console.log(req, {redirect: req.raw.redirect || 'manual'})
+    // duplex: 'half', redirect: 'manual',
+    // FIXME: check for js requests to set redirect
+    res = await fetch(req.url.href, { body, method: req.method, headers: req.headers, redirect: req.raw.redirect || 'manual' })
 
     // console.log(res)
     if (res?.redirected) {
-      // console.log(res?.url)
       if (res?.url?.contains?.('cloudflareaccess.com/cdn-cgi')) {
         return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
+      } else {
+        // console.log('redirected', res)
+        // FIXME: propper status code
+        return new Response(null, { status: 302, headers: { location: res.url }})
       }
+      // {
+      //   // console.log(res)
+      //   return res
+      // }
+      // else if xmlhttp
       // return new Response('Redirect Error', {status: 500})
     }
     if (res.type === 'opaqueredirect') {

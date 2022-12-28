@@ -50,6 +50,7 @@ export async function loadConfig (envFlag, cmd, appName, repo, buildName, ayuVer
       repo,
       env
     },
-    runConf: confFile?.runConf
+    runConf: confFile?.runConf,
+    extraAppEntryPoints: confFile?.extraAppEntryPoints
   }
 }

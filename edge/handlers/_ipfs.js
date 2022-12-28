@@ -28,6 +28,7 @@ export async function handler ({ req, app, waitUntil }) {
 
   let appHash = req.url.pathname.startsWith('/_ayu') ? app.ayuHash : app.Hash
   let path = req.url.pathname.startsWith('/_ayu') ? req.url.pathname.replace('/_ayu', '') : req.url.pathname
+  const preloadHeader = {}
 
   if (path.startsWith('/ayu@')) {
     if (path.startsWith('/ayu@latest')) {
@@ -82,8 +83,10 @@ export async function handler ({ req, app, waitUntil }) {
     if (!reqHash) {
       if (path.endsWith('/')) {
         path += 'index.html'
+        // preloadHeader.Link = '</build/dashboard-main.js>; rel=preload; as=script; crossorigin=anonymous, </build/shared/chunk-V22KRN5O.js>; rel=preload; as=script; crossorigin=anonymous, </build/shared/chunk-ZVJPVNPO.js>; rel=preload; as=script; crossorigin=anonymous, </build/base.css>; rel=preload; as=style' // nopush
       } else if (!path) {
         path = '/index.html'
+        // preloadHeader.Link = 'rel=preload; </build/dashboard-main.js>; as=script;' // nopush
       }
 
       if (
@@ -180,7 +183,8 @@ export async function handler ({ req, app, waitUntil }) {
       'cache-control': 'public, must-revalidate, max-age=0',
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss',
+      ...preloadHeader
     })
   } else if (revalidate) {
     headers = new Headers({
@@ -190,7 +194,8 @@ export async function handler ({ req, app, waitUntil }) {
       'cache-control': 'public, must-revalidate, max-age=' + (env === 'prod' ? 3 * 60 * 60 : 4), // prod 3h, other 4s
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored',
+      ...preloadHeader
     })
   } else {
     headers = new Headers({
@@ -201,7 +206,8 @@ export async function handler ({ req, app, waitUntil }) {
       'last-modified': response.headers.get('last-modified'),
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
-      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored'
+      'cache-status': response.headers.get('cache-status') || 'edge-kv; miss; stored',
+      ...preloadHeader
     })
   }
 

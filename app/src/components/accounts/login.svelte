@@ -1,5 +1,5 @@
 <script>
-  import SidebarLayout from '../sidebar-layout/components/sidebar-layout.svelte.js'
+  import SidebarLayout from '../sidebar-layout/components/sidebar-layout.svelte'
   import { onMount } from 'svelte'
 
   export let userData

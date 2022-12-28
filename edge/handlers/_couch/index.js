@@ -37,6 +37,8 @@ export function handler ({ req, text }) {
   //   // return new Response(readable, response)
   // } else {
 
+  delete req.headers.cookie
+
   return fetch(href, {
     method: req.method,
     // redirect: 'error', error not supported, manual?

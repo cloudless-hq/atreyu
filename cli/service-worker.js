@@ -1,5 +1,5 @@
-import { join, green, build } from '../deps-deno.ts'
-import esbuildPlugin from './esbuild-plugin.ts'
+import { join, build } from '../deps-deno.ts' // green
+import esbuildPlugin, { parseMetafile } from './esbuild-plugin.ts'
 export default async function ({ appFolder, batch, buildRes, clean } = {}) {
   // const startTime = Date.now()
   const fileName = `service-worker.js`
@@ -33,8 +33,8 @@ export default async function ({ appFolder, batch, buildRes, clean } = {}) {
 
   const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '').replace('https:/', 'https://')
 
-  const { errors, warnings, metafile } = await build({
-    entryPoints: [swPath],
+  const { metafile } = await build({ // errors, warnings,
+    entryPoints: [ swPath ],
     sourcemap: 'linked',
     // splitting: true,
     bundle: true,
@@ -49,13 +49,7 @@ export default async function ({ appFolder, batch, buildRes, clean } = {}) {
     outfile: `${appFolderAbs}/service-worker.bundle.js`
   }).catch(e => { console.error(e) })
 
-  // if (warnings.length > 0) {
-  //   warnings.forEach(warn => console.warn(warn))
-  // }
-  // if (errors.length > 0) {
-  //   errors.forEach(err => console.error(err))
-  // }
-  // console.log(metafile)
+  parseMetafile(metafile)
 
   newBuildRes.files[projectPath] = {
     emits: [
@@ -75,7 +69,7 @@ export default async function ({ appFolder, batch, buildRes, clean } = {}) {
     })
   }
 
-  console.log(`    ${green('emitted:')} app/service-worker.bundle.js`)
+  // console.log(`    ${green('emitted:')} app/service-worker.bundle.js`)
   // console.log(`    └─ ${emitRes}`) // .map(stat => stat.join(': ')).join(', ') currently always empty
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')

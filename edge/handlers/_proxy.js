@@ -3,16 +3,17 @@ import { getEnv } from '/_env.js'
 import { escapeId } from '/_ayu/src/lib/helpers.js'
 
 // TODO: needs different domain from main?!
-
+const cookieBindings = {}
 const data = {}
 function getCookie (name, cookieString = '') {
   const v = cookieString.match('(^|;) ?' + name + '=([^;]*)(;|$)')
   return v ? v[2] : null
 }
 const { _couchKey, _couchSecret, couchHost, env, appName } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'appName'])
-const dbName = 'ayu_' + escapeId(env + '__' + appName.replace('preview', 'closr'))
 
-const { json: settings } = await doReq(`${couchHost}/${dbName}/channel:web`, { // text, headers, ok, error
+const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
+
+const { json: settings } = await doReq(`${couchHost}/${dbName}/system:settings`, { // text, headers, ok, error
   cacheNs: 'dialogflow',
   ttl: 60 * 5, // 5 minutes
   headers: {
@@ -94,13 +95,20 @@ async function hash (string) {
   return hashHex
 }
 
-export async function handler ({ req, parsedBody }) {
+export async function handler ({ req, parsedBody, text }) {
   const origUrl = new URL(req.url.href)
+  // console.log(req.headers['forwarded'] || req.url.href)
   if (req.url.pathname === '/__csp_report') {
     return new Response('OK')
   }
 
-  if (!req.headers['referer']?.endsWith('service-worker.bundle.js')) {
+  if (
+    !req.headers['referer']?.endsWith('service-worker.bundle.js')
+    // && !req.url.pathname.startsWith('/oauth2') &&
+    // !req.url.pathname.startsWith('/login-consent-provider') &&
+    // !req.url.pathname.startsWith('/profile/de-DE/login') &&
+    // !req.url.href.includes('?return=')
+  ) {
     if (req.url.pathname !== '/') {
       return Response.redirect(`${origUrl.origin}/?return=${origUrl.href}`, 307)
     }
@@ -112,7 +120,12 @@ export async function handler ({ req, parsedBody }) {
     <meta charset="utf-8">
     <link rel="icon" href="data:,">
     <title>installing service worker</title>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module">
+      import startWorker from '/_ayu/src/service-worker/start-worker.js'
+      startWorker({ reloadAfterInstall: true }).then(() => {
+
+      })
+    </script>
   </head>
   <body>
     Installing...
@@ -129,7 +142,13 @@ export async function handler ({ req, parsedBody }) {
     }})
   }
 
+  if (!settings.hostname) {
+    return Response.redirect(`${origUrl.origin}/_dashboard/#/settings`, 307)
+  }
+
+  let forwarded = false
   if (req.headers['forwarded']) {
+    forwarded = true
     const forwardConf = req.headers['forwarded']
       .replaceAll(' ', '')
       .split(';').map(elem => elem.split('='))
@@ -142,24 +161,36 @@ export async function handler ({ req, parsedBody }) {
     req.url.port = forwardConf.port
     req.url.protocol = forwardConf.proto
   } else if (req.headers.cookie && getCookie('AYU_SECONDARY_PROXY', req.headers.cookie)) {
+    forwarded = true
     const secondaryProxyUrl = new URL(getCookie('AYU_SECONDARY_PROXY', req.headers.cookie))
     req.url.hostname = secondaryProxyUrl.hostname
     req.url.port = secondaryProxyUrl.port
     req.url.protocol = secondaryProxyUrl.protocol
   } else {
     // TODO move to origen setting with proto and port instead of domain only
-    req.url.hostname = settings.domain
+    req.url.hostname = settings.hostname
     req.url.protocol = 'https'
   }
 
   if (!data[req.url.hostname]) {
     data[req.url.hostname] = { paths: {}, cookies: {}, domainInfo: {}, certInfo: {}, firstSeen: Date.now(), lastSeen: Date.now() }
+    // console.log('new: ', req.url.hostname)
+    // fetch('https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
+    //   .then(res => res.json()).then(({WhoisRecord}) => data[req.url.hostname].domainInfo = WhoisRecord)
 
-    fetch('https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
-      .then(res => res.json()).then(({WhoisRecord}) => data[req.url.hostname].domainInfo = WhoisRecord)
+    // fetch('https://ssl-certificates.whoisxmlapi.com/api/v1?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
+    //   .then(res => res.json()).then(certInfo => data[req.url.hostname].certInfo = certInfo)
 
-    fetch('https://ssl-certificates.whoisxmlapi.com/api/v1?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
-      .then(res => res.json()).then(certInfo => data[req.url.hostname].certInfo = certInfo)
+    fetch(`http://secret-beige-takin.faviconkit.com/${ req.url.hostname }/24`)
+      .then(res => res.blob())
+      .then(blob => {
+        const a = new FileReader()
+        a.onload = e => {
+          data[req.url.hostname].favicon = e.target.result
+        }
+        a.readAsDataURL(blob)
+      })
+      .catch(_err => {})
   }
   if (!data[req.url.hostname].paths[req.url.pathname]) {
     data[req.url.hostname].paths[req.url.pathname] = {
@@ -232,6 +263,13 @@ export async function handler ({ req, parsedBody }) {
     'cache-status'
   ]
 
+  const reqHeaderBlocklist = [
+    'referer',
+    'x-via',
+    'forwarded',
+    'origin'
+  ]
+
   // TODO: cookie js set/js accessible, iframes
   // cookie, referer, user-agent?, authorization
   const cleanReqHeaders = {}
@@ -240,23 +278,41 @@ export async function handler ({ req, parsedBody }) {
     if ([...commonHeadersWhitelist, ...reqHeaderWhitelist].includes(key.toLowerCase())) {
       cleanReqHeaders[key] = val
     } else if (key === 'cookie') {
-      cleanReqHeaders[key] = val
-      val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([key, ...vals]) => {
-        data[req.url.hostname].cookies[key] = vals.join('=')
+      const cookies = []
+
+      // console.log(req.url.hostname, cookieBindings)
+
+      val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([cname, ...cvalParts]) => {
+        const cval = cvalParts.join('=')
+        // console.log({cname, cval})
+        // if (cookieBindings[cname]) {
+        //   console.log(cookieBindings[cname] === req.url.hostname, cname)
+        // }
+        if (cookieBindings[cname] === req.url.hostname || (!cookieBindings[cname] && !forwarded)) {
+          data[req.url.hostname].cookies[cname] = cval
+          cookies.push(`${cname}=${cval}`)
+        }
       })
-      // console.log('req cookies', val.split(';').map(cook => cook.split('=')))
+
+      if (cookies.length) {
+        cleanReqHeaders.cookie = cookies.join('; ')
+      }
     } else if (key === 'host') {
       cleanReqHeaders[key] = req.url.hostname
-    } else {
+    } else if (!reqHeaderBlocklist.includes(key.toLowerCase())) {
       // disabled whitelisting for now
       cleanReqHeaders[key] = val
       // console.log(['req', key, val])
     }
   })
 
+  cleanReqHeaders.origin = settings.hostname
+
+  // console.log({ href, cleanReqHeaders, method: req.method, req })
   // TODO: headers allready stripped to minimum if they come from KV store
   const { raw: res, error, ok } = await doReq(href, {
     method: req.method,
+    body: text,
     // cacheNs: 'cors',
     headers: cleanReqHeaders,
     raw: true
@@ -274,7 +330,7 @@ export async function handler ({ req, parsedBody }) {
     reqHeaders: req.headers,
     status: res.status,
     statusText: res.statusText,
-    resHeaders: Object.fromEntries([...res.headers])
+    resHeaders: Object.fromEntries([...(res.headers || [])])
   })
 
   // console.log(req.headers)
@@ -285,37 +341,51 @@ export async function handler ({ req, parsedBody }) {
   // }
 
   const resHeaders = [...res.headers]
-  const cleanResHeaders = {}
+  const cleanResHeaders = new Headers()
+  // NOTE: eg. set cookie headers can appear multiple times with same key in headers!
   resHeaders.forEach(([key, val]) => {
     if ([...commonHeadersWhitelist, ...resHeaderWhitelist].includes(key.toLowerCase())) {
-      cleanResHeaders[key] = val
+      cleanResHeaders.append(key, val)
     } else if (key === 'set-cookie') {
-      // FIXME: multiple set cookie and other header instances in same request?
-      cleanResHeaders[key] = val
-      val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([key, ...vals]) => {
-        data[req.url.hostname].cookies[key] = vals.join('=')
-      })
+      // console.log('cookie set: ', req.url.hostname, val)
+      cleanResHeaders.append(key, val)
+      // console.log(val)
+      const [ckey, ...crest] = val.split('=')
+      data[req.url.hostname].cookies[ckey.trim()] = crest.join('=').trim()
+      if (cookieBindings[ckey.trim()] && cookieBindings[ckey.trim()] !== req.url.hostname) {
+        console.warn('cookie names must be unique across domains until v1.0')
+      }
+      cookieBindings[ckey.trim()] = req.url.hostname
+      // console.log(cookieBindings)
+      // val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([key, ...vals]) => {
+      //   data[req.url.hostname].cookies[key] = vals.join('=')
+      // })
       // console.log('res cookies', val.split(';').map(cook => cook.split('=')))
     } else {
       // disabled whitilisting for now
-      cleanResHeaders[key] = val
+      cleanResHeaders.append(key, val)
       // console.log(['res', key, val])
     }
   })
 
   if (!ok) {
-    if ([301, 302, 307, 308].includes(res.status)) {
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
       if (res.headers.get('location').startsWith('http')) {
         const redirectUrl = new URL(res.headers.get('location'))
+        // console.log(redirectUrl, req.url)
         if (redirectUrl.origin !== req.url.origin) {
-          console.log('---- external redirect: ' + res.url + ' to: ' + redirectUrl, res)
-          cleanResHeaders['set-cookie'] = `AYU_SECONDARY_PROXY=${redirectUrl.origin}; Path=/; HttpOnly; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`
+          console.log('---- external redirect: ' + res.url + ' to: ' + redirectUrl)
+          if (redirectUrl.hostname !== settings.hostname) {
+            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=${redirectUrl.origin}; Path=/; HttpOnly; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`)
+          } else {
+            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=; Path=/; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT; Version=1;`)
+          }
         }
 
         redirectUrl.protocol = origUrl.protocol
         redirectUrl.port = origUrl.port
         redirectUrl.hostname = origUrl.hostname
-        cleanResHeaders.location = redirectUrl.href
+        cleanResHeaders.set('location', redirectUrl.href)
       }
     }
     // else {
@@ -358,25 +428,42 @@ export async function handler ({ req, parsedBody }) {
   // <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https://*; child-src 'none';" />
   //  navigator.sendBeacon('/log', analyticsData);
   // report-to: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v3?s=rusnAxdqt7ztQKMpDBtrfCS%2FEgdYKc1W47llyCjZR7uElhboUd6nWtpI6YsPT0H2oNHI%2FhXV0%2B3bPvmgav1qSe0dyxdyZYkxkCFJ8zbXnpS0AK9IGM6twnZ9"}],"group":"cf-nel","max_age":604800}
-  cleanResHeaders.server = 'ayu-proxy-edge-worker'
+  cleanResHeaders.set('server', 'ayu-proxy-edge-worker')
   // cleanResHeaders['content-security-policy-report-only'] = `script-src 'none'; frame-ancestors 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; report-uri http://preview.localhost/__csp_report`
 
-  if (!cleanResHeaders['cache-status']) {
-    cleanResHeaders['cache-status'] = 'edge-kv; miss'
+  // if (!cleanResHeaders['cache-status']) {
+  //   cleanResHeaders['cache-status'] = 'edge-kv; miss'
+  // }
+
+  let hasBody = true
+  if (res.status === 304) {
+    hasBody = false
   }
 
   // TODO: force installing service worker and reload
   const isHtml = res.headers.get('Content-Type')?.includes('text/html')
-  if (isHtml && settings.selector) {
+
+  const pathParts = req.url.pathname.split('.')
+  const ext = pathParts[pathParts.length - 1]
+  data[req.url.hostname].paths[req.url.pathname].isImage = !isHtml && (res.headers.get('Content-Type')?.includes('image/') || ['jpg', 'svg', 'jpeg', 'png', 'gif', 'ico'].includes(ext))
+
+  function userReplacements (text) {
+    settings.replacements.forEach(([remove, replace]) => {
+      text = text.replace(remove, replace || '')
+    })
+    return text
+  }
+
+  if (isHtml) { // && settings.selector
     // const headers = new Headers(res.headers)
 
     const body = await res.text()
 
     // TODO: move all code to main module
     // FIXME: object proxies need inlining
+    // window.ayu_settings=${JSON.stringify(settings)}
     const inject = `
 <script>
-  window.ayu_settings=${JSON.stringify(settings)}
   document.proxied = new Proxy({ cookie: ''}, {
     get (obj, prop, receiver) {
       // console.log('get', { obj, prop, receiver })
@@ -388,6 +475,7 @@ export async function handler ({ req, parsedBody }) {
     set (obj, prop, value) {
       // console.log('set', { obj, prop, value })
       if (prop === 'cookie') {
+        // console.log('js domain cookie ' + value)
         return document.cookie = value.replaceAll(' ', '').split(';').filter(elem => !elem.startsWith('domain=')).join('; ')
       }
       return obj[prop] = value
@@ -411,11 +499,23 @@ export async function handler ({ req, parsedBody }) {
     }
   })
 </script>
-<script type="module" src="/src/main.js"></script>`
+<script type="module">
+  import startWorker from '/_ayu/src/service-worker/start-worker.js'
+
+  // TODO: sw cannot be renamed anyways, make async / promise + config object, rename startWorker etc instead of start
+  startWorker({ reloadAfterInstall: true }).then(() => {
+
+  })
+
+  // preload + preconnect
+  // TODO: handle document.querySelectorAll('iframe') + links
+  // cert and domain whois info
+</script>
+${settings.inject || ''}`
     // defer?
 
     // FIXME!
-    return new Response(replacements(body).replace('<head>', `<head>${inject}`), {
+    return new Response(replacements(userReplacements(body)).replace('<head>', `<head>${inject}`), {
       status: res.status,
       statusText: res.statusText,
       headers: cleanResHeaders
@@ -426,14 +526,14 @@ export async function handler ({ req, parsedBody }) {
   if (isJs) {
     const body = await res.text()
 
-    return new Response(replacements(body), {
+    return new Response(hasBody ? replacements(body) : null, {
       status: res.status,
       statusText: res.statusText,
       headers: cleanResHeaders
     })
   }
 
-  const ress = new Response(res.body, {
+  const ress = new Response(hasBody ? res.body : null, {
     status: res.status,
     statusText: res.statusText,
     headers: cleanResHeaders

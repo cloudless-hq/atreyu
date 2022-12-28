@@ -32,6 +32,13 @@ export default ({ handler, _module, app }) => {
       url
     }
 
+    if (req.headers['content-length']) {
+      req.headers['content-length'] = parseInt(req.headers['content-length'], 10)
+    }
+    if (req.headers['Content-Length']) {
+      req.headers['Content-Length'] = parseInt(req.headers['Content-Length'], 10)
+    }
+
     const traceId = req.headers.traceparent || Math.round(Math.random() * 10000000000000)
     // used for logging subrequests without having to pass stats just for that, should be replaced with apm solution
     event._traceId = traceId

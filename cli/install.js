@@ -8,7 +8,7 @@ const permissions = [
   '--allow-env=HOME,DENO_DIR,DENO_HOME,ESBUILD_BINARY_PATH,DENO_AUTH_TOKENS',
   '--allow-hrtime',
   '--allow-net=atreyu.dev,127.0.0.1:5001,127.0.0.1:8080,localhost,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org,deno.land,c3b0b243-4f69-4cb1-9ece-1b0561a67cee-bluemix.cloudant.com',
-  '--allow-run=kill,yarn,pnpm,ipfs,\`command -v deno\`,"$ESBUILD_BINARY_PATH","$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.14.51',
+  '--allow-run=kill,yarn,pnpm,ipfs,\`command -v deno\`,"$ESBUILD_BINARY_PATH","$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.15.17',
   '--allow-write="$TMPDIR","$DENO_DIR"/,"$HOME"/.atreyu,./',
   '--no-check',
   '--unstable'

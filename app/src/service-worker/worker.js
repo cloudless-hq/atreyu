@@ -344,6 +344,15 @@ export default function ({
     if (matched.operationId === '_ipfs') {
       handlerRes = ipfsHandler({ event, url: rewrite(new URL(event.request.url)), origUrl: url })
     } else if (matched.operationId === '_proxy') {
+      // if (
+      //   req.url.pathname.startsWith('/oauth2') ||
+      //   req.url.pathname.startsWith('/login-consent-provider') ||
+      //   req.url.pathname.startsWith('/profile/de-DE/login') ||
+      //   req.url.href.includes('?return=')
+      // ) {
+      //   return
+      // }
+
       return event.respondWith(proxyHandler({ event, req }))
     } else if (matched.operationId) {
       handlerRes = appHandlers[matched.operationId]({ event, req })
@@ -364,7 +373,7 @@ function rewrite (url) {
   }
 
   if (url.pathname.endsWith('.svelte') || url.pathname.endsWith('.ts')) {
-    url.pathname = url.pathname.replace('src', 'build') + '.js'
+    url.pathname = url.pathname.replace('src', 'build').replace('.svelte', '.js')
   } else if (url.pathname === '/svelte/store') {
     url.pathname = '/_ayu/build/deps/svelte-store.js'
     return url
