@@ -30,6 +30,9 @@ export function escapeId (baseString, doc) {
 }
 
 export function formatBytes (bytes, pad) {
+  if (!bytes && bytes !== 0) {
+    return ''
+  }
   const units = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PT' ]
   let dim = 0
   let n = parseInt(bytes, 10) || 0

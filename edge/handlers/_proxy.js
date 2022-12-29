@@ -173,7 +173,7 @@ export async function handler ({ req, parsedBody, text }) {
   }
 
   if (!data[req.url.hostname]) {
-    data[req.url.hostname] = { paths: {}, cookies: {}, domainInfo: {}, certInfo: {}, firstSeen: Date.now(), lastSeen: Date.now() }
+    data[req.url.hostname] = { paths: {},cookies: {}, domainInfo: {}, certInfo: {}, firstSeen: Date.now(), lastSeen: Date.now() }
     // console.log('new: ', req.url.hostname)
     // fetch('https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
     //   .then(res => res.json()).then(({WhoisRecord}) => data[req.url.hostname].domainInfo = WhoisRecord)
@@ -195,6 +195,7 @@ export async function handler ({ req, parsedBody, text }) {
   if (!data[req.url.hostname].paths[req.url.pathname]) {
     data[req.url.hostname].paths[req.url.pathname] = {
       reqs: [],
+      methods: [],
       firstSeen: Date.now(),
       lastSeen: Date.now()
     }
@@ -320,7 +321,13 @@ export async function handler ({ req, parsedBody, text }) {
 
   data[req.url.hostname].lastSeen = Date.now()
   data[req.url.hostname].paths[req.url.pathname].lastSeen = Date.now()
+  if (!data[req.url.hostname].paths[req.url.pathname].methods.includes(req.method)) {
+    data[req.url.hostname].paths[req.url.pathname].methods.push(req.method)
+  }
+
   // firstSeen, lastSeen
+  data[req.url.hostname].paths[req.url.pathname].contentLength = res.headers.get('content-length')
+  data[req.url.hostname].paths[req.url.pathname].contentType = res.headers.get('content-type')
   data[req.url.hostname].paths[req.url.pathname].reqs.push({
     date: Date.now(),
     method: req.method,
