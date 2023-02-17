@@ -1,6 +1,12 @@
 import { join, build } from '../deps-deno.ts' // green
 import esbuildPlugin, { parseMetafile } from './esbuild-plugin.ts'
-export default async function ({ appFolder, batch, buildRes, clean } = {}) {
+
+// TODO: use natural folder location and scope allowed headersResponse included "Service-Worker-Allowed : /"
+// navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).then(() => {
+//   console.log("Install succeeded as the max allowed scope was overriden to '/'.");
+// })
+
+export default async function ({ appFolder, batch, buildRes, clean, info } = {}) {
   // const startTime = Date.now()
   const fileName = `service-worker.js`
   const appFolderAbs = join(Deno.cwd(), appFolder)
@@ -49,7 +55,7 @@ export default async function ({ appFolder, batch, buildRes, clean } = {}) {
     outfile: `${appFolderAbs}/service-worker.bundle.js`
   }).catch(e => { console.error(e) })
 
-  parseMetafile(metafile)
+  parseMetafile(metafile, info)
 
   newBuildRes.files[projectPath] = {
     emits: [

@@ -51,3 +51,11 @@ export function fromNow (timestamp) {
 export function formatTime (timestamp) {
   return DateTime.fromMillis(timestamp).toFormat('HH:mm, dd.MM.y')
 }
+
+export function getFlagEmoji (countryCode) {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt())
+  return String.fromCodePoint(...codePoints)
+}

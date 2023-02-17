@@ -15,6 +15,36 @@ export default {
     }
   },
 
+  '_users': {
+    get: {
+      handler: async ({ dbs, session: { org, userId } }) => {
+        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
+          partition: 'system',
+          reduce: false,
+          include_docs: true,
+          startkey: [ 'session' ],
+          endkey: ['session', {}]
+        })
+
+        const users = sessions.map(row => row.doc).sort((a, b) => b.lastLogin - a.lastLogin).reduce((agg, session) => {
+          if (!agg[session.title]) {
+            agg[session.title] = session
+            agg[session.title].numSessions = 1
+          } else {
+            agg[session.title].numSessions += 1
+          }
+          return agg
+        }, {})
+
+        return {
+          jsonGraph: {
+            _users: { $type: 'atom', value: Object.values(users) }
+          }
+        }
+      }
+    }
+  },
+
   '_sessions': {
     get: {
       handler: async ({ dbs, session: { org, userId } }) => {

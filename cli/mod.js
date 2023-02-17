@@ -72,6 +72,7 @@ const {
   resetAppDb,
   force,
   verbose,
+  info,
   ...rest
 } = parse(Deno.args)
 
@@ -134,14 +135,17 @@ const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: unify with other schema loader which allows also schema.js
 async function loadEdgeSchema ({ appFolder }) {
   // TODO: support implicit endpoints folder routes
-  let schema = (await import('file:' + projectPath + `/${appFolder}/schema/main.js`).catch(error => ({ error })))?.schema
+  const maybeSchema = await import('file:' + projectPath + `/${appFolder}/schema/main.js`).catch(error => ({ error }))
+  let schema = maybeSchema?.schema
 
   if (typeof schema === 'function') {
     schema = schema({ defaultPaths, addPathTags })
+  } else if (schema) {
+    schema.paths = { ...defaultPaths, ...schema.paths }
   }
 
   if (!schema) {
-    console.warn('  could not load schema, falling back to default') // verbose schemaImports
+    console.warn('  could not load schema, falling back to default') // verbose schemaImports, console.log(maybeSchema)
 
     schema = {
       paths: {
@@ -199,11 +203,8 @@ async function doStart () {
   const res = await fetch('http://localhost:' + port, { signal: c.signal }).catch(error => ({error}))
   clearTimeout(id)
 
-  if (res?.headers?.get('server') === 'ipfs-edge-worker') {
-    console.info('  using allready running daemon...')
-    return
-  } else if (res.ok) {
-    console.error('  ❗️ other process allready running on port ' + port)
+  if (res.ok) {
+    console.error('  using existing daemon on port ' + port)
     return
   }
 
@@ -317,6 +318,7 @@ switch (cmd) {
 
       buildRes = await Promise.all([
         buildSvelte({
+          info,
           input,
           appFolder,
           outputTarget,
@@ -329,13 +331,14 @@ switch (cmd) {
         }),
 
         buildServiceWorker({
+          info,
           batch,
           appFolder,
           buildRes,
           clean: doClean
         }),
 
-        buildEdge({ workers: edgeSchema, buildName, batch, clean: doClean, buildRes })
+        buildEdge({ workers: edgeSchema, buildName, batch, clean: doClean, buildRes, info })
       ])
 
       buildEmits = buildEmits.concat(buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] ))
@@ -355,7 +358,7 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, verbose, env, resetAppDb: clean && resetAppDb, force })
+      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, verbose, env, resetAppDb: doClean && resetAppDb, force })
     }
 
     if (!noStart) {
@@ -403,12 +406,13 @@ switch (cmd) {
         outputTarget,
         appFolder,
         output,
+        info,
         clean: true,
         dev: false,
         sveltePath
       }),
 
-      buildServiceWorker({clean: true, appFolder})
+      buildServiceWorker({clean: true, appFolder, info})
     ])
 
     // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
@@ -427,7 +431,7 @@ switch (cmd) {
       publish: true
     })
 
-    await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true })
+    await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true, info })
 
     await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs})
 

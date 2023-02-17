@@ -1,14 +1,15 @@
 <script>
+  import { fade } from '/svelte/transition'
   import { formatBytes } from '/_ayu/src/lib/helpers.js'
+
   import Login from './login.svelte'
   import Sessions from './sessions.svelte'
-  // import Confirmation from './confirmation.svelte.js'
+  import Users from './users.svelte'
   import UserMenu from '/_ayu/src/components/user-menu.svelte'
-  import Manage from './manage.svelte'
+  import Accounts from './accounts.svelte'
 	import makeRouterStore from '/_ayu/src/store/router.js'
-  const router = makeRouterStore()
 
-	import { fade } from '/svelte/transition'
+  const router = makeRouterStore()
 
   $: newUser = ($router.hash === '#new')
 
@@ -40,7 +41,7 @@
       }
     }
   }
-  if ($router.hash !== '#/sessions') {
+  if ($router.hash !== '#/sessions' && $router.hash !== '#/users') {
     loadLocalDbs()
   }
 
@@ -54,6 +55,8 @@
   $: {
     if ($router.hash === '#/sessions') {
       view = 'sessions'
+    } else if ($router.hash === '#/users') {
+      view = 'users'
     } else if (localDbNames && (localDbNames?.length === 0 || userData || newUser)) {
       view = 'login'
     } else if (localDbNames) {
@@ -99,7 +102,7 @@
 <div class="ayu-header flex items-center">
   <img class="logo sm:px-6 lg:px-8 left-0 absolute" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
 
-  <UserMenu class="sm:px-6 lg:px-8 right-0 absolute" />
+  <UserMenu class="sm:px-6 lg:px-8 right-0 absolute" hide={['settings']} />
 </div>
 
 <div class="app antialiased font-sans bg-gray-100" transition:fade="{{ duration: 250}}">
@@ -108,7 +111,9 @@
   {:else if view === 'login' }
     <Login {userData} />
   {:else if view === 'accounts'}
-    <Manage {localDbNames} {doLoginUser} />
+    <Accounts {localDbNames} {doLoginUser} />
+  {:else if view === 'users'}
+    <Users />
   {/if}
 
   {#if dataUsage}

@@ -38,6 +38,10 @@ export default async function ({
     await PouchDB.replicate(couch, pouch, { doc_ids: preload })
   }
 
+  if (!sessionDoc.startSeq) {
+    console.warn('missing session doc start seq, fallback to fullsync', sessionDoc)
+  }
+
   const sync = PouchDB.sync(pouch, couch, {
     live: true,
     sse: true,
@@ -48,7 +52,7 @@ export default async function ({
     conflicts: true, // TODO
     pull: {
       since: sessionDoc.startSeq,
-      filter: (doc, opts) => {
+      filter: (doc, _opts) => {
         if (doc._conflicts) {
           console.warn(doc._conflicts)
         }
@@ -58,7 +62,7 @@ export default async function ({
       }
     },
     push: {
-      filter: (doc, opts) => {
+      filter: (doc, _opts) => {
         if (doc._conflicts) {
           console.warn(doc._conflicts)
         }

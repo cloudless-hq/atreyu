@@ -70,5 +70,6 @@ export function match (req, handlers) {
     }
   }
 
+  // return {}
   // return // { workerName, paramsValidation }
 }

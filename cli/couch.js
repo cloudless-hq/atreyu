@@ -118,6 +118,7 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
         if (!res?.ok) {
           clean = false
           console.error('  🛑 Unexpected update result...', res)
+          console.error(res.reason)
         }
       })
     }

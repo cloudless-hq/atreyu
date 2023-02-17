@@ -79,7 +79,7 @@ export default {
   // cloudflare access support
   '/cdn-cgi/access*': {
     get: {
-      // tags: [],
+      tags: [ 'service-worker' ],
       operationId: '_bypass'
     }
   }

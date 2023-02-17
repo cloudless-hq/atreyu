@@ -36,6 +36,7 @@ const globalStyles: {[key: string]: string} = {}
 export default async function ({
   appFolder,
   input,
+  info,
   outputTarget,
   batch,
   clean,
@@ -118,7 +119,7 @@ export default async function ({
       outbase: 'app/src',
       splitting: true,
       // write: false,
-      incremental: true,
+      incremental: dev,
       target: 'esnext',
       platform: 'browser', // 'neutral',
       format: 'esm', // iife
@@ -251,7 +252,7 @@ export default async function ({
   }
   // outputFiles[{path, contents, text}]
   // console.log(buildResult)
-  const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = parseMetafile(buildResult?.metafile)
+  const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = parseMetafile(buildResult?.metafile, info)
 
   const baseStylePath = `${appFolder}/build/base.css`
   const resetStylePath = `${appFolder}/build/resets.css`

@@ -23,6 +23,8 @@ export default function ({
   // TODO: gobally precompile schema on build time
   if (typeof schema === 'function') {
     schema = schema({ defaultPaths, addPathTags })
+  } else if (schema) {
+    schema.paths = { ...defaultPaths, ...schema.paths }
   }
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
@@ -63,92 +65,96 @@ export default function ({
 
     async refresh () {
       let redirectOtherClients = null
-
       let newSession
-      const sessionReq = await fetch('/_api/_session', {
-        redirect: 'error',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      }).catch(error => ({ ok: false, error }))
-      if (sessionReq.ok) {
-        newSession = await sessionReq.json()
-      }
 
-      if (!newSession?.userId ) {
-        self.session.clear()
-        redirectOtherClients = 'logout'
-      } else if (newSession.userId !== self.session.value?.userId) {
-        self.session.clear()
-
-        // FIXME: this formmat and flow is awkward leftover from supporting any number of client dbs per user (now only one)
-        let newDbConf
-        if (typeof dbConf === 'function') {
-          newDbConf = dbConf({ userId: newSession.userId, appName: newSession.appName, env: newSession.env, escapeId, org: newSession.org })
-        } else {
-          newDbConf = dbConf
+      try {
+        const sessionReq = await fetch('/_api/_session', {
+          redirect: 'error',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        }).catch(error => ({ ok: false, error }))
+        if (sessionReq.ok) {
+          newSession = await sessionReq.json()
         }
 
-        // (pouchdb prefix allready ayu_)
-        const clientDbName = escapeId(newSession.userId + '__' + newSession.env + '__' + newSession.appName + ( newSession.org ? '__' + newSession.org : '__'))
-        const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
+        if (!newSession?.userId || !newSession?.sessionId) {
+          self.session.clear()
+          redirectOtherClients = 'logout'
+        } else if (newSession.userId !== self.session.value?.userId || newSession.sessionId !== self.session.value?.sessionId) {
+          self.session.clear()
 
-        self.session.dbs = await makePouch({
-          clientDbName,
-          serverDbName,
-          sessionId: newSession.sessionId,
-          preload: newDbConf.preload,
-          clientDesignDocs: newDbConf[clientDbName]
-        })
-
-        // console.log('making falcor server')
-        self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
-
-        if (newSession.userId && !self.session.loaded) {
-          redirectOtherClients = 'continue'
-        }
-      }
-
-      self.session.value = newSession
-
-      if (redirectOtherClients) {
-        clientsRes = await clients.matchAll()
-
-        const clientNavigations = clientsRes.map(client => {
-          const url = new URL(client.url)
-          const query = new URLSearchParams(url.search)
-          if (redirectOtherClients === 'continue') {
-            if (url.pathname.startsWith('/_ayu/accounts')) {
-              const navMessage = 'navigate:' + (query.get('continue') || '/')
-              client.postMessage(navMessage)
-              client._ayu_lastNavMessage = navMessage
-              return waitForNavigation(client)
-              // client.navigate().catch(err => console.error(err))
-            }
+          // FIXME: this formmat and flow is awkward leftover from supporting any number of client dbs per user (now only one)
+          let newDbConf
+          if (typeof dbConf === 'function') {
+            newDbConf = dbConf({ userId: newSession.userId, appName: newSession.appName, env: newSession.env, escapeId, org: newSession.org })
           } else {
-            let cont = ''
-            if (url.pathname.length > 1 || url.hash || url.search > 0) {
-              if (query.get('continue')) {
-                cont = `continue=${query.get('continue')}`
-              } else {
-                cont = `continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
+            newDbConf = dbConf
+          }
+
+          // (pouchdb prefix allready ayu_)
+          const clientDbName = escapeId(newSession.userId + '__' + newSession.env + '__' + newSession.appName + ( newSession.org ? '__' + newSession.org : '__'))
+          const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
+
+          self.session.dbs = await makePouch({
+            clientDbName,
+            serverDbName,
+            sessionId: newSession.sessionId,
+            preload: newDbConf.preload,
+            clientDesignDocs: newDbConf[clientDbName]
+          })
+
+          // console.log('making falcor server')
+          self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
+
+          if (newSession.userId && !self.session.loaded) {
+            redirectOtherClients = 'continue'
+          }
+        }
+
+        self.session.value = newSession
+
+        if (redirectOtherClients) {
+          clientsRes = await clients.matchAll()
+
+          const clientNavigations = clientsRes.map(client => {
+            const url = new URL(client.url)
+            const query = new URLSearchParams(url.search)
+            if (redirectOtherClients === 'continue') {
+              if (url.pathname.startsWith('/_ayu/accounts')) {
+                const navMessage = 'navigate:' + (query.get('continue') || '/')
+                client.postMessage(navMessage)
+                client._ayu_lastNavMessage = navMessage
+                return waitForNavigation(client)
+                // client.navigate().catch(err => console.error(err))
+              }
+            } else {
+              let cont = ''
+              if (url.pathname.length > 1 || url.hash || url.search > 0) {
+                if (query.get('continue')) {
+                  cont = `continue=${query.get('continue')}`
+                } else {
+                  cont = `continue=${encodeURIComponent(url.pathname + url.search + url.hash)}`
+                }
+              }
+              if (!url.pathname.startsWith('/_ayu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
+                const url = `/_ayu/accounts/?${cont}` // `/_api/_session?login${cont}`
+                console.log('redirecting client', url, newSession, client)
+
+                client.postMessage('navigate:' + url)
+                return waitForNavigation(client)
+                // after safari support: client.navigate().catch(err => console.error(err))
               }
             }
-            if (!url.pathname.startsWith('/_ayu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
-              const url = `/_ayu/accounts/?${cont}` // `/_api/_session?login${cont}`
-              console.log('redirecting client', url, newSession, client)
+          })
 
-              client.postMessage('navigate:' + url)
-              return waitForNavigation(client)
-              // after safari support: client.navigate().catch(err => console.error(err))
-            }
-          }
-        })
-
-        await Promise.all(clientNavigations)
+          await Promise.all(clientNavigations)
+        }
+        self.session.loaded = true
+      } catch (err) {
+        console.error(err)
       }
 
-      self.session.loaded = true
       self.session.pendingInit = null
       return newSession
     }
@@ -289,79 +295,87 @@ export default function ({
   // FIXME: implement same matching logic from specific to unspecific as in edge route matching!
   // TODO: add navigation preloadoing for interesting routes, also possibly use it for couch syncing by setting header to seq
   addEventListener('fetch', event => {
-    // TODO: handle forced login routes for fetch, currently all window fetches are public, only service worker can do authenticated subrequests and expose via falcor
-    const url = new URL(event.request.url)
-    const req = {
-      raw: event.request,
-      method: event.request.method,
-      headers: Object.fromEntries(event.request.headers.entries()),
-      query: Object.fromEntries(url.searchParams.entries()),
-      url
-    }
+    try {
+      // TODO: handle forced login routes for fetch, currently all window fetches are public, only service worker can do authenticated subrequests and expose via falcor
+      const url = new URL(event.request.url)
+      const req = {
+        raw: event.request,
+        method: event.request.method,
+        headers: Object.fromEntries(event.request.headers.entries()),
+        query: Object.fromEntries(url.searchParams.entries()),
+        url
+      }
 
-    const matched = match(req, handlerConf)
-    // console.log(url.href, matched)
+      const matched = match(req, handlerConf)
+      // console.log(url.href, matched)
 
-    // allowing non http url schemes to prevent browser plugins from breaking
-    if (!(['http:', 'https:']).includes(url.protocol)) {
-      console.info('bypassing: ' + url.href)
-      return
-    }
-    if (matched.operationId === '_bypass') {
-      // console.info('bypassing: ' + url.href)
-      return
-    }
-
-    if (url.origin !== location.origin) {
-      // custom handling for cors requests
-      if (proxiedDomains && (proxiedDomains === '*' || proxiedDomains.includes(url.origin))) {
-        return event.respondWith(proxyHandler({ event, req }))
-      } else if (proxiedDomains) {
-        return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
-      } else {
+      // allowing non http url schemes to prevent browser plugins from breaking
+      if (!(['http:', 'https:']).includes(url.protocol)) {
+        console.info('bypassing: ' + url.href)
         return
       }
-    }
+      if (matched?.operationId === '_bypass') {
+        // console.info('bypassing: ' + url.href)
+        return
+      }
 
-    if (url.pathname === '/_api/_logout') {
-      self.session.logout()
-      return event.respondWith(new Response('OK'))
-    }
+      if (url.origin !== location.origin) {
+        // custom handling for cors requests
+        if (proxiedDomains && (proxiedDomains === '*' || proxiedDomains.includes(url.origin))) {
+          return event.respondWith(proxyHandler({ event, req }))
+        } else if (proxiedDomains) {
+          return event.respondWith(new Response('Cross origin request to this domain forbidden', { status: 403 }))
+        } else {
+          return
+        }
+      }
 
-    // TODO: support registration.scope and non hash based client side routing
-    // if (routes.includes(url.pathname)) {
-    //   url.pathname = '/'
-    // }
-    // TODO: support auth system without falcor server?
-    // if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
-    //   self.session.pendingInit = self.session.refresh()
-    // }
-    // TODO: actually handle and error non matching methods, if not configured in schema
-    // if (event.request.method !== 'GET') {
-    //   return
-    // }
-    let handlerRes
-    if (matched.operationId === '_ipfs') {
-      handlerRes = ipfsHandler({ event, url: rewrite(new URL(event.request.url)), origUrl: url })
-    } else if (matched.operationId === '_proxy') {
-      // if (
-      //   req.url.pathname.startsWith('/oauth2') ||
-      //   req.url.pathname.startsWith('/login-consent-provider') ||
-      //   req.url.pathname.startsWith('/profile/de-DE/login') ||
-      //   req.url.href.includes('?return=')
-      // ) {
+      if (url.pathname === '/_api/_logout') {
+        self.session.logout()
+        return event.respondWith(new Response('OK'))
+      }
+
+      // TODO: support registration.scope and non hash based client side routing
+      // if (routes.includes(url.pathname)) {
+      //   url.pathname = '/'
+      // }
+      // TODO: support auth system without falcor server?
+      // if ((!self.session.loaded || !self.session.value?.userId) && !self.session.pendingInit) {
+      //   self.session.pendingInit = self.session.refresh()
+      // }
+      // TODO: actually handle and error non matching methods, if not configured in schema
+      // if (event.request.method !== 'GET') {
       //   return
       // }
+      let handlerRes
+      if (matched?.operationId === '_ipfs') {
+        handlerRes = ipfsHandler({ event, url: rewrite(new URL(event.request.url)), origUrl: url })
+      } else if (matched?.operationId === '_proxy') {
+        // if (
+        //   req.url.pathname.startsWith('/oauth2') ||
+        //   req.url.pathname.startsWith('/login-consent-provider') ||
+        //   req.url.pathname.startsWith('/profile/de-DE/login') ||
+        //   req.url.href.includes('?return=')
+        // ) {
+        //   return
+        // }
 
-      return event.respondWith(proxyHandler({ event, req }))
-    } else if (matched.operationId) {
-      handlerRes = appHandlers[matched.operationId]({ event, req })
-    } else if (matched.handler) {
-      handlerRes = matched.handler({ event, req })
+        return event.respondWith(proxyHandler({ event, req }))
+      } else if (matched?.operationId) {
+        handlerRes = appHandlers[matched.operationId]({ event, req })
+      } else if (matched?.handler) {
+        handlerRes = matched.handler({ event, req })
+      }
+      if (!matched && !handlerRes) {
+        return event.respondWith(new Response('route not found', { status: 404 }))
+      }
+
+      return event.respondWith(handlerRes)
+    } catch (fetchError) {
+      console.error(fetchError, event)
     }
-
-    return event.respondWith(handlerRes)
   })
+
 }
 
 // TODO: only applies to ipfs handler, so move there
