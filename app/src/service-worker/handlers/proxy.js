@@ -23,6 +23,9 @@ export default async function ({ req, _key, event }) {
   //   return cached
   // }
 
+  // console.log(req.raw, req.raw.referrer)
+  // console.log(...req.raw.headers)
+
   let res
   try {
     // TODO use whitelisting or THIRD SHIELD PROXY, headers, methods, cookies etc.
@@ -46,7 +49,7 @@ export default async function ({ req, _key, event }) {
 
     // console.log(res)
     if (res?.redirected) {
-      if (res?.url?.contains?.('cloudflareaccess.com/cdn-cgi')) {
+      if (res?.url && res.url.contains('cloudflareaccess.com/cdn-cgi')) {
         return new Response('Logged Out', { status: 307, headers: { location: '/atreyu/accounts?logout' } })
       } else {
         // console.log('redirected', res)
@@ -66,6 +69,16 @@ export default async function ({ req, _key, event }) {
       console.error(req.url.href, res)
     } else {
       // event.waitUntil(cache.put(key, res.clone()))
+      const newHeaders = new Headers(res.headers)
+
+      // TODO: reconsiliate with existing header
+      newHeaders.append('Content-Security-Policy-Report-Only', 'default-src https:; report-to /__csp_report')
+
+      return new Response(res.body, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: newHeaders
+      })
     }
   } catch (err) {
     console.error('sw request request error', err)

@@ -1,9 +1,9 @@
 import doReq from '../lib/req.js'
 import { getEnv } from '/_env.js'
 import { escapeId } from '/_ayu/src/lib/helpers.js'
+import { setCookieParser, renderSetCookieString } from '../lib/http.js'
 
 // TODO: needs different domain from main?!
-const cookieBindings = {}
 const data = {}
 function getCookie (name, cookieString = '') {
   const v = cookieString.match('(^|;) ?' + name + '=([^;]*)(;|$)')
@@ -13,13 +13,21 @@ const { _couchKey, _couchSecret, couchHost, env, appName } = getEnv(['_couchKey'
 
 const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
-const { json: settings } = await doReq(`${couchHost}/${dbName}/system:settings`, { // text, headers, ok, error
-  cacheNs: 'dialogflow',
-  ttl: 60 * 5, // 5 minutes
-  headers: {
-    'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
-  }
-})
+const urlPatternConf = {
+  'cookidoo.:lang': [
+    '/recipes/recipe/:lang/:recipeId',
+    '/search/:lang',
+    '/foundation/:lang'
+  ],
+  'assets.tmecosys.com': [
+    '/image/upload/:format/img/recipe/ras/Assets/:assetId/Derivates/:derivateName',
+    '/image/upload/:format/img/collection/ras/Assets/:assetId/Derivates/:derivateName',
+    '/image/upload/:format/cdn/contentful/:id1/:id2/:filename',
+    '/video/upload/:id/:format/v1/videos/:hir1/:hir2/:filename'
+  ]
+}
+
+const patterns = Object.entries(urlPatternConf).flatMap(([hostname, pathPatterns]) => pathPatterns.map(pathname => new URLPattern({ pathname, hostname })))
 
 // const doc = {
 //     route: 'domain/path*',
@@ -85,18 +93,122 @@ const { json: settings } = await doReq(`${couchHost}/${dbName}/system:settings`,
 //   }
 // }
 
-async function hash (string) {
-  const utf8 = new TextEncoder().encode(string)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', utf8)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hashHex = hashArray
-    .map((bytes) => bytes.toString(16).padStart(2, '0'))
-    .join('')
-  return hashHex
+// async function hash (string) {
+//   const utf8 = new TextEncoder().encode(string)
+//   const hashBuffer = await crypto.subtle.digest('SHA-256', utf8)
+//   const hashArray = Array.from(new Uint8Array(hashBuffer))
+//   const hashHex = hashArray
+//     .map((bytes) => bytes.toString(16).padStart(2, '0'))
+//     .join('')
+//   return hashHex
+// }
+
+async function getDoc (id, newDoc) {
+  const { json, ok } = await doReq(`${couchHost}/${dbName}/${id}`, {
+    // cacheNs: 'dialogflow', ttl: 60 * 5,
+    headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}` }
+  })
+
+  if (ok) {
+    return json
+  }
+
+  if (!newDoc._id) {
+    newDoc._id = id
+  }
+  if (newDoc) {
+    edits[id] = [ () => newDoc ]
+  }
+  return newDoc
 }
 
-export async function handler ({ req, parsedBody, text }) {
+const edits = {}
+function updateDoc (doc, fun) {
+  edits[doc._id] = [...(edits[doc._id] || []), fun]
+  // console.log(doc)
+  return fun(doc)
+  // console.log(doc)
+}
+
+const pending = {}
+const locked = {}
+async function commit (doc) {
+  if (!edits[doc._id]) {
+    return
+  }
+  if (locked[doc._id]) {
+    pending[doc._id] = true
+    return
+  }
+  locked[doc._id] = true
+  const currentEdits = edits[doc._id]
+  delete edits[doc._id]
+
+  // console.log('\ncommit ' + doc.pathname)
+
+  const _rev = doc._rev
+  delete doc._rev // make sure race conditions lead to conflicts
+
+  // console.log('pre', doc.pathname, _rev)
+  const { json, ok } = await doReq(`${couchHost}/${dbName}/${doc._id}`, {
+    method: 'PUT',
+    body: { ...doc, _rev, reqs: undefined },
+    headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}` }
+  })
+
+  if (json.error === 'conflict') {
+    const updatedDoc = await getDoc(doc._id)
+
+    console.log(json, updatedDoc.pathname, updatedDoc._rev, doc._rev)
+    // console.error(json, { ...doc, _rev, reqs: undefined })
+    // TODO: get updstream doc and merge funs
+  }
+
+  if (json.rev) {
+    doc._rev = json.rev
+    // console.log('post', doc.pathname, json.rev)
+  }
+  locked[doc._id] = false
+  if (pending[doc._id]) {
+    return commit(doc)
+  }
+  // console.log(json, { ...doc, _rev, reqs: undefined })
+}
+
+let settingsLocked = false
+let settings
+async function loadSettings () {
+  if (settingsLocked) {
+    return
+  }
+  settingsLocked = true
+  const { json } = await doReq(`${couchHost}/${dbName}/system:settings`, {
+    // cacheNs: 'preview', // TODO: errror message if ns not available
+    // ttl: 60 * 3, // 5 minutes
+    headers: {
+      'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`
+    }
+  })
+  settingsLocked = false
+  return json
+}
+export async function handler ({ req, text, waitUntil }) {
   const origUrl = new URL(req.url.href)
+
+  if (req.url.pathname === '/__ayu_refresh') {
+    settings = await loadSettings()
+    return Response.redirect(`${origUrl.origin}/`, 307)
+  }
+
+  if (!settings) {
+    settings = await loadSettings()
+  }
+
+  const cookieBindings = settings.cookieBindings
+  if (!cookieBindings[settings.hostname]) {
+    cookieBindings[settings.hostname] = {}
+  }
+
   // console.log(req.headers['forwarded'] || req.url.href)
   if (req.url.pathname === '/__csp_report') {
     return new Response('OK')
@@ -122,13 +234,17 @@ export async function handler ({ req, parsedBody, text }) {
     <title>installing service worker</title>
     <script type="module">
       import startWorker from '/_ayu/src/service-worker/start-worker.js'
-      startWorker({ reloadAfterInstall: true }).then(() => {
+      startWorker({ reloadAfterInstall: false }).then(() => {
 
       })
     </script>
   </head>
   <body>
-    Installing...
+    <h2>Preparing your Application Proxy...</h2>
+
+    Please note that this is purely for evaluation and testing of your application and is not safe to use with real or sensitive accounts. Please only use test accounts and public pages.
+
+    <button onClick="window.location.reload()">Start</button>
   </body>
 </html>`
     return new Response(initBody, { headers:  {
@@ -137,18 +253,73 @@ export async function handler ({ req, parsedBody, text }) {
   }
 
   if (req.url.pathname === '/__ayu_data') {
-    return new Response(JSON.stringify(data), { headers:  {
-      'content-type': 'application/json'
-    }})
+    const { json: { rows } } = await doReq(`${couchHost}/${dbName}/_design/ayu_preview/_view/by_primaryHost_and_hostname_and_pathname`, {
+      params: {
+        reduce: true,
+        group_level: 2,
+        start_key: [settings.hostname],
+        end_key: [settings.hostname, {}]
+      },
+      headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}
+    })
+
+    const favReqs = rows.map(({ key: [ _primaryHost, hostname ], value: { jsCookies, httpCookies, firstSeen, reqHeaders } }) => {
+      data[hostname] = { httpCookies, jsCookies, firstSeen, reqHeaders, paths: {}, favicon: data[hostname]?.favicon }
+
+      if (hostname === settings.hostname) {
+        data[hostname].primaryHost = true
+      }
+
+      if (!data[hostname].favicon) {
+        return doReq(`https://secret-beige-takin.faviconkit.com/${ hostname }/24`, { raw: true, cacheNs: 'favicons' })
+          .then(async ({ raw }) => {
+            const buf = new Uint8Array(await raw.arrayBuffer())
+            let string = ''
+            buf.forEach( byte => { string += String.fromCharCode(byte) })
+            data[hostname].favicon = `data:${raw.headers.get('content-type')};base64,` + btoa(string)
+          })
+      } else {
+        return Promise.resolve()
+      }
+    })
+
+    const { json: { rows: pathRows } } = await doReq(`${couchHost}/${dbName}/_design/ayu_preview/_view/by_primaryHost_and_hostname_and_pathname`, {
+      params: {
+        include_docs: true,
+        reduce: false,
+        limit: 4000,
+        start_key: [settings.hostname],
+        end_key: [settings.hostname, {}]
+      },
+      headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}
+    })
+    pathRows.forEach(({ doc: pathDoc }) => {
+      data[pathDoc.hostname].paths[pathDoc.pathname] = pathDoc
+    })
+
+    await Promise.all(favReqs)
+
+    // fetch('https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
+    //   .then(res => res.json()).then(({WhoisRecord}) => data[req.url.hostname].domainInfo = WhoisRecord)
+    // fetch('https://ssl-certificates.whoisxmlapi.com/api/v1?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
+    //   .then(res => res.json()).then(certInfo => data[req.url.hostname].certInfo = certInfo)
+
+    return new Response(JSON.stringify(data), { headers:  { 'content-type': 'application/json' }})
   }
 
   if (!settings.hostname) {
+    // if worker coninues make sure it lazyly updates possible settings changes without blocking other requests
+    // loadSettings().then(result => {
+    //   if (result ) {
+    //     settings = result
+    //   }
+    // })
     return Response.redirect(`${origUrl.origin}/_dashboard/#/settings`, 307)
   }
 
-  let forwarded = false
+  let forwarded
   if (req.headers['forwarded']) {
-    forwarded = true
+    forwarded = 'external'
     const forwardConf = req.headers['forwarded']
       .replaceAll(' ', '')
       .split(';').map(elem => elem.split('='))
@@ -158,13 +329,18 @@ export async function handler ({ req, parsedBody, text }) {
       }, {})
     // console.log({forwardConf})
     req.url.host = forwardConf.host
-    req.url.port = forwardConf.port
+    if (forwardConf.port) {
+      req.url.port = forwardConf.port
+    }
+
     req.url.protocol = forwardConf.proto
   } else if (req.headers.cookie && getCookie('AYU_SECONDARY_PROXY', req.headers.cookie)) {
-    forwarded = true
+    forwarded = 'internal'
     const secondaryProxyUrl = new URL(getCookie('AYU_SECONDARY_PROXY', req.headers.cookie))
     req.url.hostname = secondaryProxyUrl.hostname
-    req.url.port = secondaryProxyUrl.port
+    if (secondaryProxyUrl.port) {
+      req.url.port = secondaryProxyUrl.port
+    }
     req.url.protocol = secondaryProxyUrl.protocol
   } else {
     // TODO move to origen setting with proto and port instead of domain only
@@ -172,33 +348,48 @@ export async function handler ({ req, parsedBody, text }) {
     req.url.protocol = 'https'
   }
 
-  if (!data[req.url.hostname]) {
-    data[req.url.hostname] = { paths: {},cookies: {}, domainInfo: {}, certInfo: {}, firstSeen: Date.now(), lastSeen: Date.now() }
-    // console.log('new: ', req.url.hostname)
-    // fetch('https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
-    //   .then(res => res.json()).then(({WhoisRecord}) => data[req.url.hostname].domainInfo = WhoisRecord)
-
-    // fetch('https://ssl-certificates.whoisxmlapi.com/api/v1?apiKey=at_67cgy7rNjEoykwPiDXpsWP9qW45Mu&outputFormat=JSON&domainName=' + req.url.hostname)
-    //   .then(res => res.json()).then(certInfo => data[req.url.hostname].certInfo = certInfo)
-
-    fetch(`http://secret-beige-takin.faviconkit.com/${ req.url.hostname }/24`)
-      .then(res => res.blob())
-      .then(blob => {
-        const a = new FileReader()
-        a.onload = e => {
-          data[req.url.hostname].favicon = e.target.result
-        }
-        a.readAsDataURL(blob)
-      })
-      .catch(_err => {})
-  }
-  if (!data[req.url.hostname].paths[req.url.pathname]) {
-    data[req.url.hostname].paths[req.url.pathname] = {
-      reqs: [],
-      methods: [],
-      firstSeen: Date.now(),
-      lastSeen: Date.now()
+  let match
+  for (const pattern of patterns) {
+    const result = pattern.exec(req.url.href)
+    if (result) {
+      match = { pattern, result }
+      break
     }
+  }
+
+  let docPath
+  if (match) {
+    docPath = match.pattern.pathname
+  } else {
+    docPath = req.url.pathname
+  }
+
+  if (!data[req.url.hostname]) {
+    data[req.url.hostname] = {
+      paths: {}
+      // lastSeen:   Date.now() needs reqs ...
+    }
+  }
+
+  let doc = data[req.url.hostname].paths[docPath]
+
+  if (!doc) {
+    doc = await getDoc('path:' + btoa(settings.hostname + req.url.hostname + docPath), {
+      primaryHost: settings.hostname,
+      hostname: req.url.hostname,
+      pathname: docPath,
+      examplePath: req.url.pathname,
+      reqHeaders: {},
+      jsCookies: {},
+      httpCookies: {},
+      methods: [],
+      statuses: [],
+      firstSeen: Date.now()
+      // lastSeen: Date.now()
+    })
+    // doc.reqs = []
+
+    data[req.url.hostname].paths[docPath] = doc
   }
 
   const href = req.url.href
@@ -266,9 +457,19 @@ export async function handler ({ req, parsedBody, text }) {
 
   const reqHeaderBlocklist = [
     'referer',
+    'x-forwarded-proto',
+    'x-real-ip',
     'x-via',
     'forwarded',
     'origin'
+  ]
+
+  const resHeaderBlocklist = [
+    'content-security-policy',
+    'cross-origin-opener-policy',
+    'cross-origin-resource-policy',
+    'nel',
+    'report-to'
   ]
 
   // TODO: cookie js set/js accessible, iframes
@@ -278,20 +479,50 @@ export async function handler ({ req, parsedBody, text }) {
   Object.entries(req.headers).forEach(([key, val]) => {
     if ([...commonHeadersWhitelist, ...reqHeaderWhitelist].includes(key.toLowerCase())) {
       cleanReqHeaders[key] = val
+
+      if (!doc.reqHeaders[key]) {
+        updateDoc(doc, draft => draft.reqHeaders[key] = val)
+      }
     } else if (key === 'cookie') {
       const cookies = []
+      // console.log('get cookie', val, doc, settings.hostname, cookieBindings)
+      val.split(';').map(cook => cook.split('=')).forEach(([cname, ...cvalParts]) => {
+        const cval = cvalParts.join('=').trim()
+        cname = cname.trim()
 
-      // console.log(req.url.hostname, cookieBindings)
+        if (!cookieBindings[settings.hostname][cname] && !forwarded) {
+          updateDoc(settings, draft => {
+            if (!draft.cookieBindings[settings.hostname]) {
+              draft.cookieBindings[settings.hostname] = {}
+            }
+            if (!draft.cookieBindings[settings.hostname][cname]) {
+              draft.cookieBindings[settings.hostname][cname] = {}
+            }
+            draft.cookieBindings[settings.hostname][cname].hostname = req.url.hostname
+            draft.cookieBindings[settings.hostname][cname].http = false
+          })
+          if (!cookieBindings[settings.hostname][cname]) {
+            cookieBindings[settings.hostname][cname] = {}
+          }
+          cookieBindings[settings.hostname][cname].hostname = req.url.hostname
+          cookieBindings[settings.hostname][cname].http = false
+        }
 
-      val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([cname, ...cvalParts]) => {
-        const cval = cvalParts.join('=')
-        // console.log({cname, cval})
-        // if (cookieBindings[cname]) {
-        //   console.log(cookieBindings[cname] === req.url.hostname, cname)
-        // }
-        if (cookieBindings[cname] === req.url.hostname || (!cookieBindings[cname] && !forwarded)) {
-          data[req.url.hostname].cookies[cname] = cval
-          cookies.push(`${cname}=${cval}`)
+        if (cookieBindings[settings.hostname][cname]?.hostname === req.url.hostname) {
+          if (cname !== 'CF_Authorization') {
+            if (cookieBindings[settings.hostname][cname].http) {
+              if (doc.httpCookies[cname] !== decodeURIComponent(cval)) {
+                // console.log('get http upd', cname)
+                updateDoc(doc, draft => draft.httpCookies[cname] = decodeURIComponent(cval)) // TODO: how handle changes of cookies vs reqheaders?
+              }
+            } else if (doc.jsCookies[cname] !== decodeURIComponent(cval)) {
+              // console.log('get js upd', cname)
+              updateDoc(doc, draft => draft.jsCookies[cname] = decodeURIComponent(cval))
+              // console.log('new', doc)
+            }
+
+            cookies.push(`${cname}=${cval}`)
+          }
         }
       })
 
@@ -300,92 +531,120 @@ export async function handler ({ req, parsedBody, text }) {
       }
     } else if (key === 'host') {
       cleanReqHeaders[key] = req.url.hostname
-    } else if (!reqHeaderBlocklist.includes(key.toLowerCase())) {
+    } else if (!reqHeaderBlocklist.includes(key.toLowerCase()) && !key.toLowerCase().startsWith('cf-')) {
       // disabled whitelisting for now
       cleanReqHeaders[key] = val
-      // console.log(['req', key, val])
+
+      if (!doc.reqHeaders[key]) {
+        updateDoc(doc, draft => draft.reqHeaders[key] = val)
+      }
     }
   })
 
-  cleanReqHeaders.origin = settings.hostname
+  // TODO: only if origin present before + respect current domain
+  // cleanReqHeaders.origin = settings.hostname
 
-  // console.log({ href, cleanReqHeaders, method: req.method, req })
   // TODO: headers allready stripped to minimum if they come from KV store
+
   const { raw: res, error, ok } = await doReq(href, {
+    redirect: forwarded === 'external' ? 'follow' : 'manual',
     method: req.method,
-    body: text,
-    // cacheNs: 'cors',
+    body: req.raw.body, // text,
     headers: cleanReqHeaders,
     raw: true
   })
-
-  data[req.url.hostname].lastSeen = Date.now()
-  data[req.url.hostname].paths[req.url.pathname].lastSeen = Date.now()
-  if (!data[req.url.hostname].paths[req.url.pathname].methods.includes(req.method)) {
-    data[req.url.hostname].paths[req.url.pathname].methods.push(req.method)
+  if (!res || error) {
+    console.error('req error:', error, req.raw)
   }
 
-  // firstSeen, lastSeen
-  data[req.url.hostname].paths[req.url.pathname].contentLength = res.headers.get('content-length')
-  data[req.url.hostname].paths[req.url.pathname].contentType = res.headers.get('content-type')
-  data[req.url.hostname].paths[req.url.pathname].reqs.push({
-    date: Date.now(),
-    method: req.method,
-    query: req.url.search,
-    proto: req.url.protocol,
-    port: req.url.port,
-    reqHeaders: req.headers,
-    status: res.status,
-    statusText: res.statusText,
-    resHeaders: Object.fromEntries([...(res.headers || [])])
-  })
+  if (!doc.methods.includes(req.method)) {
+    updateDoc(doc, draft => draft.methods.push(req.method))
+  }
+  if (!doc.statuses.includes(res.status)) {
+    updateDoc(doc, draft => draft.statuses.push(res.status))
+  }
 
-  // console.log(req.headers)
-  // TODO: handle cookies, headear, other methods?
+  if (res.headers.get('content-length') && doc.contentLength !== res.headers.get('content-length')) {
+    updateDoc(doc, draft => draft.contentLength = res.headers.get('content-length'))
+  }
 
-  // if (req.headers.cookie) {
-  //     console.log('request cookies: ', req.headers.cookie.split('; ').map(cook => cook.split('=')))
-  // }
+  if (res.headers.get('content-type') && doc.contentType !== res.headers.get('content-type')) {
+    updateDoc(doc, draft => draft.contentType = res.headers.get('content-type'))
+  }
+
+  // doc.reqs.push({
+  //   date: Date.now(),
+  //   method: req.method,
+  //   query: req.url.search,
+  //   proto: req.url.protocol,
+  //   port: req.url.port,
+  //   reqHeaders: req.headers,
+  //   status: res.status,
+  //   statusText: res.statusText,
+  //   resHeaders: Object.fromEntries([...(res.headers || [])])
+  // })
 
   const resHeaders = [...res.headers]
   const cleanResHeaders = new Headers()
-  // NOTE: eg. set cookie headers can appear multiple times with same key in headers!
+
+  // NOTE: set cookie headers can appear multiple times with same key in headers
   resHeaders.forEach(([key, val]) => {
     if ([...commonHeadersWhitelist, ...resHeaderWhitelist].includes(key.toLowerCase())) {
       cleanResHeaders.append(key, val)
     } else if (key === 'set-cookie') {
-      // console.log('cookie set: ', req.url.hostname, val)
+      const parsedCookies = setCookieParser(val)
+
+      parsedCookies.forEach(cookie => {
+        delete cookie.domain
+        cleanResHeaders.append('set-cookie', renderSetCookieString(cookie))
+
+        const ckey = cookie.name
+        const cvalue = cookie.value
+        if (doc.httpCookies[ckey] !== decodeURIComponent(cvalue)) {
+          updateDoc(doc, draft => draft.httpCookies[ckey] = decodeURIComponent(cvalue))
+        }
+        if (cookieBindings[settings.hostname][ckey] && cookieBindings[settings.hostname][ckey]?.hostname !== req.url.hostname) {
+          console.warn('cookie names must be unique across domains until v1.0')
+        }
+        if (cookieBindings[settings.hostname][ckey]?.hostname !== req.url.hostname || !cookieBindings[settings.hostname][ckey]?.http) {
+          updateDoc(settings, draft => {
+            if (!draft.cookieBindings[settings.hostname]) {
+              draft.cookieBindings[settings.hostname] = {}
+            }
+            if (!draft.cookieBindings[settings.hostname][ckey]) {
+              draft.cookieBindings[settings.hostname][ckey] = {}
+            }
+            draft.cookieBindings[settings.hostname][ckey].hostname = req.url.hostname
+            draft.cookieBindings[settings.hostname][ckey].http = true
+          })
+          if (!cookieBindings[settings.hostname][ckey]) {
+            cookieBindings[settings.hostname][ckey] = {}
+          }
+          cookieBindings[settings.hostname][ckey].hostname = req.url.hostname
+          cookieBindings[settings.hostname][ckey].http = true
+        }
+      })
+    } else if (!resHeaderBlocklist.includes(key.toLowerCase())) {
+      // NOTE: disabled whitilisting for now
       cleanResHeaders.append(key, val)
-      // console.log(val)
-      const [ckey, ...crest] = val.split('=')
-      data[req.url.hostname].cookies[ckey.trim()] = crest.join('=').trim()
-      if (cookieBindings[ckey.trim()] && cookieBindings[ckey.trim()] !== req.url.hostname) {
-        console.warn('cookie names must be unique across domains until v1.0')
-      }
-      cookieBindings[ckey.trim()] = req.url.hostname
-      // console.log(cookieBindings)
-      // val.split(';').map(cook => cook.replace(' ', '').split('=')).forEach(([key, ...vals]) => {
-      //   data[req.url.hostname].cookies[key] = vals.join('=')
-      // })
-      // console.log('res cookies', val.split(';').map(cook => cook.split('=')))
-    } else {
-      // disabled whitilisting for now
-      cleanResHeaders.append(key, val)
-      // console.log(['res', key, val])
     }
   })
+
+  await commit(settings)
 
   if (!ok) {
     if ([301, 302, 303, 307, 308].includes(res.status)) {
       if (res.headers.get('location').startsWith('http')) {
         const redirectUrl = new URL(res.headers.get('location'))
-        // console.log(redirectUrl, req.url)
         if (redirectUrl.origin !== req.url.origin) {
+          // TODO handle asset redirects!
           console.log('---- external redirect: ' + res.url + ' to: ' + redirectUrl)
-          if (redirectUrl.hostname !== settings.hostname) {
-            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=${redirectUrl.origin}; Path=/; HttpOnly; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`)
+          if (redirectUrl.hostname !== settings.hostname && req.url.hostname === settings.hostname) {
+            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=${redirectUrl.origin}; Path=/; HttpOnly; Expires=Tue, 19 Jan 2038 04:14:07 GMT`)
+          } else if (redirectUrl.hostname === settings.hostname) {
+            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=delete; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT`)
           } else {
-            cleanResHeaders.append('set-cookie', `AYU_SECONDARY_PROXY=; Path=/; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT; Version=1;`)
+            console.error('third party redirect, should never happen, as they use follow mode')
           }
         }
 
@@ -452,13 +711,16 @@ export async function handler ({ req, parsedBody, text }) {
 
   const pathParts = req.url.pathname.split('.')
   const ext = pathParts[pathParts.length - 1]
-  data[req.url.hostname].paths[req.url.pathname].isImage = !isHtml && (res.headers.get('Content-Type')?.includes('image/') || ['jpg', 'svg', 'jpeg', 'png', 'gif', 'ico'].includes(ext))
+  const isImage = !isHtml && (res.headers.get('Content-Type')?.includes('image/') || ['jpg', 'svg', 'jpeg', 'png', 'gif', 'ico'].includes(ext))
+  if (doc.isImage !== isImage) {
+    updateDoc(doc, draft => draft.isImage = isImage)
+  }
 
-  function userReplacements (text) {
-    settings.replacements.forEach(([remove, replace]) => {
-      text = text.replace(remove, replace || '')
+  function userReplacements (inputText) {
+    settings?.replacements?.forEach(([remove, replace]) => {
+      inputText = inputText.replace(remove, replace || '')
     })
-    return text
+    return inputText
   }
 
   if (isHtml) { // && settings.selector
@@ -482,15 +744,21 @@ export async function handler ({ req, parsedBody, text }) {
     set (obj, prop, value) {
       // console.log('set', { obj, prop, value })
       if (prop === 'cookie') {
-        // console.log('js domain cookie ' + value)
+        console.log('js set of cookie ' + value)
         return document.cookie = value.replaceAll(' ', '').split(';').filter(elem => !elem.startsWith('domain=')).join('; ')
       }
       return obj[prop] = value
     }
   })
-  window.proxiedLoc = new Proxy(window.location, {
-    get (obj, prop, receiver) {
-      return obj[prop]
+
+  window.proxiedLoc = new Proxy({}, {
+    get: function (obj, prop, receiver) {
+      if (prop === Symbol.toPrimitive) {
+           return undefined
+      } else if (prop === 'toString') {
+          return function toString () { return window.location.toString() }
+      }
+      return window.location[prop]
     },
     set (obj, prop, value) {
       if (prop === 'href') {
@@ -502,7 +770,8 @@ export async function handler ({ req, parsedBody, text }) {
         }
         value = url.href
       }
-      return obj[prop] = value
+      window.location[prop] = value
+      return true
     }
   })
 </script>
@@ -521,7 +790,12 @@ export async function handler ({ req, parsedBody, text }) {
 ${settings.inject || ''}`
     // defer?
 
+    if (!doc.contentLength && body.length) {
+      updateDoc(doc, draft => draft.contentLength = body.length)
+    }
+
     // FIXME!
+    waitUntil(commit(doc))
     return new Response(replacements(userReplacements(body)).replace('<head>', `<head>${inject}`), {
       status: res.status,
       statusText: res.statusText,
@@ -533,6 +807,11 @@ ${settings.inject || ''}`
   if (isJs) {
     const body = await res.text()
 
+    if (!doc.contentLength && body.length) {
+      updateDoc(doc, draft => draft.contentLength = body.length)
+    }
+
+    waitUntil(commit(doc))
     return new Response(hasBody ? replacements(body) : null, {
       status: res.status,
       statusText: res.statusText,
@@ -546,6 +825,7 @@ ${settings.inject || ''}`
     headers: cleanResHeaders
   })
 
+  waitUntil(commit(doc))
   return ress
 }
 

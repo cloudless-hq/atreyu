@@ -1,4 +1,6 @@
 <script>
+  import MenuToggleBtn from './menu-toggle-btn.svelte'
+
   export let right = false
   // Represents the width of the sidebar when adjacent. If not set (null) it defaults to the sidebar's content width
   // .with-sidebar > :global(*) > :global(*) {flex-basis: sideWidth}
@@ -6,9 +8,26 @@
   // A CSS percentage value. The minimum width of the content element in the horizontal configuration
   // .with-sidebar > :global(*) > :global(:last-child) {min-width: calc(contentMin - var(--space))}
   export let contentMin = 50
-  export let closed
   export let height = '100vh'
   export let top = '0'
+
+  let sidebarClosed = false
+  let node
+
+  // function handleKeydown (e) {
+  //   if (tag.length > 0 && (e.key === 'Enter' || e.key === 'Tab')) {
+  //     e.preventDefault()
+  //     taglist = [...taglist, tag]
+  //     tag = ''
+  //   }
+  // }
+
+  function resizeSideHandler (event) {
+    sideWidth = event.detail.width + 'px'
+    // if (sideWidth < 180) {
+    //   sidebarClosed = true
+    // }
+  }
 </script>
 
 <style>
@@ -41,10 +60,19 @@
     transition: all .2s ease-in;
   }
 
+  .with-sidebar.closed > :global(:first-child) {
+    display: none;
+  }
+
+  :global(.with-sidebar.closed > .sidebar) {
+    min-width: 0!important;
+  }
+
   .with-sidebar > :global(:last-child) {
     flex-basis: 0;
     flex-grow: 999;
-    min-width: calc(1% * var(--content-min)); /* TODO: find less hacky workaound */
+    /* TODO: find less hacky workaound */
+    /* min-width: calc(1% * var(--content-min));  */
   }
 
   /* .with-sidebar > :global(:first-child)::after {  TODO: this creates an unclickable deadzone on the button, fix needed
@@ -67,6 +95,16 @@
 
 </style>
 
-<div class="with-sidebar" class:closed class:right style="--height: {height}; --top: {top}; --side-width: {sideWidth}; --content-min: {contentMin};">
-  <slot></slot>
+<div bind:this={node} class="with-sidebar" class:closed={sidebarClosed} class:right style="--height: {height}; --top: {top}; --side-width: {sideWidth}; --content-min: {contentMin};">
+  <slot name="sidebar"></slot>
+
+  <MenuToggleBtn
+    parentNode={node}
+    {sidebarClosed}
+    on:sidebarToggle={() => { sidebarClosed = !sidebarClosed }}
+    on:sidebarResize={resizeSideHandler}
+    {sideWidth}
+  />
+
+  <slot name="main"></slot>
 </div>

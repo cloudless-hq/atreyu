@@ -1,45 +1,90 @@
-# atreyu, cutting edge web apps
+# Atreyu - cutting edge web apps
+
+**attention**: This is pre-release software. Things will break or change without warning.
+
+Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications.
+
+It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
+
+Examples of applications that atreyu is made for:
+- Todo Apps
+- Messengers/ Chat
+- Calendars
+- Admin tools
+- Fittness and Health apps
+- Banking and Accounting
+- Bookmark and History managers
+- Electron apps
+
+Examples what atreyu is not made for:
+- landing pages
+- web magazines
+- blogs (though it is a great fit for a stand alone post writing application that publishes the posts as static assets)
+- web shops (though it is a great fit for a stand alone product mangagemnt system that publishes to web shops)
+
+With the focus on a specific usecase we can exclude a few features of mainstream frameworks that add complexity and have little to negative effect and add features that are usually missing:
+
+On puprose not in scope:
+- server side renderign
+- Static site generation
+- SEO
+
+Features (all optional):
+- routing (schema based with folder based defaults)
+- edge function endpoints
+- full offline capabilities
+- resource sharing between tabs
+- local first account-, user- and session management
+- preloading and batching
+- integrated persistence, caching, sync and databinding with live updates
+- app like updating system with prompt, ability to save work and chose when to update
+
+
+## Stack
+Atreyu is based on:
+- svelte
+- windicss
+- esbuild
+- deno for cli and local development/ cloudflare workers for prod (workerd for local and selfhosting coming)
+- netflix falcor
+- pouchdb/couchdb
 
 
 ## Installation as user
+Dependencies needed:
+- [Deno](https://deno.land/)
+- [IPFS Cli](https://ipfs.io/). Installation instructions are [here](https://docs.ipfs.io/install/command-line/).
 
+Then install with:
 
+```bash
 deno run https://atreyu.dev/ayu@latest/cli/install.js
+```
 
 You will see 3 prompts, 2 to check DENO_HOME and HOME environmnet variables, to determine where to install and the final write access to install the cli.
 
+After that you will have the ayu command available. just run `ayudev --help` for an overview of the options. Generally you can start a standard dev server in the current folder with just running `ayu` without options
 
-## Getting started
+## Contributing
 
-Notice: This is the readme for working on the atreyu itself. For just using it please refer to the documentation on https://atreyu.dev
+For working on atreyu itself.
 
 #### 1. Install environment dependencies.
 
-You need to have the following tools installed on your machine:
+You need to have the following installed on your machine:
 
-- [Node.js](https://nodejs.org/) (>=16). We recommend using a version manager like [nvm](https://github.com/nvm-sh/nvm)
+- [Node.js](https://nodejs.org/) (>=16). We recommend using a version manager like [nvm](https://github.com/nvm-sh/nvm) (will be replaced with the deno node compatibility layer as soon as feasible)
 - [Yarn](https://yarnpkg.com/) (>=1.22.10).
 - [Deno](https://deno.land/) (1.14.2)
 - [IPFS Cli](https://ipfs.io/). Installation instructions are [here](https://docs.ipfs.io/install/command-line/).
 
-After following each installation steps, check if everything is working:
-
-```bash
-node --version
-yarn --version
-deno --version
-ipfs --version
-```
-
-You should get the version of each tool printed without any errors.
 
 #### 2. Configure [Deno scripts](https://deno.land/manual/tools/script_installer) to be available on your PATH.
 
 You can achieve that by adding `export PATH="$HOME/.deno/bin:$PATH"` to your rc file.
 
 
-## All following steps executed in root of repo folder:
-
+## All following steps executed in root of this checked out repo:
 
 
 #### 3. Install nodejs dependencies and build the nodejs dependency bundles for the project.
@@ -55,7 +100,7 @@ This step installs the atreyu cli "ayu" on your system, which is  a standard [De
 Deno is a proper sandbox unlike nodejs, so its best to always add permissions explicitly, however you can also omit most these settings and use --allow-all.
 please keep in mind that the ESBUILD_BINARY_PATH (the one that includes esbuild-darwin-arm6) permission is currently hard coded, so you need to run this once with prompt and check your actual binary location and architecture.
 
-Run:
+Run (if you also want to use a standard release use -n ayudev to have both clis available):
 
 ```bash
 deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,npx,`which deno`,yarn --no-check --prompt --unstable -n ayu -f ./cli/mod.js
@@ -86,7 +131,6 @@ which ayu # prints the path for the binary
 cat `which ayu` # is helpful to check the currently installed parameters
 ayu info # prints the help text
 ```
-
 
 #### 5. Initialize the atreyu repo including the ipfs repo and configuration setup in your home folder:
 

@@ -108,3 +108,117 @@ export async function bodyParser (request, { clone } = {}) {
 
 // TODO: Link: '</http2_push/h2p/test.css>; rel=preload;',
 // todo ensure gzip support!
+
+const capitalizaations = {
+  'partitioned': 'Partitioned',
+  'httponly': 'HttpOnly',
+  'secure': 'Secure',
+  'priority': 'Priority',
+  'version': 'Version',
+  'samesite': 'SameSite',
+  'domain': 'Domain',
+  'max-age': 'Max-Age',
+  'comment': 'Comment',
+  'path': 'Path'
+}
+export function renderSetCookieString (cookie) {
+  let cookieStr = `${cookie.name}=${cookie.value}`
+
+  Object.entries(cookie).forEach(([key, val]) => {
+    if (key === 'value' || key === 'name') {
+      return
+    }
+    if (val === true) {
+      cookieStr += `; ${capitalizaations[key] || key}`
+    } else {
+      cookieStr += `; ${capitalizaations[key] || key}=${val}`
+    }
+  })
+
+  return cookieStr
+}
+
+export function setCookieParser (cookie) {
+  const cookies = [ {} ]
+
+  cookie.split(';').forEach(part => {
+    parseCookiePart(part, cookies)
+  })
+
+  return cookies
+}
+
+function parseCookiePart (part, cookies) {
+  const normalized = part.trim().toLowerCase()
+  const current = cookies[cookies.length - 1]
+
+  if (normalized.startsWith(',')) {
+    cookies.push({})
+    parseCookiePart(part.trim().slice(1), cookies)
+  } else if (normalized.startsWith('expires')) {
+    // val can have , but no =
+    const equalParts = part.split('=')
+    if (equalParts.length === 2) {
+      current.expires = equalParts[1].trim()
+    } else {
+      equalParts.shift() // shift away ['expires', ...]
+      const commaParts = equalParts.shift().split(',')
+      const nextKey = commaParts.pop()
+      current.expires = commaParts.join(',').trim()
+
+      parseCookiePart(',' + nextKey + '=' + equalParts.join('='), cookies)
+    }
+  } else {
+    for (const flag of ['partitioned', 'httponly', 'secure']) {
+      if (normalized.startsWith(flag)) {
+        current[flag] = true
+
+        if (normalized.length > flag.length) {
+          parseCookiePart(part.trim().slice(flag.length), cookies)
+        }
+        return
+      }
+    }
+
+    for (const noCommaValueKey of ['priority', 'version', 'samesite', 'domain', 'max-age', 'comment', 'path']) {
+      // FIXME: comment and path are not guaranteed comma free
+      if (normalized.startsWith(noCommaValueKey)) {
+        let noCommaValue
+        let restPart
+        if (normalized.includes(',')) {
+          const commaParts = part.split(',')
+          noCommaValue = commaParts.shift().split('=')[1].trim()
+          restPart = ',' + commaParts.join(',')
+        } else {
+          noCommaValue = part.split('=')[1].trim()
+        }
+        current[noCommaValueKey] = noCommaValue
+
+        if (restPart) {
+          parseCookiePart(restPart, cookies)
+        }
+        return
+      }
+    }
+
+    // FIXME: only using ', ' for cookie separation of main value, this might not always work on bad servers
+    const equalParts = part.split('=')
+    if (equalParts.length === 2) {
+      current.value = equalParts[1].trim()
+      current.name = equalParts[0].trim()
+    } else {
+      const key = equalParts.shift().trim()
+
+      const commaParts = equalParts.join('=').split(', ')
+
+      if (commaParts.length === 1) {
+        current.value = equalParts.join('=').trim()
+        current.name = key
+      } else {
+        current.value = commaParts.shift().trim()
+        current.name = key
+        parseCookiePart(', ' + commaParts.join(', '), cookies)
+      }
+    }
+  }
+}

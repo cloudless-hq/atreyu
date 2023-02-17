@@ -4,15 +4,23 @@ import { Observable } from '/_ayu/build/deps/falcor-observable.js'
 class ServiceWorkerSource {
   constructor ({ wake }) {
     this._inflight = {}
-    this._worker = navigator.serviceWorker.controller
-    this._id = 0 // Identifier used to correlate each Request to each response
-    this._waker
 
-    this._worker?.postMessage(JSON.stringify([-1, 'hello mike' ]))
+    this._id = 0 // Identifier used to correlate each Request to each response
+
+    const init = () => {
+      this._worker = navigator.serviceWorker.controller
+      this._worker?.postMessage(JSON.stringify([-1, 'hello mike' ]))
+    }
+    if (!this._worker) {
+      init()
+    }
 
     navigator.serviceWorker.addEventListener('message', e => {
       if (e.data.startsWith('navigate:')) {
         return
+      }
+      if (!this._worker) {
+        init()
       }
       const { id, error, value, done, hello } = JSON.parse(e.data)
 
@@ -31,7 +39,7 @@ class ServiceWorkerSource {
 
     if (wake) {
       this._waker = setInterval(() => {
-        this._worker.postMessage(JSON.stringify([-1, 'waky waky']))
+        this._worker?.postMessage(JSON.stringify([-1, 'waky waky']))
       }, wake)
     }
   }

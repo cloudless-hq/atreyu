@@ -1,6 +1,6 @@
 import { join, basename, build } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
-import esbuildPlugin, { parseMetafile } from './esbuild-plugin.ts'
+import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 import { makeValidator } from '../edge/lib/schema.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
@@ -62,26 +62,26 @@ const buildSettings = {
   target: 'esnext',
   platform: 'neutral'
 }
-async function compile ({ input, appName, workerName, output, buildName, paramsValidation, publish }) {
+async function compile ({ input, info, appName, workerName, output, buildName, paramsValidation, publish }) {
   if (publish) {
     const { metafile } = await build({
       entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
-      plugins: [ esbuildPlugin({ local: false, input, atreyuPath, paramsValidation }) ],
+      plugins: [ ayuPlugin({ local: false, input, atreyuPath, paramsValidation }) ],
       outfile: output,
       ...buildSettings
     }).catch(() => {/* ignore */})
 
-    parseMetafile(metafile)
+    parseMetafile(metafile, info)
   }
 
   const buildRes = await build({
     entryPoints: [input],
-    plugins: [ esbuildPlugin({ local: true, input, atreyuPath, paramsValidation }) ],
+    plugins: [ ayuPlugin({ local: true, input, atreyuPath, paramsValidation }) ],
     outfile: output.replace('.js', '.deno.js'),
     ...buildSettings
   }).catch(/* ignore */) // err => console.error(err)
 
-  parseMetafile(buildRes.metafile)
+  parseMetafile(buildRes.metafile, info)
 
   return Object.keys(buildRes.metafile.inputs).map(path => {
     if (path.includes('/_ayu/')) {
@@ -93,7 +93,7 @@ async function compile ({ input, appName, workerName, output, buildName, paramsV
 }
 
 const deps = {}
-export async function buildEdge ({ workers, buildName, batch = [], clean, publish }) {
+export async function buildEdge ({ workers, info, buildName, batch = [], clean, publish }) {
   // const startTime = Date.now()
   const projectFolder = Deno.cwd()
   const appName = basename(projectFolder)
@@ -121,7 +121,7 @@ export async function buildEdge ({ workers, buildName, batch = [], clean, publis
     const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
     // console.log(`    building edge-worker: ${workerLogPath}`)
 
-    const newDeps = await compile({ input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
+    const newDeps = await compile({ info, input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish })
 
     // NOTE: obsolete deps are not removed until restart
     newDeps.forEach(newDep => {

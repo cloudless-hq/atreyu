@@ -12,7 +12,7 @@ const denoLocal = typeof self !== 'undefined' && !!self.Deno
 // function setCookie (name, value, days) {
 //     let d = new Date
 //     d.setTime(d.getTime() + 24 * 60 * 60 * 1000 * days)
-//     document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString()
+//     document.cookie = name + "=" + value + ";path=/; Expires=" + d.toGMTString()
 // }
 // function deleteCookie (name) { setCookie(name, '', -1) }
 
@@ -45,15 +45,15 @@ export async function handler ({ req, stats, app }) {
 
     if (jwtPayload.dev_mock) {
       headers['Location'] = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
-      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly;'
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly'
     } else if (jwtPayload.email) {
       const base = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
       headers['Location'] = `/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin + base)}`
-      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
-      headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly'
+      headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly'
     } else {
       headers['Location'] = `/_ayu/accounts/?login`
-      // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly;'
+      // headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly'
     }
 
     return new Response('', {
@@ -73,6 +73,18 @@ export async function handler ({ req, stats, app }) {
 
     curSessionId = sessionIdParts[0]
     curOrg = sessionIdParts[1]
+  }
+
+  const userAgent = req.headers['user-agent']
+  let browserName
+  if (userAgent.includes('Edg')) {
+    browserName = 'Edge'
+  } else if (userAgent.includes('Chrome')) {
+    browserName = 'Chrome'
+  } else if (userAgent.includes('Safari')) {
+    browserName = 'Safari'
+  } else if (userAgent.includes('Firefox')) {
+    browserName = 'Firefox'
   }
 
   const cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined, clientAcceptEncoding: undefined, tlsVersion: undefined, httpProtocol: undefined }
@@ -95,10 +107,16 @@ export async function handler ({ req, stats, app }) {
       sessionName: req.query.sessionName,
 
       app,
-      cf
+      cf,
+      browserName
     }
 
-    const newSessionId = await ensureSession(newSession)
+    let newSessionId
+    if (couchHost) {
+      newSessionId = await ensureSession(newSession)
+    } else {
+      newSessionId = 'ephemeral:' + crypto.randomUUID()
+    }
 
     if (denoLocal) {
       // NOTE: deno local is a fake test login with zero validation!
@@ -116,7 +134,7 @@ export async function handler ({ req, stats, app }) {
         headers: {
           'Cache-Control': 'must-revalidate',
           'Location': req.query.continue || '/' ,
-          'Set-Cookie': `CF_Authorization=${devJwt}; Path=/_api; expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly; Version=1;`
+          'Set-Cookie': `CF_Authorization=${devJwt}; Path=/_api; Expires=Tue, 19 Jan 2038 04:14:07 GMT; HttpOnly` //  Version=1;
         }
       })
     }
@@ -126,7 +144,7 @@ export async function handler ({ req, stats, app }) {
       status: 302,
       headers: {
         'Cache-Control': 'must-revalidate',
-        'Set-Cookie': `AYU_SESSION_ID=${newSessionId}${newSession.org ? '__' + newSession.org : ''}; Path=/_api; HttpOnly; Secure; expires=Tue, 19 Jan 2038 04:14:07 GMT; Version=1;`,
+        'Set-Cookie': `AYU_SESSION_ID=${newSessionId}${newSession.org ? '__' + newSession.org : ''}; Path=/_api; HttpOnly; Secure; Expires=Tue, 19 Jan 2038 04:14:07 GMT`, // Version=1;
         'Location': req.query.continue || '/'
       }
     })
@@ -149,6 +167,7 @@ export async function handler ({ req, stats, app }) {
 
     // roles: [],
     cf,
+    browserName,
 
     expiry: jwtPayload.exp,
     issued: jwtPayload.iat,
@@ -160,7 +179,7 @@ export async function handler ({ req, stats, app }) {
   })
 }
 
-async function ensureSession ({ useSessionId, email, org, sessionName, app, cf }) {
+async function ensureSession ({ useSessionId, email, org, sessionName, app, cf, browserName }) {
   const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
   let newSessionDoc
@@ -186,6 +205,7 @@ async function ensureSession ({ useSessionId, email, org, sessionName, app, cf }
       title: `${email}${org ? ' (' + org + ')' : ''}`,
       created: Date.now(),
       cf,
+      browserName,
       app,
       loginCount: 0,
       type: 'session',

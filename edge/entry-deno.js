@@ -72,6 +72,7 @@ startWorker({
         if (typeof schema === 'function') {
           appData[appKey] = { schema: schema({ defaultPaths, addPathTags }), appHash: app.Hash }
         } else {
+          schema.paths = { ...defaultPaths, ...schema.paths }
           appData[appKey] = { schema, appHash: app.Hash }
         }
       } catch (_err) {
@@ -98,7 +99,7 @@ startWorker({
     const {
       operationId: workerName,
       paramsValidation
-    } = match(req, appData[appKey].edgeHandlers)
+    } = match(req, appData[appKey].edgeHandlers) || {}
 
     if (!workerName) {
       console.warn(`${req.method} ${req.url}`)

@@ -46,7 +46,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
         const manifestName = appPrefix === 'ayu' ? '/_ayu/ipfs-map.json' : '/ipfs-map.json'
         let ipfsMapResponse
 
-        ipfsMapResponse = await fetch(manifestName).catch(err => console.log('map get error: ', err))
+        ipfsMapResponse = await fetch(manifestName, { redirect: 'error' }).catch(err => console.log('ipfs-map get error: ', err))
 
         // if (ipfsMapResponse?.redirected) {
         //   ipfsMapResponse = null

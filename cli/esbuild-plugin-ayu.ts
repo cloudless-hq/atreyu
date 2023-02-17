@@ -26,8 +26,7 @@ type callbackFun = (arg: pathConf) => { path: string, namespace?: string }
 type onLoadcallbackFun = (arg: pathConf) => Promise<{ contents: string | Uint8Array, loader?: string }>
 type lifecycleFun = (arg: callbackArg, arg2: callbackFun | onLoadcallbackFun) => pathConf
 
-
-export default ({ local = true, input, atreyuPath, paramsValidation }: { local?: boolean, input?: string, atreyuPath: string, paramsValidation?: string }) => ({
+export const ayuPlugin = ({ local = true, input, atreyuPath, paramsValidation }: { local?: boolean, input?: string, atreyuPath: string, paramsValidation?: string }) => ({
   name: 'atreyu',
 
   setup: ({ onResolve, onLoad, initialOptions }: {onResolve: lifecycleFun, onLoad: lifecycleFun, initialOptions: { loader?: Record<string, string>} }) => {
@@ -117,7 +116,7 @@ export default ({ local = true, input, atreyuPath, paramsValidation }: { local?:
   }
 })
 
-export function parseMetafile (metafile) {
+export function parseMetafile (metafile, info) {
   function cleanBuildPath (buildPath: string) {
     if (buildPath.includes('/atreyu/')) {
       return '/atreyu/' + buildPath.split('/atreyu/')[1]
@@ -131,24 +130,26 @@ export function parseMetafile (metafile) {
       console.log(`    ${green('emitted:')} ${formatBytes(bytes)} ${entryPoint ? cleanBuildPath(entryPoint) + ' -> ' : ''}${cleanBuildPath(fileName)}`)
       const inputEntries = Object.entries(inputs)
 
-      if (imports?.length) {
-        imports.forEach(({ path }, i) => {
-          if (!inputEntries?.length && i === imports.length - 1) {
-            console.log(`     └ imports > ${cleanBuildPath(path)}`)
+      if (info) {
+        if (imports?.length) {
+          imports.forEach(({ path }, i) => {
+            if (!inputEntries?.length && i === imports.length - 1) {
+              console.log(`     └ imports > ${cleanBuildPath(path)}`)
+            } else {
+              console.log(`     ├ imports > ${cleanBuildPath(path)}`)
+            }
+          })
+        }
+
+        inputEntries.sort((a ,b) => { return b[1].bytesInOutput - a[1].bytesInOutput }).forEach(([inputName, { bytesInOutput }], i) => {
+          const percentage = ((bytesInOutput / bytes) * 100).toFixed(1)
+          if (i === inputEntries.length - 1) {
+            console.log(`     └ ${formatBytes(bytesInOutput).padEnd(6, ' ')} ${percentage.padStart(4, ' ')} % ${cleanBuildPath(inputName)}\n`)
           } else {
-            console.log(`     ├ imports > ${cleanBuildPath(path)}`)
+            console.log(`     ├ ${formatBytes(bytesInOutput).padEnd(6, ' ')} ${percentage.padStart(4, ' ')} % ${cleanBuildPath(inputName)}`)
           }
         })
       }
-
-      inputEntries.sort((a ,b) => { return b[1].bytesInOutput - a[1].bytesInOutput }).forEach(([inputName, { bytesInOutput }], i) => {
-        const percentage = ((bytesInOutput / bytes) * 100).toFixed(1)
-        if (i === inputEntries.length - 1) {
-          console.log(`     └ ${formatBytes(bytesInOutput).padEnd(6, ' ')} ${percentage.padStart(4, ' ')} % ${cleanBuildPath(inputName)}\n`)
-        } else {
-          console.log(`     ├ ${formatBytes(bytesInOutput).padEnd(6, ' ')} ${percentage.padStart(4, ' ')} % ${cleanBuildPath(inputName)}`)
-        }
-      })
     }
   })
 

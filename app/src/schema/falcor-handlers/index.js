@@ -122,7 +122,7 @@ export async function getDocs ({ ids, _event, dbs, req }) {
     }
   })
 
-  if (missingIds.length > 0) {
+  if (dbs.couch && missingIds.length > 0) {
     const { json: freshDocs } = await req(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
       body: { 'keys': missingIds }
     })

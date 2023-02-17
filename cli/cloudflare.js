@@ -172,8 +172,11 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
 
   const pinName = env === 'prod' ? appName : appName + '_' + env
   const prefix = pinName + ':'
-  const ipfsNsId = curNamespaces.find(curNs => curNs.title === 'ipfs').id
 
+  const ipfsNsId = curNamespaces.find(curNs => curNs.title === 'ipfs')?.id
+  if (!ipfsNsId) {
+    return console.error('creating ipfs kv namespace not supported yet, please manually create it in cf dashboard and run again')
+  }
   const currKeys = await req(`accounts/${cloudflareAccountId}/storage/kv/namespaces/${ipfsNsId}/keys?prefix=${prefix}`)
 
   const deletions = []
@@ -308,11 +311,20 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
             text: value
           }
         } else if (key === 'kv_namespaces') {
-          return value.map(namespace => ({
-            name: namespace,
-            type: 'kv_namespace',
-            namespace_id: curNamespaces.find(curNs => curNs.title === namespace).id
-          }))
+          return value.map(namespace => {
+            const namespace_id = curNamespaces.find(curNs => curNs.title === namespace)?.id
+            if (!namespace_id) {
+              console.error('❌ kv namespace not found and auto creation not currently implemented, please create in cf dashboard and run again: ' + namespace)
+
+              return {}
+            }
+
+            return {
+              name: namespace,
+              type: 'kv_namespace',
+              namespace_id
+            }
+          })
         } else {
           return {
             name: key,

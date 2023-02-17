@@ -183,9 +183,6 @@ async function doUpdate ({ auto, silent }) {
   .ayu-update-notification .primary.btn {
     @apply text-primary-600 hover:text-primary-500;
   }
-  .ayu-update-notification .wrapper1 {
-    @apply w-full flex flex-col items-center space-y-4 sm:items-end;
-  }
   .ayu-update-notification .wrapper2 {
     @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto overflow-hidden;
   }
@@ -224,16 +221,13 @@ async function doUpdate ({ auto, silent }) {
     @apply bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500;
   }
   /* focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 */
-  .ayu-update-notification .close-svg {
-    @apply h-5 w-5;
-  }
 </style>
 
 <svelte:body on:mousedown|passive={closeUpdateNotification}  />
 
 {#if newHash && !updating}
   <div aria-live="assertive" class="ayu-update-notification">
-    <div class="wrapper1">
+    <div class="wrapper1 w-full flex flex-col items-center space-y-4 sm:items-end">
       <div class="wrapper2">
         <div class="wrapper3">
           <div class="wrapper4">
@@ -269,7 +263,7 @@ async function doUpdate ({ auto, silent }) {
               <button class="close-btn">
                 <!-- <span class="sr-only">Close and Remind in 5 minutes</span> -->
 
-                <svg class="close-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <svg class="close-svg h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
               </button>
@@ -285,7 +279,7 @@ async function doUpdate ({ auto, silent }) {
 {#if updated && !_silent}
   {#if $data._docs[settingsDocId].buildColor$}
     <div bind:this={updatedNotification} aria-live="assertive" class="ayu-update-notification">
-      <div class="wrapper1">
+      <div class="wrapper1 w-full flex flex-col items-center space-y-4 sm:items-end">
         <div class="wrapper2">
           <div class="wrapper3">
             <div class="wrapper4">

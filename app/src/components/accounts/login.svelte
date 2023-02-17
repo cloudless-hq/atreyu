@@ -4,7 +4,7 @@
 
   export let userData
 
-  let email = userData?.email || 'dev_user@localhost'
+  let email = userData?.email || '' // 'dev_user@localhost'
   let org = userData?.org || ''
 
   const askEmail = location.hostname.endsWith('localhost')
@@ -38,7 +38,8 @@
     browserName = 'Firefox'
   }
 
-  let sessionName = `${isIncognito ? 'Incognito session ' : ''}${browserName || 'unknown browser'} on ${navigator?.userAgentData?.platform || 'unknown platform'}`
+  let sessionName = ''
+  // `${isIncognito ? 'Incognito session ' : ''}${browserName || 'unknown browser'} on ${navigator?.userAgentData?.platform || 'unknown platform'}`
 
   // let searchTxt = location.href.split('?')?.[1]
   // let formTarget = `/_api/_session?login${searchTxt ? '&' + searchTxt : ''}`
@@ -47,6 +48,9 @@
     const loginData = { email }
     if (org) {
       loginData.org = org
+    }
+    if (isIncognito) {
+      loginData.isIncognito = isIncognito
     }
     if (userData?.sessionId) {
       loginData.sessionId = userData?.sessionId

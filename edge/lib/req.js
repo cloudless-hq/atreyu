@@ -12,10 +12,21 @@ const sleepRandom = () => {
   return sleep(ms)
 }
 
-export default async function req (url, { method, body, headers: headersArg = {}, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
+export default async function req (url, { method, body, headers: headersArg = {}, params, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
   const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'
+  }
+  if (params) {
+    const paramsArray = []
+    Object.entries(params).forEach(([pKey, pValue]) => {
+      if (typeof pValue === 'object') {
+        paramsArray.push(`${pKey}=${JSON.stringify(pValue)}`)
+      } else {
+        paramsArray.push(`${pKey}=${pValue}`)
+      }
+    })
+    url += '?' + paramsArray.join('&')
   }
 
   const headers = new Headers(headersArg)
@@ -24,7 +35,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
     headers.set('content-type', 'application/json')
   }
 
-  if (body && headers.get('content-type') === 'application/json' && (typeof body !== 'string')) {
+  if (body && headers.get('content-type') === 'application/json' && !(typeof body === 'string' || typeof body.getReader === 'function')) {
     body = JSON.stringify(body)
   }
 
@@ -136,6 +147,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
   // headers.set('host', 'todo')
 
   if (!wasCached) {
+    console.log(url)
     waitUntil(log({
       stats: event?._stats,
       traceId: event?._traceId,
