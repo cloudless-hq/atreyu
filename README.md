@@ -2,27 +2,25 @@
 
 **attention**: This is pre-release software. Things will break or change without warning.
 
-Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications.
+Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications. It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
 
-It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
-
-Examples of applications that atreyu is made for:
-- Todo Apps
+Examples of applications that are a great fit:
+- Todo Applications
 - Messengers/ Chat
 - Calendars
-- Admin tools
-- Fittness and Health apps
+- Admin Tools
+- Fittness and Health Apps
 - Banking and Accounting
-- Bookmark and History managers
-- Electron apps
+- Bookmark and History Managers
+- Electron Apps
 
-Examples what atreyu is not made for:
-- landing pages
-- web magazines
-- blogs (though it is a great fit for a stand alone post writing application that publishes the posts as static assets)
-- web shops (though it is a great fit for a stand alone product mangagemnt system that publishes to web shops)
+Examples of what is not a great fit:
+- Landing Pages
+- Web Magazines
+- Blogs (though it is a great fit for a standalone post writing application that publishes the posts as static assets)
+- Web Shops (though it is a great fit for a standalone product mangagemnt system that publishes to web shops)
 
-With the focus on a specific usecase we can exclude a few features of mainstream frameworks that add complexity and have little to negative effect and add features that are usually missing:
+With this focus we can exclude a few features of mainstream frameworks that add complexity and have little to negative effect and add features that are usually missing:
 
 On puprose not in scope:
 - server side renderign
@@ -37,17 +35,16 @@ Features (all optional):
 - local first account-, user- and session management
 - preloading and batching
 - integrated persistence, caching, sync and databinding with live updates
-- app like updating system with prompt, ability to save work and chose when to update
+- app like explicit update system
 
 
 ## Stack
-Atreyu is based on:
 - svelte
 - windicss
 - esbuild
-- deno for cli and local development/ cloudflare workers for prod (workerd for local and selfhosting coming)
+- deno for cli and local development / cloudflare workers for production (workerd for local and selfhosting coming soon)
 - netflix falcor
-- pouchdb/couchdb
+- pouchdb / couchdb
 
 
 ## Installation as user
@@ -63,15 +60,23 @@ deno run https://atreyu.dev/ayu@latest/cli/install.js
 
 You will see 3 prompts, 2 to check DENO_HOME and HOME environmnet variables, to determine where to install and the final write access to install the cli.
 
-After that you will have the ayu command available. just run `ayudev --help` for an overview of the options. Generally you can start a standard dev server in the current folder with just running `ayu` without options
+After that you will have the ayu command available. just run `ayu --help` for an overview of the options.
+
+The first time use atreyu, you need to initialize the atreyu store in your home directory
+
+```bash
+ayu init
+```
+
+You can start a standard dev server in the current folder with running `ayu`
+
 
 ## Contributing
-
 For working on atreyu itself.
 
-#### 1. Install environment dependencies.
+#### 1. Install dependencies.
 
-You need to have the following installed on your machine:
+You need to have the following installed on your system:
 
 - [Node.js](https://nodejs.org/) (>=16). We recommend using a version manager like [nvm](https://github.com/nvm-sh/nvm) (will be replaced with the deno node compatibility layer as soon as feasible)
 - [Yarn](https://yarnpkg.com/) (>=1.22.10).
@@ -144,15 +149,9 @@ ayu init
 #### 6. Start atreyu local development build watcher and the dev daemon, that runs and serves the local dev setup.
 
 ```bash
-ayu dev --start
+ayu
 ```
-
-shorthand for:
-```
-ayu start # in terminal 1
-ayu dev # in terminal 2 in parallel
-```
-
-todo: https://deno.com/blog/dnt-oak
 
 The dev daemon can be killed after the success message when not working on atreyu internals.
+
+TODO: setup node compat publishing https://deno.com/blog/dnt-oak
