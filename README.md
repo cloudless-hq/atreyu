@@ -4,6 +4,8 @@
 
 Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications. It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
 
+Falcor is used for state management, caching, batching and data sharing. Svelte views are bound to a virtual data object with a js proxy based store implementation. The falcor router runs inside a service worker and can serve all open tabs and transparently only forward requests to the edge workers or other sources when it cannot answer itself or needs to refresh data.
+
 Examples of applications that are a great fit:
 - Todo Applications
 - Messengers/ Chat
@@ -22,8 +24,8 @@ Examples of what is not a great fit:
 
 With this focus we can exclude a few features of mainstream frameworks that add complexity and have little to negative effect and add features that are usually missing:
 
-On puprose not in scope:
-- server side renderign
+On purpose not in scope:
+- server side rendering
 - Static site generation
 - SEO
 
@@ -35,17 +37,17 @@ Features (all optional):
 - local first account-, user- and session management
 - preloading and batching
 - integrated persistence, caching, sync and databinding with live updates
-- app like explicit update system
+- app-like explicit update system
 
 
 ## Stack
 - svelte
 - windicss
+- ipfs as a local asset server and content adressable storage system, ipfs is not required for production sites and is not required to run in a p2p mode
 - esbuild
 - deno for cli and local development / cloudflare workers for production (workerd for local and selfhosting coming soon)
 - netflix falcor
 - pouchdb / couchdb
-
 
 ## Installation as user
 Dependencies needed:
@@ -62,14 +64,15 @@ You will see 3 prompts, 2 to check DENO_HOME and HOME environmnet variables, to 
 
 After that you will have the ayu command available. just run `ayu --help` for an overview of the options.
 
-The first time use atreyu, you need to initialize the atreyu store in your home directory
+The first time you use atreyu, you need to initialize the atreyu store in your home directory
 
 ```bash
 ayu init
 ```
 
-You can start a standard dev server in the current folder with running `ayu`
+You can start a standard dev server in the current folder by running `ayu`
 
+For detailed documentation please have a look at https://atreyu.dev
 
 ## Contributing
 For working on atreyu itself.
