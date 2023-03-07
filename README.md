@@ -2,11 +2,12 @@
 
 **attention**: This is pre-release software. Things will break or change without warning.
 
+### Intro
 Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications. It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
 
 Falcor is used for state management, caching, batching and data sharing. Svelte views are bound to a virtual data object with a js proxy based store implementation. The falcor router runs inside a service worker and can serve all open tabs and transparently only forward requests to the edge workers or other sources when it cannot answer itself or needs to refresh data.
 
-Examples of applications that are a great fit:
+### Examples of applications that are a great fit:
 - Todo Applications
 - Messengers/ Chat
 - Email clients
@@ -17,7 +18,7 @@ Examples of applications that are a great fit:
 - Bookmark and History Managers
 - Electron Apps
 
-Examples of what is not a great fit:
+### Examples of what is not a great fit:
 - Landing Pages
 - Web Magazines
 - Blogs (though it is a great fit for a standalone post writing application that publishes the posts as static assets)
@@ -25,12 +26,12 @@ Examples of what is not a great fit:
 
 With this focus we can exclude a few features of mainstream frameworks that add complexity and have little to negative effect and add features that are usually missing:
 
-On purpose not in scope:
+### On purpose not in scope:
 - server side rendering (atreyu apps are open for a long time and the initial load is negligible, but taming complexity and interaction latency is very important)
 - Static site generation (atryu apps are highly dynamic)
 - SEO (you would never want your private calendar or email data be indexed publicly)
 
-Features (all optional):
+### Features (all optional):
 - routing (schema based with folder based defaults)
 - edge function endpoints
 - full offline capabilities
@@ -41,7 +42,7 @@ Features (all optional):
 - app-like explicit update system
 
 
-## Stack
+### Stack
 - svelte
 - windicss
 - ipfs as a local asset server and content adressable storage system, ipfs is not required for production sites and is not required to run in a p2p mode
@@ -50,7 +51,7 @@ Features (all optional):
 - netflix falcor
 - pouchdb / couchdb
 
-## Installation as user
+### Installation as user
 Dependencies needed:
 - [Deno](https://deno.land/)
 - [IPFS Cli](https://ipfs.io/). Installation instructions are [here](https://docs.ipfs.io/install/command-line/).
@@ -75,4 +76,4 @@ You can start a standard dev server in the current folder by running `ayu`
 
 For detailed documentation please have a look at https://atreyu.dev
 
-For documentation for working on atreyu itself see [CONTRIBUTING.md]
+For documentation for working on atreyu itself see [CONTRIBUTING.md](here)
