@@ -8,7 +8,7 @@ Atreyu is an edge- and serviceworker first metaframework for personal, data heav
 
 Falcor is used for state management, caching, batching and data sharing. Svelte views are bound to a virtual data object with a js proxy based store implementation. The falcor router runs inside a service worker and can serve all open tabs and transparently only forward requests to the edge workers or other sources when it cannot answer itself or needs to refresh data.
 
-## Examples of applications that are a great fit
+## Usecase examples that are a great fit
 - Todo Applications
 - Messengers/ Chat
 - Email clients
@@ -19,7 +19,7 @@ Falcor is used for state management, caching, batching and data sharing. Svelte 
 - Bookmark and History Managers
 - Electron Apps
 
-## Examples of what is not a great fit
+## Usecase examples that are not a great fit
 - Landing Pages
 - Web Magazines
 - Blogs (though it is a great fit for a standalone post writing application that publishes the posts as static assets)
@@ -29,7 +29,7 @@ With this focus we can exclude a few features of mainstream frameworks that add 
 
 ## On purpose not in scope
 - server side rendering (atreyu apps are open for a long time and the initial load is negligible, but taming complexity and interaction latency is very important)
-- Static site generation (atryu apps are highly dynamic)
+- Static site generation (atreyu apps are highly dynamic)
 - SEO (you would never want your private calendar or email data be indexed publicly)
 
 ## Features (all optional)
