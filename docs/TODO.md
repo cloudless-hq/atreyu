@@ -10,3 +10,6 @@
 - relay like fragments instead preloading?
 - graphql like subscriptions
 - sourcemap and css import windi
+- conflict resolver functions
+- client / server validation functions
+- generic conflict view for db and doc (on app or admin level?)

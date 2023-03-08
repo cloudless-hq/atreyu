@@ -1,6 +1,7 @@
 # Atreyu - cutting edge web apps
 
-**attention**: This is pre-release software. Things will break or change without warning.
+**attention**: This is early pre-release software. Things will still be missing, break or change without warning.
+If you want to try the preview, please consider reaching out with a short description of your usecase at try.ayu (at) ntr.io, i am happy to give you feedback if the usecase is allready feasible and help you setup.
 
 ## Intro
 Atreyu is an edge- and serviceworker first metaframework for personal, data heavy web applications. It supports real time data sync, offline usage and values minimal boilerplate with opt in to most features.
