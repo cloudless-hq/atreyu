@@ -39,6 +39,7 @@ With this focus we can exclude a few features of mainstream frameworks that add 
 - resource sharing between tabs
 - local first account-, user- and session management
 - preloading and batching
+- fullstack reactive data binding without the boilerplate
 - integrated persistence, caching, sync and databinding with live updates
 - app-like explicit update system
 

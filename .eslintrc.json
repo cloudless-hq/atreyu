@@ -13,7 +13,7 @@
   "extends": [
     "plugin:@typescript-eslint/recommended"
   ],
-  "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*", "runtime/**", "app/src/deps/**"],
+  "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*", "dev-runtime/**", "app/src/deps/**"],
   "rules": {
     // "no-console": "error",
     "@typescript-eslint/no-explicit-any": ["off"],
