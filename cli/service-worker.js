@@ -1,14 +1,9 @@
 import { join, build } from '../deps-deno.ts' // green
 import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 
-// TODO: use natural folder location and scope allowed headersResponse included "Service-Worker-Allowed : /"
-// navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).then(() => {
-//   console.log("Install succeeded as the max allowed scope was overriden to '/'.");
-// })
-
 export default async function ({ appFolder, batch, buildRes, clean, info } = {}) {
   // const startTime = Date.now()
-  const fileName = `service-worker.js`
+  const fileName = `src/service-worker.js`
   const appFolderAbs = join(Deno.cwd(), appFolder)
   const swPath = join(appFolderAbs, fileName)
   const projectPath = join(appFolder, fileName)
@@ -52,19 +47,19 @@ export default async function ({ appFolder, batch, buildRes, clean, info } = {})
     format: 'esm', // iife
     // keepNames: true,
     platform: 'browser',
-    outfile: `${appFolderAbs}/service-worker.bundle.js`
+    outfile: `${appFolderAbs}/build/service-worker.js`
   }).catch(e => { console.error(e) })
 
   parseMetafile(metafile, info)
 
   newBuildRes.files[projectPath] = {
     emits: [
-      `app/service-worker.bundle.js`,
-      `app/service-worker.bundle.js.map`
+      `app/build/service-worker.js`,
+      `app/build/service-worker.js.map`
     ],
     newEmits: [
-      `app/service-worker.bundle.js`,
-      `app/service-worker.bundle.js.map`
+      `app/build/service-worker.js`,
+      `app/build/service-worker.js.map`
     ],
     deps: Object.keys(metafile.inputs).map(path => {
       if (path.includes('/atreyu/')) {
@@ -75,7 +70,7 @@ export default async function ({ appFolder, batch, buildRes, clean, info } = {})
     })
   }
 
-  // console.log(`    ${green('emitted:')} app/service-worker.bundle.js`)
+  // console.log(`    ${green('emitted:')} app/build/service-worker.js`)
   // console.log(`    └─ ${emitRes}`) // .map(stat => stat.join(': ')).join(', ') currently always empty
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')

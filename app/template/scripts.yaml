@@ -1,15 +1,15 @@
-imap: imports.json 
+imap: imports.json
 lock: lock.json
 lock-write: true
 
-scripts:  
+scripts:
   init: ipfs --config ipfs init
   install: cd client/atreyu/snowpack && yarn install
-  
+
   build:
     pll: [ 'vr build-worker', 'vr build-svelte' ]
   build-worker:
-    deno bundle --unstable app/service-worker.js ./app/service-worker.bundle.js
+    deno bundle --unstable app/service-worker.js ./app/build/service-worker.js
   build-svelte:
     cmd: deno run --unstable --lock-write app/atreyu/svelte.js
     allow: ['read', 'write']
@@ -19,18 +19,18 @@ scripts:
     allow: ['read', 'net']
 
   start-ipfs: ipfs --config ipfs daemon --offline
-  
+
   publish-local:
     cmd: deno run --unstable --lock-write app/atreyu/ipfs.js
     allow: ['run', 'write']
 
   lint:
     standard
-  test: 
+  test:
     npm outdated && lint
   clean:
-    rm client/build/** && rm client/service-worker.bundle.js && rm client/ipfsHash && rm client/ipfs-map.json
-  
+    rm client/build/** && rm client/build/service-worker.js && rm client/ipfsHash && rm client/ipfs-map.json
+
   watch: denon dev
-  
+
   dev: ['vr build-svelte', 'vr publish-local', 'vr build-worker', 'vr publish-local']

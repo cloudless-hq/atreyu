@@ -21,7 +21,7 @@ export default function ({ schema = {paths: {}, fallback: true}, dataStore } = {
     schema = schema({ defaultPaths, addPathTags })
   }
 
-  ;([...Object.entries(schema.paths)]).forEach(([path, {get, name}]) => {
+  ;([...Object.entries(schema.paths || {})]).forEach(([path, {get, name}]) => {
     if (get && get.tags?.includes('window')) {
       routes.push({ router: new Route(path), name, security: get.security, operationId: get.operationId })
     }

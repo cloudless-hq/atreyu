@@ -1,5 +1,4 @@
 <script>
-  import SidebarLayout from '../sidebar-layout/components/sidebar-layout.svelte'
   import { onMount } from 'svelte'
 
   export let userData
@@ -25,7 +24,6 @@
 
   let sideWidth = '440'
   let contentMin
-  let sidebarClosed = false
 
   let saveToDevice = true
 
@@ -72,9 +70,10 @@
 <style>
   .login {
     background: white;
+    height: 100vh;
   }
   .login-form {
-    max-width: 80%;
+    max-width: min(80%, 480px);
     margin: auto;
     position: relative;
     top: 30%;
@@ -117,7 +116,7 @@
   }
 </style>
 
-<SidebarLayout top="0px" sideWidth="{sideWidth}px" contentMin="{contentMin}" closed={sidebarClosed}  >
+<div>
   <div class="login" class:hidden={!!userData}>
     <!-- <form class="login-form" method="GET" name="loginForm"> -->
       <!-- action={formTarget} -->
@@ -163,4 +162,4 @@
   </div>
 
   <div></div>
-</SidebarLayout>
+</div>

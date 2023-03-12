@@ -13,7 +13,7 @@ import {
   // analyzeDeps
 } from '../deps-deno.ts'
 
-import { runDeno } from '../dev-runtime/mod.ts'
+import { runDeno } from '../runtime/mod.ts'
 import { update } from './update.ts'
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'

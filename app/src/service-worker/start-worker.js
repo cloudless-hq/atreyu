@@ -1,5 +1,5 @@
 export default async function startWorker ({ reloadAfterInstall } = {}) {
-  const workerPath = '/service-worker.bundle.js'
+  const workerPath = '/build/service-worker.js'
   let regs
   let firstStart = false
   try {

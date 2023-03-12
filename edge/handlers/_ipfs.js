@@ -92,7 +92,7 @@ export async function handler ({ req, app, waitUntil }) {
       if (
         path.endsWith('/index.html') ||
         path.endsWith('/ipfs-map.json') ||
-        path.endsWith('/service-worker.bundle.js') ||
+        path.endsWith('/service-worker.js') ||
         req.url.pathname.startsWith('/_ayu/accounts')
       ) {
         disableCache = true
@@ -176,6 +176,7 @@ export async function handler ({ req, app, waitUntil }) {
   }
   if (disableCache) {
     // TODO: But now that HTTP/1.1-conformant servers are widely deployed, there's no reason to ever use that max-age=0-and-must-revalidate combination — you should instead just use no-cache
+
     headers = new Headers({
       'content-type': contentType || response.headers.get('content-type'),
       'content-length': response.headers.get('content-length'),
@@ -183,6 +184,7 @@ export async function handler ({ req, app, waitUntil }) {
       'cache-control': 'public, must-revalidate, max-age=0',
       'x-ipfs-path': ipfsPath,
       'server': 'ipfs-edge-worker',
+      'Service-Worker-Allowed': '/',
       'cache-status': response.headers.get('cache-status') || 'edge-kv; miss',
       ...preloadHeader
     })

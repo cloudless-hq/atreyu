@@ -142,8 +142,8 @@ export async function buildEdge ({ workers, info, buildName, batch = [], clean, 
 //   "files": {
 //     "app/service-worker.js": {
 //       "emits": [
-//         "app/service-worker.bundle.js",
-//         "app/service-worker.bundle.js.map"
+//         "app/build/service-worker.js",
+//         "app/build/service-worker.js.map"
 //       ],
 //       "newEmits": [],
 //       "deps": [

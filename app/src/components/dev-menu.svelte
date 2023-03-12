@@ -5,8 +5,6 @@
 
   const settingsDoc = $data._docs['_local/ayu'].$
 
-  $: console.log(settingsDoc)
-
   function toggle (key) {
     localStorage.setItem('ayu_' + key, !JSON.parse(localStorage.getItem('ayu_' + key) || 'true'))
     location.reload()

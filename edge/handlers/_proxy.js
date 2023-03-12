@@ -215,7 +215,7 @@ export async function handler ({ req, text, waitUntil }) {
   }
 
   if (
-    !req.headers['referer']?.endsWith('service-worker.bundle.js')
+    !req.headers['referer']?.endsWith('service-worker.js')
     // && !req.url.pathname.startsWith('/oauth2') &&
     // !req.url.pathname.startsWith('/login-consent-provider') &&
     // !req.url.pathname.startsWith('/profile/de-DE/login') &&

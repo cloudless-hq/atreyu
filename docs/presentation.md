@@ -15,7 +15,7 @@ zoom in on app side of the spectrum from rich harris. web apps for us much more 
   - editors
   - Dapps without backends
   - chrome apps
-- in between: public data heavy apps where SSR makes no sense
+- in between: public data centric apps where SSR makes no sense
 - no SSR, no HMR, dev = prod philosophy
 - no node if avoidable, node = legacy
 - edge first, cloudflare/deno deploy
