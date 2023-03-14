@@ -97,7 +97,7 @@ export function makeRouter (dataRoutes) {
             console.error(err)
           },
           methodSummary: e => {
-            // console.log(e)
+            // console.trace(e)
 
             const routes = new Map()
 

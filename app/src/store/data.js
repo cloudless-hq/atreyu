@@ -1,6 +1,6 @@
 import { makeProxy } from '../lib/proxy-object.js'
 import { falcor } from '/_ayu/build/deps/falcor.js'
-import { extractFromCache } from './helpers.js'
+import { extractFromCache, setPathValue } from './helpers.js'
 import ServiceWorkerSource from './service-worker-source.js'
 
 const _undefined = Symbol('undefined')
@@ -183,7 +183,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         onAccess(path)
       }
 
-      const falcorCacheVal = extractFromCache(adjustedModel._root.cache, path)
+      const { value: falcorCacheVal } = extractFromCache({ obj: adjustedModel._root.cache, path })
       let cacheVal
       let existingProm
       if (typeof falcorCacheVal !== 'undefined') {
@@ -275,9 +275,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     },
 
     set: (path, newValue, delim, _id) => {
-      if (!path[path.length - 1]) {
+      if (path[path.length - 1] === '') {
         path.pop()
       }
+
+      // console.log({ path, newValue, delim, _id })
+
       path = subModel ? [...subModel.getPath(), ...path] : path
 
       let boxKey = ''
@@ -291,6 +294,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         path = path.concat(boxKey)
       } else {
         adjustedModel = subModel || model
+      }
+
+      const { parentAtom } = extractFromCache({ obj: adjustedModel._root.cache, path })
+      if (parentAtom) {
+        path = parentAtom.obj.$_absolutePath
+        newValue = setPathValue(parentAtom.obj.value, parentAtom.relPath, newValue)
       }
 
       adjustedModel.setValue(path, newValue)
@@ -404,7 +413,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   // invalidationHandler = paths => {
   //  invalidationCache = {}
   //  paths.forEach(path => {
-  //  console.log(extractFromCache(model._root.cache, path).description)
+  //  console.log(extractFromCache({obj: model._root.cache, path}).description)
   //  })
 
   return {

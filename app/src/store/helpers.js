@@ -1,26 +1,47 @@
-export function extractFromCache (obj, path, idx = 0, root = obj) {
+export function extractFromCache ({ obj, path, idx = 0, root = obj, parentAtom }) { // verbose,
+  // if (verbose) {
+  //   console.log({ obj, path, idx })
+  // }
+
   if (obj && obj.$type === 'atom' && path.length - idx !== 0) {
-    let step = path[idx]
+    const step = path[idx]
     if (!obj.value) {
-      return undefined
+      return { value: undefined, parentAtom }
     }
-    return extractFromCache(obj.value[step], path, idx + 1, root)
+    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root, parentAtom: { obj, relPath: path.slice(idx)} }) // verbose
   } else if (obj && obj.$type === 'ref') {
-    let newPath = obj.value.concat(path.slice(idx))
-    return extractFromCache(root, newPath)
+    const newPath = obj.value.concat(path.slice(idx))
+    return extractFromCache({ obj: root, path: newPath }) // verbose
   } else if (path.length - idx === 0) {
     if (obj && obj.$type === 'error') {
-      return undefined
+      return { value: undefined, parentAtom }
     } else if (obj && obj.$type) {
-      return obj.value
+      return { value: obj.value, parentAtom }
     } else {
-      return obj
+      return { value: obj, parentAtom }
     }
   } else if (obj === null || obj === undefined) {
-    return obj
+    return { value: obj, parentAtom }
   } else {
-    let step = path[idx]
-    return extractFromCache(obj[step], path, idx + 1, root)
+    const step = path[idx]
+    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root }) // verbose
+  }
+}
+
+export function setPathValue (o, [head, ...tail], newValue, root) {
+  if (!root) {
+    o = structuredClone(o)
+    root = o
+  }
+  if (tail.length) {
+    if (!o[head]) {
+      o[head] = {}
+    }
+
+    setPathValue(o[head], tail, newValue, root)
+  } else {
+    o[head] = newValue
+    return root
   }
 }
 
