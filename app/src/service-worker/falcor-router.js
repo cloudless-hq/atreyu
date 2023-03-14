@@ -44,8 +44,18 @@ export function toFalcorRoutes (schema) {
           const getRes = handler(...arguments)
 
           if (handlerType === 'get') {
+            const pathArg = arguments[0]
+
             if (getRes.value && !getRes.path) {
-              getRes.path = arguments[0].length ? [ ...arguments[0] ] : [ arguments[0] ]
+              getRes.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
+            } else if (typeof getRes.then === 'function') {
+              getRes.then(res => {
+                if (res.value && !res.path) {
+                  res.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
+                }
+
+                return res
+              })
             }
           }
 
@@ -88,6 +98,7 @@ export function makeRouter (dataRoutes) {
           },
           methodSummary: e => {
             // console.log(e)
+
             const routes = new Map()
 
             e.routes.forEach(route => {

@@ -25,6 +25,9 @@ export default [...deps.map((name) =>
         // include: ['**/deps/falcor.js'],
         delimiters: ['', ''],
         values: {
+          // FIXME: needs svelte patch and regresssion test!
+          "arg && typeof arg === 'object' && 'length' in arg": "arg && 'length' in arg",
+
           'process.env.FALCOR_OBSERVABLE_NO_CATCH': 'false',
           'setImmediate(throwError, e);': 'setTimeout(() => { throwError(e); }, 0);'
           // 'setImmediate': '((cb, arg) => { setTimeout(() => { cb(arg) }, 0) })'

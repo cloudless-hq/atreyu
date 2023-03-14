@@ -159,7 +159,14 @@ export default {
   '_docs.create': {
     call: {
       handler: async ({ dbs, session, _Observable }, [ docs ]) => {
+        if (!Array.isArray(docs)) {
+          docs = [docs]
+        }
         const result = await dbs.pouch.bulkDocs(docs.map(doc => {
+          if (!doc._id) {
+            // FIXME: uuid
+            doc._id = `${Math.floor(Math.random() * 1000)}:${Math.floor(Math.random() * 1000000000)}`
+          }
           doc.changes = [{ userId: session.userId, action: 'created', date: Date.now() }]
           return doc
         }))

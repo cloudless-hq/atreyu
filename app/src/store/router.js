@@ -15,13 +15,13 @@ const onIdle = window.requestIdleCallback || function (cb) {
   cb({ timeRemaining: function () { return 41 } })
 }
 
-export default function ({ schema = {paths: {}, fallback: true}, dataStore } = {}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'false', _preloadDefault } = {}) {
+export default function ({ schema = { paths: {}, fallback: true }, dataStore } = {}, { preloadDisabled = localStorage.getItem('ayu_preload') === 'false', _preloadDefault } = {}) {
   const routes = []
   if (typeof schema === 'function') {
     schema = schema({ defaultPaths, addPathTags })
   }
 
-  ;([...Object.entries(schema.paths || {})]).forEach(([path, {get, name}]) => {
+  ;([...Object.entries(schema.paths || defaultPaths)]).forEach(([path, {get, name}]) => {
     if (get && get.tags?.includes('window')) {
       routes.push({ router: new Route(path), name, security: get.security, operationId: get.operationId })
     }

@@ -1,3 +1,5 @@
+![build status](https://github.com/cloudles-hq/atreyu/workflows/container/badge.svg)
+
 # Atreyu - cutting edge web apps
 
 **attention**: This is early pre-release software. Things will still be missing, break or change without warning.
