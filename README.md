@@ -1,4 +1,4 @@
-![build status](https://github.com/cloudles-hq/atreyu/workflows/container/badge.svg)
+[![Build](https://github.com/cloudless-hq/atreyu/actions/workflows/container.yml/badge.svg)](https://github.com/cloudless-hq/atreyu/actions/workflows/container.yml)
 
 # Atreyu - cutting edge web apps
 
