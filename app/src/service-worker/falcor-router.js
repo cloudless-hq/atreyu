@@ -46,11 +46,11 @@ export function toFalcorRoutes (schema) {
           if (handlerType === 'get') {
             const pathArg = arguments[0]
 
-            if (getRes.value && !getRes.path) {
+            if (getRes.value !== undefined && !getRes.path) {
               getRes.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
             } else if (typeof getRes.then === 'function') {
               getRes.then(res => {
-                if (res.value && !res.path) {
+                if (res.value !== undefined && !res.path) {
                   res.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
                 }
 

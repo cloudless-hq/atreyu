@@ -13,3 +13,5 @@
 - conflict resolver functions
 - client / server validation functions
 - generic conflict view for db and doc (on app or admin level?)
+- make default environment global config in repo
+- ipfs file progress

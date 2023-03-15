@@ -4,3 +4,5 @@ docs/screens
 **/ipfs-map.json
 edge/build
 secrets.js
+cli/mod.js
+app/docs

@@ -59,7 +59,7 @@ export default async function startWorker ({ reloadAfterInstall } = {}) {
     return new Promise(resolve => { loaded = resolve })
   } else {
     await navigator.serviceWorker.ready
-    // console.log('ServiceWorker ready, allready installed')
+    // console.log('ServiceWorker ready, already installed')
     reg = regs[0]
     return regs[0]
   }

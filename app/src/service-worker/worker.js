@@ -92,7 +92,7 @@ export default function ({
             newDbConf = dbConf
           }
 
-          // (pouchdb prefix allready ayu_)
+          // (pouchdb prefix already ayu_)
           const clientDbName = escapeId(newSession.userId + '__' + newSession.env + '__' + newSession.appName + ( newSession.org ? '__' + newSession.org : '__'))
           const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
 

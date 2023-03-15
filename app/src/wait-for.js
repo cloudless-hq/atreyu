@@ -45,7 +45,7 @@ export default function (node, { key, frames = 2, _contentSelector, _selector })
     node.style.visibility = 'hidden'
     loadedKeys.add(key)
     mutationObserver.observe(node, obsConf)
-    run() // need to call scheduler once manually in case the dom is allready settled when the action is registered
+    run() // need to call scheduler once manually in case the dom is already settled when the action is registered
   }
 
   return {
