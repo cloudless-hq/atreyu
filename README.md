@@ -82,4 +82,4 @@ You can start a standard dev server in the current folder by running `ayu`
 
 For detailed documentation please have a look at https://atreyu.dev
 
-For documentation for working on atreyu itself see [CONTRIBUTING.md](here)
+For documentation for working on atreyu itself see [CONTRIBUTING.md](CONTRIBUTING.md)

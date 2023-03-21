@@ -17,6 +17,8 @@ export async function recursiveReaddir (path: string) {
 }
 
 export async function execStream ({ cmd, getData, killFun }: {cmd: string[], getData: (arg: string) => null, killFun: (arg: Deno.Process) => null }) {
+  console.log(cmd.join(' '))
+
   const proc = Deno.run({
     cmd,
     stdout: 'piped',
@@ -25,7 +27,7 @@ export async function execStream ({ cmd, getData, killFun }: {cmd: string[], get
 
   killFun?.(proc)
 
-  proc.status().then(async ({ code }) => {
+  const procStatusProm = proc.status().then(async ({ code }) => {
     // console.log('finish')
     if (code !== 0) {
       const rawError = await proc.stderrOutput()
@@ -39,15 +41,21 @@ export async function execStream ({ cmd, getData, killFun }: {cmd: string[], get
 
     if (getData) {
       getData(str)
+      // console.log(str)
     } else {
       console.log(str)
     }
   }
 
-  await proc.close()
+  // await proc.close()
+  return procStatusProm
 }
 
-export async function exec (cmd: string[], silent: boolean) {
+export async function exec (cmd: string[], silent: boolean, verbose: boolean) {
+  if (verbose) {
+    console.log(cmd.join(' '))
+  }
+
   const proc = Deno.run({
     cmd,
     stdout: 'piped',

@@ -33,6 +33,12 @@ const { ayuVersion, denoVersion } = versions
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
+// TODO: degit example app template create command
+// TODO: handle missing app folder
+// TODO: handle missing deno dir folder and missing deno home env
+// TODO: dynamic import for non essential modules
+// TODO: install check versions
+// TODO: remove docs js cdns dependency
 
 let buildName = ''
 let buildColor = ''
@@ -167,10 +173,10 @@ function startIpfsDaemon () {
   const runPath = _[1] || homeConfPath
   const offline = (online || pin) ? '' : ' --offline'
   const ready = new Promise((resolve, _reject) => {
-    execIpfsStream(
-      'daemon --enable-gc=true --migrate=true' + offline,
-      runPath,
-      data => {
+    execIpfsStream({
+      cmd: 'daemon --enable-gc=true --migrate=true' + offline,
+      repo: runPath,
+      getData: data => {
         if (verbose) {
           console.log('  ipfs: ' + data)
         }
@@ -184,8 +190,8 @@ function startIpfsDaemon () {
           resolve()
         }
       },
-      proc => { ipfsDaemon = proc }
-    )
+      killFun: proc => { ipfsDaemon = proc }
+    })
   })
   return ready
 }
@@ -419,7 +425,7 @@ switch (cmd) {
     // duration && console.log('  ' + duration + 's')
     // console.log('')
 
-    // TODO: warn and exit ipfs publishing on allready running offline node
+    // TODO: warn and exit ipfs publishing on already running offline node
     const { appFolderHash, rootFolderHash, fileList, ayuHash } = await addIpfs({
       appFolder,
       repo: repo || homeConfPath,

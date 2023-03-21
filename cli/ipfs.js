@@ -29,14 +29,15 @@ const { ipfsVersion } = versions
 
 // console.log({ a: import.meta.url.startsWith('file:/'), b: Deno.mainModule.startsWith('file:'), mainModule: Deno.mainModule, metaUrl: import.meta.url })
 
-export function execIpfsStream (cmd, repo, getData, killFun) {
-  return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData, killFun })
+export function execIpfsStream ({ cmd, repo, getData, killFun, verbose }) {
+  return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData, killFun, verbose })
 }
 
-export function execIpfs (cmd, repo, silent) {
+export function execIpfs (cmd, repo, silent, verbose) {
+  // execIpfsStream(cmd, repo)
   // verbose
   // console.log(['ipfs', `--config=${repo}`, ...cmd.split(' ')].join(' '))
-  return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')], silent)
+  return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')], silent, verbose)
 }
 
 export async function add ({
@@ -63,7 +64,7 @@ export async function add ({
   const pinName = env === 'prod' ? name : name + '_' + env
 
   function ipfs (cmd, {silent} = {}) {
-    return execIpfs(cmd, repo, silent)
+    return execIpfs(cmd, repo, silent, verbose)
   }
 
   const ipfsPinningApi = config.__ipfsPinningApi || 'https://api.pinata.cloud/psa'
@@ -137,7 +138,7 @@ export async function add ({
     }
   }
 
-  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js --ignore=*.svelte --ignore=*.ts `
+  const addCommand = `add -Q --wrap-with-directory=false --chunker=rabin -r --pin=false --ignore=node_modules --ignore=.git --ignore=yarn.lock --ignore=secrets.js --ignore=*.svelte `
   async function doAdd (fName) {
     if (verbose) {
       console.log('  ipfs cmd: ' + addCommand + fName)
@@ -145,7 +146,7 @@ export async function add ({
 
     if (fName.endsWith('/')) {
       const rootHash = (await ipfs(addCommand + fName)).replace('\n', '')
-      return { rootHash, ...await ls(rootHash) }
+      return { rootHash, ...(await ls(rootHash)) }
     } else {
       return (await ipfs(addCommand + fName)).replace('\n', '')
     }
@@ -160,6 +161,12 @@ export async function add ({
       '': rootHash
     }
     const folders = new Set(['QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn', rootHash]) // hash of empty folder and root folder always excluded
+
+    // const refHashes = []
+    // execIpfsStream({ cmd: `refs ${rootHash} -r --format "<src>/<dst>/<linkname>"`, repo, getData: data => {
+    //   refHashes.concat(data.split('\n'))
+    // }, verbose })
+    // console.log('here', refHashes)
 
     const refHashes = await ipfs(`refs ${rootHash} -r --format "<src>/<dst>/<linkname>"`)
 

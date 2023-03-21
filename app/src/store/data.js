@@ -57,7 +57,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     // },
     // Jafar Husain: we notify of changes but you can calculate what changed based on the version annotations from root to any level of detail when you need. this balances the cost of pushing all changes and the cost of polling in a change pull model.
     onChange: () => {
-      // TODO: batch by frame or allready done by internal scheduler?
+      // TODO: batch by frame or already done by internal scheduler?
       if (changeHandler) {
         changeHandler()
       }
@@ -211,6 +211,10 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         })
       }
 
+      // if (path[path.length - 1] === 'length') {
+      //   console.log(path, { cacheVal, existingProm, falcorCacheVal })
+      // }
+
       let newProm
       if (latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
         // TODO: instead of undefined delegating to falcor here we can make small
@@ -219,6 +223,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         lastUpdt.set(pathString, latestTick)
         newProm = adjustedModel.getValue(path)
           .then(val => {
+            // if (path[path.length - 1] === 'length') {
+            //   console.log(path, val, adjustedModel)
+            // }
             if (typeof val === 'undefined') {
               cacheMap.set(pathString, [_undefined])
             } else {

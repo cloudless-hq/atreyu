@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./app/",
+    "types": ["svelte"],
+    "paths": {
+      "/app/*": ["./app/*"],
+      "/src/*": ["./app/src/*"],
+      "/_ayu/*": ["/Users/jan/Dev/cloudless/atreyu/app*"]
+    }
+  }
+}

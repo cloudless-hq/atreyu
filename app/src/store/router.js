@@ -97,6 +97,10 @@ export default function ({ schema = { paths: {}, fallback: true }, dataStore } =
               })
               return router.reverse(newParams)
             },
+            _preloadLink: () => {
+              // TODO:
+              console.log('TODO: implement')
+            },
             _navigate: (newParams, { replaceState } = {}) => {
               Object.entries(newParams).forEach(([key, val]) => {
                 if (typeof val === 'string') {
