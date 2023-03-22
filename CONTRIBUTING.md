@@ -32,6 +32,9 @@ please keep in mind that the ESBUILD_BINARY_PATH (the one that includes esbuild-
 
 Run (if you also want to use a standard release use -n ayudev to have both clis available):
 
+
+TODO: new local cli installation with deno run --reload cli/install.js
+
 ```bash
 deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,npx,`which deno`,yarn --no-check --prompt --unstable -n ayu -f ./cli/mod.js
 

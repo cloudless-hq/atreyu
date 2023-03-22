@@ -6,3 +6,5 @@ edge/build
 secrets.js
 cli/mod.js
 app/docs
+app/example/app/build
+app/example/edge/build
