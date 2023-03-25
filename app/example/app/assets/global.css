@@ -25,6 +25,10 @@ a:visited {
 	color: rgb(0,80,160);
 }
 
+.active {
+  font-weight: 700;
+}
+
 label {
   display: inline-block;
   text-transform: uppercase;

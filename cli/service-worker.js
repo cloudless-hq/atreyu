@@ -2,7 +2,6 @@ import { join, build } from '../deps-deno.ts' // green
 import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 
 export default async function ({ appFolder, batch, buildRes, clean, info } = {}) {
-  // const startTime = Date.now()
   const fileName = `src/service-worker.js`
   const appFolderAbs = join(Deno.cwd(), appFolder)
   const swPath = join(appFolderAbs, fileName)

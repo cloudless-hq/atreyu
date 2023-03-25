@@ -36,8 +36,9 @@ class frameScheduler {
 /* eslint-enable functional/no-this-expression, functional/no-class */
 
 
-function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess, changeHandler }) {
+function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess }) {
   // let invalidationHandler
+
   if (typeof source === 'undefined') {
     source = new ServiceWorkerSource({ wake: 20_000 })
   }
@@ -58,12 +59,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     // Jafar Husain: we notify of changes but you can calculate what changed based on the version annotations from root to any level of detail when you need. this balances the cost of pushing all changes and the cost of polling in a change pull model.
     onChange: () => {
       // TODO: batch by frame or already done by internal scheduler?
-      if (changeHandler) {
-        changeHandler()
-      }
-      if (onChange) {
-        onChange()
-      }
+      // console.log('falcor model change')
+      update()
+      onChange?.()
     },
     // comparator: (oldValEnv, newValEnv, path) => {
     //   if (oldValEnv === newValEnv) {
@@ -179,9 +177,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         adjustedModel = subModel || model
       }
 
-      if (onAccess) {
-        onAccess(path)
-      }
+      onAccess?.(path)
 
       const { value: falcorCacheVal } = extractFromCache({ obj: adjustedModel._root.cache, path })
       let cacheVal
@@ -211,12 +207,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         })
       }
 
-      // if (path[path.length - 1] === 'length') {
-      //   console.log(path, { cacheVal, existingProm, falcorCacheVal })
+      // if (pathString === 'todos.completed.date.length') {
+      //   console.log({ cacheVal, existingProm, falcorCacheVal, latestTick, lastUpdt: lastUpdt.get(pathString) })
       // }
 
       let newProm
-      if (latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
+      if (falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
@@ -324,7 +320,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
 
   const runQueue = new Set()
   const subscribers = new Set()
-  function update (_changes) {
+  function update () {
     // console.log('svelte store subscribers updating')
     if (subscribers.size > 0) {
       const queueOpener = !runQueue.size
@@ -334,7 +330,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         if (!deps[id]) {
           changed = true
         } else {
-          for (const [pathString, { lastVer, path }] of deps[id]) {
+          for (const [ pathString, { lastVer, path } ] of deps[id]) {
             const newVer = model.getVersion(path) // FIXME: path inside atom object are all -1 instead of atom parent value
 
             if (newVer === -1 || !lastVer || lastVer !== newVer) {
@@ -372,7 +368,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     }
 
     const doInvalidate = (..._args) => {
-      // console.log('invalidate', id)
+      // console.log('store invalidate', id)
       if (invalidate) {
         return invalidate(..._args)
       }
@@ -392,9 +388,6 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     }
   }
 
-  changeHandler = changes => {
-    update(changes)
-  }
   // const cache = model.getCache()
   // const changes = {}
   // diffCache(cache, model).forEach(change => {

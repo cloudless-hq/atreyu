@@ -2,12 +2,18 @@
 // TODO: refactor split update logic and ui
 import data from '/_ayu/src/store/data.js'
 import DevMenu from './dev-menu.svelte'
-// FIxME: check existing timeouts and cancel to prevent double sync?
+
+export let onChange
+
 let seq
 let timeout
-export let doSync = async (dataProxy) => {
+export let doSync = async (dataProxy, falcorModel) => {
   try {
-    seq = (await dataProxy._sync(seq))?.json?._seq || seq
+    const data = (await dataProxy._sync(seq))?.json
+
+    seq = data?._seq || seq
+
+    onChange?.({data, dataProxy, falcorModel})
   } catch (err) {
     console.log(err)
   } finally {
@@ -16,7 +22,7 @@ export let doSync = async (dataProxy) => {
     }
     timeout = setTimeout(() => {
       timeout = null
-      doSync(dataProxy)
+      doSync(dataProxy, falcorModel)
     }, 100)
   }
 }

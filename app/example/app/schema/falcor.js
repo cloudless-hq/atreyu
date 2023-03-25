@@ -18,44 +18,47 @@ function viewMatch (view, sortBy) {
 }
 
 export default {
-  'todos[{keys:view}][{keys:sortBy}].length': {
+  'todos[{keys:views}][{keys:sorts}].length': {
     get: {
-      handler: async ({ dbs, view, sortBy }) => {
-        const { cView, startkey, endkey } = viewMatch(view[0], sortBy[0])
+      handler: ({ dbs, views, sorts }) => {
+        const db = navigator.onLine && dbs.couch ? dbs.couch : dbs.pouch
 
-        if (view.length > 1 || sortBy.length > 1) {
-          console.error({view, sortBy})
-        }
-        const db = navigator.onLine ? dbs.couch : dbs.pouch
+        return Promise.all(views.map(async view => {
+          const { cView, startkey, endkey } = viewMatch(view, sorts[0])
 
-        const res = await db.query('todos/' + cView, {
-          reduce: true,
-          timeout: 2000,
-          include_docs: false,
-          descending: true,
-          startkey,
-          endkey
-        }).catch(error => ({ error }))
+          if (sorts.length > 1) {
+            console.error({view, sorts})
+          }
 
-        if (res.error) {
-          console.log(res.error)
-        }
+          const res = await db.query('todos/' + cView, {
+            reduce: true,
+            timeout: 2000,
+            include_docs: false,
+            descending: true,
+            startkey,
+            endkey
+          }).catch(error => ({ error }))
 
-        return {
-          value: res.rows?.[0]?.value || 0
-        }
+          if (res.error) {
+            console.log(res.error)
+          }
+
+          return {
+            path: ['todos', view, sorts[0], 'length'],
+            value: res.rows?.[0]?.value || 0
+          }
+        }))
       }
     }
   },
 
-  'todos[{keys:view}][{keys:sortBy}][{ranges:ranges}]': {
+  'todos[{keys:views}][{keys:sorts}][{ranges:ranges}]': {
     get: {
-      handler: async ({ dbs, view, sortBy, ranges }) => {
-        const { cView, startkey, endkey } = viewMatch(view[0], sortBy[0])
-        if (view.length > 1 || sortBy.length > 1) {
-          console.error({view, sortBy})
-        }
+      handler: ({ dbs, views, sorts, ranges }) => {
+        // TODO: auto add db()
+        const db = navigator.onLine && dbs.couch ? dbs.couch : dbs.pouch
 
+        // TODO: auto add maxRange
         let to
         let from
         ranges.forEach(range => {
@@ -72,27 +75,34 @@ export default {
           }
         })
 
-        const db = navigator.onLine ? dbs.couch : dbs.pouch
+        return Promise.all(views.map(async view => {
+          const { cView, startkey, endkey } = viewMatch(view, sorts[0])
 
-        const { rows, error } = await db.query('todos/' + cView, {
-          timeout: 2000,
-          limit: to - from + 1,
-          skip: from,
-          include_docs: false,
-          reduce: false,
-          descending: true,
-          startkey,
-          endkey
-        }).catch(error => ({ error }))
+          if (sorts.length > 1) {
+            console.error({view, sorts})
+          }
 
-        if (error) {
-          console.log(error)
-        }
+          const { rows, error } = await db.query('todos/' + cView, {
+            timeout: 2000,
+            limit: to - from + 1,
+            skip: from,
+            include_docs: false,
+            reduce: false,
+            descending: true,
+            startkey,
+            endkey
+          }).catch(error => ({ error }))
 
-        return rows.map((row, i) => ({
-          path: ['todos', view, sortBy, i + from],
-          value: { $type: 'ref', value: ['_docs', row.id] }
-        }))
+          if (error) {
+            console.log(error)
+          }
+
+          return rows.map((row, i) => ({
+            path: ['todos', view, sorts[0], i + from],
+            value: { $type: 'ref', value: ['_docs', row.id] }
+          }))
+        })).then(res => res.flat())
+        // TODO: auto flatten?
       }
     }
   }

@@ -52,16 +52,17 @@
 <div class="m-6">
   <label for="view">Filter:</label>
 
-  // todo preload example:
-  <ul class="rounded" name="view" value={view}>
-    <li value='all'>
-      Show all
+  <ul class="flex">
+    <li class="m-2" class:active={ $router.todos.view === 'all' } >
+      <a href={ $router.todos._link({ view: 'all', sortBy }) }>Show all</a>
     </li>
-    <li value='completed'>
-      Show completed
+
+    <li class="m-2" class:active={ $router.todos.view === 'completed' }>
+      <a href={ $router.todos._link({ view: 'completed', sortBy: 'date' }) }>Show completed</a>
     </li>
-    <li value='active'>
-      Show active
+
+    <li class="m-2" class:active={ $router.todos.view === 'active' }>
+      <a href={ $router.todos._link({ view: 'active', sortBy: 'date' }) }>Show active</a>
     </li>
   </ul>
 </div>
@@ -71,7 +72,10 @@
 
   <select class="rounded" name="sortBy" value={sortBy} on:change={changeView}>
     <option value='date'>Time</option>
-    <option value='completed'>Completed</option>
+
+    {#if $router.todos.view === 'all' }
+      <option value='completed'>Completed</option>
+    {/if}
   </select>
 </div>
 
@@ -87,5 +91,5 @@
 </ul>
 
 {#if pageEnd < todos.length}
- <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>
+  <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>
 {/if}

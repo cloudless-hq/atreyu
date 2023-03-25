@@ -5,6 +5,7 @@ import PouchDB from '../../build/deps/pouchdb.js'
 export default async function ({
   clientDbName,
   serverDbName,
+  clientDbSeeds,
   sessionId,
   preload
 }) {
@@ -14,7 +15,7 @@ export default async function ({
   let sync
   const hasCouch = !sessionId.startsWith('ephemeral:')
 
-  await pouch.put({ _id: '_local/ayu', sessionId }).catch(() => {})
+  await pouch.bulkDocs([ { _id: '_local/ayu', sessionId }, ...(clientDbSeeds || []) ]).catch(() => {})
 
   if (hasCouch) {
     couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {

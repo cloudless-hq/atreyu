@@ -14,6 +14,7 @@ export default function ({
   dbConf = {},
   dataSources,
   schema,
+  clientDbSeeds,
   proxiedDomains,
   handlers: appHandlers
 } = {}) {
@@ -97,6 +98,7 @@ export default function ({
           const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
 
           self.session.dbs = await makePouch({
+            clientDbSeeds,
             clientDbName,
             serverDbName,
             sessionId: newSession.sessionId,

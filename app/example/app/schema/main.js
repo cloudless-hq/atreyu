@@ -3,7 +3,7 @@ import falcorPaths from './falcor.js'
 export function schema ({ defaultPaths, addPathTags }) {
   return {
     paths: {
-      '/#/todos(/:view)(/:sortBy)': {
+      '/(#/todos)(/:view)(/:sortBy)': {
         name: 'todos',
 
         get: {
