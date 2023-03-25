@@ -36,13 +36,13 @@
       pouchInfo = await $data._pouch.$promise
       sessionId = await $data._session.sessionId.$promise
       sessionDoc = await $data._docs[sessionId].$promise
-      pushDoc = await $data._docs[sessionDoc.replications.push].$promise
+      pushDoc = sessionDoc?.replications ? (await $data._docs[sessionDoc.replications.push].$promise) : null
     } else {
       try {
         const pouch = new PouchDB(localDbName)
         sessionId = (await pouch.get('_local/ayu')).sessionId
         sessionDoc = await pouch.get(sessionId)
-        pushDoc = await pouch.get(sessionDoc.replications.push)
+        pushDoc = sessionDoc?.replications ? (await pouch.get(sessionDoc.replications.push)) : null
         pouchInfo = await pouch.info()
         pouch.close()
       } catch (err) {
@@ -52,14 +52,14 @@
     const account = {
       isLoggedIn,
       sessionId,
-      username: sessionDoc.email,
+      username: sessionDoc?.email,
       pouchInfo,
       couchInfo,
-      org: sessionDoc.org,
+      org: sessionDoc?.org,
       notifications: 0,
-      unsynced: pouchInfo.update_seq - pushDoc.last_seq,
-      sessionCreated: sessionDoc.created,
-      lastLogin: sessionDoc.lastLogin
+      unsynced: pouchInfo.update_seq - (pushDoc?.last_seq || 0),
+      sessionCreated: sessionDoc?.created || Date.now(),
+      lastLogin: sessionDoc?.lastLogin || Date.now()
     }
 
     if (isLoggedIn) {

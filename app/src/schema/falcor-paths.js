@@ -83,7 +83,7 @@ export default {
       handler: async ({ dbs }) => {
         return {
           jsonGraph: {
-            _couch: { $type: 'atom', value:  await dbs.couch.info() }
+            _couch: { $type: 'atom', value:  await dbs.couch?.info?.() }
           }
         }
       }
