@@ -1,5 +1,6 @@
 import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/helpers.js'
+import dbDefaultSeeds from '../app/db-default-seeds.js'
 
 export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force, ayuHash, verbose }) {
   const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
@@ -72,12 +73,12 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       }
     }
 
-    let dbSeeds = []
+    const dbSeeds = [...dbDefaultSeeds]
     // TODO: handle updates
     if (createDb) {
       try {
         console.log('  seeding base docs to database')
-        dbSeeds = (await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default
+        dbSeeds.concat((await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default)
         // const currentVersions = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, { body: <ids>, headers })).json()
         // console.log(currentVersions)
       } catch (_err) { /* ignore */ }

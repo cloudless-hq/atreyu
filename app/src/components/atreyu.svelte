@@ -3,7 +3,7 @@
 import data from '/_ayu/src/store/data.js'
 import DevMenu from './dev-menu.svelte'
 
-export let onChange
+export let onChange = () => {}
 
 let seq
 let timeout
@@ -13,7 +13,7 @@ export let doSync = async (dataProxy, falcorModel) => {
 
     seq = data?._seq || seq
 
-    onChange?.({data, dataProxy, falcorModel})
+    onChange({data, dataProxy, falcorModel})
   } catch (err) {
     console.log(err)
   } finally {

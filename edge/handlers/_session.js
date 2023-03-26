@@ -94,7 +94,7 @@ export async function handler ({ req, stats, app }) {
       return new Response('forbidden', { status: 403 })
     }
 
-    // TODO: if allready logged in, logout or error
+    // TODO: if already logged in, logout or error
     // https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
     // name: Ja Joh, idp: Data from your identity provider, user_uuid: The ID of the user.
 

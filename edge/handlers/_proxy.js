@@ -544,7 +544,7 @@ export async function handler ({ req, text, waitUntil }) {
   // TODO: only if origin present before + respect current domain
   // cleanReqHeaders.origin = settings.hostname
 
-  // TODO: headers allready stripped to minimum if they come from KV store
+  // TODO: headers already stripped to minimum if they come from KV store
 
   const { raw: res, error, ok } = await doReq(href, {
     redirect: forwarded === 'external' ? 'follow' : 'manual',
