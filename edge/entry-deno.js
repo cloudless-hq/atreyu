@@ -138,7 +138,7 @@ startWorker({
       const denoCodePath = codePath.replace('.js', '.deno.js')
 
       try {
-        const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --config=${appData[appKey].config.repo} ${denoCodePath}`.split(' ')], false)).split(' ')
+        const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --repo-dir=${appData[appKey].config.repo} ${denoCodePath}`.split(' ')], false)).split(' ')
         if (fileHash !== workers[workerKey]?.fileHash) {
           console.log(`  ${workers[workerKey] ? 're' : ''}loading worker script: ` + workerKey)
         }

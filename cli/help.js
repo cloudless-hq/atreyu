@@ -32,14 +32,11 @@ Usage:
       --bg
         start daemon in background and exit
 
-  ${green('ayu')} ${yellow('init')}
-    initialize atreyu. This creates a fresh 'offline' ipfs repo
-    for storing and locally serving all static and compiled files.
-    It is safe to delete the ipfs folder at any time if it gets too big.
+  ${green('ayu')} ${yellow('create')}       ${gray('-- eg: ayu create myTodos')}
+    creates a new atreyu project. creates a fresh example project with a simple todo application.
     Options:
-      <path>
-      ipfs repo to use
-      optional, defaults to 'ipfs' folder in current path
+      <name>
+      name of project folder to use
 
   ${green('ayu')} ${yellow('publish')}      ${gray('-- eg: ayu publish')}
     Publish the current build to the ipfs pinning service configured.

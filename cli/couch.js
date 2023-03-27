@@ -73,10 +73,11 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
       }
     }
 
-    const dbSeeds = [...dbDefaultSeeds]
+    let dbSeeds = []
     // TODO: handle updates
     if (createDb) {
       try {
+        dbSeeds = [...dbDefaultSeeds]
         console.log('  seeding base docs to database')
         dbSeeds.concat((await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default)
         // const currentVersions = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, { body: <ids>, headers })).json()

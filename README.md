@@ -72,10 +72,12 @@ You will see 3 prompts, 2 to check DENO_HOME and HOME environmnet variables, to 
 
 After that you will have the ayu command available. just run `ayu --help` for an overview of the options.
 
-The first time you use atreyu, you need to initialize the atreyu repo, defaulting to  `~/.atreyu`. This is used as the content adressable asset store and for configuration.
+The first time you use atreyu, it will initialize the atreyu repo, defaulting to  `~/.atreyu`. This is used as the content adressable asset store and for configuration.
+
+To create a new project or getting an example application, use the create command.
 
 ```bash
-ayu init
+ayu create my-ayu-app && cd my-ayu-app
 ```
 
 You can start a standard dev server in the current folder by running `ayu`

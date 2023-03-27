@@ -30,14 +30,18 @@ const { ipfsVersion } = versions
 // console.log({ a: import.meta.url.startsWith('file:/'), b: Deno.mainModule.startsWith('file:'), mainModule: Deno.mainModule, metaUrl: import.meta.url })
 
 export function execIpfsStream ({ cmd, repo, getData, killFun, verbose }) {
-  return execStream({ cmd: ['ipfs', `--config=${repo}`, ...cmd.split(' ')], getData, killFun, verbose })
+  return execStream({ cmd: ['ipfs', `--repo-dir=${repo}`, ...cmd.split(' ')], getData, killFun, verbose })
 }
 
 export function execIpfs (cmd, repo, silent, verbose) {
   // execIpfsStream(cmd, repo)
   // verbose
-  // console.log(['ipfs', `--config=${repo}`, ...cmd.split(' ')].join(' '))
-  return exec(['ipfs', `--config=${repo}`, ...cmd.split(' ')], silent, verbose)
+  // console.log(['ipfs', `--repo-dir=${repo}`, ...cmd.split(' ')].join(' '))
+  return exec(['ipfs', `--repo-dir=${repo}`, ...cmd.split(' ')], silent, verbose)
+}
+
+export function get ({ name = 'myAyuProject', ipfsPath = '/ipfs/Qmbq9bybcQVeY8RJSLaawQ3WCcBin6EycADnfhYvuyLe6i' }) {
+  return ipfs(`get -o=./${name} ${ipfsPath}`)
 }
 
 export async function add ({
@@ -360,5 +364,5 @@ export async function add ({
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
   // console.log('')
-  return { appFolderHash, rootFolderHash, fileList, ayuHash }
+  return { appFolderHash, rootFolderHash, fileList, ayuFileList, ayuHash }
 }

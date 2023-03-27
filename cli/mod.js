@@ -20,7 +20,7 @@ import { loadConfig } from './config.js'
 import buildSvelte from './svelte.ts'
 import buildServiceWorker from './service-worker.js'
 import { buildEdge, buildWorkerConfig } from './edge.ts'
-import { execIpfs, execIpfsStream, add as addIpfs } from './ipfs.js'
+import { execIpfs, execIpfsStream, add as addIpfs, get } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
@@ -33,8 +33,6 @@ const { ayuVersion, denoVersion } = versions
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
 // TODO: load from tag!
-// TODO: degit example app template create command
-// TODO: handle missing app folder
 // TODO: handle missing deno dir folder and missing deno home env
 // TODO: dynamic import for non essential modules
 // TODO: install check versions
@@ -109,7 +107,7 @@ const ignore = [
 let cmd = _[0]
 
 const home = Deno.env.get('HOME')
-const homeConfPath = home + '/.atreyu'
+const homeConfPath = repo || home + '/.atreyu'
 const projectPath = Deno.cwd()
 const appName = basename(projectPath)
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
@@ -133,7 +131,7 @@ try {
 
 // TODO: dont always clean completely?
 
-let { config = {}, runConf = {}, env, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
+let { config = {}, runConf = {}, env, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, homeConfPath, buildName, ayuVersion)
 
 const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
@@ -169,21 +167,27 @@ async function loadEdgeSchema ({ appFolder }) {
 }
 
 let ipfsDaemon
-function startIpfsDaemon () {
-  const runPath = _[1] || homeConfPath
+async function startIpfsDaemon () {
   const offline = (online || pin) ? '' : ' --offline'
+
+  try {
+    Deno.lstatSync(homeConfPath + '/config')
+  } catch (_e) {
+    console.log(await execIpfs('init', homeConfPath))
+  }
+
   const ready = new Promise((resolve, _reject) => {
     execIpfsStream({
       cmd: 'daemon --enable-gc=true --migrate=true' + offline,
-      repo: runPath,
+      repo: homeConfPath,
       getData: data => {
         if (verbose) {
           console.log('  ipfs: ' + data)
         }
 
         if (data.startsWith('Initializing daemon...')) {
-          const [_, ipfs, repo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
-          console.log('  ' + Object.entries({ ipfs, repo, atreyu: ayuVersion, ...Deno.version }).map(en => en.join(': ')).join(', '))
+          const [_, ipfs, iRepo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
+          console.log('  ' + Object.entries({ ipfs, repo: iRepo, atreyu: ayuVersion, ...Deno.version }).map(en => en.join(': ')).join(', '))
         }
         if (data.includes('Daemon is ready')) {
           console.log('  ✅ Started ipfs daemon')
@@ -211,7 +215,7 @@ async function doStart () {
 
   if (res.ok) {
     console.error('  using existing daemon on port ' + port)
-    return
+    return 'reused'
   }
 
   await startIpfsDaemon()
@@ -275,23 +279,32 @@ async function resetDir (outputTarget, doClean) {
 
 const input = _[1] || `${appFolder}/src`
 
+// TODO: eject
 switch (cmd) {
   case 'version':
     console.log(ayuVersion)
     break
+
   case 'help':
     printHelp ({ ayuVersion })
     break
-  case 'init':
-    console.log(await execIpfs('init', _[1] || homeConfPath))
+
+  case 'create':
+    const result = await doStart()
+
+    await get({ name: _[1] })
+
+    if (result !== 'reused') {
+      await stopAll()
+      Deno.exit()
+    }
     break
 
   case 'dev':
     edgeSchema = await loadEdgeSchema({ appFolder })
-    // console.log(edgeSchema)
     let buildRes = []
     async function devBuild ({ batch, clean: doClean } = {}) {
-      const newConf = await loadConfig(env, cmd, appName, repo || homeConfPath, buildName, ayuVersion)
+      const newConf = await loadConfig(env, cmd, appName, homeConfPath, buildName, ayuVersion)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 
@@ -351,11 +364,9 @@ switch (cmd) {
 
       // console.log(JSON.stringify(buildRes, null, 2))
 
-      // console.log(buildEmits)
-
       const { appFolderHash } = await addIpfs({
         appFolder,
-        repo: repo || homeConfPath,
+        repo: homeConfPath,
         clean: doClean,
         pin,
         batch,
@@ -426,9 +437,9 @@ switch (cmd) {
     // console.log('')
 
     // TODO: warn and exit ipfs publishing on already running offline node
-    const { appFolderHash, rootFolderHash, fileList, ayuHash } = await addIpfs({
+    const { appFolderHash, rootFolderHash, fileList, ayuFileList, ayuHash } = await addIpfs({
       appFolder,
-      repo: repo || homeConfPath,
+      repo: homeConfPath,
       pin,
       clean: true,
       env,
@@ -436,6 +447,8 @@ switch (cmd) {
       config,
       publish: true
     })
+
+    console.log({fileList, ayuFileList})
 
     await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true, info })
 
@@ -458,7 +471,7 @@ switch (cmd) {
     break
 
   case 'info':
-    // Deno.exit(0)
+    // TODO: show versions and infos for stats, current paths, permissions etc. Deno.exit(0)
     break
 
   case 'start':
@@ -471,19 +484,3 @@ switch (cmd) {
 
     printHelp({ ayuVersion })
 }
-
-// TODO: eject, create
-// case 'build':
-//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-//   // build:svelte build:edge build:service-worker
-//   break
-// case 'build:edge':
-//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-//   await buildEdge(await loadEdgeSchema(), buildName)
-//   break
-// case 'build:svelte':
-//   console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
-//   buildSvelte()
-//   break
-// case 'add':
-//   addIpfs()
