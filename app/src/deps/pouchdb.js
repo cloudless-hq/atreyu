@@ -7328,6 +7328,7 @@ function HttpPouch(opts, callback) {
             callback(null, { results: [change], last_seq: change.seq });
           });
           fetchOpts.signal.addEventListener('abort', () => {
+            clearTimeout(hbTimeout);
             changes.close();
           });
         }).catch(callback);
@@ -7955,7 +7956,6 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     addHttpParam('descending', opts, params);
     addHttpParam('group', opts, params);
     addHttpParam('group_level', opts, params);
-    addHttpParam('partition', opts, params);
     addHttpParam('skip', opts, params);
     addHttpParam('stale', opts, params);
     addHttpParam('conflicts', opts, params);
@@ -7966,6 +7966,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
     addHttpParam('inclusive_end', opts, params);
     addHttpParam('key', opts, params, true);
     addHttpParam('update_seq', opts, params);
+    addHttpParam('partition', opts, params);
 
     // Format the list of parameters into a valid URI query string
     params = params.join('&');
@@ -8422,7 +8423,7 @@ function createAbstractMapReduce(localDocName, mapper, reducer, ddocValidator) {
       view.seq = currentSeq;
       view.sourceDB.activeTasks.remove(taskId);
     } catch (error) {
-      view.sourceDB.activeTasks.remove(taskId, error);      
+      view.sourceDB.activeTasks.remove(taskId, error);
     }
   }
 

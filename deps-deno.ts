@@ -1,4 +1,4 @@
-export { join, dirname, basename } from 'https://deno.land/std@0.150.0/path/mod.ts'
+export { join, dirname, basename } from 'https://deno.land/std@0.182.0/path/mod.ts'
 
 export { iterateReader as iter } from 'https://deno.land/std@0.153.0/streams/conversion.ts'
 
@@ -14,18 +14,18 @@ export {
   gray,
   rgb24 as color,
   bgRgb24 as background
-} from 'https://deno.land/std@0.126.0/fmt/colors.ts'
+} from 'https://deno.land/std@0.182.0/fmt/colors.ts'
 
-export { globToRegExp } from 'https://deno.land/std@0.153.0/path/glob.ts'
+export { globToRegExp } from 'https://deno.land/std@0.182.0/path/glob.ts'
 
 export {
   compile,
   preprocess
-} from 'https://cdn.skypack.dev/svelte@3.49.0/compiler.mjs'
+} from 'https://cdn.skypack.dev/svelte@3.58.0/compiler.mjs'
 
 export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/v1.0.3/mod.ts'
 
-export { parse } from 'https://deno.land/std@0.126.0/flags/mod.ts'
+export { parse } from 'https://deno.land/std@0.182.0/flags/mod.ts'
 
 export { build, transform } from 'https://deno.land/x/esbuild@v0.15.17/mod.js'
 

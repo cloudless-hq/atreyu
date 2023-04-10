@@ -1,5 +1,22 @@
 <script>
-  import {getContext} from 'svelte'
+  import { getContext } from 'svelte'
+
+  import { flip } from 'svelte/animate'
+  import { quintOut } from 'svelte/easing'
+	import { crossfade } from 'svelte/transition'
+	const [send, receive] = crossfade({
+		duration: d => Math.sqrt(d * 200),
+		fallback (node, params) {
+			const style = getComputedStyle(node)
+			const transform = style.transform === 'none' ? '' : style.transform
+			return {
+				duration: 300,
+				easing: quintOut,
+				css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
+			}
+		}
+	})
+
   import TodoItem from './todo-item.svelte'
   const { data, router } = getContext('ayu')
 
@@ -45,7 +62,7 @@
   </h1>
 {:else}
   <h1>
-    Showing { todos.length } of { $data.todos.all.date.length } todos
+    Showing { todos.length } of { $data.todos.all[sortBy].length } todos
   </h1>
 {/if}
 
@@ -84,11 +101,14 @@
   <button class="p-2 rounded" type="submit">+ Add new task</button>
 </form>
 
-<ul class="py-10">
-  {#each todos.slice(0, Math.min(pageEnd, todos.length)) as todo, i (i)}
-    <TodoItem {todo} {remove} {toggle} {updateText} />
+<div class="py-10">
+  {#each todos.slice(0, pageEnd) as todo, i (todo.$key)}
+    <div style="position: relative;" class:hidden={todo._id$not} in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}" animate:flip="{{duration: 200}}">
+      <!-- fixme: loading broken -->
+      <TodoItem {todo} {remove} {toggle} {updateText} />
+    </div>
   {/each}
-</ul>
+</div>
 
 {#if pageEnd < todos.length}
   <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>

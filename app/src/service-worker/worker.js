@@ -193,7 +193,7 @@ export default function ({
         if (!res.find(el => el.id === clientId)) {
           console.log(clientId, 'disappeared')
           Object.entries(pending[clientId]).forEach(([reqId, exec]) => {
-            exec?.unsubscribe()
+            exec?.unsubscribe?.()
             exec?.dispose()
             delete pending[clientId][reqId]
           })
@@ -268,7 +268,7 @@ export default function ({
         },
         async _done => {
           await e.source.postMessage(JSON.stringify({ id: reqId, done: true }))
-          exec?.unsubscribe()
+          exec?.unsubscribe?.()
           exec?.dispose()
           delete pending[clientId][reqId]
         }

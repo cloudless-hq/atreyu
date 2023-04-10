@@ -364,5 +364,5 @@ export async function add ({
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
   // console.log('')
-  return { appFolderHash, rootFolderHash, fileList, ayuFileList, ayuHash }
+  return { appFolderHash, rootFolderHash, fileList, ayuFileList: [], ayuHash }
 }

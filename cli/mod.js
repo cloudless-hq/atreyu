@@ -25,9 +25,11 @@ import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
 import defaultPaths from '../app/src/schema/default-routes.js'
-import { exec } from './helpers.ts'
+import { exec, execStream } from './helpers.ts'
 import { watch } from './watcher.ts'
 import versions from './versions.json' assert { type: 'json' }
+import { workerdSetup } from './workerd.js'
+
 const { ayuVersion, denoVersion } = versions
 
 // TODO integrate node scripts
@@ -70,6 +72,7 @@ const {
   clean,
   noStart,
   resetKvs,
+  workerd,
   repo,
   domain,
   sveltePath,
@@ -136,6 +139,8 @@ let { config = {}, runConf = {}, env, extraAppEntryPoints } = await loadConfig(e
 const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
 
+const workerdConfPath = `${homeConfPath}/config_${env}.capnp`
+
 // TODO: unify with other schema loader which allows also schema.js
 async function loadEdgeSchema ({ appFolder }) {
   // TODO: support implicit endpoints folder routes
@@ -174,6 +179,37 @@ async function startIpfsDaemon () {
     Deno.lstatSync(homeConfPath + '/config')
   } catch (_e) {
     console.log(await execIpfs('init', homeConfPath))
+    // ipfs bootstrap rm --all
+    // ipfs bootstrap add /ip4/25.196.147.100/tcp/4001/p2p/QmaMqSwWShsPg2RbredZtoneFjXhim7AQkqbLxib45Lx4S
+    // disable quic + webTransport
+    // add peering
+    const ipfsConf = JSON.parse(Deno.readFileSync(homeConfPath + '/config'))
+    ipfsConf.Bootstrap = [
+      '/dnsaddr/fra1-3.hostnodes.pinata.cloud/p2p/QmPo1ygpngghu5it8u4Mr3ym6SEU2Wp2wA66Z91Y1S1g29',
+      '/dnsaddr/nyc1-1.hostnodes.pinata.cloud/p2p/QmRjLSisUCHVpFa5ELVvX3qVPfdxajxWJEHs9kN3EcxAW6',
+      '/dnsaddr/nyc1-2.hostnodes.pinata.cloud/p2p/QmPySsdmbczdZYBpbi2oq2WMJ8ErbfxtkG8Mo192UHkfGP',
+      '/dnsaddr/nyc1-3.hostnodes.pinata.cloud/p2p/QmSarArpxemsPESa6FNkmuu9iSE1QWqPX2R3Aw6f5jq4D5',
+      '/dnsaddr/fra1-1.hostnodes.pinata.cloud/p2p/QmWaik1eJcGHq1ybTWe7sezRfqKNcDRNkeBaLnGwQJz1Cj',
+      '/dnsaddr/fra1-2.hostnodes.pinata.cloud/p2p/QmNfpLrQQZr5Ns9FAJKpyzgnDL2GgC6xBug1yUZozKFgu4'
+    ]
+    ipfsConf.Peering.Peers = [
+      { 'Addrs': [ '/dnsaddr/fra1-1.hostnodes.pinata.cloud' ],
+        'ID': 'QmWaik1eJcGHq1ybTWe7sezRfqKNcDRNkeBaLnGwQJz1Cj' },
+      { 'Addrs': [ '/dnsaddr/fra1-2.hostnodes.pinata.cloud' ],
+        'ID': 'QmNfpLrQQZr5Ns9FAJKpyzgnDL2GgC6xBug1yUZozKFgu4' },
+      { 'Addrs': [ '/dnsaddr/fra1-3.hostnodes.pinata.cloud' ],
+        'ID': 'QmPo1ygpngghu5it8u4Mr3ym6SEU2Wp2wA66Z91Y1S1g29' },
+      { 'Addrs': [ '/dnsaddr/nyc1-1.hostnodes.pinata.cloud' ],
+        'ID': 'QmRjLSisUCHVpFa5ELVvX3qVPfdxajxWJEHs9kN3EcxAW6' },
+      { 'Addrs': [ '/dnsaddr/nyc1-2.hostnodes.pinata.cloud' ],
+        'ID': 'QmPySsdmbczdZYBpbi2oq2WMJ8ErbfxtkG8Mo192UHkfGP' },
+      { 'Addrs': [ '/dnsaddr/nyc1-3.hostnodes.pinata.cloud' ],
+        'ID': 'QmSarArpxemsPESa6FNkmuu9iSE1QWqPX2R3Aw6f5jq4D5' }
+    ]
+    ipfsConf.Swarm.Transports.Network.QUIC = false
+    ipfsConf.Swarm.Transports.Network.WebTransport = false
+
+    Deno.writeFileSync(homeConfPath + '/config', JSON.stringify(ipfsConf, null, 4))
   }
 
   const ready = new Promise((resolve, _reject) => {
@@ -187,6 +223,7 @@ async function startIpfsDaemon () {
 
         if (data.startsWith('Initializing daemon...')) {
           const [_, ipfs, iRepo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
+          // TODO: add workerd version
           console.log('  ' + Object.entries({ ipfs, repo: iRepo, atreyu: ayuVersion, ...Deno.version }).map(en => en.join(': ')).join(', '))
         }
         if (data.includes('Daemon is ready')) {
@@ -221,17 +258,44 @@ async function doStart () {
   await startIpfsDaemon()
 
   console.log('  starting local worker runtime on env: ' + yellow(bold(env)))
-  runDeno({
-    addr: ':' + port, // FIXME: localhost requires sudo but 0.0.0.0 works?
-    noCheck: true,
-    watch: cmd !== 'publish',
-    inspect: cmd !== 'publish',
-    killFun: (proc) => { edgeDaemon = proc },
-    env: {
-      env
-    },
-    _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
-  })
+
+  const devMode = cmd !== 'publish'
+  if (workerd) {
+    // workerd --version
+
+    try {
+      Deno.lstatSync(workerdConfPath)
+    } catch (_e) {
+      await workerdSetup(workerdConfPath, '/entry-workerd.js', config)
+    }
+
+    execStream({
+      cmd: [ 'workerd', 'serve', '--verbose', '--experimental',
+        `--import-path=${join(atreyuPath, 'edge')}/`,
+        ...(devMode ? ['--watch', '--inspector-addr=localhost:9229'] : []),
+        workerdConfPath
+      ],
+      getData: (data, err) => {
+        // if (verbose) {
+        console.log('  workerd: ' + err || data)
+        // }
+      },
+      killFun: proc => { edgeDaemon = proc },
+      verbose: true
+    })
+  } else {
+    runDeno({
+      addr: ':' + port, // FIXME: localhost requires sudo but 0.0.0.0 works?
+      noCheck: true,
+      watch: devMode,
+      inspect: devMode,
+      killFun: proc => { edgeDaemon = proc },
+      env: {
+        env
+      },
+      _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
+    })
+  }
 }
 
 async function stopAll () {
@@ -311,8 +375,9 @@ switch (cmd) {
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
 
-      // todo: fix import path in local worker wrapper?
-      Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
+      if (!workerd) {
+        Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
+      }
 
       let buildEmits = []
 
@@ -357,7 +422,7 @@ switch (cmd) {
           clean: doClean
         }),
 
-        buildEdge({ workers: edgeSchema, buildName, batch, clean: doClean, buildRes, info })
+        buildEdge({ workers: edgeSchema, workerd, workerdConfPath, config, buildName, batch, clean: doClean, buildRes, info })
       ])
 
       buildEmits = buildEmits.concat(buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] ))
@@ -404,6 +469,7 @@ switch (cmd) {
       await doStart()
     }
 
+    // FIXME: this file is obsolete?
     Deno.writeTextFileSync( join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
 
     const outputTarget = join(input, '..', 'build')

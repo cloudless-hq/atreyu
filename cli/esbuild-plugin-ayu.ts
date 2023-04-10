@@ -60,6 +60,7 @@ export const ayuPlugin = ({ local = true, input, atreyuPath, paramsValidation }:
           '/svelte/animate': '/app/build/deps/svelte-animate.js',
           '/svelte': '/app/build/deps/svelte-internal.js',
           '/svelte/transition': '/app/build/deps/svelte-transition.js',
+          '/svelte/easing': '/app/build/deps/svelte-easing.js',
           '/svelte/store': '/app/build/deps/svelte-store.js',
           '/svelte/internal': '/app/build/deps/svelte-internal.js'
         }

@@ -427,7 +427,6 @@ ${scriptData}
       name: dnsEntry,
       type: 'AAAA',
       content: '100::',
-      ttl: 1,
       proxied: true
     }
     console.log('  adding dns entry for: ' + dnsEntry)

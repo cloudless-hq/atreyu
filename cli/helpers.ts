@@ -16,8 +16,8 @@ export async function recursiveReaddir (path: string) {
   return files
 }
 
-export async function execStream ({ cmd, getData, killFun }: {cmd: string[], getData: (arg: string) => null, killFun: (arg: Deno.Process) => null }) {
-  console.log(cmd.join(' '))
+export async function execStream ({ cmd, getData, killFun }: {cmd: string[], getData: (arg: string | null, err?: string) => null, killFun: (arg: Deno.Process) => null }) {
+  // console.log(cmd.join(' '))
 
   const proc = Deno.run({
     cmd,
@@ -36,16 +36,34 @@ export async function execStream ({ cmd, getData, killFun }: {cmd: string[], get
     }
   })
 
-  for await (const buffer of iter(proc.stdout)) {
-    const str = new TextDecoder().decode(buffer)
+  // FIXME: this is outdated and probably new ways exist in deno
 
-    if (getData) {
-      getData(str)
-      // console.log(str)
-    } else {
-      console.log(str)
-    }
-  }
+  await Promise.allSettled([
+    (async () => {
+      for await (const buffer of iter(proc.stdout)) {
+        const str = new TextDecoder().decode(buffer)
+
+        if (getData) {
+          getData(str)
+          // console.log(str)
+        } else {
+          console.log(str)
+        }
+      }
+    })(),
+    (async () => {
+      for await (const buffer of iter(proc.stderr)) {
+        const str = new TextDecoder().decode(buffer)
+
+        if (getData) {
+          getData(null, str)
+          // console.log(str)
+        } else {
+          console.error(str)
+        }
+      }
+    })()
+  ])
 
   // await proc.close()
   return procStatusProm

@@ -5,8 +5,8 @@ export function extractFromCache ({ obj, path, idx = 0, root = obj, parentAtom }
 
   if (obj && obj.$type === 'atom' && path.length - idx !== 0) {
     const step = path[idx]
-    if (!obj.value) {
-      return { value: undefined, parentAtom }
+    if (obj.value === undefined) {
+      return { value: undefined, parentAtom, $type: obj.$type }
     }
     return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root, parentAtom: { obj, relPath: path.slice(idx)} }) // verbose
   } else if (obj && obj.$type === 'ref') {
@@ -14,9 +14,9 @@ export function extractFromCache ({ obj, path, idx = 0, root = obj, parentAtom }
     return extractFromCache({ obj: root, path: newPath }) // verbose
   } else if (path.length - idx === 0) {
     if (obj && obj.$type === 'error') {
-      return { value: undefined, parentAtom }
+      return { value: undefined, parentAtom, $type: obj.$type }
     } else if (obj && obj.$type) {
-      return { value: obj.value, parentAtom }
+      return { value: obj.value, parentAtom, $type: obj.$type }
     } else {
       return { value: obj, parentAtom }
     }

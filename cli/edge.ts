@@ -2,6 +2,7 @@ import { join, basename, build } from '../deps-deno.ts'
 import { folderHandlers } from '../edge/handlers/index.js'
 import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 import { makeValidator } from '../edge/lib/schema.js'
+import { workerdSetup } from './workerd.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
@@ -93,7 +94,11 @@ async function compile ({ input, info, appName, workerName, output, buildName, p
 }
 
 const deps = {}
-export async function buildEdge ({ workers, info, buildName, batch = [], clean, publish }) {
+export async function buildEdge ({ workers, workerd, workerdConfPath, config, info, buildName, batch = [], clean, publish }) {
+  if (workerd) {
+    await workerdSetup(workerdConfPath, '/entry-workerd.js', config, workers)
+  }
+
   // const startTime = Date.now()
   const projectFolder = Deno.cwd()
   const appName = basename(projectFolder)

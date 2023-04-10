@@ -90,22 +90,23 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     //   console.log({ oldVal, newVal, path })
     //   return newVal === oldVal
     // },
-    errorSelector: function (x, y) {
+    errorSelector: function (path, error, c) {
       if (errorSelector) {
-        errorSelector(x, y)
+        errorSelector(path, error, c)
       } else {
-        console.error(x, y)
+        console.error(path, error, c)
       }
-
-      return y
+      return error
+      // console.log('hasdfhfsdhfsdhdfs', error, path, c)
+      // return error.$expires = -1000 * 60 * 2 // let errors expire in two minutes, bug: does not work
     }
   })
-    .batch((new frameScheduler())) // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
     .treatErrorsAsValues()
+    .batch((new frameScheduler())) // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
+
+  // .treatErrorsAsValues() + boxValues() as standard!!, to se what are errors!
+
   // TODO: make batch configurable for debugging
-  //  errorSelector: function(error) {
-  //     error.$expires = -1000 * 60 * 2;
-  // }
 
   // TODO: model.progressively() instead of extract from cache?
 
@@ -117,6 +118,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   const lastUpdt = new Map()
   let ticker = null
   const deps = {}
+  const keys = new Map()
 
   // TODO subscribe feature eg. $ { a.b + a.c }
   // TODO: skip double update in svelte subscriptions
@@ -133,7 +135,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     '$$unbox', // deref and unbox
     '$$unbatch', // etc. // deref and unbatch
 
-    '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type' ]
+    '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type', '$key' ]
   const makeAyuProxy = (id, subModel) => makeProxy({
     id,
     from: () => {},
@@ -158,7 +160,13 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         boxKey = delim
       }
 
-      const pathString = path.join('.') + boxKey
+      let curViewKey
+      if (delim === '$key') {
+        curViewKey = path.slice(0, path.length - 1).join('.')
+        path = path.concat('_id')
+      }
+
+      const pathString = path.join('.') + (boxKey ? `.${boxKey}` : '')
       // TODO make dep path prefix configurable for performance vs memory optimization
 
       if (!deps[id]) {
@@ -179,7 +187,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
 
       onAccess?.(path)
 
-      const { value: falcorCacheVal } = extractFromCache({ obj: adjustedModel._root.cache, path })
+      const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
+      const falcorCacheVal = (falcorCacheRes.value === undefined && falcorCacheRes.$type === 'atom') ? _undefined : falcorCacheRes.value
+
       let cacheVal
       let existingProm
       if (typeof falcorCacheVal !== 'undefined') {
@@ -187,6 +197,8 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       } else {
         [ cacheVal, existingProm ] = cacheMap.get(pathString) || []
       }
+
+      let key
 
       // TODO: properly respect invalidation and expiries
       if (!ticker) {
@@ -210,21 +222,38 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       // if (pathString === 'todos.completed.date.length') {
       //   console.log({ cacheVal, existingProm, falcorCacheVal, latestTick, lastUpdt: lastUpdt.get(pathString) })
       // }
-
+      // console.log(pathString, falcorCacheVal)
       let newProm
       if (falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
         lastUpdt.set(pathString, latestTick)
-        newProm = adjustedModel.getValue(path)
+        newProm = adjustedModel.getValue(path) // TODO: use get() instead and use info about box
           .then(val => {
-            // if (path[path.length - 1] === 'length') {
-            //   console.log(path, val, adjustedModel)
-            // }
             if (typeof val === 'undefined') {
               cacheMap.set(pathString, [_undefined])
+              if (delim === '$key' && cacheVal && cacheVal !== _undefined) {
+                keys.delete(cacheVal)
+                // console.log('undefined value received', { pathString, key, val, curViewKey, keys: [...keys] })
+              }
             } else {
+              if (key) {
+                const previousViewKeys = keys.get(val) || {}
+                // if (keys.has(val)) {
+                //  console.log('existing view key', {previousViewKeys, curViewKey, key, val})
+                // }
+                if (!previousViewKeys[curViewKey]) {
+                  previousViewKeys[curViewKey] = { key, latestTick }
+                  keys.set(val, previousViewKeys)
+                  keys.delete(pathString)
+                }
+              }
+
+              // if (delim === '$key') {
+                // console.log('value received', { pathString, key, val, curViewKey, keys: [...keys] })
+              // }
+
               cacheMap.set(pathString, [val])
             }
             // loading = false
@@ -240,6 +269,63 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
           })
         // loading = true
         cacheMap.set(pathString, [cacheVal, newProm])
+      }
+
+      if (delim === '$key') {
+        if (cacheVal && cacheVal !== _undefined) {
+          if (keys.has(cacheVal)) {
+            const viewKeyOverrides = keys.get(cacheVal)
+            let keyOverride
+
+            if (viewKeyOverrides[curViewKey] && (viewKeyOverrides[curViewKey].latestTick + 3) > latestTick) {
+              keyOverride = viewKeyOverrides[curViewKey]
+            } else {
+              const lastEntry = Object.values(viewKeyOverrides).reduce(
+                (biggest, current) => {
+                  if (current.latestTick > biggest.latestTick) {
+                    return current
+                  }
+                  return biggest
+                }, { latestTick: 0 }
+              )
+
+              keyOverride = lastEntry
+            }
+
+            // console.log({ viewKeyOverrides, keyOverride })
+
+            if (!keys.has(pathString)) {
+              // console.log('doc id cached', { keyOverride, cacheVal, falcorCacheVal, pathString, curViewKey, keys: [...keys]})
+              return keyOverride.key
+            } else {
+              // console.log('doc id cached but from other view, using path override', { viewKeyOverrides, cacheVal, pathString, curViewKey, keys: [...keys]})
+              return keys.get(pathString)
+            }
+          } else if (!keys.has(pathString)) {
+            // console.log('have cached id without temp id', cacheVal)
+            return cacheVal
+          } else {
+            // the falcor promise did not fullfill yet but the value is allready populated in the cache
+            const pathKeyOverride = keys.get(pathString)
+
+            const previousViewKeys = { [curViewKey]: {key: pathKeyOverride, latestTick} }
+            keys.set(cacheVal, previousViewKeys)
+            keys.delete(pathString)
+
+            // console.log('not set doc id cache yet but have:', { cacheVal, curViewKey, pathString,  keys: [...keys], pathKeyOverride } )
+            return pathKeyOverride
+          }
+        }
+        const maybeKeyOverride = keys.get(pathString)
+        if (maybeKeyOverride) {
+          // console.log('path mapped to temp id', {maybeKeyOverride, pathString,  keys: [...keys]})
+          return maybeKeyOverride
+        }
+
+        key = `id_${Math.floor(Math.random(10000) * 100000)}`
+        keys.set(pathString, key)
+        // console.log('new temp id', { key, pathString,  keys: [...keys] })
+        return key
       }
 
       let loadingFirstValue = true

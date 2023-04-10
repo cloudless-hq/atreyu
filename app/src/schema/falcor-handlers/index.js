@@ -57,14 +57,41 @@ function doSync (dbs, since, Observable) {
       subscriber.onError({ path: ['_seq'], value: { $type: 'error', value: err }})
     }
 
-    const changeListener = change => {
+    const changeListener = (change, v, c) => {
+      console.log(change, v, c)
       // console.log('_sync handler change', change) // todo: debug realms with client side flags
 
       // TODO: generic and better invalidation strategy
       // { path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
 
-      subscriber.onNext({ path: ['_seq'], value: { $type: 'atom', value: change.seq } })
-      subscriber.onNext({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } })
+      if (change.doc.type === 'system:counter' && change.doc.path) {
+        console.log('todo: invalidate only: ', change.doc.path)
+      }
+      //  else {
+      //   console.log()
+      // }
+
+      subscriber.onNext({
+        jsonGraph: {
+          _seq: { $type: 'atom', value: change.seq },
+          _docs: {
+            [change.id]: { $type: 'atom', value: change.doc }
+          },
+          todos: { $expires: 0, $type: 'atom' } // , value: null, $type: 'atom', invalidated: true
+        },
+        paths: [ ['_seq'], ['_docs', change.id], ['todos'] ] // , ['todos']
+        // invalidations: [ ['todos'] ], invalidate: [ ['todos'] ], invalidated: [ ['todos'] ]
+      })
+      // [
+      //   { path: ['_seq'], value: { $type: 'atom', value: change.seq } },
+      //   { path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } },
+      //   { path: ['todos'], invalidate: true, invalidated: true, value: { $expires: 0 } } // value: { $expires: 0 }
+      // ]
+      // subscriber.onNext()
+
+      // TODO: pluggable invalidation!
+      // console.log('invalidate 4')
+      // subscriber.onNext({ path: ['todos'], value: { $expires: 0 } }) // value: invalidated: true
 
       schedule(() => {
         if (!subscriber.isStopped) {

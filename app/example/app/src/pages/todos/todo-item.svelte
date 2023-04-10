@@ -6,7 +6,7 @@
   export let updateText
 </script>
 
-<li class="todo m-6">
+<div class="todo m-6">
   <input type="text" placeholder="  " class="rounded"
     class:animated-placeholder={todo.description$not}
     class:is-complete={todo.completed$}
@@ -21,4 +21,4 @@
   </button>
 
   <button on:click={() => remove(todo)}>🗑️</button>
-</li>
+</div>

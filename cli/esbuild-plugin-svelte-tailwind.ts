@@ -12,6 +12,7 @@ function svelteReplace (input: string) {
     'svelte/animate': `'/_ayu/build/deps/svelte-animate.js'`,
     'svelte': `'/_ayu/build/deps/svelte-internal.js'`,
     'svelte/transition': `'/_ayu/build/deps/svelte-transition.js'`,
+    'svelte/easing': `'/_ayu/build/deps/svelte-easing.js'`,
     'svelte/store': `'/_ayu/build/deps/svelte-store.js'`,
     'svelte/internal': `'/_ayu/build/deps/svelte-internal.js'`
   }
