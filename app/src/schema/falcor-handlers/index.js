@@ -57,41 +57,49 @@ function doSync (dbs, since, Observable) {
       subscriber.onError({ path: ['_seq'], value: { $type: 'error', value: err }})
     }
 
-    const changeListener = (change, v, c) => {
-      console.log(change, v, c)
-      // console.log('_sync handler change', change) // todo: debug realms with client side flags
-
+    const changeListener = change => {
+      console.log(change)
+      // console.log('_sync handler change', change)
       // TODO: generic and better invalidation strategy
-      // { path: ['products', 'by_title', 'length'], value: { $expires: 0 } }) // immediately invalidate the length
+      // FIXME: value: invalidated: true not working, and also jsong invalidations:
+      // [ ['todos'] ], invalidate: [ ['todos'] ], invalidated: [ ['todos'] ]
 
-      if (change.doc.type === 'system:counter' && change.doc.path) {
-        console.log('todo: invalidate only: ', change.doc.path)
-      }
-      //  else {
-      //   console.log()
-      // }
-
-      subscriber.onNext({
+      const jsonGE = {
         jsonGraph: {
           _seq: { $type: 'atom', value: change.seq },
           _docs: {
             [change.id]: { $type: 'atom', value: change.doc }
-          },
-          todos: { $expires: 0, $type: 'atom' } // , value: null, $type: 'atom', invalidated: true
+          }
         },
-        paths: [ ['_seq'], ['_docs', change.id], ['todos'] ] // , ['todos']
-        // invalidations: [ ['todos'] ], invalidate: [ ['todos'] ], invalidated: [ ['todos'] ]
-      })
-      // [
-      //   { path: ['_seq'], value: { $type: 'atom', value: change.seq } },
-      //   { path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } },
-      //   { path: ['todos'], invalidate: true, invalidated: true, value: { $expires: 0 } } // value: { $expires: 0 }
-      // ]
-      // subscriber.onNext()
+        paths: [
+          ['_seq'],
+          ['_docs', change.id]
+        ]
+      }
 
-      // TODO: pluggable invalidation!
-      // console.log('invalidate 4')
-      // subscriber.onNext({ path: ['todos'], value: { $expires: 0 } }) // value: invalidated: true
+      if (change.doc.type === 'system:counter' && change.doc.path) {
+        const invPath = change.doc.path.split('.')
+        jsonGE.paths.push(invPath)
+
+        let target = jsonGE.jsonGraph
+        let i = 0
+        for (const key of invPath) {
+          i ++
+          if (!target[key]) {
+            target[key] = {}
+          }
+          if (i === invPath.length) {
+            target[key] = { $expires: 0, value: null, $type: 'atom', invalidate: true, invalidated: true }
+          } else {
+            target = target[key]
+          }
+        }
+      } else if (change.doc.type === 'todo') {
+        jsonGE.paths.push(['todos'])
+        jsonGE.jsonGraph.todos = { $expires: 0, value: null,  $type: 'atom', invalidate: true, invalidated: true }
+      }
+
+      subscriber.onNext(jsonGE)
 
       schedule(() => {
         if (!subscriber.isStopped) {
@@ -105,7 +113,7 @@ function doSync (dbs, since, Observable) {
     changes.on('complete', complListener)
 
     return () => {
-      // todo: cancel changes when no active requests for a while
+      // TODO: cancel changes when no active requests for a while?
       cleanup(changes)
     }
   })

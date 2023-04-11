@@ -22,7 +22,7 @@ export default [
           if (doc.deleted || !doc.description) {
             return
           }
-          emit([doc.completed, doc.date])
+          emit([doc.completed, doc.date, doc._id])
         }.toString(),
         reduce: '_count'
       },
@@ -32,7 +32,7 @@ export default [
           if (doc.deleted || !doc.description) {
             return
           }
-          emit([doc.completed, doc.description])
+          emit([doc.completed, doc.description, doc._id])
         }.toString(),
         reduce: '_count'
       },
@@ -42,7 +42,7 @@ export default [
           if (doc.deleted || !doc.description) {
             return
           }
-          emit([doc.date, doc.description])
+          emit([doc.date, doc.description, doc._id])
         }.toString(),
         reduce: '_count'
       }

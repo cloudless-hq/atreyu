@@ -18,6 +18,26 @@ export function falcorTags (routes) {
   return routes
 }
 
+function maxRange (ranges) {
+  let from
+  let to
+  ranges.forEach(range => {
+    if (to === undefined) {
+      to = range.to
+    } else {
+      to = Math.max(to, range.to)
+    }
+
+    if (from === undefined) {
+      from = range.from
+    } else {
+      from = Math.min(from, range.from)
+    }
+  })
+
+  return { from, to }
+}
+
 export function toFalcorRoutes (schema) {
   // The first case in 13 years that the semicolon was actually necessary!! (but only due to the bundler) :D
   const routes = [];
@@ -39,7 +59,10 @@ export function toFalcorRoutes (schema) {
           arguments[0].session = this.session
           arguments[0].Observable = this.Observable
           arguments[0].req = this.req
+          arguments[0].model = this.model
           /* eslint-enable functional/no-this-expression */
+
+          arguments[0].maxRange = maxRange
 
           const getRes = handler(...arguments)
 

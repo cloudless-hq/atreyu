@@ -119,6 +119,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
   let ticker = null
   const deps = {}
   const keys = new Map()
+  const placeholders = new Set()
 
   // TODO subscribe feature eg. $ { a.b + a.c }
   // TODO: skip double update in svelte subscriptions
@@ -233,26 +234,45 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
           .then(val => {
             if (typeof val === 'undefined') {
               cacheMap.set(pathString, [_undefined])
-              if (delim === '$key' && cacheVal && cacheVal !== _undefined) {
-                keys.delete(cacheVal)
+
+              if (delim === '$key') {
+                if (cacheVal && cacheVal !== _undefined) {
+                  const viewKeys = keys.get(cacheVal)
+
+                  if (viewKeys && viewKeys[curViewKey]) {
+                    if ((viewKeys._maybeLatest?.latestTick || 0) < viewKeys[curViewKey].latestTick) {
+                      viewKeys._maybeLatest = viewKeys[curViewKey]
+                    }
+                    delete viewKeys[curViewKey]
+                    keys.set(cacheVal, viewKeys)
+                  }
+                }
+
+                placeholders.add(pathString)
                 // console.log('undefined value received', { pathString, key, val, curViewKey, keys: [...keys] })
               }
             } else {
-              if (key) {
-                const previousViewKeys = keys.get(val) || {}
-                // if (keys.has(val)) {
-                //  console.log('existing view key', {previousViewKeys, curViewKey, key, val})
-                // }
-                if (!previousViewKeys[curViewKey]) {
-                  previousViewKeys[curViewKey] = { key, latestTick }
-                  keys.set(val, previousViewKeys)
+              if (delim === '$key') {
+                if (key) {
+                  const previousViewKeys = keys.get(val) || {}
+                  // if (keys.has(val)) {
+                  //  console.log('existing view key', {previousViewKeys, curViewKey, key, val})
+                  // }
+                  if (!previousViewKeys[curViewKey]) {
+                    previousViewKeys[curViewKey] = { key, latestTick }
+                    keys.set(val, previousViewKeys)
+                    keys.delete(pathString)
+                  }
+                } else if (cacheVal === _undefined || placeholders.has(pathString)) {
+                  // force regeneration of temp ids for appended list entries,
+                  // as otherwise the animation from hidden palceholder to new item is weird
+                  // console.log('force regeneration of temp id', pathString)
                   keys.delete(pathString)
                 }
-              }
+                placeholders.delete(pathString)
 
-              // if (delim === '$key') {
                 // console.log('value received', { pathString, key, val, curViewKey, keys: [...keys] })
-              // }
+              }
 
               cacheMap.set(pathString, [val])
             }
@@ -277,7 +297,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
             const viewKeyOverrides = keys.get(cacheVal)
             let keyOverride
 
-            if (viewKeyOverrides[curViewKey] && (viewKeyOverrides[curViewKey].latestTick + 3) > latestTick) {
+            if (viewKeyOverrides[curViewKey] && (viewKeyOverrides[curViewKey].latestTick + 6) > latestTick) {
               keyOverride = viewKeyOverrides[curViewKey]
             } else {
               const lastEntry = Object.values(viewKeyOverrides).reduce(
@@ -299,23 +319,28 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
               return keyOverride.key
             } else {
               // console.log('doc id cached but from other view, using path override', { viewKeyOverrides, cacheVal, pathString, curViewKey, keys: [...keys]})
-              return keys.get(pathString)
+              if (!placeholders.has(pathString)) {
+                return keys.get(pathString)
+              }
             }
           } else if (!keys.has(pathString)) {
             // console.log('have cached id without temp id', cacheVal)
             return cacheVal
           } else {
             // the falcor promise did not fullfill yet but the value is allready populated in the cache
-            const pathKeyOverride = keys.get(pathString)
+            if (!placeholders.has(pathString)) {
+              const pathKeyOverride = keys.get(pathString)
 
-            const previousViewKeys = { [curViewKey]: {key: pathKeyOverride, latestTick} }
-            keys.set(cacheVal, previousViewKeys)
-            keys.delete(pathString)
+              const previousViewKeys = { [curViewKey]: {key: pathKeyOverride, latestTick} }
+              keys.set(cacheVal, previousViewKeys)
+              keys.delete(pathString)
 
-            // console.log('not set doc id cache yet but have:', { cacheVal, curViewKey, pathString,  keys: [...keys], pathKeyOverride } )
-            return pathKeyOverride
+              // console.log('not set doc id cache yet but have:', { cacheVal, curViewKey, pathString,  keys: [...keys], pathKeyOverride } )
+              return pathKeyOverride
+            }
           }
         }
+
         const maybeKeyOverride = keys.get(pathString)
         if (maybeKeyOverride) {
           // console.log('path mapped to temp id', {maybeKeyOverride, pathString,  keys: [...keys]})

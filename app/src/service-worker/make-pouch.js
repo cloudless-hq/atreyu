@@ -138,7 +138,7 @@ export default async function ({
           if (doc._conflicts) {
             console.warn(doc._conflicts)
           }
-          if (doc._id.startsWith('count:')) {
+          if (doc._id.startsWith('count_')) {
             return false
           }
           // console.log('push filter', { doc, opts })

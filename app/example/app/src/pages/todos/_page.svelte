@@ -2,20 +2,21 @@
   import { getContext } from 'svelte'
 
   import { flip } from 'svelte/animate'
-  import { quintOut } from 'svelte/easing'
-	import { crossfade } from 'svelte/transition'
-	const [send, receive] = crossfade({
-		duration: d => Math.sqrt(d * 200),
-		fallback (node, params) {
-			const style = getComputedStyle(node)
-			const transform = style.transform === 'none' ? '' : style.transform
-			return {
-				duration: 300,
-				easing: quintOut,
-				css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
-			}
-		}
-	})
+  // import { quintOut } from 'svelte/easing'
+	// import { crossfade } from 'svelte/transition'
+
+  // const [ send, receive ] = crossfade({
+	// 	duration: d => Math.sqrt(d * 200),
+	// 	fallback (node, params) {
+	// 		const style = getComputedStyle(node)
+	// 		const transform = style.transform === 'none' ? '' : style.transform
+	// 		return {
+	// 			duration: 300,
+	// 			easing: quintOut,
+	// 			css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
+	// 		}
+	// 	}
+	// })
 
   import TodoItem from './todo-item.svelte'
   const { data, router } = getContext('ayu')
@@ -26,6 +27,21 @@
   $: sortBy = $router.todos.sortBy || 'date'
 
   $: todos = $data.todos[view][sortBy]
+
+  $: completed = $data.todos.completed.date
+
+  // $: syncTodos = todos.slice(0, pageEnd).map(todo => {
+  //   return {
+  //     $key: todo._id$,
+  //     completed$: todo.completed$,
+  //     description$: todo.description$,
+  //     description$not: false,
+  //     completed$loading: false,
+  //     _id$not: false
+  //   }
+  // })
+
+  // $: console.log(syncTodos)
 
   function changeView ({ target }) {
     $router.todos._navigate({ view, [target.name]: target.value })
@@ -49,6 +65,7 @@
     await $data._docs.create({
       description: (new FormData(target)).get('newText'),
       completed: false,
+      type: 'todo',
       date: Date.now()
     })
 
@@ -103,12 +120,23 @@
 
 <div class="py-10">
   {#each todos.slice(0, pageEnd) as todo, i (todo.$key)}
-    <div style="position: relative;" class:hidden={todo._id$not} in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}" animate:flip="{{duration: 200}}">
-      <!-- fixme: loading broken -->
+    <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" >
+      <!-- fixme: loading broken in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}" -->
       <TodoItem {todo} {remove} {toggle} {updateText} />
     </div>
   {/each}
 </div>
+
+<!-- {#if view === 'active'}
+  <h2>Completed:</h2>
+  <div class="py-10">
+    {#each completed.slice(0, pageEnd) as todo, i (todo.$key)}
+      <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}">
+        <TodoItem {todo} {remove} {toggle} {updateText} />
+      </div>
+    {/each}
+  </div>
+{/if} -->
 
 {#if pageEnd < todos.length}
   <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>

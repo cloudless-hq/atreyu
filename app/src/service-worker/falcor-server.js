@@ -2,7 +2,7 @@
 /* eslint-disable functional/no-class */
 import { makeRouter, toFalcorRoutes } from './falcor-router.js'
 import { falcor } from '/_ayu/build/deps/falcor.js'
-
+import { extractFromCache } from '../store/helpers.js'
 
 class WorkerServer {
   constructor (dataSource) {
@@ -41,7 +41,7 @@ export default function ({
   const FalcorRouter = makeRouter(dataRoutes)
   const routerInstance = new FalcorRouter({ dbs, session })
 
-  const serverDataSource = falcor({
+  const serverModel = falcor({
     source: routerInstance,
     maxSize: 500000,
     collectRatio: 0.75,
@@ -49,10 +49,20 @@ export default function ({
   })
     .batch()
     .boxValues()
-    .asDataSource()
-    // _toJSONG()?
 
-  const workerServer = new WorkerServer(serverDataSource)
+  routerInstance.model = serverModel.withoutDataSource()
+  routerInstance.model.getPageKey = function (path, from) {
+    const listCache = extractFromCache({ path, obj: this._root.cache })
+
+    for (let index = from; index > 0; index--) {
+      if (listCache.value?.[index]?.$pageKey !== undefined) {
+        return { pageKey: listCache.value[index].$pageKey, index }
+      }
+    }
+    return { index: 0 }
+  }
+
+  const workerServer = new WorkerServer(serverModel.asDataSource())
 
   return workerServer
 }

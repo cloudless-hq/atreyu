@@ -6353,6 +6353,8 @@ const DEFAULT_HEARTBEAT = 10000;
 
 const supportsBulkGetMap = {};
 
+const sse = new ExportedSet();
+
 function readAttachmentsAsBlobOrBuffer(row) {
   const doc = row.doc || row.ok;
   const atts = doc && doc._attachments;
@@ -7307,9 +7309,11 @@ function HttpPouch(opts, callback) {
 
           const changes = new EventSource(url, { withCredentials: true });
 
+          sse.add(changes);
+
           function setupTimeout () {
             return setTimeout(() => {
-              console.warn('missed heartbeat', {online: navigator.onLine, changes});
+              console.warn('missed heartbeat', { online: navigator.onLine, changes, sse });
               hbTimeout = setupTimeout();
             }, opts.heartbeat * 2)
           }
@@ -7328,6 +7332,7 @@ function HttpPouch(opts, callback) {
             callback(null, { results: [change], last_seq: change.seq });
           });
           fetchOpts.signal.addEventListener('abort', () => {
+            sse.delete(changes);
             clearTimeout(hbTimeout);
             changes.close();
           });

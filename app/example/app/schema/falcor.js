@@ -81,10 +81,10 @@ export default {
             const localCouchCountDoc = await pouch.get(countId).catch(error => ({error}))
             localCouchCount = localCouchCountDoc?.value || 0
 
-            query(pouch, startkey, endkey, cView).then(couchRes => {
+            query(couch, startkey, endkey, cView).then(couchRes => {
               const couchCount = couchRes.rows?.[0]?.value
 
-              // console.log({ couchCount, pouchCount, localCouchCountDoc, countId })
+              console.log({ couchCount, pouchCount, localCouchCountDoc, countId })
 
               if (localCouchCountDoc.value !== couchCount) {
                 // console.log('updating local couch count doc', { _id: countId, value: couchCount, _rev: localCouchCountDoc._rev })
@@ -108,12 +108,14 @@ export default {
 
   'todos[{keys:views}][{keys:sorts}][{ranges:ranges}]': {
     get: {
-      handler: ({ dbs: { couch, pouch}, views, sorts, ranges, req }) => {
-        function query (db, cView, startkey, endkey, to, from) {
+      handler: ({ dbs: { couch, pouch}, views, sorts, ranges, req, model, maxRange }) => {
+        const { from, to } = maxRange(ranges)
+
+        function query (db, cView, startkey, endkey, to, from, skip) {
           return db.query('todos/' + cView, {
             timeout: 2000,
             limit: to - from + 1,
-            skip: from,
+            skip,
             include_docs: false,
             reduce: false,
             descending: true,
@@ -122,23 +124,6 @@ export default {
           }).catch(error => ({ error }))
         }
 
-        // TODO: auto add maxRange
-        let to
-        let from
-        ranges.forEach(range => {
-          if (to === undefined) {
-            to = range.to
-          } else {
-            to = Math.max(to, range.to)
-          }
-
-          if (from === undefined) {
-            from = range.from
-          } else {
-            from = Math.min(from, range.from)
-          }
-        })
-
         return Promise.all(views.map(async view => {
           const { cView, startkey, endkey } = viewMatch(view, sorts[0])
 
@@ -146,10 +131,18 @@ export default {
             console.error({view, sorts}) // sorts: ['completed', 'date'] view: "all"
           }
 
-          const { rows, error } = await query(pouch, cView, startkey, endkey, to, from)
+          const { index, pageKey } = model.getPageKey(['todos', view, sorts[0]], from)
+
+          const skip = from - index
+          // FIXME: never skip but use unpaged entries to validate model consistency?!
+
+          const { rows, error } = await query(pouch, cView, pageKey || startkey, endkey, to, from, skip)
+
+          // console.log({ index, startkey, pageKey, rows, from, to, skip, limit: to - from + 1 })
+
 
           if (navigator.onLine && couch) {
-            query(couch, cView, startkey, endkey, to, from).then(({ rows: couchRows }) => {
+            query(couch, cView, pageKey || startkey, endkey, to, from, skip).then(({ rows: couchRows }) => {
               getDocs({ ids: couchRows.map(({id}) => id), dbs: { pouch, couch }, req, existing: rows.map(({id}) => id) })
             })
           }
@@ -170,7 +163,7 @@ export default {
 
           return rows?.map((row, i) => ({
             path: ['todos', view, sorts[0], i + from],
-            value: { $type: 'ref', value: ['_docs', row.id] }
+            value: { $type: 'ref', value: ['_docs', row.id], $pageKey: row.key }
           })).concat(emptyEntries) || emptyEntries
         })).then(res => res.flat())
         // TODO: auto flatten?
