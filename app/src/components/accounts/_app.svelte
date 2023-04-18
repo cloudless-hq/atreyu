@@ -72,9 +72,6 @@
 	.app {
 		text-align: center;
 	}
-  .logo {
-    height: 35px;
-  }
   .storage-footer {
     bottom: 0;
     position: fixed;
@@ -100,7 +97,7 @@
 </style>
 
 <div class="ayu-header flex items-center">
-  <img class="logo sm:px-6 lg:px-8 left-0 absolute" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
+  <img class="logo sm:px-6 lg:px-8 left-0 absolute h-[35px]" src="/_ayu/assets/logo_black.png" alt="ayu logo" />
 
   <UserMenu class="sm:px-6 lg:px-8 right-0 absolute" hide={['settings']} />
 </div>

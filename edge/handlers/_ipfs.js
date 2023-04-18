@@ -2,10 +2,10 @@ import { getEnv } from '/_env.js'
 import { getKvStore } from '/_kvs.js'
 import doReq from '../lib/req.js'
 
-const { IPFS_GATEWAY, env, appPath, appName } = getEnv(['IPFS_GATEWAY', 'env', 'appPath', 'appName'])
+const { IPFS_GATEWAY, env, appPath, appName, workerd } = getEnv(['IPFS_GATEWAY', 'env', 'appPath', 'appName', 'workerd'])
 
-// appPath only set in local develpemnt, but not in cloudflare
-const ipfsGateway = IPFS_GATEWAY || (appPath ? 'http://127.0.0.1:8080' : 'https://cloudless.mypinata.cloud')
+// appPath only set in deno local develpemnt, but not in cloudflare, switch to workerd when deprecating deno deploy
+const ipfsGateway = IPFS_GATEWAY || ((appPath || workerd) ? 'http://127.0.0.1:8080' : 'https://cloudless.mypinata.cloud')
 
 const ipfsMaps = {}
 const kvs = getKvStore('ipfs')

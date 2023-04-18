@@ -14,6 +14,7 @@ export default function ({
   dbConf = {},
   dataSources,
   schema,
+  onChange,
   clientDbSeeds,
   proxiedDomains,
   handlers: appHandlers
@@ -162,7 +163,7 @@ export default function ({
     }
   }
 
-  console.log('starting service worker...')
+  console.log('starting service worker...' + new Date().toGMTString())
 
   clients.matchAll().then(res => {
     // send clients hello message on startup to know pending requests need to be restarted
@@ -260,6 +261,13 @@ export default function ({
     const exec = self.session.falcorServer.execute(data)
       .subscribe(
         result => {
+          if (data[1] === 'call' && data[2]?.[0] === '_sync') {
+            onChange?.({
+              model: self.session.falcorServer.dataSource._model,
+              data: result.json,
+              _where: 'service-worker'
+            })
+          }
           e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {

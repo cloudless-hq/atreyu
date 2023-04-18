@@ -1,52 +1,65 @@
 // TODO: warn Observable handlers cannot be async functions themselves
 // TODO: filter out changes of own set/ call operations
 
-function doSync (dbs, since, Observable) {
+let changes
+function doSync (dbs, since, Observable, _model) {
   let id
   let i = 0
   function schedule (action) {
-    if (i < 2) {
+    if (i < 5) {
       i++
       if (id) {
         clearTimeout(id)
         id = null
       }
-      id = setTimeout(action, 2)
+      id = setTimeout(action, 5)
     }
   }
 
   return Observable.create(subscriber => {
-    // if (since) {
     //   const changes = db.changes({
     //     since: since,
     //     include_docs: true
     //   })
-
-    //   // console.trace(changes, 'oneshot', changes.listenerCount())
     //   const { results, last_seq } = await changes
-    //   // not necesarry for single shot: changes.cancel()
-
+    //   not necesarry for single shot: changes.cancel()
     //   if (results.length) {
     //     subscriber.onNext([
     //       { path: ['_seq'], value: { $type: 'atom', value: last_seq } },
     //       ...results.map(change => ({ path: ['_docs', change.id], value: { $type: 'atom', value: change.doc } }))
     //     ])
-
     //     return () => {}
     //   }
-    // }
 
-    const changes = dbs.pouch.changes({
-      since: since || 'now',
-      live: true,
-      include_docs: true
-    })
+    let catchupFeed = false
+    let usedFeed
+    if (!changes) {
+      // console.log('creating pouch _sync changes feed', since)
+      changes = dbs.pouch.changes({
+        since: since || 'now',
+        live: true,
+        timeout: false,
+        include_docs: true
+      })
 
-    function cleanup (changesInst) {
-      changesInst.cancel()
-      changesInst.removeListener('change', changeListener)
-      changesInst.removeListener('error', errListener)
-      changesInst.removeListener('complete', complListener)
+      dbs.pouch.info().then(info => {
+        changes.lastSeq = info.update_seq
+      })
+      usedFeed = changes
+    } else {
+      if (since !== undefined && changes.lastSeq > since) {
+        // TODO: catchup feed should be oneshot ?
+        catchupFeed = true
+        console.log('creating pouch _sync catchup feed', since, changes.lastSeq)
+        usedFeed = dbs.pouch.changes({
+          since: since,
+          live: true,
+          timeout: false,
+          include_docs: true
+        })
+      } else {
+        usedFeed = changes
+      }
     }
 
     const complListener = _info => {
@@ -58,119 +71,94 @@ function doSync (dbs, since, Observable) {
     }
 
     const changeListener = change => {
-      console.log(change)
-      // console.log('_sync handler change', change)
-      // TODO: generic and better invalidation strategy
       // FIXME: value: invalidated: true not working, and also jsong invalidations:
       // [ ['todos'] ], invalidate: [ ['todos'] ], invalidated: [ ['todos'] ]
 
+      usedFeed.lastSeq = change.seq
+
       const jsonGE = {
-        jsonGraph: {
-          _seq: { $type: 'atom', value: change.seq },
-          _docs: {
-            [change.id]: { $type: 'atom', value: change.doc }
-          }
-        },
-        paths: [
-          ['_seq'],
-          ['_docs', change.id]
-        ]
+        jsonGraph: {},
+        paths: []
       }
 
       if (change.doc.type === 'system:counter' && change.doc.path) {
-        const invPath = change.doc.path.split('.')
-        jsonGE.paths.push(invPath)
+        const changePath = change.doc.path.split('.')
+        jsonGE.paths.push(changePath)
 
         let target = jsonGE.jsonGraph
         let i = 0
-        for (const key of invPath) {
+        for (const key of changePath) {
           i ++
           if (!target[key]) {
             target[key] = {}
           }
-          if (i === invPath.length) {
-            target[key] = { $expires: 0, value: null, $type: 'atom', invalidate: true, invalidated: true }
+          if (i === changePath.length) {
+            target[key] = { value: change.doc.value, $type: 'atom' }
           } else {
             target = target[key]
           }
         }
-      } else if (change.doc.type === 'todo') {
-        jsonGE.paths.push(['todos'])
-        jsonGE.jsonGraph.todos = { $expires: 0, value: null,  $type: 'atom', invalidate: true, invalidated: true }
+      } else {
+        jsonGE.paths.push(['_docs', change.id])
+        jsonGE.jsonGraph._docs = {
+          [change.id]: { $type: 'atom', value: change.doc, $expires: 1 }
+        }
       }
 
+      jsonGE.paths.push(['_seq'])
+      jsonGE.jsonGraph._seq = { $type: 'atom', value: change.seq }
+
+      // TODO: fix router to forward before complete for long running observable!
       subscriber.onNext(jsonGE)
 
       schedule(() => {
         if (!subscriber.isStopped) {
           subscriber.onCompleted()
         }
-      }) // TODO: fix router to forward before complete for long running observable!
+      })
     }
 
-    changes.on('change', changeListener)
-    changes.on('error', errListener)
-    changes.on('complete', complListener)
+    // console.log('attaching change listeners')
+    usedFeed.on('change', changeListener)
+    usedFeed.on('error', errListener)
+    usedFeed.on('complete', complListener)
 
     return () => {
-      // TODO: cancel changes when no active requests for a while?
-      cleanup(changes)
+      // console.log('cleaning change listeners')
+      if (catchupFeed) {
+        // TODO: cancel changes when no active requests for a while,
+        usedFeed.cancel()
+      }
+
+      usedFeed.removeListener('change', changeListener)
+      usedFeed.removeListener('error', errListener)
+      usedFeed.removeListener('complete', complListener)
     }
   })
 }
 
-export const _sync = ({ dbs, Observable }, [ since ]) => {
-  return dbs && doSync(dbs, since, Observable)
+export const _sync = ({ dbs, Observable, model }, [ since ]) => {
+  return dbs && doSync(dbs, since, Observable, model)
 }
 
-export async function getDocs ({ ids, _event, dbs, req }) {
-  const pouchRes = await dbs?.pouch.allDocs({
-    include_docs: true,
-    conflicts: true,
-    keys: ids.filter(id => id)
-  })
+export async function getDocs ({ ids, dbs }) {
+  const docs = await dbs.sync.pullDocs(ids.filter(id => id), {includeDocs: true})
 
-  const missingIds = []
   const _docs = {}
 
-  pouchRes?.rows?.forEach(row => {
-    if (row.error || !row.doc) {
-      if (row.error !== 'not_found') {
-        console.error(row)
-      }
+  docs.forEach(doc => {
+    const envelope = { $type: 'atom', value: doc, $expires: 1 }
 
-      missingIds.push(row.key)
-    } else {
-      if (row.doc._conflicts) {
-        console.warn('conflicts', row.doc)
-      }
-
-      _docs[row.key] = { $type: 'atom', value: row.doc }
-
-      if (row.doc.type) {
-        _docs[row.key].$schema = { $ref: row.doc.type }
-      } else if (row.doc.types?.length === 1) {
-        _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
-      } else if (row.doc.types?.length > 1) {
-        _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => ({ '$ref': type.profile })) }
-      }
+    if (doc.type) {
+      envelope.$schema = { $ref: doc.type }
+    } else if (doc.types?.length === 1) {
+      envelope.$schema = { $ref: doc.types[0].profile }
+    } else if (doc.types?.length > 1) {
+      envelope.$schema = { anyOf: doc.types.map(type => ({ '$ref': type.profile })) }
     }
+
+    _docs[doc._id] = envelope
   })
-
-  if (dbs.couch && missingIds.length > 0) {
-    const { json: freshDocs } = await req(dbs.couch.name + '/_all_docs?include_docs=true&attachments=true', {
-      body: { 'keys': missingIds }
-    })
-    // event.waitUntil(
-    freshDocs?.rows?.length && dbs.pouch.bulkDocs(freshDocs.rows.map(row => row.doc).filter(exists => exists), {
-      new_edits: false
-    })
-    // )
-
-    freshDocs?.rows?.forEach(row => {
-      _docs[row.id] = { $type: 'atom', value: row.doc }
-    })
-  }
 
   return {
     jsonGraph: {

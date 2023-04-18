@@ -98,14 +98,6 @@ export function toFalcorRoutes (schema) {
   return routes
 }
 
-function find (map, pathString) {
-  for ([key, value] of map.entries()) {
-    if (pathString.replaceAll('[', '').replaceAll(']', '').startsWith(key.replaceAll('[', '').replaceAll(']', ''))) {
-      return value
-    }
-  }
-}
-
 export function makeRouter (dataRoutes) {
   class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
     constructor ({ session, dbs }) {
@@ -120,65 +112,54 @@ export function makeRouter (dataRoutes) {
             console.error(err)
           },
           methodSummary: e => {
-            // console.trace(e)
+            const totalDuration = e.end - e.start
 
-            const routes = new Map()
-
-            e.routes.forEach(route => {
-              routes.set(JSON.stringify(route.pathSet), route)
-            })
-
-            e.pathSets?.forEach(pathSet => {
-              if (Array.isArray(pathSet) && Array.isArray(pathSet[0])) {
-                pathSet[0].forEach(path => {
-                  const route = find(routes, JSON.stringify([path]))
-                  if (!route) {
-                    routes.set(JSON.stringify([path]), { pathSet: [path], missing: true })
-                  }
-                })
-                if (pathSet.length > 1) {
-                  console.error('unsupported path set format for logging', pathSet)
-                }
-              } else {
-                const route = find(routes, JSON.stringify(pathSet))
-                if (!route) {
-                  routes.set(JSON.stringify(pathSet), { pathSet, missing: true })
-                }
-              }
-            })
-
-            let duration = e.end - e.start
-
-            if (routes.size) {
-              let i = 0
-              routes.forEach(route => {
-                let batchMarker = ''
-                if (routes.size > 1) {
-                  if (i === 0) {
-                    batchMarker = ' (batched >'
-                  } else if (i === routes.size - 1) {
-                    batchMarker = ' < batched)'
-                  } else {
-                    batchMarker = ' ...'
-                  }
-
-                  const body = route.results?.map(res => res.value.jsonGraph || res.value.value)
-                  duration = route.end && route.start ? route.end - route.start : 0
-                  urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body })
+            e.routes?.forEach((route, i) => {
+              let batchMarker = ''
+              if (e.routes.length > 1) {
+                if (i === 0) {
+                  batchMarker = ' (batched >'
+                } else if (i === e.routes.length - 1) {
+                  batchMarker = ' < batched)'
                 } else {
-                  urlLogger({ missing: route.missing, method: e.method.toUpperCase() + batchMarker, url: `falcor://${JSON.stringify(route.pathSet)}`, duration, body: e.results[i]?.value.jsonGraph || e.results[i]?.value.value })
+                  batchMarker = ' ...'
                 }
 
-                i++
-              })
-            } else {
-              let missing = false
-              if (e.routes.length < 1) {
-                missing = true
+                const body = route.results?.map(res => res.value.jsonGraph || res.value)
+                const duration = route.end && route.start ? route.end - route.start : 0
+
+                urlLogger({
+                  method: e.method.toUpperCase() + batchMarker,
+                  url: `falcor://${JSON.stringify(route.pathSet)}`,
+                  duration,
+                  error: route.error,
+                  body
+                })
+              } else {
+                urlLogger({
+                  method: e.method.toUpperCase(),
+                  url: `falcor://${JSON.stringify(route.pathSet)}`,
+                  error: route.error,
+                  duration: totalDuration,
+                  body: e.results[i]?.value.jsonGraph || e.results[i]?.value.value
+                })
               }
-              const paths = e.callPath || e.jsonGraphEnvelope.paths
-              const body = e.jsonGraphEnvelope || e.results.map(res => res.value.jsonGraph || res.value.value)
-              urlLogger({ missing, method: e.method.toUpperCase(), url: `falcor://${JSON.stringify(paths)}`, body, duration, args: e.args })
+            })
+
+            const reqPaths = [...(e.pathSets || []), ...(e.callPath ? [e.callPath] : []) , ...(e.jsonGraphEnvelope?.paths || [])]
+            if (reqPaths.length > (e.routes?.length || 0)) {
+              console.log(e, reqPaths)
+
+              reqPaths.slice(e.routes.length).forEach(pathSet => {
+                urlLogger({
+                  missing: true,
+                  error: e.error,
+                  method: e.method.toUpperCase(),
+                  url: `falcor://${JSON.stringify(pathSet)}`,
+                  duration: totalDuration,
+                  args: e.args
+                })
+              })
             }
           }
         }

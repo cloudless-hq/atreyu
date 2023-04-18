@@ -1,5 +1,7 @@
 // TODO: only in debug/dev mode
 // This is my own code, its in vendor, because i want to release as standdalone package maybe?
+import { getJsonPath } from '../store/helpers.js'
+
 const errorHandlers = {
   deleteProperty () {
     console.error('error: calling `delete` on atreyu proxy.')
@@ -65,7 +67,7 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
         console.log('has function trap not well supported', target, key)
         return true
       },
-      apply (target, _thisArg, args) {
+      apply (target, thisArg, args) {
         const path = [...rootPath]
         path.pop()
         const cleanKey = rootPath[rootPath.length - 1]
@@ -83,6 +85,13 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
         } else if (cleanKey === 'map') {
           console.error('direct map call not allowed. please post your use case to get support.')
           console.log(args, target, subObj)
+        }
+
+        if (cleanKey === '_loadRef') {
+          const ref = args[0]
+          if (ref?.length > 0) {
+            return getJsonPath(thisArg, ref )
+          }
         }
 
         return call(rootPath, args, '', id)

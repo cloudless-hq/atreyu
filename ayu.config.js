@@ -6,6 +6,7 @@ export default {
   ...secrets
 }
 
+// TODO: rename to prebuild step
 export const runConf = {
   'pnpm build': { globs: [ 'app/src/deps/**'] }
 }

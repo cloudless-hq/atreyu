@@ -1,9 +1,13 @@
 <script>
+  import Updater from '/_ayu/src/components/updater.svelte'
+  import DevMenu from '/_ayu/src/components/dev-menu.svelte'
   import setAyuContext from '/_ayu/src/store/context.js'
-  const { data, router } = setAyuContext()
+  import {onChange} from '../changes.js'
 
-  window.ayu = { data }
-  $: window.ayu.router = $router
+  const { data, router } = setAyuContext({ onChange })
+
+  window.ayu = { data, router }
+  // $: window.ayu.router = $router
 </script>
 
 {#if $router._component}
@@ -11,3 +15,7 @@
 {:else if $router._error}
   <svelte:component this={$router._errorComponent} />
 {/if}
+
+<Updater />
+
+<DevMenu />

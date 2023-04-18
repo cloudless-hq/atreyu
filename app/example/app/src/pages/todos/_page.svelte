@@ -1,35 +1,34 @@
 <script>
+  import Lazy from '/_ayu/src/components/lazy.svelte'
+  import Header from '/_ayu/src/components/header.svelte'
   import { getContext } from 'svelte'
-
-  import { flip } from 'svelte/animate'
-  // import { quintOut } from 'svelte/easing'
-	// import { crossfade } from 'svelte/transition'
-
-  // const [ send, receive ] = crossfade({
-	// 	duration: d => Math.sqrt(d * 200),
-	// 	fallback (node, params) {
-	// 		const style = getComputedStyle(node)
-	// 		const transform = style.transform === 'none' ? '' : style.transform
-	// 		return {
-	// 			duration: 300,
-	// 			easing: quintOut,
-	// 			css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
-	// 		}
-	// 	}
-	// })
-
-  import TodoItem from './todo-item.svelte'
   const { data, router } = getContext('ayu')
 
-  let pageEnd = 10
+  import TodoItem from './todo-item.svelte'
+
+  import { flip } from 'svelte/animate'
+  import { quintOut } from 'svelte/easing'
+	import { crossfade } from 'svelte/transition'
+
+  const [ send, receive ] = crossfade({
+		duration: d => Math.sqrt(d * 200),
+		fallback (node, params) {
+			const style = getComputedStyle(node)
+			const transform = style.transform === 'none' ? '' : style.transform
+			return {
+				duration: 300,
+				easing: quintOut,
+				css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
+			}
+		}
+	})
 
   $: view = $router.todos.view || 'all'
   $: sortBy = $router.todos.sortBy || 'date'
-
   $: todos = $data.todos[view][sortBy]
 
-  $: completed = $data.todos.completed.date
-
+  // let pageEnd = 10
+  // $: completed = $data.todos.completed.date
   // $: syncTodos = todos.slice(0, pageEnd).map(todo => {
   //   return {
   //     $key: todo._id$,
@@ -40,7 +39,6 @@
   //     _id$not: false
   //   }
   // })
-
   // $: console.log(syncTodos)
 
   function changeView ({ target }) {
@@ -66,78 +64,89 @@
       description: (new FormData(target)).get('newText'),
       completed: false,
       type: 'todo',
-      date: Date.now()
+      date: Date.now() // TODO: move to system created date, changes etc.
     })
 
     target.reset()
   }
 </script>
 
-{#if todos.length$loading}
-  <h1>
-    Loading…
-  </h1>
-{:else}
-  <h1>
-    Showing { todos.length } of { $data.todos.all[sortBy].length } todos
-  </h1>
-{/if}
 
-<div class="m-6">
-  <label for="view">Filter:</label>
+<div class="padding-1">
+  <Header hide={['settings']}>
+    <img slot="logo" class="logo sm:px-6 lg:px-8 left-0 absolute h-[35px]" src="/assets/favicon.png" alt="today logo" />
+  </Header>
 
-  <ul class="flex">
-    <li class="m-2" class:active={ $router.todos.view === 'all' } >
-      <a href={ $router.todos._link({ view: 'all', sortBy }) }>Show all</a>
-    </li>
+  {#if todos.length$loading}
+    <h1>
+      Loading…
+    </h1>
+  {:else}
+    <h1>
+      Showing { todos.length } of { $data.todos.all[sortBy].length } todos
+    </h1>
+  {/if}
 
-    <li class="m-2" class:active={ $router.todos.view === 'completed' }>
-      <a href={ $router.todos._link({ view: 'completed', sortBy: 'date' }) }>Show completed</a>
-    </li>
+  <div class="m-6">
+    <label for="view">Filter:</label>
 
-    <li class="m-2" class:active={ $router.todos.view === 'active' }>
-      <a href={ $router.todos._link({ view: 'active', sortBy: 'date' }) }>Show active</a>
-    </li>
-  </ul>
-</div>
+    <ul class="flex">
+      <li class="m-2" class:active={ view === 'all' } >
+        <a href={ $router.todos._link({ view: 'all', sortBy }) }>Show all</a>
+      </li>
 
-<div class="m-6">
-  <label for="sortBy">Sort:</label>
+      <li class="m-2" class:active={ view === 'completed' }>
+        <a href={ $router.todos._link({ view: 'completed', sortBy: 'date' }) }>Show completed</a>
+      </li>
 
-  <select class="rounded" name="sortBy" value={sortBy} on:change={changeView}>
-    <option value='date'>Time</option>
+      <li class="m-2" class:active={ view === 'active' }>
+        <a href={ $router.todos._link({ view: 'active', sortBy: 'date' }) }>Show active</a>
+      </li>
+    </ul>
+  </div>
 
-    {#if $router.todos.view === 'all' }
-      <option value='completed'>Completed</option>
-    {/if}
-  </select>
-</div>
+  <div class="m-6">
+    <label for="sortBy">Sort:</label>
 
-<form class="m-6 mt-20" on:submit|preventDefault={add}>
-  <input id="newText" name="newText" type="text" class="rounded w-[440px]">
-  <button class="p-2 rounded" type="submit">+ Add new task</button>
-</form>
+    <select class="rounded" name="sortBy" value={sortBy} on:change={changeView}>
+      <option value='date'>Time</option>
 
-<div class="py-10">
-  {#each todos.slice(0, pageEnd) as todo, i (todo.$key)}
-    <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" >
-      <!-- fixme: loading broken in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}" -->
-      <TodoItem {todo} {remove} {toggle} {updateText} />
-    </div>
-  {/each}
-</div>
+      {#if view === 'all' }
+        <option value='completed'>Completed</option>
+      {/if}
+    </select>
+  </div>
 
-<!-- {#if view === 'active'}
-  <h2>Completed:</h2>
+  <form class="m-6 mt-20" on:submit|preventDefault={add}>
+    <input id="newText" name="newText" type="text" class="rounded w-[440px]">
+    <button class="p-2 rounded" type="submit">+ Add new task</button>
+  </form>
+
   <div class="py-10">
-    {#each completed.slice(0, pageEnd) as todo, i (todo.$key)}
-      <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}">
-        <TodoItem {todo} {remove} {toggle} {updateText} />
+    {#each todos as todo, i (todo.$refKey)}
+      <div class="realtive" animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$refKey }}" out:send="{{ key: todo.$refKey }}" >
+        <Lazy style="min-height: 50px" preload={i < 10}>
+          <TodoItem todo={$data._loadRef(todo.$ref)} {remove} {toggle} {updateText} />
+        </Lazy>
       </div>
     {/each}
   </div>
-{/if} -->
 
-{#if pageEnd < todos.length}
-  <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>
-{/if}
+  <!--
+    fixme: loading broken animate flip, in out crossfade
+    todos.slice(0, pageEnd)
+    {#if view === 'active'}
+      <h2>Completed:</h2>
+      <div class="py-10">
+        {#each completed.slice(0, pageEnd) as todo, i (todo.$key)}
+          <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}">
+            <TodoItem {todo} {remove} {toggle} {updateText} />
+          </div>
+        {/each}
+      </div>
+    {/if}
+    {#if pageEnd < todos.length}
+      <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>
+    {/if}
+  -->
+</div>

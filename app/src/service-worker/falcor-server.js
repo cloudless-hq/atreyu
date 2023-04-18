@@ -17,7 +17,6 @@ class WorkerServer {
     const pathSuffixes = action[4] || []
 
     let paths
-
     switch (method) {
       case 'get':
         paths = action[2]
@@ -62,7 +61,9 @@ export default function ({
     return { index: 0 }
   }
 
-  const workerServer = new WorkerServer(serverModel.asDataSource())
+  const dataSource = serverModel.asDataSource()
+
+  const workerServer = new WorkerServer(dataSource)
 
   return workerServer
 }

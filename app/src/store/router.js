@@ -250,6 +250,8 @@ export default function ({ schema = { paths: {}, fallback: true }, dataStore } =
       onIdle(IdleDeadline => {
         const remainingTime = IdleDeadline.timeRemaining()
         if (remainingTime > 48) {
+          console.log('idle callback')
+
           const startTime = Date.now()
           cb(startTime + remainingTime)
         } else {
@@ -335,6 +337,7 @@ export default function ({ schema = { paths: {}, fallback: true }, dataStore } =
     }
     // console.log('instance', endTime - Date.now())
 
+    // FIXME: do not start idle work if waiting for rate limiting or network/syncing!! this leads to thrashing amplification!
     awaitIdle(endTime => {
       // console.log(instances.get(currentHref))
       if (currentHref) {

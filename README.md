@@ -1,5 +1,8 @@
 [![Build](https://github.com/cloudless-hq/atreyu/actions/workflows/container.yml/badge.svg)](https://github.com/cloudless-hq/atreyu/actions/workflows/container.yml)
 
+TODO: Start CodeSpace Badge
+https://github.com/codespaces/new?repo=cloudless-hq%2Fatreyu
+
 # Atreyu - cutting edge web apps
 
 **attention**: This is early pre-release software. Things will still be missing, break or change without warning.

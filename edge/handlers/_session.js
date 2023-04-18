@@ -5,9 +5,26 @@ import doReq from '../lib/req.js'
 // eslint-disable-next-line no-restricted-imports
 import { escapeId } from '../../app/src/lib/helpers.js'
 
-const { _couchKey, _couchSecret, couchHost, env, folderHash, auth_domain, appName } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'folderHash', 'auth_domain', 'appName'])
+// auth_domain
+const {
+  _couchKey,
+  _couchSecret,
+  couchHost,
+  env,
+  folderHash,
+  appName,
+  workerd
+} = getEnv([
+  '_couchKey',
+  '_couchSecret',
+  'couchHost',
+  'env',
+  'folderHash',
+  'appName',
+  'workerd'
+])
 
-const denoLocal = typeof self !== 'undefined' && !!self.Deno
+const local = (typeof self !== 'undefined' && !!self.Deno) || workerd
 
 // function setCookie (name, value, days) {
 //     let d = new Date
@@ -29,7 +46,7 @@ function getCookie (name, cookieString = '') {
 
 export async function handler ({ req, stats, app }) {
   let jwt
-  if (denoLocal && !req.headers['cf-access-jwt-assertion']) {
+  if (local && !req.headers['cf-access-jwt-assertion']) {
     jwt = getCookie('CF_Authorization', req.headers['cookie'])
   } else {
     jwt = req.headers['cf-access-jwt-assertion']
@@ -64,7 +81,7 @@ export async function handler ({ req, stats, app }) {
 
   let curSessionId
   let curOrg
-  if (denoLocal) {
+  if (local) {
     curSessionId = jwtPayload.sessionId
     curOrg = jwtPayload.org
   } else {
@@ -99,8 +116,8 @@ export async function handler ({ req, stats, app }) {
     // name: Ja Joh, idp: Data from your identity provider, user_uuid: The ID of the user.
 
     const newSession = {
-      email: denoLocal ? req.query.email : jwtPayload.email,
-      useSessionId: denoLocal ? req.query.sessionId : curSessionId,
+      email: local ? req.query.email : jwtPayload.email,
+      useSessionId: local ? req.query.sessionId : curSessionId,
 
       // TODO: validate org and setup user/org association
       org: req.query.org,
@@ -118,7 +135,7 @@ export async function handler ({ req, stats, app }) {
       newSessionId = 'ephemeral:' + crypto.randomUUID()
     }
 
-    if (denoLocal) {
+    if (local) {
       // NOTE: deno local is a fake test login with zero validation!
 
       const devJwt = 'dev.' + btoa(JSON.stringify({

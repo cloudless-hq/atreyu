@@ -55,8 +55,8 @@ export default async function req (url, { method, body, headers: headersArg = {}
       if (kvRes?.value) {
         const options = {
           headers: {
-            'cache-status': `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}`,
-            'content-type': kvRes.metadata.headers?.['content-type']
+            'cache-status': `edge-kv; hit${kvRes.metadata?.expiration ? '; ttl=' + (kvRes.metadata?.expiration - Math.floor(Date.now() / 1000)) : ''}`,
+            'content-type': kvRes.metadata?.headers?.['content-type']
           },
           ok: true,
           statusText: 'OK',

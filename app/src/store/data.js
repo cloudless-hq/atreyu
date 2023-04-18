@@ -1,6 +1,6 @@
 import { makeProxy } from '../lib/proxy-object.js'
 import { falcor } from '/_ayu/build/deps/falcor.js'
-import { extractFromCache, setPathValue } from './helpers.js'
+import { extractFromCache, setPathValue, getJsonPath } from './helpers.js'
 import ServiceWorkerSource from './service-worker-source.js'
 
 const _undefined = Symbol('undefined')
@@ -36,7 +36,7 @@ class frameScheduler {
 /* eslint-enable functional/no-this-expression, functional/no-class */
 
 
-function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, errorSelector, onAccess }) {
+export default function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, onModelChange, errorSelector, onAccess }) {
   // let invalidationHandler
 
   if (typeof source === 'undefined') {
@@ -61,7 +61,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       // TODO: batch by frame or already done by internal scheduler?
       // console.log('falcor model change')
       update()
-      onChange?.()
+      onModelChange?.()
     },
     // comparator: (oldValEnv, newValEnv, path) => {
     //   if (oldValEnv === newValEnv) {
@@ -136,7 +136,7 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     '$$unbox', // deref and unbox
     '$$unbatch', // etc. // deref and unbatch
 
-    '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type', '$key' ]
+    '$error', '$rev', '$ref', '$version', '$schema', '$timestamp', '$expires', '$size', '$type', '$key', '$refKey' ]
   const makeAyuProxy = (id, subModel) => makeProxy({
     id,
     from: () => {},
@@ -162,9 +162,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       }
 
       let curViewKey
-      if (delim === '$key') {
+      if (delim === '$key' || delim == '$refKey') {
         curViewKey = path.slice(0, path.length - 1).join('.')
-        path = path.concat('_id')
+
+        if (delim === '$key') {
+          path = path.concat('_id') // FIXME: for $ref case!
+        }
       }
 
       const pathString = path.join('.') + (boxKey ? `.${boxKey}` : '')
@@ -178,18 +181,29 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         deps[id].set(pathString, { path })
       }
 
-      let adjustedModel
       if (boxKey !== '') {
-        adjustedModel = subModel ? subModel.boxValues() : boxedModel
         path = path.concat(boxKey)
+      }
+
+      let adjustedModel
+      if (boxKey !== '' || delim === '$ref' || delim === '$refKey') {
+        adjustedModel = subModel ? subModel.boxValues() : boxedModel
       } else {
         adjustedModel = subModel || model
       }
 
       onAccess?.(path)
 
-      const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
-      const falcorCacheVal = (falcorCacheRes.value === undefined && falcorCacheRes.$type === 'atom') ? _undefined : falcorCacheRes.value
+      let falcorCacheVal
+      if (delim === '$ref' || delim === '$refKey') {
+        const cacheVEnvelope = getJsonPath(adjustedModel.getCache(path), path)
+        if (cacheVEnvelope?.$type === 'ref') {
+          falcorCacheVal = cacheVEnvelope.value
+        }
+      } else {
+        const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
+        falcorCacheVal = (falcorCacheRes.value === undefined && falcorCacheRes.$type === 'atom') ? _undefined : falcorCacheRes.value
+      }
 
       let cacheVal
       let existingProm
@@ -225,14 +239,16 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
       // }
       // console.log(pathString, falcorCacheVal)
       let newProm
-      if (falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) { // || typeof cacheVal === 'undefined'
+      if ((falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) && delim !== '$refKey') { // || typeof cacheVal === 'undefined'
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
         lastUpdt.set(pathString, latestTick)
-        newProm = adjustedModel.getValue(path) // TODO: use get() instead and use info about box
+
+        // TODO: use get() instead and use info about box, migrate all internals to envelopes and only unpack in last step
+        newProm = adjustedModel.getValue(path)
           .then(val => {
-            if (typeof val === 'undefined') {
+            if (typeof val === 'undefined' || (val.$type === 'atom' && val.value === undefined)) {
               cacheMap.set(pathString, [_undefined])
 
               if (delim === '$key') {
@@ -252,6 +268,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
                 // console.log('undefined value received', { pathString, key, val, curViewKey, keys: [...keys] })
               }
             } else {
+              if (delim === '$ref') {
+                if (val.$type === 'ref') {
+                  val = val.value
+                }
+              }
+
               if (delim === '$key') {
                 if (key) {
                   const previousViewKeys = keys.get(val) || {}
@@ -291,8 +313,12 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
         cacheMap.set(pathString, [cacheVal, newProm])
       }
 
-      if (delim === '$key') {
+      if (delim === '$key' || delim === '$refKey') {
         if (cacheVal && cacheVal !== _undefined) {
+          if (delim === '$refKey') {
+            cacheVal = cacheVal.join('.')
+          }
+
           if (keys.has(cacheVal)) {
             const viewKeyOverrides = keys.get(cacheVal)
             let keyOverride
@@ -442,7 +468,9 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
           changed = true
         } else {
           for (const [ pathString, { lastVer, path } ] of deps[id]) {
-            const newVer = model.getVersion(path) // FIXME: path inside atom object are all -1 instead of atom parent value
+            const newVer = model.getVersion(path) // FIXME: path inside atom object are all -1 instead of atom parent value use own getVersion
+
+            // console.log({ newVer, data: model.getCache(path) })
 
             if (newVer === -1 || !lastVer || lastVer !== newVer) {
               deps[id].set(pathString, { path, lastVer: newVer })
@@ -474,12 +502,10 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     const subscriptionProxy = makeAyuProxy(id, subModel)
 
     const doRun = (..._args) => {
-      // console.log('run', id)
       return run(..._args)
     }
 
     const doInvalidate = (..._args) => {
-      // console.log('store invalidate', id)
       if (invalidate) {
         return invalidate(..._args)
       }
@@ -488,44 +514,54 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     const subscriber = [doRun, doInvalidate, subscriptionProxy, id]
 
     subscribers.add(subscriber)
-    // console.log('subscribe', id)
 
     run(subscriptionProxy)
 
     return () => {
-      // console.log('unsubscribe', id)
       delete deps[id]
       return subscribers.delete(subscriber)
     }
   }
 
-  // const cache = model.getCache()
-  // const changes = {}
-  // diffCache(cache, model).forEach(change => {
-  //   changes[change[0]] = change[1]
-  // })
-  // console.log(changes)
+  let seq
+  let timeout
+  const doSync = async () => {
+    try {
+      // TODO: full support for long running observable subscriptions to avoid this loop
+      const data = (await boxedModel.call(['_sync'], [seq]))?.json
+      seq = data?._seq.value || seq
 
-  // const entries = Object.entries(changes)
-  // for (let i = 0; i < entries.length; i++) {
-  //   const entr = entries[i]
-  //   const chPath = entr[0].split('.')
-  //   const compPath = ['falcor', 'messages', contactId, view, 'length']
-  //   while (chPath.length > 0) {
-  //     if (chPath.shift() !== compPath.shift()) {
-  //       break
-  //     }
-  //   }
-  //   if (chPath.length === 0) {
-  //     updatePage = true
-  //     break
-  //   }
-  // ntr.app.set(changes)
-  // invalidationHandler = paths => {
-  //  invalidationCache = {}
-  //  paths.forEach(path => {
-  //  console.log(extractFromCache({obj: model._root.cache, path}).description)
-  //  })
+      // TODO: support invalidation and re-preloading by connecting to router
+      onChange({ data, model, _where: 'window' })
+    } catch (err) {
+      console.log(err)
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
+      timeout = setTimeout(() => {
+        timeout = null
+        doSync()
+      }, 5)
+    }
+  }
+
+  async function init () {
+    const userId = await model.getValue(['_session', 'userId'])
+    if (userId) {
+      doSync()
+    }
+  }
+  init()
+
+  // page was restored from the bfcache, sync is broken and needs to be re-initialized
+  self.addEventListener('pageshow', e => {
+    if (e.persisted) {
+      console.log('bf cache resume, retriggering _sync init')
+      clearTimeout(timeout)
+      init()
+    }
+  })
 
   return {
     deref: paths => {
@@ -545,10 +581,32 @@ function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onCh
     subscribe,
     set: () => {},
     falcor: model,
-    // proxy: makeAyuProxy('_direct'), avoid debugging proxy creation, just use a manual subscription instead
     deps
   }
 }
 
-// TODO: if this should be configuratble, this needs to be function
-export default makeDataStore({})
+// change path detection feature postponed for performance reasons:
+// const cache = model.getCache()
+// const changes = {}
+// diffCache(cache, model).forEach(change => {
+//   changes[change[0]] = change[1]
+// })
+// const entries = Object.entries(changes)
+// for (let i = 0; i < entries.length; i++) {
+//   const entr = entries[i]
+//   const chPath = entr[0].split('.')
+//   const compPath = ['falcor', 'messages', contactId, view, 'length']
+//   while (chPath.length > 0) {
+//     if (chPath.shift() !== compPath.shift()) {
+//       break
+//     }
+//   }
+//   if (chPath.length === 0) {
+//     updatePage = true
+//     break
+//   }
+// invalidationHandler = paths => {
+//  invalidationCache = {}
+//  paths.forEach(path => {
+//    console.log(extractFromCache({obj: model._root.cache, path}).description)
+//  })

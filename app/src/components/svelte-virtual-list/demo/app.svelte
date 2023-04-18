@@ -2,7 +2,7 @@
 
 <script>
 	import VirtualList from '@sveltejs/svelte-virtual-list';
-	import items from './data.js';
+	import items from './context.js';
 	import ListItem from './ListItem.svelte';
 
 	let start;

@@ -1,9 +1,8 @@
 <script>
   import Menu from '/_ayu/src/components/menu.svelte'
   import trans from '/_ayu/src/class-transition.js'
-  import data from '/_ayu/src/store/data.js'
-
-  const settingsDoc = $data._docs['_local/ayu'].$
+  // import { data } from '/_ayu/src/store/context.js'
+  // const settingsDoc = $data._docs['_local/ayu'].$
 
   function toggle (key) {
     localStorage.setItem('ayu_' + key, !JSON.parse(localStorage.getItem('ayu_' + key) || 'true'))

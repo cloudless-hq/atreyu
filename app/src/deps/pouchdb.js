@@ -7311,23 +7311,34 @@ function HttpPouch(opts, callback) {
 
           sse.add(changes);
 
+          let connectionLost = false;
           function setupTimeout () {
             return setTimeout(() => {
-              console.warn('missed heartbeat', { online: navigator.onLine, changes, sse });
+              if (!connectionLost) {
+                connectionLost = true;
+                console.warn('db connection lost!', { online: navigator.onLine, changes, sse });
+              }
               hbTimeout = setupTimeout();
             }, opts.heartbeat * 2)
           }
 
           let hbTimeout = setupTimeout();
 
-          changes.addEventListener('heartbeat', () => {
+          function resetTimer () {
             clearTimeout(hbTimeout);
             hbTimeout = setupTimeout();
-          });
+            if (connectionLost) {
+              connectionLost = false;
+              console.info('db connection resumed!', { online: navigator.onLine, changes, sse });
+            }
+          }
+
+          changes.addEventListener('heartbeat', resetTimer);
 
           changes.addEventListener('error', callback);
 
           changes.addEventListener('message', e => {
+            resetTimer();
             const change = JSON.parse(e.data);
             callback(null, { results: [change], last_seq: change.seq });
           });

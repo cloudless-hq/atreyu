@@ -28,6 +28,22 @@ export function extractFromCache ({ obj, path, idx = 0, root = obj, parentAtom, 
   }
 }
 
+export function getJsonPath (obj, path) {
+  if (obj === undefined) {
+    return
+  }
+  let current = obj
+
+	for (let i = 0; i < path.length; i++) {
+		if (current[path[i]] === undefined) {
+      return
+    }
+		current = current[path[i]]
+	}
+
+	return current
+}
+
 export function setPathValue (o, [head, ...tail], newValue, root) {
   if (!root) {
     o = structuredClone(o)

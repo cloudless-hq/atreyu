@@ -4,11 +4,12 @@ export default [
 
     options: {
       partitioned: false,
+      include_design: true,
       where: 'both'
     },
 
     views: {
-      // TODO: useme!
+      // TODO: useme & move to system views!
       conflicts: {
         map: function (doc) {
           if (doc._conflicts) {
@@ -17,6 +18,7 @@ export default [
         }.toString(),
         reduce: '_count'
       },
+
       by_completed_and_date: {
         map: function (doc) {
           if (doc.deleted || !doc.description) {

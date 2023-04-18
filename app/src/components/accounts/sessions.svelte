@@ -1,5 +1,9 @@
 <script>
-  import data from '/_ayu/src/store/data.js'
+  // import { data } from '/_ayu/src/store/context.js'
+
+  import { getContext } from 'svelte'
+  const {data} = getContext('ayu')
+
   import { fromNow, formatTime, getFlagEmoji } from '/_ayu/src/lib/helpers.js'
 
   const browserIcons = {

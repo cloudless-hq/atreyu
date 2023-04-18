@@ -2,8 +2,19 @@ import { join } from '../deps-deno.ts'
 import { escapeId } from '../app/src/lib/helpers.js'
 import dbDefaultSeeds from '../app/db-default-seeds.js'
 
-export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, config, version, buildName, buildTime, appName, env, resetAppDb, force, ayuHash, verbose }) {
-  const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey } = config
+export async function couchUpdt ({
+  appFolderHash,
+  rootFolderHash,
+  config,
+  version,
+  buildMeta,
+  appName,
+  resetAppDb,
+  force,
+  ayuHash,
+  verbose
+}) {
+  const { couchHost, __couchAdminKey, __couchAdminSecret, _couchKey, env } = config
 
   if (!couchHost || !__couchAdminKey) {
     if (verbose || (couchHost !== __couchAdminKey)) {
@@ -99,9 +110,9 @@ export async function couchUpdt ({ appFolderHash, rootFolderHash, buildColor, co
           rootFolderHash,
           version, // deprecate this key
           ayuVersion: version,
-          buildName,
-          buildTime,
-          buildColor
+          buildName: buildMeta.buildName,
+          buildTime: buildMeta.buildTime,
+          buildColor: buildMeta.buildColor
         },
         ...dbSeeds
       ] }),

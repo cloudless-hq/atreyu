@@ -43,7 +43,7 @@ export default async function ({ appFolder, batch, buildRes, clean, info } = {})
     minify: false,
     plugins: [ ayuPlugin({ atreyuPath }) ],
     sourceRoot: './',
-    format: 'esm', // iife
+    format: 'iife', // esm format pollutes global namespace in non esm environments
     // keepNames: true,
     platform: 'browser',
     outfile: `${appFolderAbs}/build/service-worker.js`

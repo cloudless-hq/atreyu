@@ -10,7 +10,6 @@ import {
   color,
   red,
   globToRegExp
-  // analyzeDeps
 } from '../deps-deno.ts'
 
 import { runDeno } from '../runtime/mod.ts'
@@ -24,13 +23,13 @@ import { execIpfs, execIpfsStream, add as addIpfs, get } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
 import { addPathTags } from '../app/src/schema/helpers.js'
-import defaultPaths from '../app/src/schema/default-routes.js'
 import { exec, execStream } from './helpers.ts'
 import { watch } from './watcher.ts'
-import versions from './versions.json' assert { type: 'json' }
 import { workerdSetup } from './workerd.js'
 
-const { ayuVersion, denoVersion } = versions
+import versions from './versions.json' assert { type: 'json' }
+import defaultPaths from '../app/src/schema/default-routes.js'
+import ignore from './ignores.js'
 
 // TODO integrate node scripts
 // TODO: sourcemaps worker and svelte, use sourcemaps for watch rebuild dependencies
@@ -40,22 +39,6 @@ const { ayuVersion, denoVersion } = versions
 // TODO: install check versions
 // TODO: remove docs js cdns dependency
 
-let buildName = ''
-let buildColor = ''
-let buildTime = Date.now()
-let buildNameColoured = ''
-
-let edgeSchema
-
-function rollBuildMeta () {
-  buildName = faker.company.bs()
-  buildColor = {r: Math.floor(Math.random() * 255), g: Math.floor(Math.random() * 255), b: Math.floor(Math.random() * 255)}
-  buildNameColoured = bold(italic(color(buildName, buildColor)))
-  buildTime = Date.now()
-}
-rollBuildMeta()
-
-// TODO: warn or autofix if no service or edge worker to use custom sevlte library eg. --sveltePath=https://cdn.skypack.dev/svelte@v3.35.0
 
 const {
   _,
@@ -87,60 +70,57 @@ if (Object.keys(rest).length) {
   console.error(`  ❓ Unknown command line arguments:`, rest)
 }
 
-const ignore = [
-  '**/.git/**',
-  '.git/**',
-  '**/**.build.css',
-  'node_modules/**',
-  '**/node_modules/**',
-  'yarn.lock',
-  '**/*.svelte.js',
-  '**/build/**',
-  '**/*.svelte.ssr.js',
-  '.gitignore',
-  '**/.devcontainer/**',
-  'README.md',
-  '**/*.svelte.css',
-  '**/.github/**',
-  '**/*.map',
-  '**/ipfs-map.json',
-  '**/*.bundle.js'
-]
-
 let cmd = _[0]
-
-const home = Deno.env.get('HOME')
-const homeConfPath = repo || home + '/.atreyu'
-const projectPath = Deno.cwd()
-const appName = basename(projectPath)
-const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
-
 if (help) {
   cmd = 'help'
 }
 if (version) {
   cmd = 'version'
 }
-
 if (!cmd) {
   cmd = 'dev'
 }
+
+let buildMeta
+function buildString () {
+  return bold(italic(color(buildMeta.buildName, buildMeta.buildColor)))
+}
+function rollBuildMeta () {
+  buildMeta = {
+    buildName: faker.company.bs(),
+    buildColor: {r: Math.floor(Math.random() * 255), g: Math.floor(Math.random() * 255), b: Math.floor(Math.random() * 255)},
+    buildTime: Date.now()
+  }
+}
+rollBuildMeta()
+
+const { ayuVersion, denoVersion } = versions
+const home = Deno.env.get('HOME')
+const projectPath = Deno.cwd()
+const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
+const homeConfPath = repo || home + '/.atreyu'
+const appName = basename(projectPath)
+let { config = {}, runConf = {}, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, homeConfPath, buildMeta.buildName, ayuVersion)
+const env = config.env
+const devMode = cmd !== 'publish'
+const appKey = env === 'prod' ? appName : appName + '_' + env
+const envDir = `${homeConfPath}/${env}`
+const workerdConfPath = `${envDir}/main.capnp`
+const input = _[1] || `${appFolder}/src`
 
 try {
   Deno.lstatSync(homeConfPath)
 } catch (_e) {
   Deno.mkdirSync(homeConfPath)
 }
+try {
+  Deno.lstatSync(envDir)
+} catch (_e) {
+  Deno.mkdirSync(envDir)
+}
 
 // TODO: dont always clean completely?
-
-let { config = {}, runConf = {}, env, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, homeConfPath, buildName, ayuVersion)
-
-const appKey = env === 'prod' ? appName : appName + '_' + env
 // TODO: allow argument relative path for apps different from cwd
-
-const workerdConfPath = `${homeConfPath}/config_${env}.capnp`
-
 // TODO: unify with other schema loader which allows also schema.js
 async function loadEdgeSchema ({ appFolder }) {
   // TODO: support implicit endpoints folder routes
@@ -243,7 +223,7 @@ async function doStart () {
     // TODO handle pid files
     await stopAll()
   }
-  // console.log('starting...')
+
   // TODO: add gneric timeout for all localhost requests...
   const c = new AbortController()
   const id = setTimeout(() => c.abort(), 1000)
@@ -259,26 +239,47 @@ async function doStart () {
 
   console.log('  starting local worker runtime on env: ' + yellow(bold(env)))
 
-  const devMode = cmd !== 'publish'
   if (workerd) {
     // workerd --version
 
     try {
       Deno.lstatSync(workerdConfPath)
     } catch (_e) {
-      await workerdSetup(workerdConfPath, '/entry-workerd.js', config)
+      // if first start, setup empty workerd conf so it can startup and watch
+      await workerdSetup({ appName, workerdConfPath, mainScriptPath: atreyuPath + '/edge/entry-workerd.js', config, atreyuPath, projectPath, workers: {} })
     }
 
     execStream({
       cmd: [ 'workerd', 'serve', '--verbose', '--experimental',
-        `--import-path=${join(atreyuPath, 'edge')}/`,
         ...(devMode ? ['--watch', '--inspector-addr=localhost:9229'] : []),
         workerdConfPath
       ],
       getData: (data, err) => {
-        // if (verbose) {
-        console.log('  workerd: ' + err || data)
-        // }
+        (data || err).split('\n').forEach(line => {
+          if (!line) {
+            return
+          }
+
+          const error = line.split('uncaught exception; source = ')[1] || line.split('failed: ')[1] || line.split('error: ')[1]
+          if (error) {
+            console.error('  workerd: ❗️ ' + error.trim())
+            return
+          }
+
+          const warning = line.split('console warning; message = ')[1] || line.split('console warning; description = ')[1]
+          if (warning) {
+            console.log('  workerd: ⚠️  ' + warning.trim())
+            return
+          }
+
+          const info = line.split('info: ')[1]
+          if (info) {
+            console.log('  workerd: ' + info.trim())
+            return
+          }
+
+          console.error('  workerd: ' + line.trim())
+        })
       },
       killFun: proc => { edgeDaemon = proc },
       verbose: true
@@ -341,19 +342,13 @@ async function resetDir (outputTarget, doClean) {
   } catch (_e) { /* ignore */ }
 }
 
-const input = _[1] || `${appFolder}/src`
-
 // TODO: eject
-switch (cmd) {
-  case 'version':
-    console.log(ayuVersion)
-    break
+const tasks = {
+  version: () => console.log(ayuVersion),
 
-  case 'help':
-    printHelp ({ ayuVersion })
-    break
+  help: () => printHelp ({ ayuVersion }),
 
-  case 'create':
+  create: async () => {
     const result = await doStart()
 
     await get({ name: _[1] })
@@ -362,18 +357,20 @@ switch (cmd) {
       await stopAll()
       Deno.exit()
     }
-    break
+  },
 
-  case 'dev':
-    edgeSchema = await loadEdgeSchema({ appFolder })
+  dev: async () => {
+    const edgeSchema = await loadEdgeSchema({ appFolder })
+
     let buildRes = []
+
     async function devBuild ({ batch, clean: doClean } = {}) {
-      const newConf = await loadConfig(env, cmd, appName, homeConfPath, buildName, ayuVersion)
+      const newConf = await loadConfig(env, cmd, appName, homeConfPath, buildMeta.buildName, ayuVersion)
       config = newConf?.config || {}
       runConf = newConf?.runConf || {}
 
       rollBuildMeta()
-      console.log('  🚀 Starting Build: "' + buildNameColoured + '"')
+      console.log('  🚀 Starting Build: "' + buildString() + '"')
 
       if (!workerd) {
         Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
@@ -413,7 +410,6 @@ switch (cmd) {
           output,
           sveltePath
         }),
-
         buildServiceWorker({
           info,
           batch,
@@ -421,15 +417,20 @@ switch (cmd) {
           buildRes,
           clean: doClean
         }),
-
-        buildEdge({ workers: edgeSchema, workerd, workerdConfPath, config, buildName, batch, clean: doClean, buildRes, info })
+        buildEdge({
+          workers: edgeSchema,
+          workerd,
+          buildName: buildMeta.buildName,
+          batch,
+          clean: doClean,
+          buildRes,
+          info
+        })
       ])
 
       buildEmits = buildEmits.concat(buildRes.flatMap( res => res ? Object.values(res.files).flatMap(({ newEmits }) => newEmits ) : [] ))
 
-      // console.log(JSON.stringify(buildRes, null, 2))
-
-      const { appFolderHash } = await addIpfs({
+      const { appFolderHash, rootFolderHash, ayuHash } = await addIpfs({
         appFolder,
         repo: homeConfPath,
         clean: doClean,
@@ -440,7 +441,33 @@ switch (cmd) {
         env,
         config
       })
-      await couchUpdt({ appFolderHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, verbose, env, resetAppDb: doClean && resetAppDb, force })
+
+      if (workerd) {
+        await workerdSetup({
+          appName,
+          rootFolderHash,
+          ayuHash,
+          workerdConfPath,
+          appFolderHash,
+          mainScriptPath: atreyuPath + '/edge/entry-workerd.js',
+          config,
+          atreyuPath,
+          projectPath,
+          workers: edgeSchema
+        })
+      }
+
+      await couchUpdt({
+        appFolderHash,
+        config,
+        version: ayuVersion,
+        buildMeta,
+        appName,
+        verbose,
+        env,
+        resetAppDb: doClean && resetAppDb,
+        force
+      })
     }
 
     if (!noStart) {
@@ -450,33 +477,30 @@ switch (cmd) {
     await devBuild({ clean: true })
 
     if (!once) {
+      // FIXME: move to esbuild watch
       await watch({ watchPath: projectPath, ignore, handler: devBuild })
     } else {
       await stopAll()
       Deno.exit()
     }
-    // let { deps, errors } = await analyzeDeps('file:///Users/jan/Dev/igp/closr/app/schema/falcor.js')
-    // const { deps: newDeps, errors: newErrors } = await analyzeDeps( opts.entrypoint )
-    // const depsChanged = new Set([...deps, ...newDeps]).size
-    // if (depsChanged) { deps = newDeps }
-    break
+  },
 
-  case 'publish':
-    console.log('  🚀 Starting Build for publish: "' + buildNameColoured + '"')
-    edgeSchema = await loadEdgeSchema({ appFolder })
+  publish: async () => {
+    console.log('  🚀 Starting Build for publish: "' + buildString() + '"')
+    const edgeSchema = await loadEdgeSchema({ appFolder })
 
     if (!noStart) {
       await doStart()
     }
 
-    // FIXME: this file is obsolete?
-    Deno.writeTextFileSync( join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
+    if (!workerd) {
+      Deno.writeTextFileSync(join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
+    }
 
     const outputTarget = join(input, '..', 'build')
     await resetDir(outputTarget, clean)
 
-    // const startTime = Date.now()
-    const runs = Object.entries(runConf).map(([command]) => (async () => { // unused? , { globs }
+    const runs = Object.entries(runConf).map(([ command ]) => (async () => { // unused? , { globs }
       console.log(`  ▶️  running ${command}...`)
       await exec(command.split(' '))
     })())
@@ -495,15 +519,19 @@ switch (cmd) {
         sveltePath
       }),
 
-      buildServiceWorker({clean: true, appFolder, info})
+      buildServiceWorker({clean: true, appFolder, info}),
+
+      buildEdge({
+        workers: edgeSchema,
+        buildName: buildMeta.buildName,
+        publish: true,
+        clean: true,
+        info
+      })
     ])
 
-    // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
-    // duration && console.log('  ' + duration + 's')
-    // console.log('')
-
     // TODO: warn and exit ipfs publishing on already running offline node
-    const { appFolderHash, rootFolderHash, fileList, ayuFileList, ayuHash } = await addIpfs({
+    const { appFolderHash, rootFolderHash, fileList, _ayuFileList, ayuHash } = await addIpfs({
       appFolder,
       repo: homeConfPath,
       pin,
@@ -514,39 +542,55 @@ switch (cmd) {
       publish: true
     })
 
-    console.log({fileList, ayuFileList})
+    await cloudflareDeploy({
+      domain: config.domain || domain || appName,
+      workers: edgeSchema,
+      appName,
+      env,
+      config,
+      atreyuPath,
+      projectPath,
+      appFolderHash,
+      rootFolderHash,
+      fileList,
+      ayuHash,
+      resetKvs
+    })
 
-    await buildEdge({ workers: edgeSchema, buildName, publish: true, clean: true, info })
-
-    await cloudflareDeploy({ domain: config.domain || domain || appName, workers: edgeSchema, appName, env, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs})
-
-    await couchUpdt({ appFolderHash, rootFolderHash, ayuHash, buildColor, config, version: ayuVersion, buildName, buildTime, appName, env, resetAppDb, force })
+    await couchUpdt({
+      appFolderHash,
+      rootFolderHash,
+      ayuHash,
+      buildMeta,
+      config,
+      version: ayuVersion,
+      appName,
+      resetAppDb,
+      force
+    })
     await stopAll()
     Deno.exit()
-    break
+  },
 
-  case 'stop':
+  stop: async () => {
     await stopAll()
     Deno.exit()
-    break
+  },
 
-  case 'update':
-    // TODO: kill daemon and ipfs
-    // Deno.exit(0)
-    await update()
-    break
+  // TODO: kill daemon and ipfs
+  // Deno.exit(0)
+  update,
 
-  case 'info':
-    // TODO: show versions and infos for stats, current paths, permissions etc. Deno.exit(0)
-    break
+  // TODO: show versions and infos for stats, current paths, permissions etc. Deno.exit(0)
+  info: () => {},
 
-  case 'start':
+  start: () => {
     console.log(Deno.version)
     doStart()
-    break
-
-  default:
-    console.log(`${red('unknown sub-command')} ${red(cmd)}\n`)
-
-    printHelp({ ayuVersion })
+  }
 }
+
+await (tasks[cmd]?.() || (() => {
+  console.log(`${red('unknown sub-command')} ${red(cmd)}\n`)
+  printHelp({ ayuVersion })
+})())

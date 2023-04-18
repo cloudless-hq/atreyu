@@ -8,7 +8,7 @@ export function schema ({ defaultPaths, addPathTags }) {
 
         get: {
           tags: ['window'],
-          operationId: 'todos'
+          operationId: 'todos' // TODO: make explicit /pages/todos/_page.svelte ?
         }
       },
 
