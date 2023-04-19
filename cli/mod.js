@@ -12,7 +12,6 @@ import {
   globToRegExp
 } from '../deps-deno.ts'
 
-import { runDeno } from '../runtime/mod.ts'
 import { update } from './update.ts'
 import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
@@ -55,7 +54,6 @@ const {
   clean,
   noStart,
   resetKvs,
-  workerd,
   repo,
   domain,
   sveltePath,
@@ -65,6 +63,33 @@ const {
   info,
   ...rest
 } = parse(Deno.args)
+
+// FIXME: use features
+// parseArgs(Deno.args, {
+//   alias: {
+//     "help": "h",
+//     "reload": "r",
+//     "version": "V",
+//   },
+//   boolean: [
+//     "check",
+//     "help",
+//     "inspect",
+//     "reload",
+//     "version",
+//     "watch",
+//   ],
+//   string: [
+//     "addr",
+//     "libs",
+//     "env",
+//   ],
+//   default: {
+//     addr: ":8080",
+//     check: true,
+//     libs: "ns,window,fetchevent",
+//   },
+// })
 
 if (Object.keys(rest).length) {
   console.error(`  ❓ Unknown command line arguments:`, rest)
@@ -94,6 +119,7 @@ function rollBuildMeta () {
 }
 rollBuildMeta()
 
+const workerd = true
 const { ayuVersion, denoVersion } = versions
 const home = Deno.env.get('HOME')
 const projectPath = Deno.cwd()
@@ -238,65 +264,51 @@ async function doStart () {
   await startIpfsDaemon()
 
   console.log('  starting local worker runtime on env: ' + yellow(bold(env)))
+  // workerd --version
 
-  if (workerd) {
-    // workerd --version
-
-    try {
-      Deno.lstatSync(workerdConfPath)
-    } catch (_e) {
-      // if first start, setup empty workerd conf so it can startup and watch
-      await workerdSetup({ appName, workerdConfPath, mainScriptPath: atreyuPath + '/edge/entry-workerd.js', config, atreyuPath, projectPath, workers: {} })
-    }
-
-    execStream({
-      cmd: [ 'workerd', 'serve', '--verbose', '--experimental',
-        ...(devMode ? ['--watch', '--inspector-addr=localhost:9229'] : []),
-        workerdConfPath
-      ],
-      getData: (data, err) => {
-        (data || err).split('\n').forEach(line => {
-          if (!line) {
-            return
-          }
-
-          const error = line.split('uncaught exception; source = ')[1] || line.split('failed: ')[1] || line.split('error: ')[1]
-          if (error) {
-            console.error('  workerd: ❗️ ' + error.trim())
-            return
-          }
-
-          const warning = line.split('console warning; message = ')[1] || line.split('console warning; description = ')[1]
-          if (warning) {
-            console.log('  workerd: ⚠️  ' + warning.trim())
-            return
-          }
-
-          const info = line.split('info: ')[1]
-          if (info) {
-            console.log('  workerd: ' + info.trim())
-            return
-          }
-
-          console.error('  workerd: ' + line.trim())
-        })
-      },
-      killFun: proc => { edgeDaemon = proc },
-      verbose: true
-    })
-  } else {
-    runDeno({
-      addr: ':' + port, // FIXME: localhost requires sudo but 0.0.0.0 works?
-      noCheck: true,
-      watch: devMode,
-      inspect: devMode,
-      killFun: proc => { edgeDaemon = proc },
-      env: {
-        env
-      },
-      _: [ join(atreyuPath, 'edge', 'entry-deno.js') ]
-    })
+  try {
+    Deno.lstatSync(workerdConfPath)
+  } catch (_e) {
+    // if first start, setup empty workerd conf so it can startup and watch
+    await workerdSetup({ appName, workerdConfPath, mainScriptPath: atreyuPath + '/edge/entry-workerd.js', config, atreyuPath, projectPath, workers: {} })
   }
+
+  // FIXME: localhost requires sudo but 0.0.0.0 works? add port support
+  execStream({
+    cmd: [ 'workerd', 'serve', '--verbose', '--experimental',
+      ...(devMode ? ['--watch', '--inspector-addr=localhost:9229'] : []),
+      workerdConfPath
+    ],
+    getData: (data, err) => {
+      (data || err).split('\n').forEach(line => {
+        if (!line) {
+          return
+        }
+
+        const error = line.split('uncaught exception; source = ')[1] || line.split('failed: ')[1] || line.split('error: ')[1]
+        if (error) {
+          console.error('  workerd: ❗️ ' + error.trim())
+          return
+        }
+
+        const warning = line.split('console warning; message = ')[1] || line.split('console warning; description = ')[1]
+        if (warning) {
+          console.log('  workerd: ⚠️  ' + warning.trim())
+          return
+        }
+
+        const info = line.split('info: ')[1]
+        if (info) {
+          console.log('  workerd: ' + info.trim())
+          return
+        }
+
+        console.error('  workerd: ' + line.trim())
+      })
+    },
+    killFun: proc => { edgeDaemon = proc },
+    verbose: true
+  })
 }
 
 async function stopAll () {
@@ -342,6 +354,49 @@ async function resetDir (outputTarget, doClean) {
   } catch (_e) { /* ignore */ }
 }
 
+// TODO: update check
+// if (Deno.isatty(Deno.stdin.rid)) {
+//   let latestVersion;
+//   // Get the path to the update information json file.
+//   const { updatePath } = getConfigPaths();
+//   // Try to read the json file.
+//   const updateInfoJson = await Deno.readTextFile(updatePath).catch((error) => {
+//     if (error.name == "NotFound") return null;
+//     console.error(error);
+//   });
+//   if (updateInfoJson) {
+//     const updateInfo = JSON.parse(updateInfoJson) as {
+//       lastFetched: number;
+//       latest: number;
+//     };
+//     const moreThanADay =
+//       Math.abs(Date.now() - updateInfo.lastFetched) > 24 * 60 * 60 * 1000;
+//     // Fetch the latest release if it has been more than a day since the last
+//     // time the information about new version is fetched.
+//     if (moreThanADay) {
+//       fetchReleases();
+//     } else {
+//       latestVersion = updateInfo.latest;
+//     }
+//   } else {
+//     fetchReleases();
+//   }
+
+//   // If latestVersion is set we need to inform the user about a new release.
+//   if (
+//     latestVersion &&
+//     !(semverGreaterThanOrEquals(VERSION, latestVersion.toString()))
+//   ) {
+//     console.log(
+//       [
+//         `A new release of deployctl is available: ${VERSION} -> ${latestVersion}`,
+//         "To upgrade, run `deployctl upgrade`",
+//         `https://github.com/denoland/deployctl/releases/tag/${latestVersion}\n`,
+//       ].join("\n"),
+//     );
+//   }
+// }
+
 // TODO: eject
 const tasks = {
   version: () => console.log(ayuVersion),
@@ -371,10 +426,6 @@ const tasks = {
 
       rollBuildMeta()
       console.log('  🚀 Starting Build: "' + buildString() + '"')
-
-      if (!workerd) {
-        Deno.writeTextFileSync( join(homeConfPath, `${appKey}.json`), JSON.stringify(config, null, 2))
-      }
 
       let buildEmits = []
 
@@ -442,20 +493,18 @@ const tasks = {
         config
       })
 
-      if (workerd) {
-        await workerdSetup({
-          appName,
-          rootFolderHash,
-          ayuHash,
-          workerdConfPath,
-          appFolderHash,
-          mainScriptPath: atreyuPath + '/edge/entry-workerd.js',
-          config,
-          atreyuPath,
-          projectPath,
-          workers: edgeSchema
-        })
-      }
+      await workerdSetup({
+        appName,
+        rootFolderHash,
+        ayuHash,
+        workerdConfPath,
+        appFolderHash,
+        mainScriptPath: atreyuPath + '/edge/entry-workerd.js',
+        config,
+        atreyuPath,
+        projectPath,
+        workers: edgeSchema
+      })
 
       await couchUpdt({
         appFolderHash,
@@ -491,10 +540,6 @@ const tasks = {
 
     if (!noStart) {
       await doStart()
-    }
-
-    if (!workerd) {
-      Deno.writeTextFileSync(join(home, '.atreyu', `${appKey}.json`), JSON.stringify(config, null, 2))
     }
 
     const outputTarget = join(input, '..', 'build')
