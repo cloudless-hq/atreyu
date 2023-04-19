@@ -1,0 +1,45 @@
+{
+  "name": "convoi dev setup",
+  "image": "ghcr.io/cloudless-hq/atreyu:0.9.45",
+
+  "settings": {
+    "deno.enable": true,
+    "remote.autoForwardPorts": false
+  },
+
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "denoland.vscode-deno",
+    "file-icons.file-icons",
+    "svelte.svelte-vscode",
+    "ardenivanov.svelte-intellisense",
+    "mhutchie.git-graph"
+  ],
+
+  "forwardPorts": [],
+
+  "portsAttributes": {
+		"80": {
+			"label": "Web App Port",
+			"onAutoForward": "ignore"
+		},
+    "9229": {
+			"label": "chrome remote debugger",
+			"onAutoForward": "ignore"
+		},
+    "5001": {
+			"label": "ipfs port",
+			"onAutoForward": "ignore"
+		},
+    "8080": {
+			"label": "ipfs gateway",
+			"onAutoForward": "ignore"
+		}
+	},
+
+  "postCreateCommand": "pnpm install && cp secrets_template.js secrets.js && cloudflared service install $__CLOUDFLARE_TUNNEL_TOKEN && cd /root && cd app/example && cp secrets_template.js secrets.js && ayu --once && pkill ipfs",
+
+  "postStartCommand": "service cloudflared start",
+
+  "remoteUser": "root"
+}

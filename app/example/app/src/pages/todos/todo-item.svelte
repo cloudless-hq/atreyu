@@ -6,8 +6,29 @@
   export let updateText
 </script>
 
+<style>
+  .todo .is-complete {
+    text-decoration: line-through;
+    color: green;
+    background: none;
+    border: 1px solid #0000;
+  }
+  .todo input {
+    width: 440px;
+  }
+  .todo button {
+    border-radius: 50%;
+    width: 2.25em;
+    height: 2.25em;
+    line-height: 1.3em;
+    text-align: center;
+    margin-left: 0.75em;
+    padding: 0;
+  }
+</style>
+
 {#if todo}
-  <div class="todo m-6">
+  <div class="todo">
     <input type="text" placeholder="  " class="rounded"
       class:animated-placeholder={todo._id$not}
       class:is-complete={todo.completed$}

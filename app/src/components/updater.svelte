@@ -1,7 +1,5 @@
 <script>
   import { onMount, getContext } from 'svelte'
-  // import { data } from '/_ayu/src/store/context.js'
-
   const { data } = getContext('ayu')
 
   const settingsDocId = 'system:ayu_settings'
@@ -89,11 +87,11 @@
   }
 
   function closeUpdateNotification (e) {
-    const path = e.composedPath()
+    // const path = e.composedPath()
     if (updated) {
-      if (!path.includes(updatedNotification)) {
+      // if (!path.includes(updatedNotification)) {
         closeUpdated()
-      }
+      // }
     }
   }
 
@@ -140,7 +138,7 @@
     @apply fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start;
   }
   .ayu-update-notification .btn {
-    @apply bg-white rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+    @apply p-1 bg-white rounded-md text-sm font-medium focus:ring-2 ring-opacity-50 ring-black;
   }
   .ayu-update-notification .secondary.btn {
     @apply text-gray-700 hover:text-gray-500;
@@ -151,7 +149,7 @@
   .ayu-update-notification .wrapper2 {
     @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto overflow-hidden;
   }
-  /* ring-1 ring-black ring-opacity-5 */
+  /* ring-1 ring-black  focus:ring-offset-2  focus:outline-none focus:ring-2 focus:ring-primary-500 */
   .ayu-update-notification .wrapper3 {
     @apply p-4;
   }

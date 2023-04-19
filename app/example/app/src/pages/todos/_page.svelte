@@ -12,7 +12,8 @@
 
   const [ send, receive ] = crossfade({
 		duration: d => Math.sqrt(d * 200),
-		fallback (node, params) {
+
+    fallback (node, params) {
 			const style = getComputedStyle(node)
 			const transform = style.transform === 'none' ? '' : style.transform
 			return {
@@ -27,7 +28,6 @@
   $: sortBy = $router.todos.sortBy || 'date'
   $: todos = $data.todos[view][sortBy]
 
-  // let pageEnd = 10
   // $: completed = $data.todos.completed.date
   // $: syncTodos = todos.slice(0, pageEnd).map(todo => {
   //   return {
@@ -39,7 +39,6 @@
   //     _id$not: false
   //   }
   // })
-  // $: console.log(syncTodos)
 
   function changeView ({ target }) {
     $router.todos._navigate({ view, [target.name]: target.value })
@@ -71,19 +70,81 @@
   }
 </script>
 
+<style>
+  a {
+    color: rgb(0,100,200);
+    text-decoration: none;
+  }
 
-<div class="padding-1">
-  <Header hide={['settings']}>
-    <img slot="logo" class="logo sm:px-6 lg:px-8 left-0 absolute h-[35px]" src="/assets/favicon.png" alt="today logo" />
-  </Header>
+  a:hover {
+    text-decoration: underline;
+  }
 
+  a:visited {
+    color: rgb(0,80,160);
+  }
+
+  .active {
+    font-weight: 700;
+  }
+
+  label {
+    display: inline-block;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  input, button, select {
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0.4em;
+    margin: 0 0 0.5em 0;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+  }
+
+  input:disabled {
+    color: #ccc;
+  }
+
+  button {
+    background-color: #f4f4f4;
+    outline: none;
+  }
+
+  button:active {
+    background-color: #ddd;
+  }
+
+  button:focus {
+    border-color: #666;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  button {
+    margin-left: 0.75em;
+  }
+</style>
+
+<Header hide={['settings']}>
+  <img slot="logo" class="logo sm:px-6 lg:px-8 left-0 absolute h-[35px]" src="/assets/favicon.png" alt="today logo" />
+</Header>
+
+<div class="p-10 pt-24">
   {#if todos.length$loading}
     <h1>
       Loading…
     </h1>
   {:else}
     <h1>
-      Showing { todos.length } of { $data.todos.all[sortBy].length } todos
+      Showing
+      { todos.length } of
+      { $data.todos.all[sortBy].length } todos
     </h1>
   {/if}
 
@@ -124,29 +185,23 @@
 
   <div class="py-10">
     {#each todos as todo, i (todo.$refKey)}
-      <div class="realtive" animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$refKey }}" out:send="{{ key: todo.$refKey }}" >
-        <Lazy style="min-height: 50px" preload={i < 10}>
+      <div style="transform: translateZ(0); backface-visibility: hidden; perspective: 1000;" class="realtive p-3" animate:flip="{{ duration: 200 }}" in:receive="{{ key: todo.$refKey }}" out:send="{{ key: todo.$refKey }}" >
+        <Lazy style="min-height: 42px;" preload={i < 20} batchSize={20} listEnd={i === 0 || i + 1 === todos.length}>
           <TodoItem todo={$data._loadRef(todo.$ref)} {remove} {toggle} {updateText} />
         </Lazy>
       </div>
     {/each}
   </div>
 
-  <!--
-    fixme: loading broken animate flip, in out crossfade
-    todos.slice(0, pageEnd)
+  <!-- fixme: loading broken animate flip, in out crossfade
     {#if view === 'active'}
       <h2>Completed:</h2>
       <div class="py-10">
-        {#each completed.slice(0, pageEnd) as todo, i (todo.$key)}
+        {#each completed as todo, i (todo.$key)}
           <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}">
             <TodoItem {todo} {remove} {toggle} {updateText} />
           </div>
         {/each}
       </div>
-    {/if}
-    {#if pageEnd < todos.length}
-      <button class="p-3 m-14 rounded" on:click={() => { pageEnd += 10 }}>Load more...</button>
-    {/if}
-  -->
+    {/if} -->
 </div>

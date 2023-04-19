@@ -108,7 +108,7 @@ export default {
       handler: () => {
         return {
           jsonGraph: {
-            _hash: self.ipfsHash
+            _hash: { $type: 'atom', value: self.ipfsHash }
           }
         }
       }
@@ -125,9 +125,9 @@ export default {
       }
     },
     set: {
-      handler: ({_updating}) => {
+      handler: ({_updating, model}) => {
         self.updating = _updating
-
+        model.invalidate('_hash')
         return {
           jsonGraph: {
             _updating

@@ -8,7 +8,10 @@
     open = !open
   }
 
+  let longCLick
   function mouseUp (e) {
+    longCLick && longCLick !== true && clearTimeout(longCLick)
+
     const path = e.composedPath()
     if (path.includes(menuNode)) {
       // if (!originalClick) {
@@ -22,11 +25,19 @@
       open = false
     } else if (!path.includes(buttonNode)) {
       open = false
+    } else {
+      if (longCLick === true) {
+        open = false
+      }
     }
     // originalClick = false
   }
 
   function mouseDown (e) {
+    longCLick = setTimeout(() => {
+      longCLick = true
+    }, 600)
+
     const path = e.composedPath()
     if (open) {
       if (path.includes(menuNode)) {
