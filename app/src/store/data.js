@@ -202,7 +202,7 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
         }
       } else {
         const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
-        falcorCacheVal = (falcorCacheRes.value === undefined && falcorCacheRes.$type === 'atom') ? _undefined : falcorCacheRes.value
+        falcorCacheVal = (falcorCacheRes?.value === undefined && falcorCacheRes?.$type === 'atom') ? _undefined : falcorCacheRes.value
       }
 
       let cacheVal
@@ -248,7 +248,7 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
         // TODO: use get() instead and use info about box, migrate all internals to envelopes and only unpack in last step
         newProm = adjustedModel.getValue(path)
           .then(val => {
-            if (typeof val === 'undefined' || (val.$type === 'atom' && val.value === undefined)) {
+            if (typeof val === 'undefined' || (val?.$type === 'atom' && val?.value === undefined)) {
               cacheMap.set(pathString, [_undefined])
 
               if (delim === '$key') {

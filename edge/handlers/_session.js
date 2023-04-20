@@ -44,7 +44,7 @@ function getCookie (name, cookieString = '') {
 
 // TODO: create database if not existing
 
-export async function handler ({ req, stats, app }) {
+export default async function ({ req, stats, app }) {
   let jwt
   if (local && !req.headers['cf-access-jwt-assertion']) {
     jwt = getCookie('CF_Authorization', req.headers['cookie'])

@@ -4,7 +4,7 @@ import { fetchStream } from '../lib/http.js'
 const env = getEnv(['_couchKey', '_couchSecret', '_couchHost'])
 
 
-export async function handler ({event, req, app}) {
+export default async function ({event, req, app}) {
   const url = 'https://' + env._couchHost + '/' + req.url.href.split('_feed/')[1]
 
   const { readable, write } = await fetchStream(url, {

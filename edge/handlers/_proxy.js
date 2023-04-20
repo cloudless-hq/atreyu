@@ -192,7 +192,7 @@ async function loadSettings () {
   settingsLocked = false
   return json
 }
-export async function handler ({ req, text, waitUntil }) {
+export default async function ({ req, text, waitUntil }) {
   const origUrl = new URL(req.url.href)
 
   if (req.url.pathname === '/__ayu_refresh') {
