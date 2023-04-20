@@ -1,42 +1,49 @@
-const workerRoutes = Object.entries(JSON.parse(routes))
-  .map(([pattern, workerName]) => [workerName, new URLPattern({ pathname: pattern })])
-  .sort(([patternA], [patternB]) => patternB.length - patternA.length)
-
 let cfData
-addEventListener('fetch', event => {
-  if (!cfData) {
-    event.waitUntil(fetch('https://workers.cloudflare.com/cf.json').then(async res => {
-      const json = await res.json()
-      cfData = {
-        longitude: json.longitude,
-        latitude: json.latitude,
-        country: json.country,
-        colo: json.colo,
-        city: json.city,
-        asOrganization: json.asOrganization
-      }
-    }))
+let workerRoutes
+export default {
+  fetch (request, env, context) {
+    if (!workerRoutes) {
+      workerRoutes = Object.entries(JSON.parse(env.routes))
+        .map(([pattern, workerName]) => [workerName, new URLPattern({ pathname: pattern })])
+        .sort(([patternA], [patternB]) => patternB.length - patternA.length)
+    }
+
+    if (!cfData) {
+      cfData = {}
+      const prom = fetch('https://workers.cloudflare.com/cf.json').then(res => {
+        return res.json().then(json => {
+          cfData = {
+            longitude: json.longitude,
+            latitude: json.latitude,
+            country: json.country,
+            colo: json.colo,
+            city: json.city,
+            asOrganization: json.asOrganization
+          }
+        })
+      }).catch(err => { console.log(err)} )
+      context.waitUntil(prom)
+    }
+
+    const url = new URL(request.url)
+    const localhostMatch = url.hostname.split('.localhost')
+    const appName = localhostMatch.length > 1 ? localhostMatch[0] : 'ayu'
+    const appKey = env.env === 'prod' ? appName : appName + '_' + env.env
+
+    const [ workerName ] = workerRoutes.find(([_, pattern]) => pattern.test(url.href))
+
+    // if (!app) {
+    //  return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
+    // }
+
+    if (env[workerName]?.fetch) {
+      return env[workerName].fetch(request, { cf: cfData })
+    } else {
+      return new Response(JSON.stringify({ workerRoutes, workerName, url, cfData: cfData || {}, appKey, appName }), {headers: {'content-type': 'application/json'}})
+      // event.respondWith(fetch(event.request))
+    }
   }
-
-  const url = new URL(event.request.url)
-  const localhostMatch = url.hostname.split('.localhost')
-  const appName = localhostMatch.length > 1 ? localhostMatch[0] : 'ayu'
-  const appKey = env === 'prod' ? appName : appName + '_' + env
-
-  const [ workerName ] = workerRoutes.find(([_, pattern]) => pattern.test(url.href))
-
-  // if (!app) {
-  //  return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
-  // }
-
-  if (self[workerName]?.fetch) {
-    event.respondWith(self[workerName].fetch(event.request))
-  } else {
-    event.respondWith(new Response(JSON.stringify({ routes, workerName, url, cfData: cfData || {}, appKey, appName }), {headers: {'content-type': 'application/json'}}))
-
-    // event.respondWith(fetch(event.request))
-  }
-})
+}
 
 // import { makeValidator } from './lib/schema.js'
 // import startWorker from './lib/start-worker.js'
@@ -45,8 +52,6 @@ addEventListener('fetch', event => {
 // async function getApps () {
 //   return (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
 // }
-// const workers = {}
-// const appData = {}
 // let apps = []
 // TODO: stat page for worker status etc.
 // startWorker({

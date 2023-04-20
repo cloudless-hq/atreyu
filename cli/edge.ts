@@ -1,12 +1,12 @@
-import { join, basename, build } from '../deps-deno.ts'
+import { join, esbContext } from '../deps-deno.ts' // basename,
 import { folderHandlers } from '../edge/handlers/index.js'
 import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 import { makeValidator } from '../edge/lib/schema.js'
 
 const atreyuPath = join(Deno.mainModule, '..', '..').replace('file:', '')
 
-export function buildWorkerConfig (schema: any) {
-  const workers: Record<string, unknown> = {}
+export function buildServices (schema: unknown) {
+  const services: Record<string, unknown> = {}
 
   Object.entries(schema.paths).forEach(([path, conf]) => {
     Object.entries(conf).forEach(([method, { tags, operationId, parameters }]) => {
@@ -18,8 +18,8 @@ export function buildWorkerConfig (schema: any) {
 
       if (tags?.includes('edge')) {
         const workerName = operationId.replace('.js', '').replaceAll('/', '__')
-        if (!workers[workerName]) {
-          workers[workerName] = {}
+        if (!services[workerName]) {
+          services[workerName] = {}
         }
 
         let base = []
@@ -33,92 +33,42 @@ export function buildWorkerConfig (schema: any) {
           filename = operationId
         }
 
-        workers[workerName].paramsValidation = makeValidator({
+        services[workerName].paramsValidation = makeValidator({
           params: parameters, standalone: true
         })
-        workers[workerName].codePath = join(...base, filename)
+        services[workerName].codePath = join(...base, filename)
 
-        if (workers[workerName].routes) {
-          if (!workers[workerName].routes.includes(path)) {
-            workers[workerName].routes.push(path)
+        if (services[workerName].routes) {
+          if (!services[workerName].routes.includes(path)) {
+            services[workerName].routes.push(path)
           }
         } else {
-          workers[workerName].routes = [path]
+          services[workerName].routes = [path]
         }
       }
     })
   })
 
-  return workers
-}
-
-const buildSettings = {
-  sourcemap: 'linked',
-  bundle: true,
-  treeShaking: true,
-  metafile: true,
-  minify: false,
-  sourceRoot: './',
-  target: 'esnext',
-  platform: 'neutral'
-}
-async function compile ({ input, info, output, paramsValidation, publish, workerd }) {
-  if (publish || workerd) {
-    const buildRes = await build({
-      entryPoints: [join(atreyuPath, 'edge', 'entry-cloudflare.js')],
-      plugins: [ ayuPlugin({ local: false, input, atreyuPath, paramsValidation }) ],
-      outfile: output,
-      ...buildSettings
-    }).catch(() => {/* ignore */})
-
-    parseMetafile(buildRes.metafile, info)
-
-    if (workerd) {
-      return Object.keys(buildRes.metafile.inputs).map(path => {
-        if (path.includes('/_ayu/')) {
-          return '/_ayu/' + path.split('/_ayu/')[1]
-        } else {
-          return path
-        }
-      })
-    }
-  }
-
-  if (!workerd) {
-    const buildRes = await build({
-      entryPoints: [input],
-      plugins: [ ayuPlugin({ local: true, input, atreyuPath, paramsValidation }) ],
-      outfile: output.replace('.js', '.deno.js'),
-      ...buildSettings
-    }).catch(/* ignore */) // err => console.error(err)
-
-    parseMetafile(buildRes.metafile, info)
-
-    return Object.keys(buildRes.metafile.inputs).map(path => {
-      if (path.includes('/_ayu/')) {
-        return '/_ayu/' + path.split('/_ayu/')[1]
-      } else {
-        return path
-      }
-    })
-  }
+  return services
 }
 
 const deps = {}
-export async function buildEdge ({ workers, info, buildName, batch = [], clean, publish, workerd }) {
+export async function buildEdge ({ services, info, batch = [], clean }) {
+  // buildName
   // const startTime = Date.now()
+  // const appName = basename(projectFolder)
+
   const projectFolder = Deno.cwd()
-  const appName = basename(projectFolder)
   const buildPath = join(projectFolder, 'edge/build')
 
   if (clean) {
     console.log('  🐘 recreating: edge/build')
     try {
       Deno.removeSync(buildPath, { recursive: true })
-    } catch (_e) { }
+    } catch (_e) { /* ignore */ }
     try {
       Deno.mkdirSync(buildPath, { recursive: true })
-    } catch (_e) { }
+    } catch (_e) {  /* ignore */ }
   }
   console.log( `  compiling edge to: edge/build`)
 
@@ -129,11 +79,44 @@ export async function buildEdge ({ workers, info, buildName, batch = [], clean, 
     })
   }
 
-  await Promise.all(Object.entries(workers).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath, paramsValidation }]) => {
+  await Promise.all(Object.entries(services).filter(([workerName]) => clean || affectedWorkers.includes(workerName)).map(async ([workerName, { codePath, paramsValidation }]) => {
     // const workerLogPath = codePath.replace(atreyuPath, '/atreyu').replace(projectFolder, '')
     // console.log(`    building edge-worker: ${workerLogPath}`)
+    // entryPoints: [codePath],
+    // plugins: [ ayuPlugin({ local: true,input: codePath, atreyuPath, paramsValidation }) ],
+    // outfile: join(buildPath, workerName) + '.js'.replace('.js', '.deno.js'),
+    // ...buildSettings
 
-    const newDeps = await compile({ info, input: codePath, appName, paramsValidation, workerName, output: join(buildPath, workerName) + '.js', buildName, publish, workerd })
+    const buildCtx = await esbContext({
+      entryPoints: [join(atreyuPath, 'edge', 'entry.js')],
+      plugins: [ ayuPlugin({ local: false, input: codePath, atreyuPath, paramsValidation }) ],
+      outfile: join(buildPath, workerName) + '.js',
+      sourcemap: 'linked',
+      bundle: true,
+      treeShaking: true,
+      // write: false,
+      metafile: true,
+      minify: false,
+      sourceRoot: './',
+      target: 'esnext',
+      platform: 'neutral'
+    }).catch(() => {/* ignore */})
+
+    const buildRes = await buildCtx.rebuild()
+
+    buildCtx.dispose()
+
+    // console.log(buildRes)
+
+    parseMetafile(buildRes.metafile, info)
+
+    const newDeps = Object.keys(buildRes.metafile.inputs).map(path => {
+      if (path.includes('/_ayu/')) {
+        return '/_ayu/' + path.split('/_ayu/')[1]
+      } else {
+        return path
+      }
+    })
 
     // NOTE: obsolete deps are not removed until restart
     newDeps.forEach(newDep => {
@@ -143,10 +126,9 @@ export async function buildEdge ({ workers, info, buildName, batch = [], clean, 
       deps[newDep].push(workerName)
     })
   }))
+
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)) / 10
   // duration && console.log('  ' + duration + 's')
-  // console.log('')
-
   return { files: {} }
 }
 

@@ -14,13 +14,13 @@ export function workerdSetup ({
   atreyuPath,
   projectPath,
   config,
-  workers
+  services
 }) {
   // TODO: rename consistent
   config['folderHash'] = appFolderHash
   config['rootFolderHash'] = rootFolderHash
   config['ayuHash'] = ayuHash
-  config['workerd'] = true
+  config['workerd'] = 'true'
 
   const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}`
 
@@ -62,14 +62,14 @@ export function workerdSetup ({
     .filter(binding => binding.text || binding.type === 'kv_namespace')
     .map(binding => {
       if (binding.text) {
-        return `(name = "${binding.name}", text = "${binding.text}")`
+        return `(name = "${binding.name}", text = "${escape(binding.text)}")`
       } else {
         return `(name = "${binding.name}", kvNamespace = "${binding.name}")`
       }
     })
     .join(',\n        ')
 
-  const services = Object.entries(workers).map(([workerName, { codePath, routes }]) => {
+  const serviceDefs = Object.entries(services).map(([workerName, { codePath, routes }]) => {
     const cfWorkerName = appPrefix + '__' + workerName
 
     routes.forEach((route) => {
@@ -79,11 +79,10 @@ export function workerdSetup ({
     const scriptPath = codePath.replace(atreyuPath, projectPath).replace('/handlers/', '/build/').replace('/index', '')
 
     serviceBindings.push(`(name = "${cfWorkerName}", service = "${cfWorkerName}")`)
-    serviceRefs.push({ name: cfWorkerName, capName: `${cfWorkerName.replaceAll('_','').charAt(0).toUpperCase() + cfWorkerName.replaceAll('_','').slice(1)}` })
+    serviceRefs.push({ name: cfWorkerName, capName: `${cfWorkerName.replaceAll('_','X').replaceAll('-','X').charAt(0).toUpperCase() + cfWorkerName.replaceAll('_','X').replaceAll('-','X').slice(1)}` })
 
     const service = `(name = "${cfWorkerName}", worker = (
       compatibilityDate = "2023-04-04",
-
       bindings = [
         ${bindings}
       ],
@@ -94,8 +93,24 @@ export function workerdSetup ({
     return { name: cfWorkerName, service }
   })
 
+  const envDir = join(workerdConfPath, '..')
+  const appDir = join(envDir, appPrefix)
+
+  try {
+    Deno.lstatSync(appDir)
+  } catch (_e) {
+    Deno.mkdirSync(appDir)
+  }
+
+  try {
+    Deno.lstatSync(envDir + '/kv-store')
+  } catch (_e) {
+    Deno.mkdirSync(envDir + '/kv-store')
+  }
+
+
   const capnp = `using Workerd = import "/workerd/workerd.capnp";
-${serviceRefs.map(({ name, capName }) => `using ${capName} = import "${appPrefix}/${name.replace(appPrefix, '')}.capnp";`).join('\n')}
+${serviceRefs.map(({ name, capName }) => `using ${capName} = import "${appPrefix}/${name.replace(appPrefix + '__', '')}.capnp";`).join('\n')}
 
 const config :Workerd.Config = (
   sockets = [
@@ -107,35 +122,37 @@ const config :Workerd.Config = (
   ],
 
   services = [
+    # TODO: only allow local for certain services?
     ( name = "internet",
-      network = (
-        allow = ["public", "local"], # TODO: only allow local for certain services?
-        tlsOptions = (trustBrowserCas = true)
-      )
+      network = ( allow = ["public", "local"], tlsOptions = (trustBrowserCas = true) )
     ),
 
-    (name = "ipfs", disk = (path = "kv-store", writable = true)),
+    ( name = "kvStore", disk = (path = "${envDir}/kv-store", writable = true)),
 
     ${serviceRefs.map(({ capName }) => capName + '.Service').join(',\n    ')},
 
+    (name = "ipfs", worker = (
+      compatibilityDate = "2023-04-04",
+      bindings = [ ( name = "kvStore", service = "kvStore") ],
+      modules = [ (esModule = "${escape(Deno.readTextFileSync(join(mainScriptPath, '..', 'workerd-kvstore.js')))}") ]
+    )),
+
     (name = "main", worker = (
       compatibilityDate = "2023-04-04",
-
       bindings = [
         (name = "routes", text = "${JSON.stringify(toSetRoutes).replaceAll('"', '\\"')}"),
         ${serviceBindings.join(',\n        ')},
         ${bindings}
       ],
-
-      serviceWorkerScript = "${escape(Deno.readTextFileSync(mainScriptPath))}"
+      modules = [ (esModule = "${escape(Deno.readTextFileSync(mainScriptPath))}") ]
     ))
   ]
 );
 `
 
-  services.forEach(({ name, service }) => {
+  serviceDefs.forEach(({ name, service }) => {
     Deno.writeTextFileSync(
-      join(workerdConfPath, '..', appPrefix, name.replace(appPrefix, '') + '.capnp'),
+      join(appDir, name.replace(appPrefix + '__', '') + '.capnp'),
       `using Workerd = import "/workerd/workerd.capnp";
 const Service :Workerd.Service = ${service};`)
   })
@@ -143,16 +160,10 @@ const Service :Workerd.Service = ${service};`)
   Deno.writeTextFileSync(workerdConfPath, capnp)
 }
 
-// TODO: (name = "ipfs", worker = (
-//   modules = [ (esModule = embed "kv.js") ],  compatibilityDate = "2023-04-04" )),
-// (name = "ipfs", disk = (path="kvTest", writable=true) ),
+// TODO:
 // (name = "test", worker = (
 //   modules = [
 //     (esModule = embed "test.js"),
 //   ],
-//   bindings= [(name="test", text="hello world"), (
-//     name="kv", kvNamespace="kvTest"
-//   )],
-//   globalOutbound= "main",
-//   compatibilityDate = "2023-04-04"
-// ))
+//   bindings= [( name="kv", kvNamespace="kvTest" )],
+//   globalOutbound= "main"

@@ -17,7 +17,7 @@ import { printHelp } from './help.js'
 import { loadConfig } from './config.js'
 import buildSvelte from './svelte.ts'
 import buildServiceWorker from './service-worker.js'
-import { buildEdge, buildWorkerConfig } from './edge.ts'
+import { buildEdge, buildServices } from './edge.ts'
 import { execIpfs, execIpfsStream, add as addIpfs, get } from './ipfs.js'
 import { cloudflareDeploy } from './cloudflare.js'
 import { couchUpdt } from './couch.js'
@@ -129,7 +129,7 @@ const appName = basename(projectPath)
 let { config = {}, runConf = {}, extraAppEntryPoints } = await loadConfig(envFlag, cmd, appName, homeConfPath, buildMeta.buildName, ayuVersion)
 const env = config.env
 const devMode = cmd !== 'publish'
-const appKey = env === 'prod' ? appName : appName + '_' + env
+// const appKey = env === 'prod' ? appName : appName + '_' + env
 const envDir = `${homeConfPath}/${env}`
 const workerdConfPath = `${envDir}/main.capnp`
 const input = _[1] || `${appFolder}/src`
@@ -148,7 +148,7 @@ try {
 // TODO: dont always clean completely?
 // TODO: allow argument relative path for apps different from cwd
 // TODO: unify with other schema loader which allows also schema.js
-async function loadEdgeSchema ({ appFolder }) {
+async function loadServices ({ appFolder }) {
   // TODO: support implicit endpoints folder routes
   const maybeSchema = await import('file:' + projectPath + `/${appFolder}/schema/main.js`).catch(error => ({ error }))
   let schema = maybeSchema?.schema
@@ -173,8 +173,9 @@ async function loadEdgeSchema ({ appFolder }) {
       }
     }
   }
+
   // TODO: get endpoints script for auto handling
-  return buildWorkerConfig(schema)
+  return buildServices(schema)
 }
 
 let ipfsDaemon
@@ -270,7 +271,7 @@ async function doStart () {
     Deno.lstatSync(workerdConfPath)
   } catch (_e) {
     // if first start, setup empty workerd conf so it can startup and watch
-    await workerdSetup({ appName, workerdConfPath, mainScriptPath: atreyuPath + '/edge/entry-workerd.js', config, atreyuPath, projectPath, workers: {} })
+    await workerdSetup({ appName, workerdConfPath, mainScriptPath: atreyuPath + '/edge/main.js', config, atreyuPath, projectPath, services: {} })
   }
 
   // FIXME: localhost requires sudo but 0.0.0.0 works? add port support
@@ -415,7 +416,7 @@ const tasks = {
   },
 
   dev: async () => {
-    const edgeSchema = await loadEdgeSchema({ appFolder })
+    const services = await loadServices({ appFolder })
 
     let buildRes = []
 
@@ -469,7 +470,7 @@ const tasks = {
           clean: doClean
         }),
         buildEdge({
-          workers: edgeSchema,
+          services,
           workerd,
           buildName: buildMeta.buildName,
           batch,
@@ -499,11 +500,11 @@ const tasks = {
         ayuHash,
         workerdConfPath,
         appFolderHash,
-        mainScriptPath: atreyuPath + '/edge/entry-workerd.js',
+        mainScriptPath: atreyuPath + '/edge/main.js',
         config,
         atreyuPath,
         projectPath,
-        workers: edgeSchema
+        services
       })
 
       await couchUpdt({
@@ -536,7 +537,7 @@ const tasks = {
 
   publish: async () => {
     console.log('  🚀 Starting Build for publish: "' + buildString() + '"')
-    const edgeSchema = await loadEdgeSchema({ appFolder })
+    const services = await loadservices({ appFolder })
 
     if (!noStart) {
       await doStart()
@@ -567,7 +568,7 @@ const tasks = {
       buildServiceWorker({clean: true, appFolder, info}),
 
       buildEdge({
-        workers: edgeSchema,
+        services,
         buildName: buildMeta.buildName,
         publish: true,
         clean: true,
@@ -589,7 +590,7 @@ const tasks = {
 
     await cloudflareDeploy({
       domain: config.domain || domain || appName,
-      workers: edgeSchema,
+      services,
       appName,
       env,
       config,

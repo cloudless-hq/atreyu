@@ -1,4 +1,17 @@
-export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers, config, atreyuPath, projectPath, appFolderHash, rootFolderHash, fileList, ayuHash, resetKvs }) {
+export async function cloudflareDeploy ({
+  domain,
+  env = 'prod',
+  appName,
+  services,
+  config,
+  atreyuPath,
+  projectPath,
+  appFolderHash,
+  rootFolderHash,
+  fileList,
+  ayuHash,
+  resetKvs
+}) {
   // const startTime = Date.now()
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
@@ -271,7 +284,7 @@ export async function cloudflareDeploy ({ domain, env = 'prod', appName, workers
   const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__`
 
   const toSetRoutes = {}
-  const workerCreations = Object.entries(workers).map(async ([workerName, {codePath, routes}]) => {
+  const workerCreations = Object.entries(services).map(async ([workerName, {codePath, routes}]) => {
     const cfWorkerName = appPrefix + workerName
 
     routes.forEach((route) => {

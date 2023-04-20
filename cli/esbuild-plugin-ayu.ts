@@ -26,16 +26,16 @@ type callbackFun = (arg: pathConf) => { path: string, namespace?: string }
 type onLoadcallbackFun = (arg: pathConf) => Promise<{ contents: string | Uint8Array, loader?: string }>
 type lifecycleFun = (arg: callbackArg, arg2: callbackFun | onLoadcallbackFun) => pathConf
 
-export const ayuPlugin = ({ local = true, input, atreyuPath, paramsValidation }: { local?: boolean, input?: string, atreyuPath: string, paramsValidation?: string }) => ({
+export const ayuPlugin = ({ input, atreyuPath, paramsValidation }: { input?: string, atreyuPath: string, paramsValidation?: string }) => ({
   name: 'atreyu',
 
   setup: ({ onResolve, onLoad, initialOptions }: {onResolve: lifecycleFun, onLoad: lifecycleFun, initialOptions: { loader?: Record<string, string>} }) => {
     const pathConf = {
       kvs: { filter: /^\/\_kvs\.js/, fun: () => {
-        return toPathObj(atreyuPath + (local ? '/edge/lib/kvs-local.js' : '/edge/lib/kvs.js'))
+        return toPathObj(atreyuPath + '/edge/lib/kvs.js')
       } },
       env: { filter: /^\/\_env\.js/, fun: () => {
-        return toPathObj(atreyuPath + (local ? '/edge/lib/env-local.js' : '/edge/lib/env.js'))
+        return toPathObj(atreyuPath + '/edge/lib/env.js')
       }},
 
       handler: { filter: /^\/\_handler\.js/, fun: () => {

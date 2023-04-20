@@ -1,6 +1,6 @@
 import { join, green } from '../deps-deno.ts'
 import { recursiveReaddir } from './helpers.ts'
-import { build } from '../deps-deno.ts'
+import { esbContext } from '../deps-deno.ts'
 
 import { parseMetafile, ayuPlugin } from './esbuild-plugin-ayu.ts'
 import { sveltePlugin } from './esbuild-plugin-svelte-tailwind.ts'
@@ -14,6 +14,7 @@ function arrEqual (a: string[], b: string[]): boolean {
   return a?.length === b?.length && a.every((value, index) => value === b[index])
 }
 
+let buildCtx
 let buildResult
 let globalBuildRes
 
@@ -52,12 +53,12 @@ export default async function ({
 
   const entryPoints = files.filter(file => (file.endsWith('_page.svelte') || file.endsWith('_error.svelte') || file === 'app/src/main.js' || file === 'app/src/main.ts' || extraAppEntryPoints.includes(file)))
 
-  if (!buildResult || !arrEqual(entryPoints, buildResult._entryPoints)) {
-    buildResult?.rebuild?.dispose()
+  if (!buildCtx || !arrEqual(entryPoints, buildResult._entryPoints)) {
+    // buildCtx?.rebuild?.dispose()
 
     // console.log(inFolder, appFolder) // app/src  und app
 
-    buildResult = await build({
+    buildCtx = await esbContext({
       entryPoints,
       outdir: outputTarget,
       entryNames: '[dir]/[name]',
@@ -66,7 +67,7 @@ export default async function ({
       outbase: 'app/src',
       splitting: true,
       // write: false,
-      incremental: dev,
+      // deprecated incremental: dev,
       target: 'esnext',
       platform: 'browser', // 'neutral',
       format: 'esm', // iife
@@ -123,12 +124,14 @@ export default async function ({
         }
       ]
     }).catch(() => {/* ingore */})
+
+    buildResult = await buildCtx.rebuild()
     buildResult._entryPoints = entryPoints
   } else {
-    buildResult = await buildResult.rebuild()
+    buildResult = await buildCtx.rebuild()
   }
   // outputFiles[{path, contents, text}]
-  // console.log(buildResult)
+  // console.log(buildCtx)
   const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = parseMetafile(buildResult?.metafile, info)
 
   globalBuildRes.forEach(buildRes => {
