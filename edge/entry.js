@@ -67,7 +67,7 @@ addEventListener('fetch', event => {
   event._traceId = traceId
   event._stats = stats
 
-  async function execute () {
+  event.respondWith((async () => {
     try {
       const { parsedBody, text } = event.request.body ? await bodyParser(event.request, { clone: true }) : {}
 
@@ -77,7 +77,7 @@ addEventListener('fetch', event => {
         }
       }
 
-      // TODO move req parsed data to req object props for fetch
+      // TODO move req parsed data to req object props for fetch instead of adding it other way round to raw
       return (
         worker.fetch?.(event.request, self, { waitUntil, stats, app, req, parsedBody, text })
         || worker({ stats, app, req, parsedBody, text, event, waitUntil })
@@ -99,9 +99,7 @@ addEventListener('fetch', event => {
 
       return new Response(ex.message || 'An error occurred', { status: ex.statusCode || 500 })
     }
-  }
-
-  event.respondWith(execute())
+  })())
 })
 
 // TODO: cloudflare independent security headers?
@@ -119,71 +117,29 @@ addEventListener('fetch', event => {
 // X-Permitted-Cross-Domain-Policies: none
 // X-XSS-Protection: 0
 
-// import { join, basename } from '../deps-deno.ts'
 // import { makeValidator } from './lib/schema.js'
-// import startWorker from './lib/start-worker.js'
 // import { addPathTags } from '../app/src/schema/helpers.js'
 // import { parse, match } from '../app/src/lib/routing.js'
-// import { exec } from '../cli/helpers.ts'
 // import defaultPaths from '../app/src/schema/default-routes.js'
 
 // // TODO: use config and args from cli
 // const ipfsGateway = 'http://127.0.0.1:8080'
 // const ipfsApi = 'http://127.0.0.1:5001'
-// const homeDir = Deno.env.get('HOME')
-// const env = Deno.env.get('env')
-// const repoName = Deno.env.get('RepositoryName')
-// const projectPath = Deno.cwd()
-// const cwd = basename(projectPath)
-
 // async function getApps () {
 //   return (await (await fetch(ipfsApi + '/api/v0/files/ls?arg=/apps&long=true', { method: 'POST' })).json()).Entries
 // }
 
-// let cfData = {}
-// fetch('https://workers.cloudflare.com/cf.json').then(async res => {
-//   const json = await res.json()
-
-//   cfData = {
-//     longitude: json.longitude,
-//     latitude: json.latitude,
-//     country: json.country,
-//     colo: json.colo,
-//     city: json.city,
-//     asOrganization: json.asOrganization
-//   }
-// })
-
-// const workers = {}
-// const appData = {}
-// let apps = []
-
 // // TODO: stat page for worker status etc.
-// startWorker({
-//   handler: async arg => {
-//     const { req } = arg
-
-//     const localhostMatch = req.url.hostname.split('.localhost')
-
 //     const appName = localhostMatch.length > 1 ? localhostMatch[0] : repoName || cwd
 //     const appKey = env === 'prod' ? appName : appName + '_' + env
-
 //     apps = (await getApps()) || []
-
 //     const app = apps.find(app => app.Name === appKey)
 //     // console.log(app)
 //     if (!app) {
 //       return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })
 //     }
-
 //     const ayuHash = apps.find(app => app.Name === 'atreyu_dev').Hash // TODO only use dev for ayudev execution?
-
-//     // TODO find generic solution for local and cf, seperate local envs into processes
-//     app.ayuHash = ayuHash
-//     app.appName = appName
-//     arg.app = app
-//     arg.stats.app = app
-//     arg.event.request.cf = cfData
+//     // TODO seperate local envs into processes
 //     arg.req.raw.cf = cfData // should be set by reference but check
 
 //     if (!appData[appKey]?.schema || appData[appKey].appHash !== app.Hash) {
@@ -254,29 +210,19 @@ addEventListener('fetch', event => {
 //         base = [appData[appKey].config.appPath, 'edge', 'build']
 //         filename = workerName
 //       }
-
-//       const codePath = join(...base, filename)
-//       const denoCodePath = codePath.replace('.js', '.deno.js')
-
 //       try {
 //         const [_1, fileHash, _2] = (await exec([...`ipfs add --only-hash --repo-dir=${appData[appKey].config.repo} ${denoCodePath}`.split(' ')], false)).split(' ')
 //         if (fileHash !== workers[workerKey]?.fileHash) {
 //           console.log(`  ${workers[workerKey] ? 're' : ''}loading worker script: ` + workerKey)
 //         }
-
 //         workers[workerKey] = { code: (await import('file:' + denoCodePath + `?${fileHash}`)), appHash: app.Hash, fileHash }
 //       } catch (err) {
 //         console.error('  could not load edge worker: ' + workerKey, err)
 //       }
 //     }
-
 //     // TODO parsing params and handle requestBody
 //     if (paramsValidation ) {
 //       if (!paramsValidation({ headers: arg.req.headers })) {
 //         return new Response(JSON.stringify(paramsValidation.errors), { status: 400, headers: { 'content-type': 'application/json' }})
 //       }
-//     }
 
-//     return workers[workerKey].code.handler(arg)
-//   }
-// })

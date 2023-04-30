@@ -91,6 +91,9 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
           const ref = args[0]
           if (ref?.length > 0) {
             return getJsonPath(thisArg, ref )
+          } else {
+            // FIXME: dont return root proxy but the path to the $ref
+            return thisArg
           }
         }
 

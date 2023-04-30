@@ -4,8 +4,9 @@ import { Observable } from '/_ayu/build/deps/falcor-observable.js'
 class ServiceWorkerSource {
   constructor ({ wake }) {
     this._inflight = {}
-
     this._id = 0 // Identifier used to correlate each Request to each response
+    this._active = 0
+    this._timer
 
     const init = () => {
       this._worker = navigator.serviceWorker.controller
@@ -28,7 +29,7 @@ class ServiceWorkerSource {
         // delete after timeout to not crash a message that was the reason for waking the worker...
         // TODO: find better solution?
         setTimeout(() => {
-          Object.values(this._inflight).forEach(stale => stale('service worker restarted...'))
+          Object.values(this._inflight).forEach(stale => stale('service worker restarted, canceled:', stale))
         }, 800)
       } else if (typeof this._inflight[id] === 'function') {
         this._inflight[id](error, value, done)
@@ -42,6 +43,13 @@ class ServiceWorkerSource {
         this._worker?.postMessage(JSON.stringify([-1, 'waky waky']))
       }, wake)
     }
+  }
+
+  isActive () {
+    // console.log('isactive', this._timer, Object.keys(this._inflight).length)
+    // Object.keys(this._inflight).length > 1
+    // console.log(this._active)
+    return this._active !== false // this._timer !== null currently only the sync endoint is allowed to run forever
   }
 
   get (paths) {
@@ -62,11 +70,15 @@ class ServiceWorkerSource {
   // identifier which the client sends with the request and
   // the server echoes back along with the response.
   _getResponse (action) {
-    const { _worker, _inflight } = this
     const id = this._id++
 
+    if (action[1] !== 'call' && action[1][0] !== '_sync') {
+      // console.log('start', action)
+      this._active = this._active ? this._active + 1 : 1
+    }
+
     return Observable.create(subscriber => {
-      _inflight[id] = (error, value, done) => {
+      this._inflight[id] = (error, value, done) => {
         if (error) {
           subscriber.onError(error)
         } else if (done) {
@@ -76,10 +88,24 @@ class ServiceWorkerSource {
         }
       }
 
-      _worker.postMessage(JSON.stringify([id, ...action]))
+      this._worker.postMessage(JSON.stringify([id, ...action]))
 
       return () => {
-        delete _inflight[id]
+        delete this._inflight[id]
+        if (action[1] !== 'call' && action[1][0] !== '_sync') {
+          this._active--
+
+          if (this._timer) {
+            clearTimeout(this._timer)
+          }
+          this._timer = setTimeout(() => {
+            // console.log('finishing', action, this._active)
+            this._timer = null
+            if (this._active === 0) {
+              this._active = false
+            }
+          }, 30)
+        }
       }
     })
   }

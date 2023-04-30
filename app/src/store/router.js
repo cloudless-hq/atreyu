@@ -249,8 +249,8 @@ export default function ({ schema = { paths: {}, fallback: true }, dataStore } =
     setTimeout(() => {
       onIdle(IdleDeadline => {
         const remainingTime = IdleDeadline.timeRemaining()
-        if (remainingTime > 48) {
-          console.log('idle callback')
+        if (remainingTime > 48 && !dataStore.falcor._source.isActive()) {
+          // console.log('idle callback')
 
           const startTime = Date.now()
           cb(startTime + remainingTime)
@@ -259,7 +259,7 @@ export default function ({ schema = { paths: {}, fallback: true }, dataStore } =
             awaitIdle(cb)
           }, 100)
         }
-      })}, 70)
+      })}, 150)
   }
 
   const primary = new Set()

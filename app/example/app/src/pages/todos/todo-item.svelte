@@ -27,16 +27,16 @@
   }
 </style>
 
-{#if todo}
+{#if todo && !todo._id$not}
   <div class="todo">
     <input type="text" placeholder="  " class="rounded"
-      class:animated-placeholder={todo._id$not}
+      class:animated-placeholder={todo._id$loading}
       class:is-complete={todo.completed$}
-      on:blur={e => updateText(todo, e.target.value)} value={todo.description$} >
+      on:blur={e => updateText(todo, e.target.value)} value={todo.description$ || ''} >
 
     <button on:click={() => toggle(todo)}>
       {#if todo.completed$loading}
-        &nbsp;
+        {' '}
       {:else}
         {#if todo.completed$}♻️{:else}✔️{/if}
       {/if}

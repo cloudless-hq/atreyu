@@ -34,14 +34,14 @@ export function getJsonPath (obj, path) {
   }
   let current = obj
 
-	for (let i = 0; i < path.length; i++) {
-		if (current[path[i]] === undefined) {
+  for (let i = 0; i < path.length; i++) {
+    if (current[path[i]] === undefined) {
       return
     }
-		current = current[path[i]]
-	}
+    current = current[path[i]]
+  }
 
-	return current
+  return current
 }
 
 export function setPathValue (o, [head, ...tail], newValue, root) {

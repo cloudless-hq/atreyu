@@ -6,29 +6,14 @@
 
   import TodoItem from './todo-item.svelte'
 
-  import { flip } from 'svelte/animate'
-  import { quintOut } from 'svelte/easing'
-	import { crossfade } from 'svelte/transition'
-
-  const [ send, receive ] = crossfade({
-		duration: d => Math.sqrt(d * 200),
-
-    fallback (node, params) {
-			const style = getComputedStyle(node)
-			const transform = style.transform === 'none' ? '' : style.transform
-			return {
-				duration: 300,
-				easing: quintOut,
-				css: t => `transform: ${transform} scale(${t}); opacity: ${t};`
-			}
-		}
-	})
+  // import { flip, send, receive } from './anim.js'
 
   $: view = $router.todos.view || 'all'
   $: sortBy = $router.todos.sortBy || 'date'
   $: todos = $data.todos[view][sortBy]
 
   // $: completed = $data.todos.completed.date
+
   // $: syncTodos = todos.slice(0, pageEnd).map(todo => {
   //   return {
   //     $key: todo._id$,
@@ -95,16 +80,6 @@
     font-weight: bold;
   }
 
-  input, button, select {
-    font-family: inherit;
-    font-size: inherit;
-    padding: 0.4em;
-    margin: 0 0 0.5em 0;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 2px;
-  }
-
   input:disabled {
     color: #ccc;
   }
@@ -112,6 +87,7 @@
   button {
     background-color: #f4f4f4;
     outline: none;
+    margin-left: 0.75em;
   }
 
   button:active {
@@ -126,9 +102,6 @@
     list-style: none;
     padding: 0;
   }
-  button {
-    margin-left: 0.75em;
-  }
 </style>
 
 <Header hide={['settings']}>
@@ -142,24 +115,19 @@
     </h1>
   {:else}
     <h1>
-      Showing
-      { todos.length } of
-      { $data.todos.all[sortBy].length } todos
+      Showing { todos.length } of { $data.todos.all[sortBy].length } todos
     </h1>
   {/if}
 
   <div class="m-6">
     <label for="view">Filter:</label>
-
     <ul class="flex">
       <li class="m-2" class:active={ view === 'all' } >
         <a href={ $router.todos._link({ view: 'all', sortBy }) }>Show all</a>
       </li>
-
       <li class="m-2" class:active={ view === 'completed' }>
         <a href={ $router.todos._link({ view: 'completed', sortBy: 'date' }) }>Show completed</a>
       </li>
-
       <li class="m-2" class:active={ view === 'active' }>
         <a href={ $router.todos._link({ view: 'active', sortBy: 'date' }) }>Show active</a>
       </li>
@@ -168,11 +136,9 @@
 
   <div class="m-6">
     <label for="sortBy">Sort:</label>
-
     <select class="rounded" name="sortBy" value={sortBy} on:change={changeView}>
       <option value='date'>Time</option>
-
-      {#if view === 'all' }
+      {#if view === 'all'}
         <option value='completed'>Completed</option>
       {/if}
     </select>
@@ -184,24 +150,46 @@
   </form>
 
   <div class="py-10">
-    {#each todos as todo, i (todo.$refKey)}
-      <div style="transform: translateZ(0); backface-visibility: hidden; perspective: 1000;" class="realtive p-3" animate:flip="{{ duration: 200 }}" in:receive="{{ key: todo.$refKey }}" out:send="{{ key: todo.$refKey }}" >
-        <Lazy style="min-height: 42px;" preload={i < 20} batchSize={20} listEnd={i === 0 || i + 1 === todos.length}>
+    {#each todos as todo, i}
+      <div class="realtive p-3">
+        <Lazy style="min-height: 42px;" preload={i < 20} batchSize={20} batchEnd={i === 0 || i + 1 === todos.length}>
           <TodoItem todo={$data._loadRef(todo.$ref)} {remove} {toggle} {updateText} />
         </Lazy>
       </div>
     {/each}
+
+    <hr class="m-6 mt-10" />
+    <div class="relative p-3" style="height: 50vh;"></div>
   </div>
 
-  <!-- fixme: loading broken animate flip, in out crossfade
+  <!--
+    {@const key = todo.$refKey}
+    {@const disabled = $router._preloading}
+
+    (todo.$refKey)
+
+    animate:flip="{{ duration: 200, disabled }}" in:receive="{{ key, disabled }}" out:send="{{ key, disabled }}"
+
     {#if view === 'active'}
       <h2>Completed:</h2>
-      <div class="py-10">
-        {#each completed as todo, i (todo.$key)}
-          <div style="position: relative;" class:hidden={todo._id$not} animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$key }}" out:send="{{ key: todo.$key }}">
-            <TodoItem {todo} {remove} {toggle} {updateText} />
+
+      <div class="py-10" style="height: 50vh; overflow: scroll;">
+        {#each completed as todo, i (todo.$refKey)}
+          <div class="relative p-3" animate:flip="{{duration: 200}}" in:receive="{{ key: todo.$refKey }}" out:send="{{ key: todo.$refKey }}" >
+            <Lazy style="min-height: 42px;" preload={i < 10} batchSize={20} listEnd={i === 0 || i + 1 === todos.length}>
+              <TodoItem todo={$data._loadRef(todo.$ref)} {remove} {toggle} {updateText} />
+            </Lazy>
           </div>
         {/each}
+
+        <hr class="m-6 mt-10" />
+
+        <div class="relative p-3" style="height: 50vh;"></div>
       </div>
-    {/if} -->
+    {/if}
+
+    .slice(0, Math.min(2, todos.length)
+    FIXME: loading broken animate flip, in out crossfade
+   .slice(0, 1) style="transform: translateZ(0); backface-visibility: hidden; perspective: 1000;"
+  -->
 </div>

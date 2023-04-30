@@ -15,7 +15,7 @@ function arrEqual (a: string[], b: string[]): boolean {
 }
 
 let buildCtx
-let buildResult
+let buildResult = {}
 let globalBuildRes
 
 export default async function ({
@@ -125,14 +125,23 @@ export default async function ({
       ]
     }).catch(() => {/* ingore */})
 
-    buildResult = await buildCtx.rebuild()
+    try {
+      buildResult = await buildCtx.rebuild()
+    } catch (err) {
+      console.error(err)
+    }
+
     buildResult._entryPoints = entryPoints
   } else {
-    buildResult = await buildCtx.rebuild()
+    try {
+      buildResult = await buildCtx.rebuild()
+    } catch (err) {
+      console.error(err)
+    }
   }
   // outputFiles[{path, contents, text}]
   // console.log(buildCtx)
-  const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = parseMetafile(buildResult?.metafile, info)
+  const newBuildRes: { files: { [key: string]: { deps: string[], emits: string[], newEmits: string[] } } } = buildResult?.metafile ? parseMetafile(buildResult.metafile, info) : { files: {}}
 
   globalBuildRes.forEach(buildRes => {
     newBuildRes.files[buildRes.emits[0]] = {

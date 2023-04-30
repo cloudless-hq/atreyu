@@ -26,7 +26,7 @@
         toShow.delete(elem)
       }
 
-      if (toShow.size > _batchSize || toHide.size > _batchSize || elem.listEnd) {
+      if (toShow.size > _batchSize || toHide.size > _batchSize || elem.batchEnd) {
         if (ongoing) {
           clearTimeout(ongoing)
           ongoing = null
@@ -68,11 +68,11 @@
   // export let kind = ''
   export let batchSize = 10
   export let id = ''
-  export let listEnd = false
+  export let batchEnd = false
 
 	let shouldRender = false
 	let container
-  let noPointer
+  // let noPointer
 
   _batchSize = batchSize
   // TODO: override with actual size before unrender fixedMinHeight.value = targetEl.value.clientHeight;
@@ -80,20 +80,20 @@
   const preloading = $router._preloading
 
   // FIXME: should be on whole parent?
-  let pointerWating = false
-  $: {
-    if (!shouldRender) {
-      noPointer = true
-      pointerWating && clearTimeout(pointerWating)
-    } else if (noPointer === true && !pointerWating) {
-      pointerWating = setTimeout(() => { noPointer = false; pointerWating = false }, 50)
-    }
-  }
+  // let pointerWating = false
+  // $: {
+  //   if (!shouldRender) {
+  //     noPointer = true
+  //     pointerWating && clearTimeout(pointerWating)
+  //   } else if (noPointer === true && !pointerWating) {
+  //     pointerWating = setTimeout(() => { noPointer = false; pointerWating = false }, 50)
+  //   }
+  // }
 
   onMount(() => {
     elements.set(container, {
       id,
-      listEnd,
+      batchEnd,
       show: () => { shouldRender = true },
       hide: () => { shouldRender = false }
     })
@@ -108,15 +108,16 @@
 </script>
 
 <style>
-  .noPointer {
+  /* .noPointer {
     pointer-events: none;
-  }
+  } */
   div {
     contain: style paint;
   }
 </style>
 
-<div bind:this={container} {style} class={$$props.class} class:noPointer>
+<div bind:this={container} {style} class={$$props.class} >
+  <!-- class:noPointer -->
   {#if shouldRender || (preloading && preload)}
 	  <slot></slot>
   {/if}

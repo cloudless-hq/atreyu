@@ -2,6 +2,8 @@ import { join, basename } from '../deps-deno.ts'
 import { compile, transform, preprocess } from '../deps-deno.ts'
 import { collectWindiClasses, makeGlobalWindi, windiParse } from './windi.ts'
 
+
+// TODO: merge in some https://github.com/EMH333/esbuild-svelte/blob/main/index.ts
 const buildCache = new Map()
 // const deps = new Map()
 
@@ -97,10 +99,11 @@ export function sveltePlugin ({ dev, clean, inFolder, appFolder, globalCssTarget
           return { text: message, location }
         }
 
-        const { code } = await doPreprocess(source, filename)
         // console.log(preprocessReult.dependencies)
 
         try {
+          const { code } = await doPreprocess(source, filename)
+
           const { js, warnings } = compile(code, {
             filename,
             css: true,

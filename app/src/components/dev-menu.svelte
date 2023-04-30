@@ -4,6 +4,7 @@
   // import { data } from '/_ayu/src/store/context.js'
   // const settingsDoc = $data._docs['_local/ayu'].$
 
+  // TODO:  component debugger inspector on hover
   function toggle (key) {
     localStorage.setItem('ayu_' + key, !JSON.parse(localStorage.getItem('ayu_' + key) || 'true'))
     location.reload()

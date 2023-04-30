@@ -36,7 +36,7 @@
   function mouseDown (e) {
     longCLick = setTimeout(() => {
       longCLick = true
-    }, 600)
+    }, 500)
 
     const path = e.composedPath()
     if (open) {

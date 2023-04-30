@@ -14,7 +14,7 @@
     currentContinue = currentLocation === '/' ? '' : `?continue=${currentLocation}`
   }
 
-  export let glass = true
+  export let glass = false
   export let hide = []
   function logout () {
     fetch('/_api/_logout')
@@ -48,7 +48,7 @@
 <div class="{$$props.class}">
   <Menu let:open>
     <button slot="menu-button" type="button" active={open} class="max-w-xs bg-white flex items-center text-sm rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-primary-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
-      <span class="inline-block h-8 w-8 rounded-full overflow-hidden bg-gray-100">
+      <span class="inline-block h-9 w-9 rounded-full overflow-hidden bg-gray-100">
         <svg class="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
           <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>

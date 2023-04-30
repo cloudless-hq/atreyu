@@ -40,7 +40,7 @@ export function execIpfs (cmd, repo, silent, verbose) {
   return exec(['ipfs', `--repo-dir=${repo}`, ...cmd.split(' ')], silent, verbose)
 }
 
-export function get ({ name = 'myAyuProject', ipfsPath = '/ipfs/Qmbq9bybcQVeY8RJSLaawQ3WCcBin6EycADnfhYvuyLe6i' }) {
+export function get ({ name = 'myAyuProject', ipfsPath = '/ipfs/FIXME: use example app folder' }) {
   return ipfs(`get -o=./${name} ${ipfsPath}`)
 }
 

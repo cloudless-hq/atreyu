@@ -119,7 +119,8 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
   let ticker = null
   const deps = {}
   const keys = new Map()
-  const placeholders = new Set()
+  const placeholders = new Map()
+  const duplicates = {}
 
   // TODO subscribe feature eg. $ { a.b + a.c }
   // TODO: skip double update in svelte subscriptions
@@ -197,8 +198,11 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
       let falcorCacheVal
       if (delim === '$ref' || delim === '$refKey') {
         const cacheVEnvelope = getJsonPath(adjustedModel.getCache(path), path)
+        // console.log({cacheVEnvelope})
         if (cacheVEnvelope?.$type === 'ref') {
           falcorCacheVal = cacheVEnvelope.value
+        } else if (cacheVEnvelope?.$type === 'atom') {
+          falcorCacheVal = cacheVEnvelope?.$value ? { $type: 'error', value: { message: 'tried using value as reference', val: cacheVEnvelope?.$value } } : _undefined
         }
       } else {
         const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
@@ -234,12 +238,8 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
         })
       }
 
-      // if (pathString === 'todos.completed.date.length') {
-      //   console.log({ cacheVal, existingProm, falcorCacheVal, latestTick, lastUpdt: lastUpdt.get(pathString) })
-      // }
-      // console.log(pathString, falcorCacheVal)
       let newProm
-      if ((falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) && delim !== '$refKey') { // || typeof cacheVal === 'undefined'
+      if ((falcorCacheVal === undefined || latestTick !== lastUpdt.get(pathString)) && delim !== '$refKey') {
         // TODO: instead of undefined delegating to falcor here we can make small
         // prom that returns from our model cache, gets load off falcor internals
 
@@ -264,7 +264,7 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
                   }
                 }
 
-                placeholders.add(pathString)
+                placeholders.set(pathString, true)
                 // console.log('undefined value received', { pathString, key, val, curViewKey, keys: [...keys] })
               }
             } else {
@@ -314,68 +314,95 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
       }
 
       if (delim === '$key' || delim === '$refKey') {
+        if (falcorCacheVal === undefined) { //
+          // console.log('undefined value', { cacheVal, falcorCacheVal })
+          if (duplicates.firstIds) {
+            const firstIdPath = (cacheVal && cacheVal !== _undefined) ? duplicates.firstIds.get(`${cacheVal}`) : true
+            if (firstIdPath && firstIdPath !== pathString) {
+              // console.log('duplicate', pathString, duplicates.firstIds.get(`${cacheVal}`), cacheVal)
+              placeholders.set(pathString, { fresh: true })
+            }
+          }
+        }
+
+        if (cacheVal === _undefined || falcorCacheVal === _undefined) {
+          const placeholder = placeholders.get(pathString)
+          // console.log('fresh _undef value')
+          if (placeholder?.fresh || !placeholder) {
+            placeholders.set(pathString, { fresh: false })
+            keys.delete(pathString)
+          }
+        }
+
+        const pathOverride = keys.get(pathString)
+
         if (cacheVal && cacheVal !== _undefined) {
           if (delim === '$refKey') {
             cacheVal = cacheVal.join('.')
           }
-
-          if (keys.has(cacheVal)) {
-            const viewKeyOverrides = keys.get(cacheVal)
-            let keyOverride
-
-            if (viewKeyOverrides[curViewKey] && (viewKeyOverrides[curViewKey].latestTick + 6) > latestTick) {
-              keyOverride = viewKeyOverrides[curViewKey]
-            } else {
-              const lastEntry = Object.values(viewKeyOverrides).reduce(
-                (biggest, current) => {
-                  if (current.latestTick > biggest.latestTick) {
-                    return current
-                  }
-                  return biggest
-                }, { latestTick: 0 }
-              )
-
-              keyOverride = lastEntry
-            }
-
-            // console.log({ viewKeyOverrides, keyOverride })
-
-            if (!keys.has(pathString)) {
-              // console.log('doc id cached', { keyOverride, cacheVal, falcorCacheVal, pathString, curViewKey, keys: [...keys]})
-              return keyOverride.key
-            } else {
-              // console.log('doc id cached but from other view, using path override', { viewKeyOverrides, cacheVal, pathString, curViewKey, keys: [...keys]})
-              if (!placeholders.has(pathString)) {
-                return keys.get(pathString)
+          const valueOverrides = keys.get(cacheVal)
+          const currentViewValueOverride = valueOverrides?.[curViewKey]
+          const isExpired = currentViewValueOverride ? !((currentViewValueOverride.latestTick + 6) > latestTick) : null
+          const latestValueOverride = valueOverrides ? Object.values(valueOverrides).reduce(
+            (biggest, current) => {
+              if (current.latestTick > biggest.latestTick) {
+                return current
               }
+              return biggest
+            }, { latestTick: 0 }
+          ) : null
+
+          if (falcorCacheVal !== undefined && falcorCacheVal !== _undefined) {
+            placeholders.delete(pathString)
+            if (duplicates.curViewKey !== curViewKey) {
+              duplicates.curViewKey = curViewKey
+              duplicates.firstIds = new Map()
             }
-          } else if (!keys.has(pathString)) {
-            // console.log('have cached id without temp id', cacheVal)
+
+            duplicates.firstIds.set(`${cacheVal}`, pathString)
+          }
+
+          // console.log(pathString + ' have: ' , { cacheVal, falcorCacheVal, pathOverride, valueOverrides, currentViewValueOverride, isExpired, latestTick, latestValueOverride, placeholder: placeholders.get(pathString) })
+
+          const noOverrides = !valueOverrides && !pathOverride
+          if (noOverrides) {
+            // console.log('used: cached value without key overrides', cacheVal)
             return cacheVal
-          } else {
-            // the falcor promise did not fullfill yet but the value is allready populated in the cache
-            if (!placeholders.has(pathString)) {
-              const pathKeyOverride = keys.get(pathString)
+          }
 
-              const previousViewKeys = { [curViewKey]: {key: pathKeyOverride, latestTick} }
-              keys.set(cacheVal, previousViewKeys)
-              keys.delete(pathString)
+          if (currentViewValueOverride && !isExpired && !pathOverride) {
+            // console.log('used: ' + currentViewValueOverride.key, { currentViewValueOverride })
+            return currentViewValueOverride.key
+          }
 
-              // console.log('not set doc id cache yet but have:', { cacheVal, curViewKey, pathString,  keys: [...keys], pathKeyOverride } )
-              return pathKeyOverride
+          if (latestValueOverride && !pathOverride && !placeholders.has(pathString)) {
+            // console.log('used: ' + latestValueOverride.key, { latestValueOverride })
+            return latestValueOverride.key
+          }
+
+          if (!currentViewValueOverride && !placeholders.has(pathString)) {
+            if (!valueOverrides) {
+              keys.set(cacheVal, { [curViewKey]: { key: pathOverride, latestTick } })
+            } else {
+              valueOverrides[curViewKey] = { key: pathOverride, latestTick }
+              keys.set(cacheVal, valueOverrides)
             }
+
+            keys.delete(pathString)
+
+            // console.log('used after set valOverride and del pathString:', {pathOverride})
+            return pathOverride
           }
         }
 
-        const maybeKeyOverride = keys.get(pathString)
-        if (maybeKeyOverride) {
-          // console.log('path mapped to temp id', {maybeKeyOverride, pathString,  keys: [...keys]})
-          return maybeKeyOverride
+        if (pathOverride) {
+          // console.log('used:', { pathOverride })
+          return pathOverride
         }
 
-        key = `id_${Math.floor(Math.random(10000) * 100000)}`
+        key = `first_seen_${pathString}_${latestTick} `
+        // console.log('used: new temp id', { key })
         keys.set(pathString, key)
-        // console.log('new temp id', { key, pathString,  keys: [...keys] })
         return key
       }
 

@@ -4,6 +4,7 @@
   import setAyuContext from '/_ayu/src/store/context.js'
   import {onChange} from '../changes.js'
 
+  // TODO: move to main.js?
   const { data, router } = setAyuContext({ onChange })
 
   window.ayu = { data, router }
