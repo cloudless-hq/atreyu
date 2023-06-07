@@ -89,8 +89,13 @@ export async function couchUpdt ({
     if (createDb) {
       try {
         dbSeeds = [...dbDefaultSeeds]
-        console.log('  seeding base docs to database')
-        dbSeeds.concat((await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))).default)
+        console.log('  seeding system base docs to database')
+        const appSeeds = await import('file://' + join('/', Deno.cwd(), 'db-seed.js'))
+
+        if (appSeeds?.default) {
+          console.log(`  seeding ${appSeeds.default.length} application docs to database`)
+          dbSeeds = dbSeeds.concat(appSeeds.default)
+        }
         // const currentVersions = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, { body: <ids>, headers })).json()
         // console.log(currentVersions)
       } catch (_err) { /* ignore */ }

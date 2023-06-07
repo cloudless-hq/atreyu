@@ -28,6 +28,7 @@ export function workerdSetup ({
   const serviceBindings = []
   const serviceRefs = []
 
+  const customKvNamespaces = []
   const bindings = Object.entries(config).flatMap(([key, value]) => {
     if (['appPath', 'defaultEnv', 'repo'].includes(key)) {
       return []
@@ -41,9 +42,12 @@ export function workerdSetup ({
           text: value
         }
       } else if (key === 'kv_namespaces') {
-        return value.map(namespace => {
+        return value.map(nsName => {
+          if (nsName !== 'ipfs') {
+            customKvNamespaces.push(nsName)
+          }
           return {
-            name: namespace,
+            name: nsName,
             type: 'kv_namespace'
           }
         })
@@ -108,6 +112,15 @@ export function workerdSetup ({
     Deno.mkdirSync(envDir + '/kv-store')
   }
 
+  customKvNamespaces.forEach(customNs => {
+    try {
+      Deno.lstatSync(envDir + '/kv-store/' + customNs)
+    } catch (_e) {
+      Deno.mkdirSync(envDir + '/kv-store/' + customNs)
+    }
+  })
+
+  const customKvNamespaceBindings = customKvNamespaces.map(name => `( name = "${name}", disk = (path = "${envDir}/kv-store/${name}", writable = true))`).join(',\n    ')
 
   const capnp = `using Workerd = import "/workerd/workerd.capnp";
 ${serviceRefs.map(({ name, capName }) => `using ${capName} = import "${appPrefix}/${name.replace(appPrefix + '__', '')}.capnp";`).join('\n')}
@@ -128,6 +141,8 @@ const config :Workerd.Config = (
     ),
 
     ( name = "kvStore", disk = (path = "${envDir}/kv-store", writable = true)),
+
+    ${customKvNamespaceBindings ? customKvNamespaceBindings + ',' : ''}
 
     ${serviceRefs.map(({ capName }) => capName + '.Service').join(',\n    ')},
 

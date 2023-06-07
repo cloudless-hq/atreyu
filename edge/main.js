@@ -4,8 +4,10 @@ export default {
   fetch (request, env, context) {
     if (!workerRoutes) {
       workerRoutes = Object.entries(JSON.parse(env.routes))
-        .map(([pattern, workerName]) => [workerName, new URLPattern({ pathname: pattern })])
         .sort(([patternA], [patternB]) => patternB.length - patternA.length)
+        .map(([pattern, workerName]) => [workerName, new URLPattern({ pathname: pattern })])
+
+      console.log({ workerRoutes })
     }
 
     if (!cfData) {
@@ -31,6 +33,8 @@ export default {
     const appKey = env.env === 'prod' ? appName : appName + '_' + env.env
 
     const [ workerName ] = workerRoutes.find(([_, pattern]) => pattern.test(url.href))
+
+    // console.log({ workerName, url: request.url })
 
     // if (!app) {
     //  return new Response('App not found ' + appKey, { status: 400, headers: { server: 'atreyu', 'content-type': 'text/plain' } })

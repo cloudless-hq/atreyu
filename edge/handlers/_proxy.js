@@ -271,12 +271,14 @@ export default async function ({ req, text, waitUntil }) {
       }
 
       if (!data[hostname].favicon) {
-        return doReq(`https://secret-beige-takin.faviconkit.com/${ hostname }/24`, { raw: true, cacheNs: 'favicons' })
-          .then(async ({ raw }) => {
-            const buf = new Uint8Array(await raw.arrayBuffer())
-            let string = ''
-            buf.forEach( byte => { string += String.fromCharCode(byte) })
-            data[hostname].favicon = `data:${raw.headers.get('content-type')};base64,` + btoa(string)
+        return doReq(`https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://${ hostname }&size=24`, { raw: true, cacheNs: 'favicons' })
+          .then(async ({ raw, error }) => {
+            if (!error) {
+              const buf = new Uint8Array(await raw.arrayBuffer())
+              let string = ''
+              buf.forEach( byte => { string += String.fromCharCode(byte) })
+              data[hostname].favicon = `data:${raw.headers.get('content-type')};base64,` + btoa(string)
+            }
           })
       } else {
         return Promise.resolve()
