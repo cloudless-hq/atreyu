@@ -1,4 +1,4 @@
-export { join, dirname, basename } from 'https://deno.land/std@0.182.0/path/mod.ts'
+export { join, dirname, basename } from 'https://deno.land/std@0.197.0/path/mod.ts'
 
 export { iterateReader as iter } from 'https://deno.land/std@0.153.0/streams/conversion.ts'
 
@@ -14,23 +14,22 @@ export {
   gray,
   rgb24 as color,
   bgRgb24 as background
-} from 'https://deno.land/std@0.182.0/fmt/colors.ts'
+} from 'https://deno.land/std@0.197.0/fmt/colors.ts'
 
-export { globToRegExp } from 'https://deno.land/std@0.182.0/path/glob.ts'
+export { globToRegExp } from 'https://deno.land/std@0.197.0/path/glob.ts'
 
 export {
   compile,
   preprocess
-} from 'https://cdn.skypack.dev/svelte@3.58.0/compiler.mjs'
+} from 'npm:svelte@4.2.0/compiler'
 
 export { faker } from 'https://raw.githubusercontent.com/jackfiszr/deno-faker/v1.0.3/mod.ts'
 
-export { parse } from 'https://deno.land/std@0.182.0/flags/mod.ts'
+export { parse } from 'https://deno.land/std@0.197.0/flags/mod.ts'
 
-export { build, transform, context as esbContext } from 'https://deno.land/x/esbuild@v0.17.17/mod.js'
+export { build, transform, context as esbContext } from 'https://deno.land/x/esbuild@v0.19.1/mod.js'
 
 export { default as WindiForms } from 'https://cdn.skypack.dev/windicss@3.5.6/plugin/forms'
-
 export { default as WindiProcessor } from 'https://esm.sh/windicss@3.5.6'
 export { HTMLParser, CSSParser } from 'https://esm.sh/windicss@3.5.6/utils/parser' // ClassParser
 

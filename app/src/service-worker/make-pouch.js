@@ -35,9 +35,13 @@ export default async function ({
   preload
 }) {
   PouchDB.prefix = '_ayu_'
+  // PouchDB.plugin({ bulkDocs: function () { return { self:this, args: arguments }; }})
+  // PouchDB.plugin({ test: function () { return { self:this, args: arguments }; }})
   const pouch = new PouchDB(clientDbName, { revs_limit: 200, auto_compaction: true, deterministic_revs: true })
   let couch
   let sync
+  // console.log(pouch)
+  // console.log(pouch.test())
   const checkpointCache = new Map()
   const viewCache = new Map()
   const pulledIds = new Set
@@ -182,7 +186,7 @@ export default async function ({
 
     if (!sessionDoc.replications) {
       if (preload?.length > 0) {
-         // TODO: handle updates
+        // TODO: handle updates
         // Use batch instead
         console.log('preloading docs to new pouch...', preload)
         await PouchDB.replicate(couch, pouch, { doc_ids: preload })
@@ -263,7 +267,7 @@ export default async function ({
         pushResolver?.()
         activePush = null
         pushResolver = null
-        // console.info('replication paused')
+        console.info('replication paused')
         initResolver?.()
         initResolver = null
       })

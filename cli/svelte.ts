@@ -23,14 +23,15 @@ export default async function ({
   input,
   info,
   outputTarget,
-  batch,
+  once,
+  // batch: string[],
   clean,
   // buildRes,
   // output,
   dev = true,
   // sveltePath = '/svelte',
   extraAppEntryPoints = []
-}: { appFolder: string, input: string, batch: string[], clean: boolean, dev: boolean, sveltePath: string, extraAppEntryPoints?: string[], outputTarget: string }) {
+}: { appFolder: string, input: string, once: boolean, info: any, clean: boolean, dev: boolean, sveltePath: string, extraAppEntryPoints?: string[], outputTarget: string }) {
   // const startTime = Date.now()
 
   let inFolder = input
@@ -152,6 +153,9 @@ export default async function ({
     console.log(`    ${green('emitted:')} ` + buildRes.emits[0])
   })
 
+  if (once) {
+    buildCtx.dispose()
+  }
   // const duration = (Math.floor(Date.now() / 100 - startTime / 100)); duration && console.log('  ' + duration + 's') / 10
   return newBuildRes
 }

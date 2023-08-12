@@ -190,7 +190,9 @@ async function startIpfsDaemon () {
     // ipfs bootstrap add /ip4/25.196.147.100/tcp/4001/p2p/QmaMqSwWShsPg2RbredZtoneFjXhim7AQkqbLxib45Lx4S
     // disable quic + webTransport
     // add peering
-    const ipfsConf = JSON.parse(Deno.readFileSync(homeConfPath + '/config'))
+    const decoder = new TextDecoder('utf-8')
+    const rawConf = decoder.decode(Deno.readFileSync(homeConfPath + '/config'))
+    const ipfsConf = JSON.parse(rawConf)
     ipfsConf.Bootstrap = [
       '/dnsaddr/fra1-3.hostnodes.pinata.cloud/p2p/QmPo1ygpngghu5it8u4Mr3ym6SEU2Wp2wA66Z91Y1S1g29',
       '/dnsaddr/nyc1-1.hostnodes.pinata.cloud/p2p/QmRjLSisUCHVpFa5ELVvX3qVPfdxajxWJEHs9kN3EcxAW6',
@@ -216,7 +218,8 @@ async function startIpfsDaemon () {
     ipfsConf.Swarm.Transports.Network.QUIC = false
     ipfsConf.Swarm.Transports.Network.WebTransport = false
 
-    Deno.writeFileSync(homeConfPath + '/config', JSON.stringify(ipfsConf, null, 4))
+    const encoder = new TextEncoder()
+    Deno.writeFileSync(homeConfPath + '/config', encoder.encode(JSON.stringify(ipfsConf, null, 4)))
   }
 
   const ready = new Promise((resolve, _reject) => {
@@ -452,6 +455,7 @@ const tasks = {
       buildRes = await Promise.all([
         buildSvelte({
           info,
+          once,
           input,
           appFolder,
           outputTarget,
@@ -465,6 +469,7 @@ const tasks = {
         buildServiceWorker({
           info,
           batch,
+          // TODO: once/ esbuild?
           appFolder,
           buildRes,
           clean: doClean
@@ -472,6 +477,7 @@ const tasks = {
         buildEdge({
           services,
           workerd,
+          // TODO: once/ esbuil?
           buildName: buildMeta.buildName,
           batch,
           clean: doClean,

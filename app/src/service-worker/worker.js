@@ -50,7 +50,7 @@ export default function ({
     async logout () {
       self.session.clear()
 
-      clientsRes = await clients.matchAll()
+      const clientsRes = await clients.matchAll()
       const logoutNavs = clientsRes.map(client => {
         const url = new URL(client.url)
         let cont = ''
@@ -118,7 +118,7 @@ export default function ({
         self.session.value = newSession
 
         if (redirectOtherClients) {
-          clientsRes = await clients.matchAll()
+          const clientsRes = await clients.matchAll()
 
           const clientNavigations = clientsRes.map(client => {
             const url = new URL(client.url)

@@ -36,7 +36,7 @@ class frameScheduler {
 /* eslint-enable functional/no-this-expression, functional/no-class */
 
 
-export default function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange, onModelChange, errorSelector, onAccess }) {
+export default function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange = () => {}, onModelChange, errorSelector, onAccess } = {}) {
   // let invalidationHandler
 
   if (typeof source === 'undefined') {

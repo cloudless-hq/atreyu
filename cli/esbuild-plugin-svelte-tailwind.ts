@@ -16,16 +16,17 @@ function svelteReplace (input: string) {
     'svelte/transition': `'/_ayu/build/deps/svelte-transition.js'`,
     'svelte/easing': `'/_ayu/build/deps/svelte-easing.js'`,
     'svelte/store': `'/_ayu/build/deps/svelte-store.js'`,
+    'svelte/internal/disclose-version': `'/_ayu/build/deps/svelte-version.js'`,
     'svelte/internal': `'/_ayu/build/deps/svelte-internal.js'`
   }
 
-  return input.replace(/["']\/?svelte\/?(?:store|animate|transition|internal)?["']/g, (matched: string) => {
+  return input.replace(/["']\/?svelte\/?(?:store|animate|transition|internal|internal\/disclose-version)?["']/g, (matched: string) => {
     const cleaned = matched.slice(1,-1)
     return `${replacements[cleaned.startsWith('/') ? cleaned.slice(1) : cleaned]}`
   })
 }
 
-export function sveltePlugin ({ dev, clean, inFolder, appFolder, globalCssTarget, addGlobalBuildRes }: { dev: boolean, clean: boolean, inFolder: string, appFolder: string, globalCssTarget: string, addGlobalBuildRes }) {
+export function sveltePlugin ({ dev, clean, inFolder, appFolder, globalCssTarget, addGlobalBuildRes }: { dev: boolean, clean: boolean, inFolder: string, appFolder: string, globalCssTarget?: string, addGlobalBuildRes }) {
   const compNames: {[key: string]: boolean} = {}
 
   const doPreprocess = (source: string, filenameArg: string) => preprocess(source, {
@@ -106,13 +107,13 @@ export function sveltePlugin ({ dev, clean, inFolder, appFolder, globalCssTarget
 
           const { js, warnings } = compile(code, {
             filename,
-            css: true,
+            css: 'injected', // true,
             dev,
             generate: 'dom',
             hydratable: false,
             // immutable,
             // ssr,
-            format: 'esm',
+            // removed in svelte 4 format: 'esm',
             cssHash: ({ name }: {hash: string, css: string, name: string, filename: string}) => {
               name = filename.toLowerCase().replace('.svelte', '').replace('/', '_')
               if (compNames[name]) {

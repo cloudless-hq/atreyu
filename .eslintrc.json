@@ -1,4 +1,4 @@
-// we use the deno base config with good old standardjs style instead of prettier
+// we use the deno base config with good old standardjs style instead of prettier for now, but will clean this up in next iteration
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
@@ -11,11 +11,13 @@
   },
   "plugins": ["@typescript-eslint", "svelte3", "functional"],
   "extends": [
+    "eslint:recommended",
     "plugin:@typescript-eslint/recommended"
   ],
   "ignorePatterns": ["node_modules", "**/build/**", "**/bundle*", "runtime/**", "app/src/deps/**"],
   "rules": {
     // "no-console": "error",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
     "@typescript-eslint/no-explicit-any": ["off"],
     "spaced-comment": ["error", "always"],
     "no-multi-spaces": "error",

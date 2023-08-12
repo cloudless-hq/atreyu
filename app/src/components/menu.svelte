@@ -52,7 +52,7 @@
 
 <svelte:body on:mouseup|passive={mouseUp} on:mousedown|passive={mouseDown}  />
 
-<div bind:this={buttonNode} on:mousedown={toggle}>
+<div bind:this={buttonNode} on:mousedown={toggle} role="button" tabindex="-1">
   <slot name="menu-button" {open}>
   </slot>
 </div>

@@ -4,7 +4,6 @@ const ipfsGateway = 'http://127.0.0.1:8080/ipfs/'
 
 export default {
   async fetch (req, { kvStore }, { waitUntil }) {
-
     // console.log({ req, env, text: await res.clone().text(), headers: [...res.headers.entries()] })
     const url = new URL(req.url)
     const { urlencoded, ttl } = new URLSearchParams(url.search)
@@ -13,8 +12,13 @@ export default {
 
     console.log(ipfsGateway + path, urlencoded, url.search)
 
-    const res = await fetch(ipfsGateway + path) // kvStore.fetch(req)
-    console.log(res)
-    return res
+    try {
+      const res = await fetch(ipfsGateway + path) // kvStore.fetch(req)
+      console.log(res)
+      return res
+    } catch (e) {
+      return new Response('unexpected error', { status: 500 })
+    }
+
   }
 }

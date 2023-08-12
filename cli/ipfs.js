@@ -63,6 +63,9 @@ export async function add ({
   } = config
   // const startTime = Date.now()
 
+
+  // FIXME!!! :  auto install the propper ayu version to ipfs, currently all need a prod version, even when apps have dev env!
+
   // TODO: default to short_name from app manifest.json
   const name = basename(Deno.cwd())
   const pinName = env === 'prod' ? name : name + '_' + env
@@ -258,9 +261,14 @@ export async function add ({
 
     ayuHash = hashRes.headers.get('x-ipfs-path').replace('/ipfs/', '')
   } else {
-    ayuHash = (await (await fetch(ipfsApi + '/api/v0/files/stat?arg=/apps/atreyu', { method: 'POST' })).json()).Hash
+    const ayuRs = await fetch(ipfsApi + '/api/v0/files/stat?arg=/apps/atreyu', { method: 'POST' }).catch(error => {error})
+    const { Hash } = await ayuRs.json()
+    ayuHash = Hash
   }
 
+  if (!ayuHash) {
+    console.warn('Could not find ayu libraries in local repo did you install propperly with --env=prod ?')
+  }
   // if ayu is run from local filesystem add atreyu to the ipfs
   // deployment because it is probably a dev or custom version not available in through http
   // let atreyuFileHashes = {}

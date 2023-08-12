@@ -1,5 +1,6 @@
 <script>
   import { fade } from '/svelte/transition'
+  import { setContext } from 'svelte'
   import { formatBytes } from '/_ayu/src/lib/helpers.js'
 
   import Login from './login.svelte'
@@ -8,8 +9,12 @@
   import UserMenu from '/_ayu/src/components/user-menu.svelte'
   import Accounts from './accounts.svelte'
 	import makeRouterStore from '/_ayu/src/store/router.js'
+  import makeDataStore from '/_ayu/src/store/data.js'
 
-  const router = makeRouterStore()
+  const data = makeDataStore()
+  const router = makeRouterStore({ dataStore: data })
+
+  setContext('ayu', { data, router })
 
   $: newUser = ($router.hash === '#new')
 

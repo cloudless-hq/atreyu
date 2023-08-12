@@ -86,7 +86,7 @@ export function workerdSetup ({
     serviceRefs.push({ name: cfWorkerName, capName: `${cfWorkerName.replaceAll('_','X').replaceAll('-','X').charAt(0).toUpperCase() + cfWorkerName.replaceAll('_','X').replaceAll('-','X').slice(1)}` })
 
     const service = `(name = "${cfWorkerName}", worker = (
-      compatibilityDate = "2023-04-04",
+      compatibilityDate = "2023-08-01",
       bindings = [
         ${bindings}
       ],
@@ -147,13 +147,13 @@ const config :Workerd.Config = (
     ${serviceRefs.map(({ capName }) => capName + '.Service').join(',\n    ')},
 
     (name = "ipfs", worker = (
-      compatibilityDate = "2023-04-04",
+      compatibilityDate = "2023-08-01",
       bindings = [ ( name = "kvStore", service = "kvStore") ],
       modules = [ (esModule = "${escape(Deno.readTextFileSync(join(mainScriptPath, '..', 'workerd-kvstore.js')))}") ]
     )),
 
     (name = "main", worker = (
-      compatibilityDate = "2023-04-04",
+      compatibilityDate = "2023-08-01",
       bindings = [
         (name = "routes", text = "${JSON.stringify(toSetRoutes).replaceAll('"', '\\"')}"),
         ${serviceBindings.join(',\n        ')},

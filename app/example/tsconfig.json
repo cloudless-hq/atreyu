@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": "./app/",
     "types": ["svelte"],
+    "strict": true,
     "paths": {
       "/app/*": ["./app/*"],
       "/src/*": ["./app/src/*"],
