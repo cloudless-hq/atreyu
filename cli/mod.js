@@ -226,17 +226,21 @@ async function startIpfsDaemon () {
     execIpfsStream({
       cmd: 'daemon --enable-gc=true --migrate=true' + offline,
       repo: homeConfPath,
-      getData: data => {
+      getData: (data, error) => {
         if (verbose) {
           console.log('  ipfs: ' + data)
         }
+        if (error) {
+          console.error(error)
+          resolve()
+        }
 
-        if (data.startsWith('Initializing daemon...')) {
+        if (data?.startsWith('Initializing daemon...')) {
           const [_, ipfs, iRepo, _system, _golang] = data.split('\n').map(line => line.split(': ')[1])
           // TODO: add workerd version
           console.log('  ' + Object.entries({ ipfs, repo: iRepo, atreyu: ayuVersion, ...Deno.version }).map(en => en.join(': ')).join(', '))
         }
-        if (data.includes('Daemon is ready')) {
+        if (data?.includes('Daemon is ready')) {
           console.log('  ✅ Started ipfs daemon')
           resolve()
         }

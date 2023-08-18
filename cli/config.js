@@ -28,11 +28,13 @@ export async function loadConfig (envFlag, cmd, appName, repo, buildName, ayuVer
     env = envFlag
   }
 
+  // save pointer to current env overrides
   let envConf = {}
   if (conf[env]) {
     envConf = conf[env]
   }
 
+  // remove all other env overrides from the main config
   for (const key in conf) {
     if (typeof conf[key] === 'object' && key !== 'kv_namespaces') {
       delete conf[key]

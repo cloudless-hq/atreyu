@@ -29,6 +29,10 @@ export function workerdSetup ({
   const serviceRefs = []
 
   const customKvNamespaces = []
+
+  if (!config.kv_namespaces) {
+    config.kv_namespaces = ['ipfs']
+  }
   const bindings = Object.entries(config).flatMap(([key, value]) => {
     if (['appPath', 'defaultEnv', 'repo'].includes(key)) {
       return []

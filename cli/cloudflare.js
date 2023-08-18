@@ -315,6 +315,10 @@ export async function cloudflareDeploy ({
     delete config.defaultEnv
     delete config.repo
 
+    if (!config.kv_namespaces) {
+      config.kv_namespaces = ['ipfs']
+    }
+
     const bindings = Object.entries(config).flatMap(([key, value]) => {
       if (!key.startsWith('__')) {
         if (key.startsWith('_')) {
