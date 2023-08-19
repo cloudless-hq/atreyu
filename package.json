@@ -7,9 +7,7 @@
   },
   "type": "module",
   "files": [
-    "./npm-dist/data.js",
-    "./npm-dist/falcor-worker.js",
-    "./npm-dist/start-worker.js"
+    "npm-dist/*"
   ],
   "exports": {
     "./data.js": "./npm-dist/data.js",
