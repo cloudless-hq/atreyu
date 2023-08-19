@@ -80,6 +80,7 @@ class ServiceWorkerSource {
     return Observable.create(subscriber => {
       this._inflight[id] = (error, value, done) => {
         if (error) {
+          console.error([id, ...action])
           subscriber.onError(error)
         } else if (done) {
           subscriber.onCompleted()
@@ -87,6 +88,8 @@ class ServiceWorkerSource {
           subscriber.onNext(value)
         }
       }
+
+      // FIXME: hanlde error case here to enable trace debugging where request originates console.error([id, ...action])
 
       this._worker.postMessage(JSON.stringify([id, ...action]))
 

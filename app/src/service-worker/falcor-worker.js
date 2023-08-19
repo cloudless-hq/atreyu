@@ -270,7 +270,7 @@ export default function ({
           e.source.postMessage(JSON.stringify({ id: reqId, value: result }))
         },
         error => {
-          console.log('falcor error in executer', error)
+          // allreadcy logged as error before console.log('falcor error in executer', error)
           e.source.postMessage(JSON.stringify({ id: reqId, error }))
         },
         async _done => {

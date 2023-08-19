@@ -5,7 +5,8 @@ async function startWorker({ reloadAfterInstall, workerPath = "/build/service-wo
   try {
     regs = await navigator.serviceWorker.getRegistrations();
   } catch (err) {
-    console.warn(err, "please try to reload");
+    console.warn(err);
+    location.reload();
   }
   if (regs.length !== 1) {
     console.log(regs.length + " worker registrations", regs);
@@ -23,7 +24,7 @@ async function startWorker({ reloadAfterInstall, workerPath = "/build/service-wo
     if (e.data === '{"worker":"active"}') {
       await navigator.serviceWorker.ready;
       console.log("ServiceWorker start", { reloadAfterInstall, firstStart });
-      if ((firstStart || reloadAfterInstall === "always") && reloadAfterInstall) {
+      if (firstStart && reloadAfterInstall) {
         if (!window.location.search) {
           window.location.reload();
         } else {
@@ -46,7 +47,7 @@ async function startWorker({ reloadAfterInstall, workerPath = "/build/service-wo
       scope: "/",
       type: isModule ? "module" : void 0
     });
-    console.log("ServiceWorker registered");
+    console.log("ServiceWorker registred");
     return new Promise((resolve) => {
       loaded = resolve;
     });
@@ -56,6 +57,6 @@ async function startWorker({ reloadAfterInstall, workerPath = "/build/service-wo
     return regs[0];
   }
 }
-export {
-  startWorker as default
-};
+
+// app/src/service-worker/start-worker-now.js
+startWorker({ reloadAfterInstall: true, workerPath: "./service-worker.js", isModule: true });

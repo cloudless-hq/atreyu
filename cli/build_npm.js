@@ -51,7 +51,7 @@ buildCtx = await esbContext({
   assetNames: '[name]',
   chunkNames: 'shared/[name]-[hash]',
   outbase: 'npm-dist',
-  splitting: true,
+  splitting: false, // FIXME: exclude for start-worker
   // write: false,
   // deprecated incremental: dev,
   target: 'esnext',

@@ -64,21 +64,27 @@ export function toFalcorRoutes (schema) {
 
           arguments[0].maxRange = maxRange
 
-          const getRes = handler(...arguments)
+          let getRes = handler(...arguments)
 
           if (handlerType === 'get') {
             const pathArg = arguments[0]
 
-            if (getRes.value !== undefined && !getRes.path) {
-              getRes.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
-            } else if (typeof getRes.then === 'function') {
-              getRes.then(res => {
-                if (res.value !== undefined && !res.path) {
-                  res.path = pathArg.length ? [ ...pathArg ] : [ pathArg ]
-                }
+            const auoWrap = (paAr, res) => {
+              if (['boolean', 'undefined', 'number', 'string'].includes(typeof res) || (!res.value && !res.path)) {
+                res = { value: { $type: 'atom', value: res } }
+              }
+              if (res.value !== undefined && !res.path) {
+                res.path = paAr.length ? [ ...paAr ] : [ paAr ]
+              }
+              return res
+            }
 
-                return res
+            if (typeof getRes.then === 'function') {
+              getRes = getRes.then(res => {
+                return auoWrap(pathArg, res)
               })
+            } else {
+              getRes = auoWrap(pathArg, getRes)
             }
           }
 
@@ -148,7 +154,7 @@ export function makeRouter (dataRoutes) {
 
             const reqPaths = [...(e.pathSets || []), ...(e.callPath ? [e.callPath] : []) , ...(e.jsonGraphEnvelope?.paths || [])]
             if (reqPaths.length > (e.routes?.length || 0)) {
-              console.log(e, reqPaths)
+              // console.log(e, reqPaths)
 
               reqPaths.slice(e.routes.length).forEach(pathSet => {
                 urlLogger({

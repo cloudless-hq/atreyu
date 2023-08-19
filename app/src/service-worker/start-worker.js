@@ -1,12 +1,11 @@
-export default async function startWorker ({ reloadAfterInstall } = {}) {
-  const workerPath = '/build/service-worker.js'
+export default async function startWorker ({ reloadAfterInstall, workerPath = '/build/service-worker.js', isModule } = {}) {
   let regs
   let firstStart = false
   try {
     regs = await navigator.serviceWorker.getRegistrations()
   } catch (err) {
-    console.warn(err)
-    location.reload()
+    console.warn(err, 'please try to reload')
+    // location.reload()
   }
   if (regs.length !== 1) {
     console.log(regs.length + ' worker registrations', regs)
@@ -26,8 +25,8 @@ export default async function startWorker ({ reloadAfterInstall } = {}) {
   navigator.serviceWorker.addEventListener('message', async e => {
     if (e.data === '{"worker":"active"}') {
       await navigator.serviceWorker.ready
-      console.log('ServiceWorker start', {reloadAfterInstall, firstStart})
-      if (firstStart && reloadAfterInstall) {
+      console.log('ServiceWorker start', { reloadAfterInstall, firstStart })
+      if ((firstStart || reloadAfterInstall === 'always') && reloadAfterInstall) {
         if (!window.location.search) {
           window.location.reload()
         } else {
@@ -38,7 +37,6 @@ export default async function startWorker ({ reloadAfterInstall } = {}) {
       }
     } else if (e.data.startsWith('navigate:')) {
       // Fox until safari support client.navigate()
-
       const href = e.data.replace('navigate:', '')
       console.log('navigating tab to ' + href)
       window.location.href = href
@@ -51,10 +49,11 @@ export default async function startWorker ({ reloadAfterInstall } = {}) {
     firstStart = true
     reg = await navigator.serviceWorker.register(workerPath, {
       updateViaCache: 'all',
-      scope: '/'
+      scope: '/',
+      type: isModule ? 'module' : undefined
     })
 
-    console.log('ServiceWorker registred')
+    console.log('ServiceWorker registered')
     // navigator.serviceWorker.addEventListener('controllerchange', async () => {}) // this fired before worker was active on slow networks...
     return new Promise(resolve => { loaded = resolve })
   } else {

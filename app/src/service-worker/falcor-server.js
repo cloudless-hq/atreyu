@@ -36,8 +36,7 @@ export default function ({
   dbs,
   session
 }) {
-  const dataRoutes = toFalcorRoutes(schema)
-  const FalcorRouter = makeRouter(dataRoutes)
+  const FalcorRouter = makeRouter(toFalcorRoutes(schema))
   const routerInstance = new FalcorRouter({ dbs, session })
 
   const serverModel = falcor({

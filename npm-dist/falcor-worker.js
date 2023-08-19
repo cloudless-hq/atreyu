@@ -1,11 +1,8 @@
-import {
-  Observable,
-  extractFromCache,
-  index
-} from "./shared/chunk-G5BW7EMY.js";
-import {
-  __export
-} from "./shared/chunk-PIWLZ6KC.js";
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 
 // app/build/deps/pouchdb.js
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
@@ -472,10 +469,10 @@ var sparkMd5 = { exports: {} };
       return String.fromCharCode.apply(null, new Uint8Array(buff));
     }
     function concatenateArrayBuffers(first, second, returnUInt8Array) {
-      var result2 = new Uint8Array(first.byteLength + second.byteLength);
-      result2.set(new Uint8Array(first));
-      result2.set(new Uint8Array(second), first.byteLength);
-      return returnUInt8Array ? result2 : result2.buffer;
+      var result4 = new Uint8Array(first.byteLength + second.byteLength);
+      result4.set(new Uint8Array(first));
+      result4.set(new Uint8Array(second), first.byteLength);
+      return returnUInt8Array ? result4 : result4.buffer;
     }
     function hexToBinaryString(hex2) {
       var bytes = [], length = hex2.length, x;
@@ -1210,8 +1207,8 @@ function toPromise(func) {
       }
     });
     if (usedCB) {
-      promise.then(function(result2) {
-        usedCB(null, result2);
+      promise.then(function(result4) {
+        usedCB(null, result4);
       }, usedCB);
     }
     return promise;
@@ -1273,9 +1270,9 @@ var MAX_NUM_CONCURRENT_REQUESTS = 6;
 function identityFunction(x) {
   return x;
 }
-function formatResultForOpenRevsGet(result2) {
+function formatResultForOpenRevsGet(result4) {
   return [{
-    ok: result2
+    ok: result4
   }];
 }
 function bulkGet(db, opts, callback) {
@@ -1322,12 +1319,12 @@ function bulkGet(db, opts, callback) {
       return;
     }
     var upTo = Math.min(i3 + MAX_NUM_CONCURRENT_REQUESTS, allRequests.length);
-    var batch = allRequests.slice(i3, upTo);
-    processBatch(batch, i3);
-    i3 += batch.length;
+    var batch2 = allRequests.slice(i3, upTo);
+    processBatch(batch2, i3);
+    i3 += batch2.length;
   }
-  function processBatch(batch, offset) {
-    batch.forEach(function(docId, j) {
+  function processBatch(batch2, offset) {
+    batch2.forEach(function(docId, j) {
       var docIdx = offset + j;
       var docRequests = requestsById.get(docId);
       var docOpts = pick(docRequests[0], ["atts_since", "attachments"]);
@@ -1346,13 +1343,13 @@ function bulkGet(db, opts, callback) {
         }
       });
       db.get(docId, docOpts, function(err, res) {
-        var result2;
+        var result4;
         if (err) {
-          result2 = [{ error: err }];
+          result4 = [{ error: err }];
         } else {
-          result2 = formatResult(res);
+          result4 = formatResult(res);
         }
-        gotResult(docIdx, docId, result2);
+        gotResult(docIdx, docId, result4);
         nextBatch();
       });
     });
@@ -1407,7 +1404,7 @@ var Changes = class extends EE {
         "binary",
         "return_docs"
       ]);
-      function onError() {
+      function onError4() {
         inprogress = false;
       }
       db.changes(changesOpts).on("change", function(c) {
@@ -1420,7 +1417,7 @@ var Changes = class extends EE {
           immediate$1(eventFunction);
         }
         inprogress = false;
-      }).on("error", onError);
+      }).on("error", onError4);
     }
     this._listeners[id] = eventFunction;
     this.on(dbName, eventFunction);
@@ -1462,8 +1459,8 @@ function randomNumber(min, max) {
     max = maxTimeout;
   }
   var ratio = Math.random();
-  var range3 = max - min;
-  return ~~(range3 * ratio + min);
+  var range5 = max - min;
+  return ~~(range5 * ratio + min);
 }
 function defaultBackOff(min) {
   var max = 0;
@@ -1498,10 +1495,10 @@ var assign;
 }
 var $inject_Object_assign = assign;
 var PouchError = class extends Error {
-  constructor(status, error, reason) {
+  constructor(status, error3, reason) {
     super();
     this.status = status;
-    this.name = error;
+    this.name = error3;
     this.message = reason;
     this.error = true;
   }
@@ -1538,12 +1535,12 @@ var INVALID_REV = new PouchError(400, "bad_request", "Invalid rev format");
 new PouchError(412, "file_exists", "The database could not be created, the file already exists.");
 var MISSING_STUB = new PouchError(412, "missing_stub", "A pre-existing attachment stub wasn't found");
 new PouchError(413, "invalid_url", "Provided URL is invalid");
-function createError(error, reason) {
+function createError(error3, reason) {
   function CustomPouchError(reason2) {
-    var names = Object.getOwnPropertyNames(error);
+    var names = Object.getOwnPropertyNames(error3);
     for (var i3 = 0, len2 = names.length; i3 < len2; i3++) {
-      if (typeof error[names[i3]] !== "function") {
-        this[names[i3]] = error[names[i3]];
+      if (typeof error3[names[i3]] !== "function") {
+        this[names[i3]] = error3[names[i3]];
       }
     }
     if (this.stack === void 0) {
@@ -1798,11 +1795,11 @@ function readAsBinaryString(blob, callback) {
   var reader = new FileReader();
   var hasBinaryString = typeof reader.readAsBinaryString === "function";
   reader.onloadend = function(e2) {
-    var result2 = e2.target.result || "";
+    var result4 = e2.target.result || "";
     if (hasBinaryString) {
-      return callback(result2);
+      return callback(result4);
     }
-    callback(arrayBufferToBinaryString(result2));
+    callback(arrayBufferToBinaryString(result4));
   };
   if (hasBinaryString) {
     reader.readAsBinaryString(blob);
@@ -1823,8 +1820,8 @@ function blobToBase64(blobOrBuffer, callback) {
 function readAsArrayBuffer(blob, callback) {
   var reader = new FileReader();
   reader.onloadend = function(e2) {
-    var result2 = e2.target.result || new ArrayBuffer(0);
-    callback(result2);
+    var result4 = e2.target.result || new ArrayBuffer(0);
+    callback(result4);
   };
   reader.readAsArrayBuffer(blob);
 }
@@ -2025,13 +2022,13 @@ function rootToLeaf(revs) {
 function sortByPos$1(a3, b) {
   return a3.pos - b.pos;
 }
-function binarySearch(arr, item, comparator) {
+function binarySearch(arr, item, comparator2) {
   var low = 0;
   var high = arr.length;
   var mid;
   while (low < high) {
     mid = low + high >>> 1;
-    if (comparator(arr[mid], item) < 0) {
+    if (comparator2(arr[mid], item) < 0) {
       low = mid + 1;
     } else {
       high = mid;
@@ -2039,12 +2036,12 @@ function binarySearch(arr, item, comparator) {
   }
   return low;
 }
-function insertSorted(arr, item, comparator) {
-  var idx = binarySearch(arr, item, comparator);
+function insertSorted(arr, item, comparator2) {
+  var idx = binarySearch(arr, item, comparator2);
   arr.splice(idx, 0, item);
 }
 function pathToTree(path, numStemmed) {
-  var root2;
+  var root4;
   var leaf;
   for (var i3 = numStemmed, len2 = path.length; i3 < len2; i3++) {
     var node = path[i3];
@@ -2053,10 +2050,10 @@ function pathToTree(path, numStemmed) {
       leaf[2].push(currentLeaf);
       leaf = currentLeaf;
     } else {
-      root2 = leaf = currentLeaf;
+      root4 = leaf = currentLeaf;
     }
   }
-  return root2;
+  return root4;
 }
 function compareTree(a3, b) {
   return a3[0] < b[0] ? -1 : 1;
@@ -2158,7 +2155,7 @@ function doMerge(tree, path, dontExpand) {
 function stem(tree, depth) {
   var paths = rootToLeaf(tree);
   var stemmedRevs;
-  var result2;
+  var result4;
   for (var i3 = 0, len2 = paths.length; i3 < len2; i3++) {
     var path = paths[i3];
     var stemmed = path.ids;
@@ -2182,19 +2179,19 @@ function stem(tree, depth) {
         ids: pathToTree(stemmed, 0)
       };
     }
-    if (result2) {
-      result2 = doMerge(result2, node, true).tree;
+    if (result4) {
+      result4 = doMerge(result4, node, true).tree;
     } else {
-      result2 = [node];
+      result4 = [node];
     }
   }
   if (stemmedRevs) {
-    traverseRevTree(result2, function(isLeaf, pos, revHash) {
+    traverseRevTree(result4, function(isLeaf, pos, revHash) {
       delete stemmedRevs[pos + "-" + revHash];
     });
   }
   return {
-    tree: result2,
+    tree: result4,
     revs: stemmedRevs ? Object.keys(stemmedRevs) : []
   };
 }
@@ -2360,8 +2357,8 @@ var Changes$1 = class extends EE {
     });
     this.then = promise.then.bind(promise);
     this["catch"] = promise["catch"].bind(promise);
-    this.then(function(result2) {
-      complete(null, result2);
+    this.then(function(result4) {
+      complete(null, result4);
     }, complete);
     if (!db.taskqueue.isReady) {
       db.taskqueue.addTask((failed) => {
@@ -2622,8 +2619,8 @@ var AbstractPouchDB = class extends EE {
       if (opts.force && doc._rev) {
         transformForceOptionToNewEditsOption();
         putDoc(function(err) {
-          var result2 = err ? null : { ok: true, id: doc._id, rev: doc._rev };
-          cb(err, result2);
+          var result4 = err ? null : { ok: true, id: doc._id, rev: doc._rev };
+          cb(err, result4);
         });
       } else {
         putDoc(cb);
@@ -2833,10 +2830,10 @@ var AbstractPouchDB = class extends EE {
       }
       var leaves = [];
       const finishOpenRevs = () => {
-        var result2 = [];
+        var result4 = [];
         var count = leaves.length;
         if (!count) {
-          return cb(null, result2);
+          return cb(null, result4);
         }
         leaves.forEach((leaf) => {
           this.get(id, {
@@ -2848,21 +2845,21 @@ var AbstractPouchDB = class extends EE {
           }, function(err, doc) {
             if (!err) {
               var existing;
-              for (var i4 = 0, l3 = result2.length; i4 < l3; i4++) {
-                if (result2[i4].ok && result2[i4].ok._rev === doc._rev) {
+              for (var i4 = 0, l3 = result4.length; i4 < l3; i4++) {
+                if (result4[i4].ok && result4[i4].ok._rev === doc._rev) {
                   existing = true;
                   break;
                 }
               }
               if (!existing) {
-                result2.push({ ok: doc });
+                result4.push({ ok: doc });
               }
             } else {
-              result2.push({ missing: leaf });
+              result4.push({ missing: leaf });
             }
             count--;
             if (!count) {
-              cb(null, result2);
+              cb(null, result4);
             }
           });
         });
@@ -2894,14 +2891,14 @@ var AbstractPouchDB = class extends EE {
         }
         return;
       }
-      return this._get(id, opts, (err, result2) => {
+      return this._get(id, opts, (err, result4) => {
         if (err) {
           err.docId = id;
           return cb(err);
         }
-        var doc = result2.doc;
-        var metadata = result2.metadata;
-        var ctx = result2.ctx;
+        var doc = result4.doc;
+        var metadata = result4.metadata;
+        var ctx = result4.ctx;
         if (opts.conflicts) {
           var conflicts = collectConflicts(metadata);
           if (conflicts.length) {
@@ -3205,7 +3202,7 @@ var AbstractPouchDB = class extends EE {
       });
       promises.push(this.compactDocument(row.id, 0));
     };
-    const onError = (err) => {
+    const onError4 = (err) => {
       this.activeTasks.remove(taskId, err);
       callback(err);
     };
@@ -3222,14 +3219,14 @@ var AbstractPouchDB = class extends EE {
       }).then(() => {
         this.activeTasks.remove(taskId);
         callback(null, { ok: true });
-      }).catch(onError);
+      }).catch(onError4);
     };
     this.info().then((info2) => {
       taskId = this.activeTasks.add({
         name: "database_compaction",
         total_items: info2.update_seq - changesOpts.last_seq
       });
-      this.changes(changesOpts).on("change", onChange).on("complete", onComplete).on("error", onError);
+      this.changes(changesOpts).on("change", onChange).on("complete", onComplete).on("error", onError4);
     });
   }
   changes(opts, callback) {
@@ -3250,9 +3247,9 @@ AbstractPouchDB.prototype.purge = adapterFun("_purge", function(docId, rev, call
     return callback(createError(UNKNOWN_ERROR, "Purge is not implemented in the " + this.adapter + " adapter."));
   }
   var self2 = this;
-  self2._getRevisionTree(docId, (error, revs) => {
-    if (error) {
-      return callback(error);
+  self2._getRevisionTree(docId, (error3, revs) => {
+    if (error3) {
+      return callback(error3);
     }
     if (!revs) {
       return callback(createError(MISSING_DOC));
@@ -3260,15 +3257,15 @@ AbstractPouchDB.prototype.purge = adapterFun("_purge", function(docId, rev, call
     let path;
     try {
       path = findPathToLeaf(revs, rev);
-    } catch (error2) {
-      return callback(error2.message || error2);
+    } catch (error4) {
+      return callback(error4.message || error4);
     }
-    self2._purge(docId, path, (error2, result2) => {
-      if (error2) {
-        return callback(error2);
+    self2._purge(docId, path, (error4, result4) => {
+      if (error4) {
+        return callback(error4);
       } else {
         appendPurgeSeq(self2, docId, rev).then(function() {
-          return callback(null, result2);
+          return callback(null, result4);
         });
       }
     });
@@ -3767,16 +3764,16 @@ function isAndInSelector(obj, isAnd) {
   return isAnd;
 }
 function massageSelector(input) {
-  var result2 = clone(input);
-  if (isAndInSelector(result2, false)) {
-    result2 = mergeAndedSelectorsNested(result2);
-    if ("$and" in result2) {
-      result2 = mergeAndedSelectors(result2["$and"]);
+  var result4 = clone(input);
+  if (isAndInSelector(result4, false)) {
+    result4 = mergeAndedSelectorsNested(result4);
+    if ("$and" in result4) {
+      result4 = mergeAndedSelectors(result4["$and"]);
     }
   }
   ["$or", "$nor"].forEach(function(orOrNor) {
-    if (orOrNor in result2) {
-      result2[orOrNor].forEach(function(subSelector) {
+    if (orOrNor in result4) {
+      result4[orOrNor].forEach(function(subSelector) {
         var fields2 = Object.keys(subSelector);
         for (var i4 = 0; i4 < fields2.length; i4++) {
           var field2 = fields2[i4];
@@ -3788,20 +3785,20 @@ function massageSelector(input) {
       });
     }
   });
-  if ("$not" in result2) {
-    result2["$not"] = mergeAndedSelectors([result2["$not"]]);
+  if ("$not" in result4) {
+    result4["$not"] = mergeAndedSelectors([result4["$not"]]);
   }
-  var fields = Object.keys(result2);
+  var fields = Object.keys(result4);
   for (var i3 = 0; i3 < fields.length; i3++) {
     var field = fields[i3];
-    var matcher3 = result2[field];
+    var matcher3 = result4[field];
     if (typeof matcher3 !== "object" || matcher3 === null) {
       matcher3 = { $eq: matcher3 };
     }
-    result2[field] = matcher3;
+    result4[field] = matcher3;
   }
-  normalizeArrayOperators(result2);
-  return result2;
+  normalizeArrayOperators(result4);
+  return result4;
 }
 function normalizeArrayOperators(selector) {
   Object.keys(selector).forEach(function(field) {
@@ -3900,22 +3897,22 @@ function indexify(key) {
       case "string":
         return key.replace(/\u0002/g, "").replace(/\u0001/g, "").replace(/\u0000/g, "");
       case "object":
-        var isArray3 = Array.isArray(key);
-        var arr = isArray3 ? key : Object.keys(key);
+        var isArray4 = Array.isArray(key);
+        var arr = isArray4 ? key : Object.keys(key);
         var i3 = -1;
         var len2 = arr.length;
-        var result2 = "";
-        if (isArray3) {
+        var result4 = "";
+        if (isArray4) {
           while (++i3 < len2) {
-            result2 += toIndexableString(arr[i3]);
+            result4 += toIndexableString(arr[i3]);
           }
         } else {
           while (++i3 < len2) {
             var objKey = arr[i3];
-            result2 += toIndexableString(objKey) + toIndexableString(key[objKey]);
+            result4 += toIndexableString(objKey) + toIndexableString(key[objKey]);
           }
         }
-        return result2;
+        return result4;
     }
   }
   return "";
@@ -4094,18 +4091,18 @@ function numToIndexableString(num) {
   var expFormat = num.toExponential().split(/e\+?/);
   var magnitude = parseInt(expFormat[1], 10);
   var neg = num < 0;
-  var result2 = neg ? "0" : "2";
+  var result4 = neg ? "0" : "2";
   var magForComparison = (neg ? -magnitude : magnitude) - MIN_MAGNITUDE;
   var magString = padLeft(magForComparison.toString(), "0", MAGNITUDE_DIGITS);
-  result2 += SEP + magString;
+  result4 += SEP + magString;
   var factor = Math.abs(parseFloat(expFormat[0]));
   if (neg) {
     factor = 10 - factor;
   }
   var factorStr = factor.toFixed(20);
   factorStr = factorStr.replace(/\.?0+$/, "");
-  result2 += SEP + factorStr;
-  return result2;
+  result4 += SEP + factorStr;
+  return result4;
 }
 function createFieldSorter(sort) {
   function getFieldValuesAsArray(doc) {
@@ -4509,21 +4506,21 @@ function rewrite(data) {
   if (!needsRewrite(data)) {
     return false;
   }
-  var isArray3 = Array.isArray(data);
-  var clone3 = isArray3 ? [] : {};
+  var isArray4 = Array.isArray(data);
+  var clone5 = isArray4 ? [] : {};
   Object.keys(data).forEach(function(key) {
-    var safeKey = isArray3 ? key : sanitise(key);
+    var safeKey = isArray4 ? key : sanitise(key);
     if (data[key] === null) {
-      clone3[safeKey] = IDB_NULL;
+      clone5[safeKey] = IDB_NULL;
     } else if (typeof data[key] === "boolean") {
-      clone3[safeKey] = data[key] ? IDB_TRUE : IDB_FALSE;
+      clone5[safeKey] = data[key] ? IDB_TRUE : IDB_FALSE;
     } else if (typeof data[key] === "object") {
-      clone3[safeKey] = rewrite(data[key]);
+      clone5[safeKey] = rewrite(data[key]);
     } else {
-      clone3[safeKey] = data[key];
+      clone5[safeKey] = data[key];
     }
   });
-  return clone3;
+  return clone5;
 }
 var DOC_STORE = "docs";
 var META_STORE = "meta";
@@ -4536,14 +4533,14 @@ function idbError(callback) {
     callback(createError(IDB_ERROR, message, evt.type));
   };
 }
-function processAttachment(name, src2, doc, isBinary) {
+function processAttachment(name, src3, doc, isBinary) {
   delete doc._attachments[name].stub;
   if (isBinary) {
-    doc._attachments[name].data = src2.attachments[doc._attachments[name].digest].data;
+    doc._attachments[name].data = src3.attachments[doc._attachments[name].digest].data;
     return Promise.resolve();
   }
   return new Promise(function(resolve) {
-    var data = src2.attachments[doc._attachments[name].digest].data;
+    var data = src3.attachments[doc._attachments[name].digest].data;
     readAsBinaryString(data, function(binString) {
       doc._attachments[name].data = thisBtoa(binString);
       delete doc._attachments[name].length;
@@ -4583,8 +4580,8 @@ var versionMultiplier = Math.pow(10, 13);
 function createIdbVersion() {
   return versionMultiplier * POUCHDB_IDB_VERSION + (/* @__PURE__ */ new Date()).getTime();
 }
-function getPouchDbVersion(version2) {
-  return Math.floor(version2 / versionMultiplier);
+function getPouchDbVersion(version3) {
+  return Math.floor(version3 / versionMultiplier);
 }
 function maintainNativeIndexes(openReq, reject) {
   var docStore = openReq.transaction.objectStore(DOC_STORE);
@@ -4727,11 +4724,11 @@ function get(txn, id, opts, callback) {
       callback(createError(MISSING_DOC, "missing"));
       return;
     }
-    var result2 = doc.revs[rev].data;
-    result2._id = doc.id;
-    result2._rev = rev;
+    var result4 = doc.revs[rev].data;
+    result4._id = doc.id;
+    result4._rev = rev;
     callback(null, {
-      doc: result2,
+      doc: result4,
       metadata: doc,
       ctx: txn
     });
@@ -4879,26 +4876,26 @@ function parseDoc(doc, newEdits, dbOpts) {
   }
   invalidIdError(doc._id);
   doc._rev = nRevNum + "-" + newRevId;
-  var result2 = { metadata: {}, data: {} };
+  var result4 = { metadata: {}, data: {} };
   for (var key in doc) {
     if (Object.prototype.hasOwnProperty.call(doc, key)) {
       var specialKey = key[0] === "_";
       if (specialKey && !reservedWords[key]) {
-        var error = createError(DOC_VALIDATION, key);
-        error.message = DOC_VALIDATION.message + ": " + key;
-        throw error;
+        var error3 = createError(DOC_VALIDATION, key);
+        error3.message = DOC_VALIDATION.message + ": " + key;
+        throw error3;
       } else if (specialKey && !dataWords[key]) {
-        result2.metadata[key.slice(1)] = doc[key];
+        result4.metadata[key.slice(1)] = doc[key];
       } else {
-        result2.data[key] = doc[key];
+        result4.data[key] = doc[key];
       }
     }
   }
-  return result2;
+  return result4;
 }
 function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
   var txn;
-  var error;
+  var error3;
   var results = [];
   var docs = [];
   var lastWriteIndex;
@@ -5014,9 +5011,9 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
     var theDoc = doc.revs[winningRev$$1].data;
     const isNewDoc = doc.isNewDoc;
     if (rewriteEnabled) {
-      var result3 = rewrite(theDoc);
-      if (result3) {
-        doc.data = result3;
+      var result5 = rewrite(theDoc);
+      if (result5) {
+        doc.data = result5;
         delete doc.data._attachments;
       } else {
         doc.data = theDoc;
@@ -5040,9 +5037,9 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
     delete doc.wasDeleted;
     let revsToDelete = doc.stemmedRevs || [];
     if (autoCompaction && !isNewDoc) {
-      const result4 = compactTree(doc);
-      if (result4.length) {
-        revsToDelete = revsToDelete.concat(result4);
+      const result6 = compactTree(doc);
+      if (result6.length) {
+        revsToDelete = revsToDelete.concat(result6);
       }
     }
     if (revsToDelete.length) {
@@ -5059,7 +5056,7 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
         var attachment = theDoc._attachments[k];
         if (attachment.stub) {
           if (!(attachment.digest in doc.attachments)) {
-            error = createError(MISSING_STUB);
+            error3 = createError(MISSING_STUB);
             txn2.abort();
             return;
           }
@@ -5120,8 +5117,8 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
       binData = attachment.data;
     }
     return new Promise(function(resolve) {
-      binaryMd5(binData, function(result3) {
-        attachment.digest = "md5-" + result3;
+      binaryMd5(binData, function(result5) {
+        attachment.digest = "md5-" + result5;
         attachment.length = binData.size || binData.length || 0;
         resolve(attachment);
       });
@@ -5150,16 +5147,16 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
     return Promise.all(promises);
   }
   for (var i3 = 0, len2 = req2.docs.length; i3 < len2; i3++) {
-    var result2;
+    var result4;
     try {
-      result2 = parseDoc(req2.docs[i3], opts.new_edits, dbOpts);
+      result4 = parseDoc(req2.docs[i3], opts.new_edits, dbOpts);
     } catch (err) {
-      result2 = err;
+      result4 = err;
     }
-    if (result2.error) {
-      return callback(result2);
+    if (result4.error) {
+      return callback(result4);
     }
-    docs.push(convertDocFormat(result2));
+    docs.push(convertDocFormat(result4));
   }
   preProcessAttachments().then(function() {
     api._openTransactionSafely([DOC_STORE, META_STORE], "readwrite", function(err, _txn) {
@@ -5168,7 +5165,7 @@ function bulkDocs(api, req2, opts, metadata, dbOpts, idbChanges2, callback) {
       }
       txn = _txn;
       txn.onabort = function() {
-        callback(error || createError(UNKNOWN_ERROR, "transaction was aborted"));
+        callback(error3 || createError(UNKNOWN_ERROR, "transaction was aborted"));
       };
       txn.ontimeout = idbError(callback);
       txn.oncomplete = function() {
@@ -5833,7 +5830,7 @@ function pool(promiseFactories, limit) {
     var err;
     function runNext() {
       running++;
-      promiseFactories[current++]().then(onSuccess, onError);
+      promiseFactories[current++]().then(onSuccess, onError4);
     }
     function doNext() {
       if (++done === len2) {
@@ -5850,7 +5847,7 @@ function pool(promiseFactories, limit) {
       running--;
       doNext();
     }
-    function onError(thisErr) {
+    function onError4(thisErr) {
       running--;
       err = err || thisErr;
       doNext();
@@ -5988,7 +5985,7 @@ function HttpPouch(opts, callback) {
     }).bind(api);
   }
   function fetchJSON(url, options, callback2) {
-    const result2 = {};
+    const result4 = {};
     options = options || {};
     options.headers = options.headers || new h();
     if (!options.headers.get("Content-Type")) {
@@ -5998,22 +5995,22 @@ function HttpPouch(opts, callback) {
       options.headers.set("Accept", "application/json");
     }
     return ourFetch(url, options).then(function(response) {
-      result2.ok = response.ok;
-      result2.status = response.status;
+      result4.ok = response.ok;
+      result4.status = response.status;
       return response.json();
     }).then(function(json) {
-      result2.data = json;
-      if (!result2.ok) {
-        result2.data.status = result2.status;
-        const err = generateErrorFromResponse(result2.data);
+      result4.data = json;
+      if (!result4.ok) {
+        result4.data.status = result4.status;
+        const err = generateErrorFromResponse(result4.data);
         if (callback2) {
           return callback2(err);
         } else {
           throw err;
         }
       }
-      if (Array.isArray(result2.data)) {
-        result2.data = result2.data.map(function(v2) {
+      if (Array.isArray(result4.data)) {
+        result4.data = result4.data.map(function(v2) {
           if (v2.error || v2.missing) {
             return generateErrorFromResponse(v2);
           } else {
@@ -6022,9 +6019,9 @@ function HttpPouch(opts, callback) {
         });
       }
       if (callback2) {
-        callback2(null, result2.data);
+        callback2(null, result4.data);
       } else {
-        return result2;
+        return result4;
       }
     });
   }
@@ -6070,8 +6067,8 @@ function HttpPouch(opts, callback) {
     } else if (dbId) {
       callback2(null, dbId);
     } else {
-      pendingDbId = ourFetch(genUrl(host, "")).then((res) => res.json()).catch(() => ({})).then((result2) => {
-        dbId = result2 && result2.uuid ? result2.uuid + host.db : dbUrl;
+      pendingDbId = ourFetch(genUrl(host, "")).then((res) => res.json()).catch(() => ({})).then((result4) => {
+        dbId = result4 && result4.uuid ? result4.uuid + host.db : dbUrl;
         pendingDbId = null;
         callback2(null, dbId);
       });
@@ -6112,13 +6109,13 @@ function HttpPouch(opts, callback) {
       fetchJSON(genDBUrl(host, "_bulk_get" + paramsToStr(params)), {
         method: "POST",
         body: JSON.stringify({ docs: opts2.docs })
-      }).then(function(result2) {
+      }).then(function(result4) {
         if (opts2.attachments && opts2.binary) {
-          result2.data.results.forEach(function(res) {
+          result4.data.results.forEach(function(res) {
             res.docs.forEach(readAttachmentsAsBlobOrBuffer);
           });
         }
-        cb(null, result2.data);
+        cb(null, result4.data);
       }).catch(cb);
     }
     function doBulkGetShim() {
@@ -6388,8 +6385,8 @@ function HttpPouch(opts, callback) {
         method: "PUT",
         body: JSON.stringify(doc)
       });
-    }).then(function(result2) {
-      callback2(null, result2.data);
+    }).then(function(result4) {
+      callback2(null, result4.data);
     }).catch(function(err) {
       err.docId = doc && doc._id;
       callback2(err);
@@ -6451,11 +6448,11 @@ function HttpPouch(opts, callback) {
     fetchJSON(genDBUrl(host, "_all_docs" + paramStr), {
       method,
       body: JSON.stringify(body)
-    }).then(function(result2) {
+    }).then(function(result4) {
       if (opts2.include_docs && opts2.attachments && opts2.binary) {
-        result2.data.rows.forEach(readAttachmentsAsBlobOrBuffer);
+        result4.data.rows.forEach(readAttachmentsAsBlobOrBuffer);
       }
-      callback2(null, result2.data);
+      callback2(null, result4.data);
     }).catch(callback2);
   });
   api._changes = function(opts2) {
@@ -6779,52 +6776,52 @@ function sequentialize(queue3, promiseFactory) {
 }
 function uniq(arr) {
   var theSet = new ExportedSet(arr);
-  var result2 = new Array(theSet.size);
+  var result4 = new Array(theSet.size);
   var index2 = -1;
   theSet.forEach(function(value) {
-    result2[++index2] = value;
+    result4[++index2] = value;
   });
-  return result2;
+  return result4;
 }
 function mapToKeysArray(map2) {
-  var result2 = new Array(map2.size);
+  var result4 = new Array(map2.size);
   var index2 = -1;
   map2.forEach(function(value, key) {
-    result2[++index2] = key;
+    result4[++index2] = key;
   });
-  return result2;
+  return result4;
 }
 function createBuiltInError(name) {
   var message = "builtin " + name + " function requires map values to be numbers or number arrays";
   return new BuiltInError(message);
 }
 function sum(values) {
-  var result2 = 0;
+  var result4 = 0;
   for (var i3 = 0, len2 = values.length; i3 < len2; i3++) {
     var num = values[i3];
     if (typeof num !== "number") {
       if (Array.isArray(num)) {
-        result2 = typeof result2 === "number" ? [result2] : result2;
+        result4 = typeof result4 === "number" ? [result4] : result4;
         for (var j = 0, jLen = num.length; j < jLen; j++) {
           var jNum = num[j];
           if (typeof jNum !== "number") {
             throw createBuiltInError("_sum");
-          } else if (typeof result2[j] === "undefined") {
-            result2.push(jNum);
+          } else if (typeof result4[j] === "undefined") {
+            result4.push(jNum);
           } else {
-            result2[j] += jNum;
+            result4[j] += jNum;
           }
         }
       } else {
         throw createBuiltInError("_sum");
       }
-    } else if (typeof result2 === "number") {
-      result2 += num;
+    } else if (typeof result4 === "number") {
+      result4 += num;
     } else {
-      result2[0] += num;
+      result4[0] += num;
     }
   }
-  return result2;
+  return result4;
 }
 var log = guardedConsole.bind(null, "log");
 var isArray = Array.isArray;
@@ -7053,9 +7050,9 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
       }
     }
     ["group_level", "limit", "skip"].forEach(function(optionName) {
-      const error = checkPositiveInteger(options[optionName]);
-      if (error) {
-        throw error;
+      const error3 = checkPositiveInteger(options[optionName]);
+      if (error3) {
+        throw error3;
       }
     });
   }
@@ -7106,18 +7103,18 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
         body: JSON.stringify(body)
       });
       ok = response2.ok;
-      const result3 = await response2.json();
+      const result5 = await response2.json();
       if (!ok) {
-        result3.status = response2.status;
-        throw generateErrorFromResponse(result3);
+        result5.status = response2.status;
+        throw generateErrorFromResponse(result5);
       }
-      result3.rows.forEach(function(row) {
+      result5.rows.forEach(function(row) {
         if (row.value && row.value.error && row.value.error === "builtin_reduce_error") {
           throw new Error(row.reason);
         }
       });
       return new Promise(function(resolve) {
-        resolve(result3);
+        resolve(result5);
       }).then(postprocessAttachments(opts));
     }
     body = body || {};
@@ -7134,13 +7131,13 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
       body: JSON.stringify(body)
     });
     ok = response.ok;
-    const result2 = await response.json();
+    const result4 = await response.json();
     if (!ok) {
-      result2.status = response.status;
-      throw generateErrorFromResponse(result2);
+      result4.status = response.status;
+      throw generateErrorFromResponse(result4);
     }
     return new Promise(function(resolve) {
-      resolve(result2);
+      resolve(result4);
     }).then(postprocessAttachments(opts));
   }
   function customQuery(db, fun, opts) {
@@ -7444,8 +7441,8 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
       await queue3.finish();
       view.seq = currentSeq;
       view.sourceDB.activeTasks.remove(taskId);
-    } catch (error) {
-      view.sourceDB.activeTasks.remove(taskId, error);
+    } catch (error3) {
+      view.sourceDB.activeTasks.remove(taskId, error3);
     }
   }
   function reduceView(view, results, options) {
@@ -7505,19 +7502,19 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
       viewOpts.include_docs = true;
       const res = await view.db.allDocs(viewOpts);
       totalRows = res.total_rows;
-      return res.rows.map(function(result2) {
-        if ("value" in result2.doc && typeof result2.doc.value === "object" && result2.doc.value !== null) {
-          const keys2 = Object.keys(result2.doc.value).sort();
+      return res.rows.map(function(result4) {
+        if ("value" in result4.doc && typeof result4.doc.value === "object" && result4.doc.value !== null) {
+          const keys2 = Object.keys(result4.doc.value).sort();
           const expectedKeys = ["id", "key", "value"];
           if (!(keys2 < expectedKeys || keys2 > expectedKeys)) {
-            return result2.doc.value;
+            return result4.doc.value;
           }
         }
-        const parsedKeyAndDocId = parseIndexableString(result2.doc._id);
+        const parsedKeyAndDocId = parseIndexableString(result4.doc._id);
         return {
           key: parsedKeyAndDocId[0],
           id: parsedKeyAndDocId[1],
-          value: "value" in result2.doc ? result2.doc.value : null
+          value: "value" in result4.doc ? result4.doc.value : null
         };
       });
     }
@@ -7578,8 +7575,8 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
         }
         return fetchFromView(viewOpts);
       });
-      const result2 = await Promise.all(fetchPromises);
-      const flattenedResult = flatten(result2);
+      const result4 = await Promise.all(fetchPromises);
+      const flattenedResult = flatten(result4);
       return onMapResultsReady(flattenedResult);
     } else {
       const viewOpts = {
@@ -7631,8 +7628,8 @@ function createAbstractMapReduce(localDocName2, mapper2, reducer2, ddocValidator
         }
         viewOpts.skip = skip;
       }
-      const result2 = await fetchFromView(viewOpts);
-      return onMapResultsReady(result2);
+      const result4 = await fetchFromView(viewOpts);
+      return onMapResultsReady(result4);
     }
   }
   async function httpViewCleanup(db) {
@@ -7887,24 +7884,24 @@ function getDocAttachments(db, doc) {
     return db.getAttachment(doc._id, filename, { rev: doc._rev });
   }));
 }
-function getDocAttachmentsFromTargetOrSource(target, src2, doc) {
-  var doCheckForLocalAttachments = isRemote(src2) && !isRemote(target);
+function getDocAttachmentsFromTargetOrSource(target, src3, doc) {
+  var doCheckForLocalAttachments = isRemote(src3) && !isRemote(target);
   var filenames = Object.keys(doc._attachments);
   if (!doCheckForLocalAttachments) {
-    return getDocAttachments(src2, doc);
+    return getDocAttachments(src3, doc);
   }
   return target.get(doc._id).then(function(localDoc) {
     return Promise.all(filenames.map(function(filename) {
       if (fileHasChanged(localDoc, doc, filename)) {
-        return src2.getAttachment(doc._id, filename);
+        return src3.getAttachment(doc._id, filename);
       }
       return target.getAttachment(localDoc._id, filename);
     }));
-  }).catch(function(error) {
-    if (error.status !== 404) {
-      throw error;
+  }).catch(function(error3) {
+    if (error3.status !== 404) {
+      throw error3;
     }
-    return getDocAttachments(src2, doc);
+    return getDocAttachments(src3, doc);
   });
 }
 function createBulkGetOpts(diffs) {
@@ -7924,7 +7921,7 @@ function createBulkGetOpts(diffs) {
     latest: true
   };
 }
-function getDocs(src2, target, diffs, state) {
+function getDocs(src3, target, diffs, state) {
   diffs = clone(diffs);
   var resultDocs = [], ok = true;
   function getAllDocs() {
@@ -7932,7 +7929,7 @@ function getDocs(src2, target, diffs, state) {
     if (!bulkGetOpts.docs.length) {
       return;
     }
-    return src2.bulkGet(bulkGetOpts).then(function(bulkGetResponse) {
+    return src3.bulkGet(bulkGetOpts).then(function(bulkGetResponse) {
       if (state.cancelled) {
         throw new Error("cancelled");
       }
@@ -7945,7 +7942,7 @@ function getDocs(src2, target, diffs, state) {
           if (!remoteDoc || !remoteDoc._attachments) {
             return remoteDoc;
           }
-          return getDocAttachmentsFromTargetOrSource(target, src2, remoteDoc).then(function(attachments) {
+          return getDocAttachmentsFromTargetOrSource(target, src3, remoteDoc).then(function(attachments) {
             var filenames = Object.keys(remoteDoc._attachments);
             attachments.forEach(function(attachment, i3) {
               var att = remoteDoc._attachments[filenames[i3]];
@@ -8016,8 +8013,8 @@ function updateCheckpoint(db, id, checkpoint, session, returnValue) {
   });
 }
 var CheckpointerInternal = class {
-  constructor(src2, target, id, returnValue, opts) {
-    this.src = src2;
+  constructor(src3, target, id, returnValue, opts) {
+    this.src = src3;
     this.target = target;
     this.id = id;
     this.returnValue = returnValue;
@@ -8083,14 +8080,14 @@ var CheckpointerInternal = class {
         if (targetDoc.version !== sourceDoc.version) {
           return since;
         }
-        var version2;
+        var version3;
         if (targetDoc.version) {
-          version2 = targetDoc.version.toString();
+          version3 = targetDoc.version.toString();
         } else {
-          version2 = "undefined";
+          version3 = "undefined";
         }
-        if (version2 in comparisons) {
-          return comparisons[version2](targetDoc, sourceDoc, since);
+        if (version3 in comparisons) {
+          return comparisons[version3](targetDoc, sourceDoc, since);
         }
         return since;
       }, function(err) {
@@ -8179,25 +8176,25 @@ function hasSessionId(sessionId, history) {
 function isForbiddenError(err) {
   return typeof err.status === "number" && Math.floor(err.status / 100) === 4;
 }
-function Checkpointer(src2, target, id, returnValue, opts) {
+function Checkpointer(src3, target, id, returnValue, opts) {
   if (!(this instanceof CheckpointerInternal)) {
-    return new CheckpointerInternal(src2, target, id, returnValue, opts);
+    return new CheckpointerInternal(src3, target, id, returnValue, opts);
   }
   return Checkpointer;
 }
 var STARTING_BACK_OFF = 0;
-function backOff(opts, returnValue, error, callback) {
+function backOff(opts, returnValue, error3, callback) {
   if (opts.retry === false) {
-    returnValue.emit("error", error);
+    returnValue.emit("error", error3);
     returnValue.removeAllListeners();
     return;
   }
   if (typeof opts.back_off_function !== "function") {
     opts.back_off_function = defaultBackOff;
   }
-  returnValue.emit("requestError", error);
+  returnValue.emit("requestError", error3);
   if (returnValue.state === "active" || returnValue.state === "pending") {
-    returnValue.emit("paused", error);
+    returnValue.emit("paused", error3);
     returnValue.state = "stopped";
     var backOffSet = function backoffTimeSet() {
       opts.current_back_off = STARTING_BACK_OFF;
@@ -8213,12 +8210,12 @@ function backOff(opts, returnValue, error, callback) {
   setTimeout(callback, opts.current_back_off);
 }
 function sortObjectPropertiesByKey(queryParams) {
-  return Object.keys(queryParams).sort(collate).reduce(function(result2, key) {
-    result2[key] = queryParams[key];
-    return result2;
+  return Object.keys(queryParams).sort(collate).reduce(function(result4, key) {
+    result4[key] = queryParams[key];
+    return result4;
   }, {});
 }
-function generateReplicationId(src2, target, opts) {
+function generateReplicationId(src3, target, opts) {
   var docIds = opts.doc_ids ? opts.doc_ids.sort(collate) : "";
   var filterFun = opts.filter ? opts.filter.toString() : "";
   var queryParams = "";
@@ -8233,7 +8230,7 @@ function generateReplicationId(src2, target, opts) {
   if (opts.filter && opts.filter === "_view") {
     filterViewName = opts.view.toString();
   }
-  return Promise.all([src2.id(), target.id()]).then(function(res) {
+  return Promise.all([src3.id(), target.id()]).then(function(res) {
     var queryData = res[0] + res[1] + filterFun + filterViewName + queryParams + docIds + selector;
     return new Promise(function(resolve) {
       binaryMd5(queryData, resolve);
@@ -8243,7 +8240,7 @@ function generateReplicationId(src2, target, opts) {
     return "_local/" + md5sum;
   });
 }
-function replicate(src2, target, opts, returnValue, result2) {
+function replicate(src3, target, opts, returnValue, result4) {
   var batches = [];
   var currentBatch;
   var pendingBatch = {
@@ -8268,7 +8265,7 @@ function replicate(src2, target, opts, returnValue, result2) {
   var changedDocs = [];
   var session = uuid();
   var taskId;
-  result2 = result2 || {
+  result4 = result4 || {
     ok: true,
     start_time: (/* @__PURE__ */ new Date()).toISOString(),
     docs_read: 0,
@@ -8277,12 +8274,12 @@ function replicate(src2, target, opts, returnValue, result2) {
     errors: []
   };
   var changesOpts = {};
-  returnValue.ready(src2, target);
+  returnValue.ready(src3, target);
   function initCheckpointer() {
     if (checkpointer) {
       return Promise.resolve();
     }
-    return generateReplicationId(src2, target, opts).then(function(res) {
+    return generateReplicationId(src3, target, opts).then(function(res) {
       returnValue.replicationId = repId = res;
       var checkpointOpts = {};
       if (opts.checkpoint === false) {
@@ -8294,7 +8291,7 @@ function replicate(src2, target, opts, returnValue, result2) {
       } else {
         checkpointOpts = { writeSourceCheckpoint: true, writeTargetCheckpoint: true, since: opts.since };
       }
-      checkpointer = new Checkpointer(src2, target, repId, returnValue, checkpointOpts);
+      checkpointer = new Checkpointer(src3, target, repId, returnValue, checkpointOpts);
     });
   }
   function writeDocs() {
@@ -8316,24 +8313,24 @@ function replicate(src2, target, opts, returnValue, result2) {
         }
       });
       var errorsNo = Object.keys(errorsById).length;
-      result2.doc_write_failures += errorsNo;
-      result2.docs_written += docs.length - errorsNo;
+      result4.doc_write_failures += errorsNo;
+      result4.docs_written += docs.length - errorsNo;
       docs.forEach(function(doc) {
-        var error = errorsById[doc._id];
-        if (error) {
-          result2.errors.push(error);
-          var errorName = (error.name || "").toLowerCase();
+        var error3 = errorsById[doc._id];
+        if (error3) {
+          result4.errors.push(error3);
+          var errorName = (error3.name || "").toLowerCase();
           if (errorName === "unauthorized" || errorName === "forbidden") {
-            returnValue.emit("denied", clone(error));
+            returnValue.emit("denied", clone(error3));
           } else {
-            throw error;
+            throw error3;
           }
         } else {
           changedDocs.push(doc);
         }
       });
     }, function(err) {
-      result2.doc_write_failures += docs.length;
+      result4.doc_write_failures += docs.length;
       throw err;
     });
   }
@@ -8341,8 +8338,8 @@ function replicate(src2, target, opts, returnValue, result2) {
     if (currentBatch.error) {
       throw new Error("There was a problem getting docs.");
     }
-    result2.last_seq = last_seq = currentBatch.seq;
-    var outResult = clone(result2);
+    result4.last_seq = last_seq = currentBatch.seq;
+    var outResult = clone(result4);
     if (changedDocs.length) {
       outResult.docs = changedDocs;
       if (typeof currentBatch.pending === "number") {
@@ -8352,19 +8349,19 @@ function replicate(src2, target, opts, returnValue, result2) {
       returnValue.emit("change", outResult);
     }
     writingCheckpoint = true;
-    var task = src2.activeTasks.get(taskId);
+    var task = src3.activeTasks.get(taskId);
     if (!currentBatch || !task) {
       return;
     }
     var completed = task.completed_items || 0;
     let total_items;
     if (typeof initial_last_seq === "number") {
-      const info2 = await src2.info();
+      const info2 = await src3.info();
       if (typeof info2.update_seq === "number") {
         total_items = info2.update_seq - initial_last_seq;
       }
     }
-    src2.activeTasks.update(taskId, {
+    src3.activeTasks.update(taskId, {
       completed_items: completed + currentBatch.changes.length,
       total_items
     });
@@ -8402,11 +8399,11 @@ function replicate(src2, target, opts, returnValue, result2) {
     });
   }
   function getBatchDocs() {
-    return getDocs(src2, target, currentBatch.diffs, returnValue).then(function(got) {
+    return getDocs(src3, target, currentBatch.diffs, returnValue).then(function(got) {
       currentBatch.error = !got.ok;
       got.docs.forEach(function(doc) {
         delete currentBatch.diffs[doc._id];
-        result2.docs_read++;
+        result4.docs_read++;
         currentBatch.docs.push(doc);
       });
     });
@@ -8459,8 +8456,8 @@ function replicate(src2, target, opts, returnValue, result2) {
     if (!err.message) {
       err.message = reason;
     }
-    result2.ok = false;
-    result2.status = "aborting";
+    result4.ok = false;
+    result4.status = "aborting";
     batches = [];
     pendingBatch = {
       seq: 0,
@@ -8474,30 +8471,30 @@ function replicate(src2, target, opts, returnValue, result2) {
       return;
     }
     if (returnValue.cancelled) {
-      result2.status = "cancelled";
+      result4.status = "cancelled";
       if (writingCheckpoint) {
         return;
       }
     }
-    result2.status = result2.status || "complete";
-    result2.end_time = (/* @__PURE__ */ new Date()).toISOString();
-    result2.last_seq = last_seq;
+    result4.status = result4.status || "complete";
+    result4.end_time = (/* @__PURE__ */ new Date()).toISOString();
+    result4.last_seq = last_seq;
     replicationCompleted = true;
-    src2.activeTasks.remove(taskId, fatalError);
+    src3.activeTasks.remove(taskId, fatalError);
     if (fatalError) {
       fatalError = createError(fatalError);
-      fatalError.result = result2;
+      fatalError.result = result4;
       var errorName = (fatalError.name || "").toLowerCase();
       if (errorName === "unauthorized" || errorName === "forbidden") {
         returnValue.emit("error", fatalError);
         returnValue.removeAllListeners();
       } else {
         backOff(opts, returnValue, fatalError, function() {
-          replicate(src2, target, opts, returnValue);
+          replicate(src3, target, opts, returnValue);
         });
       }
     } else {
-      returnValue.emit("complete", result2);
+      returnValue.emit("complete", result4);
       returnValue.removeAllListeners();
     }
   }
@@ -8510,10 +8507,10 @@ function replicate(src2, target, opts, returnValue, result2) {
     }
     var filter3 = filterChange(opts)(change);
     if (!filter3) {
-      var task = src2.activeTasks.get(taskId);
+      var task = src3.activeTasks.get(taskId);
       if (task) {
         var completed = task.completed_items || 0;
-        src2.activeTasks.update(taskId, { completed_items: ++completed });
+        src3.activeTasks.update(taskId, { completed_items: ++completed });
       }
       return;
     }
@@ -8552,7 +8549,7 @@ function replicate(src2, target, opts, returnValue, result2) {
         writingCheckpoint = true;
         checkpointer.writeCheckpoint(changes3.last_seq, session).then(() => {
           writingCheckpoint = false;
-          result2.last_seq = last_seq = changes3.last_seq;
+          result4.last_seq = last_seq = changes3.last_seq;
           complete();
         }).catch(onCheckpointError);
       } else {
@@ -8583,7 +8580,7 @@ function replicate(src2, target, opts, returnValue, result2) {
       returnValue._changes.cancel();
     }
     returnValue.once("cancel", abortChanges);
-    var changes3 = src2.changes(changesOpts).on("change", onChange);
+    var changes3 = src3.changes(changesOpts).on("change", onChange);
     changes3.then(removeListener2, removeListener2);
     changes3.then(onChangesComplete).catch(onChangesError);
     if (opts.retry) {
@@ -8592,12 +8589,12 @@ function replicate(src2, target, opts, returnValue, result2) {
     }
   }
   async function createTask(checkpoint) {
-    const info2 = await src2.info();
+    const info2 = await src3.info();
     let total_items;
     if (typeof info2.update_seq === "number") {
       total_items = typeof opts.since === "undefined" ? info2.update_seq - checkpoint : info2.update_seq;
     }
-    taskId = src2.activeTasks.add({
+    taskId = src3.activeTasks.add({
       name: `${continuous ? "continuous " : ""}replication from ${info2.db_name}`,
       total_items
     });
@@ -8663,8 +8660,8 @@ function replicate(src2, target, opts, returnValue, result2) {
     returnValue.once("cancel", completeReplication);
     if (typeof opts.complete === "function") {
       returnValue.once("error", opts.complete);
-      returnValue.once("complete", function(result3) {
-        opts.complete(null, result3);
+      returnValue.once("complete", function(result5) {
+        opts.complete(null, result5);
       });
     }
     returnValue._addedListeners = true;
@@ -8694,7 +8691,7 @@ var Replication = class extends EE {
     this.state = "cancelled";
     this.emit("cancel");
   }
-  ready(src2, target) {
+  ready(src3, target) {
     if (this._readyCalled) {
       return;
     }
@@ -8702,10 +8699,10 @@ var Replication = class extends EE {
     const onDestroy = () => {
       this.cancel();
     };
-    src2.once("destroyed", onDestroy);
+    src3.once("destroyed", onDestroy);
     target.once("destroyed", onDestroy);
     function cleanup() {
-      src2.removeListener("destroyed", onDestroy);
+      src3.removeListener("destroyed", onDestroy);
       target.removeListener("destroyed", onDestroy);
     }
     this.once("complete", cleanup);
@@ -8720,7 +8717,7 @@ function toPouch(db, opts) {
     return db;
   }
 }
-function replicateWrapper(src2, target, opts, callback) {
+function replicateWrapper(src3, target, opts, callback) {
   if (typeof opts === "function") {
     callback = opts;
     opts = {};
@@ -8740,12 +8737,12 @@ function replicateWrapper(src2, target, opts, callback) {
   opts.retry = "retry" in opts ? opts.retry : false;
   opts.PouchConstructor = opts.PouchConstructor || this;
   var replicateRet = new Replication(opts);
-  var srcPouch = toPouch(src2, opts);
+  var srcPouch = toPouch(src3, opts);
   var targetPouch = toPouch(target, opts);
   replicate(srcPouch, targetPouch, opts, replicateRet);
   return replicateRet;
 }
-function sync(src2, target, opts, callback) {
+function sync(src3, target, opts, callback) {
   if (typeof opts === "function") {
     callback = opts;
     opts = {};
@@ -8755,18 +8752,18 @@ function sync(src2, target, opts, callback) {
   }
   opts = clone(opts);
   opts.PouchConstructor = opts.PouchConstructor || this;
-  src2 = toPouch(src2, opts);
+  src3 = toPouch(src3, opts);
   target = toPouch(target, opts);
-  return new Sync(src2, target, opts, callback);
+  return new Sync(src3, target, opts, callback);
 }
 var Sync = class extends EE {
-  constructor(src2, target, opts, callback) {
+  constructor(src3, target, opts, callback) {
     super();
     this.canceled = false;
     const optsPush = opts.push ? $inject_Object_assign({}, opts, opts.push) : opts;
     const optsPull = opts.pull ? $inject_Object_assign({}, opts, opts.pull) : opts;
-    this.push = replicateWrapper(src2, target, optsPush);
-    this.pull = replicateWrapper(target, src2, optsPull);
+    this.push = replicateWrapper(src3, target, optsPush);
+    this.pull = replicateWrapper(target, src3, optsPull);
     this.pushPaused = true;
     this.pullPaused = true;
     const pullChange = (change) => {
@@ -8968,12 +8965,12 @@ async function make_pouch_default({
   serverDbName,
   clientDbSeeds,
   sessionId,
-  preload
+  preload: preload2
 }) {
   PouchDB.prefix = "_ayu_";
   const pouch = new PouchDB(clientDbName, { revs_limit: 200, auto_compaction: true, deterministic_revs: true });
   let couch;
-  let sync2;
+  let sync3;
   const checkpointCache = /* @__PURE__ */ new Map();
   const viewCache = /* @__PURE__ */ new Map();
   const pulledIds = /* @__PURE__ */ new Set();
@@ -9004,7 +9001,7 @@ async function make_pouch_default({
         const [_, idSuffix] = url.split("/_local/");
         if (idSuffix) {
           const checkpointDocId = "_local/" + decodeURIComponent(idSuffix);
-          if (checkpointDocId === sync2.pull.replicationId || checkpointDocId === sync2.push.replicationId) {
+          if (checkpointDocId === sync3.pull.replicationId || checkpointDocId === sync3.push.replicationId) {
             checkpointReqKey = checkpointDocId;
             if (opts.method === "GET" || !opts.method) {
               const maybeCached = checkpointCache.get(checkpointDocId);
@@ -9085,9 +9082,9 @@ async function make_pouch_default({
     };
     const [sessionDoc] = await pullDocs([sessionId], { includeDocs: true });
     if (!sessionDoc.replications) {
-      if (preload?.length > 0) {
-        console.log("preloading docs to new pouch...", preload);
-        await PouchDB.replicate(couch, pouch, { doc_ids: preload });
+      if (preload2?.length > 0) {
+        console.log("preloading docs to new pouch...", preload2);
+        await PouchDB.replicate(couch, pouch, { doc_ids: preload2 });
       }
       inited = new Promise((resolve) => {
         initResolver = resolve;
@@ -9096,7 +9093,7 @@ async function make_pouch_default({
     if (!sessionDoc.startSeq) {
       console.warn("missing session doc start seq, fallback to fullsync", sessionDoc);
     }
-    sync2 = PouchDB.sync(pouch, couch, {
+    sync3 = PouchDB.sync(pouch, couch, {
       live: true,
       sse: true,
       skipInitialBatch: true,
@@ -9164,32 +9161,32 @@ async function make_pouch_default({
     });
     let init = async () => {
       init = null;
-      if (sync2.pull.replicationId && sync2.push.replicationId) {
+      if (sync3.pull.replicationId && sync3.push.replicationId) {
         let updateReplications = false;
         if (sessionDoc.replications) {
-          if (sessionDoc.replications.pull !== sync2.pull.replicationId) {
-            console.error("pull replication id cahnged", sessionDoc, sync2.pull);
+          if (sessionDoc.replications.pull !== sync3.pull.replicationId) {
+            console.error("pull replication id cahnged", sessionDoc, sync3.pull);
             updateReplications = true;
           }
-          if (sessionDoc.replications.push !== sync2.push.replicationId) {
-            console.error("push replication id cahnged", sessionDoc, sync2.push);
+          if (sessionDoc.replications.push !== sync3.push.replicationId) {
+            console.error("push replication id cahnged", sessionDoc, sync3.push);
             updateReplications = true;
           }
         }
         if (!sessionDoc.replications || updateReplications) {
           sessionDoc.replications = {
-            pull: sync2.pull.replicationId,
-            push: sync2.push.replicationId
+            pull: sync3.pull.replicationId,
+            push: sync3.push.replicationId
           };
           await pouch.put(sessionDoc);
         }
       }
     };
-    sync2.pullDocs = pullDocs;
+    sync3.pullDocs = pullDocs;
   }
   function clear() {
     if (hasCouch) {
-      sync2.cancel();
+      sync3.cancel();
       couch.close();
       checkpointCache.clear();
     }
@@ -9198,15 +9195,436 @@ async function make_pouch_default({
   if (inited) {
     await inited;
   }
-  return { pouch, couch, sync: sync2, clear };
+  return { pouch, couch, sync: sync3, clear };
 }
+
+// app/build/deps/falcor-observable.js
+function getAugmentedNamespace2(n2) {
+  if (n2.__esModule)
+    return n2;
+  var f = n2.default;
+  if (typeof f == "function") {
+    var a3 = function a4() {
+      if (this instanceof a4) {
+        return Reflect.construct(f, arguments, this.constructor);
+      }
+      return f.apply(this, arguments);
+    };
+    a3.prototype = f.prototype;
+  } else
+    a3 = {};
+  Object.defineProperty(a3, "__esModule", { value: true });
+  Object.keys(n2).forEach(function(k) {
+    var d2 = Object.getOwnPropertyDescriptor(n2, k);
+    Object.defineProperty(a3, k, d2.get ? d2 : {
+      enumerable: true,
+      get: function() {
+        return n2[k];
+      }
+    });
+  });
+  return a3;
+}
+function symbolObservablePonyfill(root4) {
+  var result4;
+  var Symbol2 = root4.Symbol;
+  if (typeof Symbol2 === "function") {
+    if (Symbol2.observable) {
+      result4 = Symbol2.observable;
+    } else {
+      result4 = Symbol2("observable");
+      Symbol2.observable = result4;
+    }
+  } else {
+    result4 = "@@observable";
+  }
+  return result4;
+}
+var root;
+if (typeof self !== "undefined") {
+  root = self;
+} else if (typeof window !== "undefined") {
+  root = window;
+} else if (typeof global !== "undefined") {
+  root = global;
+} else if (typeof module !== "undefined") {
+  root = module;
+} else {
+  root = Function("return this")();
+}
+var result = symbolObservablePonyfill(root);
+var es = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  default: result
+});
+var require$$02 = /* @__PURE__ */ getAugmentedNamespace2(es);
+var symbolError$1 = Symbol("try-catch-error");
+var lastError = null;
+function popError$1() {
+  if (!lastError) {
+    throw new Error("popError may only be called once");
+  }
+  const { e: e2 } = lastError;
+  lastError = null;
+  return e2;
+}
+var tryCatch$1;
+var tryCatchResult$1;
+{
+  const throwError = (e2) => {
+    throw e2;
+  };
+  tryCatch$1 = function doTryCatch(f, ...args) {
+    try {
+      f.call(this, ...args);
+    } catch (e2) {
+      setTimeout(() => {
+        throwError(e2);
+      }, 0);
+    }
+  };
+  tryCatchResult$1 = function doTryCatchResult(f, ...args) {
+    try {
+      return f.call(this, ...args);
+    } catch (e2) {
+      lastError = { e: e2 };
+      return symbolError$1;
+    }
+  };
+}
+var tryCatch_1 = { tryCatch: tryCatch$1, tryCatchResult: tryCatchResult$1, symbolError: symbolError$1, popError: popError$1 };
+var symbolObservable = require$$02.default;
+var {
+  tryCatch,
+  tryCatchResult,
+  symbolError,
+  popError
+} = tryCatch_1;
+function callNext(observer, value) {
+  const { next } = observer;
+  if (typeof next === "function") {
+    next.call(observer, value);
+  }
+}
+function callError(observer, errorValue) {
+  const { error: error3 } = observer;
+  if (typeof error3 === "function") {
+    error3.call(observer, errorValue);
+  }
+}
+function callComplete(observer) {
+  const { complete } = observer;
+  if (typeof complete === "function") {
+    complete.call(observer);
+  }
+}
+function callStart(observer, subscription) {
+  const { start } = observer;
+  if (typeof start === "function") {
+    start.call(observer, subscription);
+  }
+}
+function callCleanup(subscription) {
+  const cleanup = subscription._cleanup;
+  if (typeof cleanup === "function") {
+    subscription._cleanup = void 0;
+    cleanup();
+  } else if (typeof cleanup === "object" && cleanup !== null) {
+    subscription._cleanup = void 0;
+    cleanup.unsubscribe();
+  }
+}
+var SubscriptionObserver = class {
+  constructor(subscription) {
+    this._subscription = subscription;
+  }
+  next(value) {
+    const subscription = this._subscription;
+    const observer = subscription._observer;
+    if (typeof observer === "undefined") {
+      return;
+    }
+    tryCatch(callNext, observer, value);
+  }
+  error(errorValue) {
+    const subscription = this._subscription;
+    const observer = subscription._observer;
+    if (typeof observer === "undefined") {
+      return;
+    }
+    subscription._observer = void 0;
+    tryCatch(callError, observer, errorValue);
+    tryCatch(callCleanup, subscription);
+  }
+  complete() {
+    const subscription = this._subscription;
+    const observer = subscription._observer;
+    if (typeof observer === "undefined") {
+      return;
+    }
+    subscription._observer = void 0;
+    tryCatch(callComplete, observer);
+    tryCatch(callCleanup, subscription);
+  }
+  get closed() {
+    return typeof this._subscription._observer === "undefined";
+  }
+  onNext(value) {
+    this.next(value);
+  }
+  onError(errorValue) {
+    this.error(errorValue);
+  }
+  onCompleted() {
+    this.complete();
+  }
+  get isStopped() {
+    return this.closed;
+  }
+};
+var Subscription$1 = class Subscription {
+  constructor(subscriber, observer) {
+    this._observer = observer;
+    tryCatch(callStart, observer, this);
+    if (typeof this._observer === "undefined") {
+      return;
+    }
+    const subscriptionObserver = new SubscriptionObserver(this);
+    const subscriberResult = tryCatchResult(subscriber, subscriptionObserver);
+    if (subscriberResult === symbolError) {
+      subscriptionObserver.error(popError());
+      return;
+    }
+    const cleanup = subscriberResult;
+    if (cleanup === null || typeof cleanup === "undefined") {
+      return;
+    }
+    if (typeof cleanup !== "function" && typeof cleanup !== "object") {
+      throw new TypeError(
+        "unexpected subscriber result type " + typeof cleanup
+      );
+    }
+    if (typeof cleanup === "object" && typeof cleanup.unsubscribe !== "function") {
+      throw new TypeError("expected unsubscribe property to be a function");
+    }
+    this._cleanup = cleanup;
+    if (typeof this._observer === "undefined") {
+      tryCatch(callCleanup, this);
+    }
+  }
+  unsubscribe() {
+    const observer = this._observer;
+    if (typeof observer === "undefined") {
+      return;
+    }
+    this._observer = void 0;
+    tryCatch(callCleanup, this);
+  }
+  get closed() {
+    return typeof this._observer === "undefined";
+  }
+  dispose() {
+    this.unsubscribe();
+  }
+  get isDisposed() {
+    return this.closed;
+  }
+};
+var EsObservable;
+var BaseObservable$1 = class BaseObservable {
+  constructor(subscriber) {
+    if (typeof subscriber !== "function") {
+      throw new TypeError("Function expected");
+    }
+    this._subscriber = subscriber;
+  }
+  // $FlowFixMe: No symbol or computed property support.
+  [symbolObservable]() {
+    return new EsObservable(this._subscriber);
+  }
+  // Flow doesn't support returning a differently parameterized this type so
+  // specify types on subclasses instead.
+  pipe(...operators) {
+    return this.constructor.from(
+      // $FlowFixMe: No symbol support.
+      operators.reduce((acc, curr) => curr(acc), this[symbolObservable]())
+    );
+  }
+  static of(...values) {
+    return new this((observer) => {
+      for (const value of values) {
+        observer.next(value);
+      }
+      observer.complete();
+    });
+  }
+  static from(input) {
+    if (typeof input === "undefined" || input === null) {
+      throw new TypeError();
+    }
+    if (typeof input === "object") {
+      const observableProp = (
+        // $FlowFixMe: No symbol support.
+        input[symbolObservable]
+      );
+      if (typeof observableProp === "function") {
+        const observable2 = observableProp.call(input);
+        if (typeof observable2 !== "object" || observable2 === null) {
+          throw new TypeError();
+        }
+        if (observable2.constructor === this) {
+          return observable2;
+        }
+        if (observable2 instanceof BaseObservable) {
+          return new this(observable2._subscriber);
+        }
+        return new this((observer) => observable2.subscribe(observer));
+      }
+      if (typeof input.subscribe === "function") {
+        const classic = input;
+        return new this((observer) => {
+          const disposable = classic.subscribe(observer);
+          return () => disposable.dispose();
+        });
+      }
+      if (typeof input.then === "function") {
+        const promiseLike = input;
+        return new this((observer) => {
+          promiseLike.then(
+            (value) => {
+              observer.next(value);
+              observer.complete();
+            },
+            (errorValue) => {
+              observer.error(errorValue);
+            }
+          );
+        });
+      }
+    }
+    if (typeof input[Symbol.iterator] === "function") {
+      return new this((observer) => {
+        for (const value of input) {
+          observer.next(value);
+        }
+        observer.complete();
+      });
+    }
+    throw new TypeError();
+  }
+  static fromClassicObservable(classic) {
+    return this.from(classic);
+  }
+  static empty() {
+    return new this((observer) => {
+      observer.complete();
+    });
+  }
+  static throw(errorValue) {
+    return new this((observer) => {
+      observer.error(errorValue);
+    });
+  }
+  static defer(factory) {
+    return new this((observer) => {
+      const result4 = factory();
+      const obs = this.from(result4);
+      return new Subscription$1(obs._subscriber, observer);
+    });
+  }
+};
+EsObservable = class EsObservable2 extends BaseObservable$1 {
+  subscribe(observerOrOnNext, onError4, onComplete) {
+    const observer = typeof observerOrOnNext === "object" && observerOrOnNext !== null ? observerOrOnNext : {
+      next: observerOrOnNext,
+      error: onError4,
+      complete: onComplete
+    };
+    return new Subscription$1(this._subscriber, observer);
+  }
+  // $FlowFixMe: No symbol or computed property support.
+  [symbolObservable]() {
+    return this;
+  }
+  // To pass ES Observable tests these static functions must work without this.
+  static of(...values) {
+    const C = typeof this === "function" ? this : EsObservable2;
+    return super.of.call(C, ...values);
+  }
+  static from(input) {
+    const C = typeof this === "function" ? this : EsObservable2;
+    return super.from.call(C, input);
+  }
+};
+var esObservable = {
+  BaseObservable: BaseObservable$1,
+  Observable: EsObservable,
+  Subscription: Subscription$1
+};
+var { BaseObservable: BaseObservable2, Subscription: Subscription2 } = esObservable;
+var EsFromClassicObserver = class {
+  constructor(observer) {
+    this._observer = observer;
+  }
+  next(value) {
+    const observer = this._observer;
+    const { onNext: onNext2 } = observer;
+    if (typeof onNext2 === "function") {
+      onNext2.call(observer, value);
+    }
+  }
+  error(errorValue) {
+    const observer = this._observer;
+    const { onError: onError4 } = observer;
+    if (typeof onError4 === "function") {
+      onError4.call(observer, errorValue);
+    }
+  }
+  complete() {
+    const observer = this._observer;
+    const { onCompleted: onCompleted2 } = observer;
+    if (typeof onCompleted2 === "function") {
+      onCompleted2.call(observer);
+    }
+  }
+};
+var ClassicObservable = class _ClassicObservable extends BaseObservable2 {
+  subscribe(observerOrOnNext, onError4, onCompleted2) {
+    const observer = typeof observerOrOnNext === "object" && observerOrOnNext !== null ? new EsFromClassicObserver(observerOrOnNext) : {
+      next: observerOrOnNext,
+      error: onError4,
+      complete: onCompleted2
+    };
+    return new Subscription2(this._subscriber, observer);
+  }
+  static create(subscriber) {
+    const C = typeof this === "function" ? this : _ClassicObservable;
+    if (typeof subscriber !== "function") {
+      throw new TypeError("Function expected");
+    }
+    return new C((observer) => {
+      const cleanup = subscriber(observer);
+      if (typeof cleanup !== "object" || cleanup === null) {
+        return cleanup;
+      }
+      if (typeof cleanup.dispose === "function") {
+        return () => {
+          cleanup.dispose();
+        };
+      }
+      return { unsubscribe: cleanup.dispose };
+    });
+  }
+};
+var classicObservable = { Observable: ClassicObservable };
+var Observable = classicObservable.Observable;
 
 // app/build/deps/falcor-router.js
 var commonjsGlobal2 = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 function getDefaultExportFromCjs2(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
 }
-function getAugmentedNamespace2(n2) {
+function getAugmentedNamespace3(n2) {
   if (n2.__esModule)
     return n2;
   var f = n2.default;
@@ -9272,34 +9690,34 @@ var isNumber$2 = function(x) {
 };
 var convertPathKeyTo$2 = convertPathKeyTo$3;
 var isNumber$1 = isNumber$2;
-function onRange$2(out, range3) {
-  out[out.length] = range3;
+function onRange$2(out, range5) {
+  out[out.length] = range5;
 }
-function keyReduce(out, key, range3) {
+function keyReduce(out, key, range5) {
   if (!isNumber$1(key)) {
-    return range3;
+    return range5;
   }
   key = +key;
-  if (range3) {
-    if (key - 1 === range3.to) {
-      range3.to = key;
-    } else if (key + 1 === range3.from) {
-      range3.from = key;
+  if (range5) {
+    if (key - 1 === range5.to) {
+      range5.to = key;
+    } else if (key + 1 === range5.from) {
+      range5.from = key;
     } else {
-      range3 = null;
+      range5 = null;
     }
   }
-  if (!range3) {
-    range3 = { to: key, from: key };
-    out[out.length] = range3;
+  if (!range5) {
+    range5 = { to: key, from: key };
+    out[out.length] = range5;
   }
-  return range3;
+  return range5;
 }
 var convertPathKeyToRange$1 = convertPathKeyTo$2(onRange$2, keyReduce);
-var rangeToArray$2 = function onRange(range3) {
+var rangeToArray$2 = function onRange(range5) {
   var out = [];
-  var i3 = range3.from;
-  var to = range3.to;
+  var i3 = range5.from;
+  var to = range5.to;
   var outIdx = out.length;
   for (; i3 <= to; ++i3, ++outIdx) {
     out[outIdx] = i3;
@@ -9309,9 +9727,9 @@ var rangeToArray$2 = function onRange(range3) {
 var convertPathKeyTo$1 = convertPathKeyTo$3;
 var isNumber = isNumber$2;
 var rangeToArray$1 = rangeToArray$2;
-function onRange$1(out, range3) {
+function onRange$1(out, range5) {
   var len2 = out.length - 1;
-  rangeToArray$1(range3).forEach(function(el) {
+  rangeToArray$1(range5).forEach(function(el) {
     out[++len2] = el;
   });
 }
@@ -9326,9 +9744,9 @@ var rangeToArray = rangeToArray$2;
 function onKey(out, key) {
   out[out.length] = key;
 }
-function onRange2(out, range3) {
+function onRange2(out, range5) {
   var len2 = out.length - 1;
-  rangeToArray(range3).forEach(function(el) {
+  rangeToArray(range5).forEach(function(el) {
     out[++len2] = el;
   });
 }
@@ -9577,18 +9995,18 @@ var exceptions$1 = {
   unexpectedToken: "Unexpected token.",
   invalidIdentifier: "Invalid Identifier.",
   invalidPath: "Please provide a valid path.",
-  throwError: function(err, tokenizer2, token) {
+  throwError: function(err, tokenizer3, token) {
     if (token) {
-      throw err + " -- " + tokenizer2.parseString + " with next token: " + token;
+      throw err + " -- " + tokenizer3.parseString + " with next token: " + token;
     }
-    throw err + " -- " + tokenizer2.parseString;
+    throw err + " -- " + tokenizer3.parseString;
   }
 };
 var Tokenizer$1 = tokenizerExports;
 var TokenTypes$4 = TokenTypes_1;
 var E$4 = exceptions$1;
-var range$1 = function range(tokenizer2, openingToken, state, out) {
-  var token = tokenizer2.peek();
+var range$1 = function range(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.peek();
   var dotCount = 1;
   var done = false;
   var inclusive = true;
@@ -9596,13 +10014,13 @@ var range$1 = function range(tokenizer2, openingToken, state, out) {
   var from2 = Tokenizer$1.toNumber(state.indexer[idx]);
   var to;
   if (isNaN(from2)) {
-    E$4.throwError(E$4.range.precedingNaN, tokenizer2);
+    E$4.throwError(E$4.range.precedingNaN, tokenizer3);
   }
   while (!done && !token.done) {
     switch (token.type) {
       case TokenTypes$4.dotSeparator:
         if (dotCount === 3) {
-          E$4.throwError(E$4.unexpectedToken, tokenizer2);
+          E$4.throwError(E$4.unexpectedToken, tokenizer3);
         }
         ++dotCount;
         if (dotCount === 3) {
@@ -9610,9 +10028,9 @@ var range$1 = function range(tokenizer2, openingToken, state, out) {
         }
         break;
       case TokenTypes$4.token:
-        to = Tokenizer$1.toNumber(tokenizer2.next().token);
+        to = Tokenizer$1.toNumber(tokenizer3.next().token);
         if (isNaN(to)) {
-          E$4.throwError(E$4.range.suceedingNaN, tokenizer2);
+          E$4.throwError(E$4.range.suceedingNaN, tokenizer3);
         }
         done = true;
         break;
@@ -9621,8 +10039,8 @@ var range$1 = function range(tokenizer2, openingToken, state, out) {
         break;
     }
     if (!done) {
-      tokenizer2.next();
-      token = tokenizer2.peek();
+      tokenizer3.next();
+      token = tokenizer3.peek();
     } else {
       break;
     }
@@ -9632,8 +10050,8 @@ var range$1 = function range(tokenizer2, openingToken, state, out) {
 var TokenTypes$3 = TokenTypes_1;
 var E$3 = exceptions$1;
 var quoteE = E$3.quote;
-var quote$1 = function quote(tokenizer2, openingToken, state, out) {
-  var token = tokenizer2.next();
+var quote$1 = function quote(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.next();
   var innerToken = "";
   var openingQuote = openingToken.token;
   var escaping = false;
@@ -9649,7 +10067,7 @@ var quote$1 = function quote(tokenizer2, openingToken, state, out) {
       case TokenTypes$3.openingBrace:
       case TokenTypes$3.closingBrace:
         if (escaping) {
-          E$3.throwError(quoteE.illegalEscape, tokenizer2);
+          E$3.throwError(quoteE.illegalEscape, tokenizer3);
         }
         innerToken += token.token;
         break;
@@ -9667,15 +10085,15 @@ var quote$1 = function quote(tokenizer2, openingToken, state, out) {
         escaping = true;
         break;
       default:
-        E$3.throwError(E$3.unexpectedToken, tokenizer2);
+        E$3.throwError(E$3.unexpectedToken, tokenizer3);
     }
     if (done) {
       break;
     }
-    token = tokenizer2.next();
+    token = tokenizer3.next();
   }
   if (innerToken.length === 0) {
-    E$3.throwError(quoteE.empty, tokenizer2);
+    E$3.throwError(quoteE.empty, tokenizer3);
   }
   state.indexer[state.indexer.length] = innerToken;
 };
@@ -9688,8 +10106,8 @@ var TokenTypes$2 = TokenTypes_1;
 var RoutedTokens$1 = RoutedTokens$2;
 var E$2 = exceptions$1;
 var routedE = E$2.routed;
-var routed$1 = function routed(tokenizer2, openingToken, state, out) {
-  var routeToken = tokenizer2.next();
+var routed$1 = function routed(tokenizer3, openingToken, state, out) {
+  var routeToken = tokenizer3.next();
   var named = false;
   var name = "";
   switch (routeToken.token) {
@@ -9698,18 +10116,18 @@ var routed$1 = function routed(tokenizer2, openingToken, state, out) {
     case RoutedTokens$1.keys:
       break;
     default:
-      E$2.throwError(routedE.invalid, tokenizer2);
+      E$2.throwError(routedE.invalid, tokenizer3);
       break;
   }
-  var next = tokenizer2.next();
+  var next = tokenizer3.next();
   if (next.type === TokenTypes$2.colon) {
     named = true;
-    next = tokenizer2.next();
+    next = tokenizer3.next();
     if (next.type !== TokenTypes$2.token) {
-      E$2.throwError(routedE.invalid, tokenizer2);
+      E$2.throwError(routedE.invalid, tokenizer3);
     }
     name = next.token;
-    next = tokenizer2.next();
+    next = tokenizer3.next();
   }
   if (next.type === TokenTypes$2.closingBrace) {
     var outputToken = {
@@ -9719,7 +10137,7 @@ var routed$1 = function routed(tokenizer2, openingToken, state, out) {
     };
     state.indexer[state.indexer.length] = outputToken;
   } else {
-    E$2.throwError(routedE.invalid, tokenizer2);
+    E$2.throwError(routedE.invalid, tokenizer3);
   }
 };
 var TokenTypes$1 = TokenTypes_1;
@@ -9728,8 +10146,8 @@ var idxE = E$1.indexer;
 var range2 = range$1;
 var quote2 = quote$1;
 var routed2 = routed$1;
-var indexer$1 = function indexer(tokenizer2, openingToken, state, out) {
-  var token = tokenizer2.next();
+var indexer$1 = function indexer(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.next();
   var done = false;
   var allowedMaxLength = 1;
   var routedIndexer = false;
@@ -9739,27 +10157,27 @@ var indexer$1 = function indexer(tokenizer2, openingToken, state, out) {
       case TokenTypes$1.token:
       case TokenTypes$1.quote:
         if (state.indexer.length === allowedMaxLength) {
-          E$1.throwError(idxE.requiresComma, tokenizer2);
+          E$1.throwError(idxE.requiresComma, tokenizer3);
         }
         break;
     }
     switch (token.type) {
       case TokenTypes$1.openingBrace:
         routedIndexer = true;
-        routed2(tokenizer2, token, state);
+        routed2(tokenizer3, token, state);
         break;
       case TokenTypes$1.token:
         var t2 = +token.token;
         if (isNaN(t2)) {
-          E$1.throwError(idxE.needQuotes, tokenizer2);
+          E$1.throwError(idxE.needQuotes, tokenizer3);
         }
         state.indexer[state.indexer.length] = t2;
         break;
       case TokenTypes$1.dotSeparator:
         if (!state.indexer.length) {
-          E$1.throwError(idxE.leadingDot, tokenizer2);
+          E$1.throwError(idxE.leadingDot, tokenizer3);
         }
-        range2(tokenizer2, token, state);
+        range2(tokenizer3, token, state);
         break;
       case TokenTypes$1.space:
         break;
@@ -9767,28 +10185,28 @@ var indexer$1 = function indexer(tokenizer2, openingToken, state, out) {
         done = true;
         break;
       case TokenTypes$1.quote:
-        quote2(tokenizer2, token, state);
+        quote2(tokenizer3, token, state);
         break;
       case TokenTypes$1.openingBracket:
-        E$1.throwError(idxE.nested, tokenizer2);
+        E$1.throwError(idxE.nested, tokenizer3);
         break;
       case TokenTypes$1.commaSeparator:
         ++allowedMaxLength;
         break;
       default:
-        E$1.throwError(E$1.unexpectedToken, tokenizer2);
+        E$1.throwError(E$1.unexpectedToken, tokenizer3);
         break;
     }
     if (done) {
       break;
     }
-    token = tokenizer2.next();
+    token = tokenizer3.next();
   }
   if (state.indexer.length === 0) {
-    E$1.throwError(idxE.empty, tokenizer2);
+    E$1.throwError(idxE.empty, tokenizer3);
   }
   if (state.indexer.length > 1 && routedIndexer) {
-    E$1.throwError(idxE.routedTokens, tokenizer2);
+    E$1.throwError(idxE.routedTokens, tokenizer3);
   }
   if (state.indexer.length === 1) {
     state.indexer = state.indexer[0];
@@ -9799,8 +10217,8 @@ var indexer$1 = function indexer(tokenizer2, openingToken, state, out) {
 var TokenTypes = TokenTypes_1;
 var E = exceptions$1;
 var indexer2 = indexer$1;
-var head$1 = function head(tokenizer2) {
-  var token = tokenizer2.next();
+var head$1 = function head(tokenizer3) {
+  var token = tokenizer3.next();
   var state = {};
   var out = [];
   while (!token.done) {
@@ -9808,28 +10226,28 @@ var head$1 = function head(tokenizer2) {
       case TokenTypes.token:
         var first = +token.token[0];
         if (!isNaN(first)) {
-          E.throwError(E.invalidIdentifier, tokenizer2);
+          E.throwError(E.invalidIdentifier, tokenizer3);
         }
         out[out.length] = token.token;
         break;
       case TokenTypes.dotSeparator:
         if (out.length === 0) {
-          E.throwError(E.unexpectedToken, tokenizer2);
+          E.throwError(E.unexpectedToken, tokenizer3);
         }
         break;
       case TokenTypes.space:
         break;
       case TokenTypes.openingBracket:
-        indexer2(tokenizer2, token, state, out);
+        indexer2(tokenizer3, token, state, out);
         break;
       default:
-        E.throwError(E.unexpectedToken, tokenizer2);
+        E.throwError(E.unexpectedToken, tokenizer3);
         break;
     }
-    token = tokenizer2.next();
+    token = tokenizer3.next();
   }
   if (out.length === 0) {
-    E.throwError(E.invalidPath, tokenizer2);
+    E.throwError(E.invalidPath, tokenizer3);
   }
   return out;
 };
@@ -9965,17 +10383,17 @@ var parseTree$1 = function parseTree(routes) {
 };
 function buildParseTree(node, routeObject, depth) {
   var route = routeObject.route;
-  var get3 = routeObject.get;
-  var set2 = routeObject.set;
-  var call2 = routeObject.call;
+  var get7 = routeObject.get;
+  var set5 = routeObject.set;
+  var call4 = routeObject.call;
   var el = route[depth];
   el = !isNaN(+el) && +el || el;
-  var isArray3 = Array.isArray(el);
+  var isArray4 = Array.isArray(el);
   var i3 = 0;
   do {
     var value = el;
     var next;
-    if (isArray3) {
+    if (isArray4) {
       value = value[i3];
     }
     if (typeof value === "object") {
@@ -9998,41 +10416,41 @@ function buildParseTree(node, routeObject, depth) {
         next[Keys$2.match] = matchObject;
       }
       matchObject.prettyRoute = routeObject.prettyRoute;
-      if (get3) {
-        matchObject.get = actionWrapper(route, get3);
+      if (get7) {
+        matchObject.get = actionWrapper(route, get7);
         matchObject.getId = routeObject.getId;
       }
-      if (set2) {
-        matchObject.set = actionWrapper(route, set2);
+      if (set5) {
+        matchObject.set = actionWrapper(route, set5);
         matchObject.setId = routeObject.setId;
       }
-      if (call2) {
-        matchObject.call = actionWrapper(route, call2);
+      if (call4) {
+        matchObject.call = actionWrapper(route, call4);
         matchObject.callId = routeObject.callId;
       }
     } else {
       buildParseTree(next, routeObject, depth + 1);
     }
-  } while (isArray3 && ++i3 < el.length);
+  } while (isArray4 && ++i3 < el.length);
 }
 function setHashOrThrowError(parseMap, routeObject) {
   var route = routeObject.route;
-  var get3 = routeObject.get;
-  var set2 = routeObject.set;
-  var call2 = routeObject.call;
+  var get7 = routeObject.get;
+  var set5 = routeObject.set;
+  var call4 = routeObject.call;
   getHashesFromRoute(route).map(function mapHashToString(hash) {
     return hash.join(",");
   }).forEach(function forEachRouteHash(hash) {
-    if (get3 && parseMap[hash + "get"] || set2 && parseMap[hash + "set"] || call2 && parseMap[hash + "call"]) {
+    if (get7 && parseMap[hash + "get"] || set5 && parseMap[hash + "set"] || call4 && parseMap[hash + "call"]) {
       throw new Error(errors$1.routeWithSamePrecedence + " " + prettifyRoute2(route));
     }
-    if (get3) {
+    if (get7) {
       parseMap[hash + "get"] = true;
     }
-    if (set2) {
+    if (set5) {
       parseMap[hash + "set"] = true;
     }
-    if (call2) {
+    if (call4) {
       parseMap[hash + "call"] = true;
     }
   });
@@ -10060,17 +10478,17 @@ function getHashesFromRoute(route, depth, hashes, hash) {
   hashes = hashes || [];
   hash = hash || [];
   var routeValue = route[depth];
-  var isArray3 = Array.isArray(routeValue);
-  var length = isArray3 && routeValue.length || 0;
+  var isArray4 = Array.isArray(routeValue);
+  var length = isArray4 && routeValue.length || 0;
   var idx = 0;
   var value;
-  if (typeof routeValue === "object" && !isArray3) {
+  if (typeof routeValue === "object" && !isArray4) {
     value = routeValue.type;
-  } else if (!isArray3) {
+  } else if (!isArray4) {
     value = routeValue;
   }
   do {
-    if (isArray3) {
+    if (isArray4) {
       value = routeValue[idx];
     }
     if (value === Keys$2.integers || value === Keys$2.ranges) {
@@ -10085,7 +10503,7 @@ function getHashesFromRoute(route, depth, hashes, hash) {
     } else {
       hashes.push(cloneArray$1(hash));
     }
-  } while (isArray3 && ++idx < length);
+  } while (isArray4 && ++idx < length);
   return hashes;
 }
 var Precedence$1 = {
@@ -10101,10 +10519,10 @@ function requireIterateKeySet() {
   if (hasRequiredIterateKeySet)
     return iterateKeySet$1;
   hasRequiredIterateKeySet = 1;
-  var isArray3 = Array.isArray;
-  iterateKeySet$1 = function iterateKeySet2(keySet, note) {
+  var isArray4 = Array.isArray;
+  iterateKeySet$1 = function iterateKeySet4(keySet, note) {
     if (note.isArray === void 0) {
-      initializeNote(keySet, note);
+      initializeNote2(keySet, note);
     }
     if (note.isArray) {
       var nextValue;
@@ -10122,7 +10540,7 @@ function requireIterateKeySet() {
         var type = typeof el;
         if (type === "object") {
           if (!note.loaded) {
-            initializeRange(el, note);
+            initializeRange2(el, note);
           }
           if (note.empty) {
             continue;
@@ -10136,7 +10554,7 @@ function requireIterateKeySet() {
       return nextValue;
     } else if (note.isObject) {
       if (!note.loaded) {
-        initializeRange(keySet, note);
+        initializeRange2(keySet, note);
       }
       if (note.rangeOffset > note.to) {
         note.done = true;
@@ -10148,7 +10566,7 @@ function requireIterateKeySet() {
       return keySet;
     }
   };
-  function initializeRange(key, memo) {
+  function initializeRange2(key, memo) {
     var from2 = memo.from = key.from || 0;
     var to = memo.to = key.to || (typeof key.length === "number" && memo.from + key.length - 1 || 0);
     memo.rangeOffset = memo.from;
@@ -10157,10 +10575,10 @@ function requireIterateKeySet() {
       memo.empty = true;
     }
   }
-  function initializeNote(key, note) {
+  function initializeNote2(key, note) {
     note.done = false;
-    var isObject2 = note.isObject = !!(key && typeof key === "object");
-    note.isArray = isObject2 && isArray3(key);
+    var isObject4 = note.isObject = !!(key && typeof key === "object");
+    note.isArray = isObject4 && isArray4(key);
     note.arrayOffset = 0;
   }
   return iterateKeySet$1;
@@ -10171,19 +10589,19 @@ function requireToTree() {
   if (hasRequiredToTree)
     return toTree;
   hasRequiredToTree = 1;
-  var iterateKeySet2 = requireIterateKeySet();
-  toTree = function toTree2(paths) {
+  var iterateKeySet4 = requireIterateKeySet();
+  toTree = function toTree4(paths) {
     return paths.reduce(function(acc, path) {
-      innerToTree(acc, path, 0);
+      innerToTree2(acc, path, 0);
       return acc;
     }, {});
   };
-  function innerToTree(seed, path, depth) {
+  function innerToTree2(seed, path, depth) {
     var keySet = path[depth];
     var iteratorNote = {};
     var key;
     var nextDepth = depth + 1;
-    key = iterateKeySet2(keySet, iteratorNote);
+    key = iterateKeySet4(keySet, iteratorNote);
     do {
       var next = seed[key];
       if (!next) {
@@ -10194,10 +10612,10 @@ function requireToTree() {
         }
       }
       if (nextDepth < path.length) {
-        innerToTree(next, path, nextDepth);
+        innerToTree2(next, path, nextDepth);
       }
       if (!iteratorNote.done) {
-        key = iterateKeySet2(keySet, iteratorNote);
+        key = iterateKeySet4(keySet, iteratorNote);
       }
     } while (!iteratorNote.done);
   }
@@ -10209,8 +10627,8 @@ function requireHasIntersection$1() {
   if (hasRequiredHasIntersection$1)
     return hasIntersection$1;
   hasRequiredHasIntersection$1 = 1;
-  var iterateKeySet2 = requireIterateKeySet();
-  hasIntersection$1 = function hasIntersection2(tree, path, depth) {
+  var iterateKeySet4 = requireIterateKeySet();
+  hasIntersection$1 = function hasIntersection4(tree, path, depth) {
     var current = tree;
     var intersects = true;
     for (; intersects && depth < path.length; ++depth) {
@@ -10218,15 +10636,15 @@ function requireHasIntersection$1() {
       var keyType = typeof key;
       if (key && keyType === "object") {
         var note = {};
-        var innerKey = iterateKeySet2(key, note);
+        var innerKey = iterateKeySet4(key, note);
         var nextDepth = depth + 1;
         do {
           var next = current[innerKey];
           intersects = next !== void 0;
           if (intersects) {
-            intersects = hasIntersection2(next, path, nextDepth);
+            intersects = hasIntersection4(next, path, nextDepth);
           }
-          innerKey = iterateKeySet2(key, note);
+          innerKey = iterateKeySet4(key, note);
         } while (intersects && !note.done);
         break;
       }
@@ -10243,12 +10661,12 @@ function requirePathsComplementFromTree() {
   if (hasRequiredPathsComplementFromTree)
     return pathsComplementFromTree;
   hasRequiredPathsComplementFromTree = 1;
-  var hasIntersection2 = requireHasIntersection$1();
-  pathsComplementFromTree = function pathsComplementFromTree2(paths, tree) {
+  var hasIntersection4 = requireHasIntersection$1();
+  pathsComplementFromTree = function pathsComplementFromTree4(paths, tree) {
     var out = [];
     var outLength = -1;
     for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
-      if (!hasIntersection2(tree, paths[i3], 0)) {
+      if (!hasIntersection4(tree, paths[i3], 0)) {
         out[++outLength] = paths[i3];
       }
     }
@@ -10262,13 +10680,13 @@ function requirePathsComplementFromLengthTree() {
   if (hasRequiredPathsComplementFromLengthTree)
     return pathsComplementFromLengthTree;
   hasRequiredPathsComplementFromLengthTree = 1;
-  var hasIntersection2 = requireHasIntersection$1();
-  pathsComplementFromLengthTree = function pathsComplementFromLengthTree2(paths, tree) {
+  var hasIntersection4 = requireHasIntersection$1();
+  pathsComplementFromLengthTree = function pathsComplementFromLengthTree4(paths, tree) {
     var out = [];
     var outLength = -1;
     for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
       var path = paths[i3];
-      if (!hasIntersection2(tree[path.length], path, 0)) {
+      if (!hasIntersection4(tree[path.length], path, 0)) {
         out[++outLength] = path;
       }
     }
@@ -10282,37 +10700,37 @@ function requireToPaths() {
   if (hasRequiredToPaths)
     return toPaths.exports;
   hasRequiredToPaths = 1;
-  var isArray3 = Array.isArray;
-  var typeOfObject = "object";
+  var isArray4 = Array.isArray;
+  var typeOfObject2 = "object";
   var typeOfString = "string";
-  var typeOfNumber = "number";
-  var MAX_SAFE_INTEGER = 9007199254740991;
+  var typeOfNumber2 = "number";
+  var MAX_SAFE_INTEGER2 = 9007199254740991;
   var MAX_SAFE_INTEGER_DIGITS = 16;
   var MIN_SAFE_INTEGER_DIGITS = 17;
-  var abs = Math.abs;
+  var abs2 = Math.abs;
   var safeNumberRegEx = /^(0|(\-?[1-9][0-9]*))$/;
-  toPaths.exports = function toPaths2(lengths) {
+  toPaths.exports = function toPaths4(lengths) {
     var pathmap;
     var allPaths = [];
     var allPathsLength = 0;
     for (var length in lengths) {
-      if (isSafeNumber(length) && isObject2(pathmap = lengths[length])) {
-        var paths = collapsePathMap(pathmap, 0, parseInt(length, 10)).sets;
+      if (isSafeNumber(length) && isObject4(pathmap = lengths[length])) {
+        var paths = collapsePathMap2(pathmap, 0, parseInt(length, 10)).sets;
         var pathsIndex = -1;
         var pathsCount = paths.length;
         while (++pathsIndex < pathsCount) {
-          allPaths[allPathsLength++] = collapsePathSetIndexes(paths[pathsIndex]);
+          allPaths[allPathsLength++] = collapsePathSetIndexes2(paths[pathsIndex]);
         }
       }
     }
     return allPaths;
   };
-  function isObject2(value) {
-    return value !== null && typeof value === typeOfObject;
+  function isObject4(value) {
+    return value !== null && typeof value === typeOfObject2;
   }
-  function collapsePathMap(pathmap, depth, length) {
+  function collapsePathMap2(pathmap, depth, length) {
     var key;
-    var code = getHashCode(String(depth));
+    var code = getHashCode2(String(depth));
     var subs = /* @__PURE__ */ Object.create(null);
     var codes = [];
     var codesIndex = -1;
@@ -10326,7 +10744,7 @@ function requireToPaths() {
       subKeysCount = getSortedKeys(pathmap, subKeys);
       while (++subKeysIndex < subKeysCount) {
         key = subKeys[subKeysIndex];
-        subPath = collapsePathMap(pathmap[key], depth + 1, length);
+        subPath = collapsePathMap2(pathmap[key], depth + 1, length);
         subCode = subPath.code;
         if (subs[subCode]) {
           subPath = subs[subCode];
@@ -10337,7 +10755,7 @@ function requireToPaths() {
             sets: subPath.sets
           };
         }
-        code = getHashCode(code + key + subCode);
+        code = getHashCode2(code + key + subCode);
         isSafeNumber(key) && subPath.keys.push(parseInt(key, 10)) || subPath.keys.push(key);
       }
       while (++codesIndex < codesCount) {
@@ -10371,7 +10789,7 @@ function requireToPaths() {
         pathsets[pathsetsCount++] = subKeys;
       }
       while (++subKeysIndex < subKeysCount) {
-        code = getHashCode(code + subKeys[subKeysIndex]);
+        code = getHashCode2(code + subKeys[subKeysIndex]);
       }
     }
     return {
@@ -10379,18 +10797,18 @@ function requireToPaths() {
       sets: pathsets
     };
   }
-  function collapsePathSetIndexes(pathset) {
+  function collapsePathSetIndexes2(pathset) {
     var keysetIndex = -1;
     var keysetCount = pathset.length;
     while (++keysetIndex < keysetCount) {
       var keyset = pathset[keysetIndex];
-      if (isArray3(keyset)) {
-        pathset[keysetIndex] = collapseIndex(keyset);
+      if (isArray4(keyset)) {
+        pathset[keysetIndex] = collapseIndex2(keyset);
       }
     }
     return pathset;
   }
-  function collapseIndex(keyset) {
+  function collapseIndex2(keyset) {
     var keyIndex = -1;
     var keyCount = keyset.length - 1;
     var isSparseRange = keyCount > 0;
@@ -10403,7 +10821,7 @@ function requireToPaths() {
       keyset[keyIndex] = parseInt(key, 10);
     }
     if (isSparseRange === true) {
-      keyset.sort(sortListAscending);
+      keyset.sort(sortListAscending2);
       var from2 = keyset[0];
       var to = keyset[keyCount];
       if (to - from2 <= keyCount) {
@@ -10415,7 +10833,7 @@ function requireToPaths() {
     }
     return keyset;
   }
-  function sortListAscending(a3, b) {
+  function sortListAscending2(a3, b) {
     return a3 - b;
   }
   function getSortedKeys(map2, keys2, sort) {
@@ -10428,7 +10846,7 @@ function requireToPaths() {
     }
     return len2;
   }
-  function getHashCode(key) {
+  function getHashCode2(key) {
     var code = 5381;
     var index2 = -1;
     var count = key.length;
@@ -10452,10 +10870,10 @@ function requireToPaths() {
         return true;
       }
       num = +val;
-    } else if (type !== typeOfNumber) {
+    } else if (type !== typeOfNumber2) {
       return false;
     }
-    return num % 1 === 0 && abs(num) <= MAX_SAFE_INTEGER;
+    return num % 1 === 0 && abs2(num) <= MAX_SAFE_INTEGER2;
   }
   toPaths.exports._isSafeNumber = isSafeNumber;
   return toPaths.exports;
@@ -10466,9 +10884,9 @@ function requireCollapse() {
   if (hasRequiredCollapse)
     return collapse$1;
   hasRequiredCollapse = 1;
-  var toPaths2 = requireToPaths();
-  var toTree2 = requireToTree();
-  collapse$1 = function collapse2(paths) {
+  var toPaths4 = requireToPaths();
+  var toTree4 = requireToTree();
+  collapse$1 = function collapse4(paths) {
     var collapseMap = paths.reduce(function(acc, path) {
       var len2 = path.length;
       if (!acc[len2]) {
@@ -10478,9 +10896,9 @@ function requireCollapse() {
       return acc;
     }, {});
     Object.keys(collapseMap).forEach(function(collapseKey) {
-      collapseMap[collapseKey] = toTree2(collapseMap[collapseKey]);
+      collapseMap[collapseKey] = toTree4(collapseMap[collapseKey]);
     });
-    return toPaths2(collapseMap);
+    return toPaths4(collapseMap);
   };
   return collapse$1;
 }
@@ -10490,7 +10908,7 @@ function requireCloneArray() {
   if (hasRequiredCloneArray)
     return cloneArray_1;
   hasRequiredCloneArray = 1;
-  function cloneArray2(arr, index2) {
+  function cloneArray3(arr, index2) {
     var a3 = [];
     var len2 = arr.length;
     for (var i3 = index2 || 0; i3 < len2; i3++) {
@@ -10498,7 +10916,7 @@ function requireCloneArray() {
     }
     return a3;
   }
-  cloneArray_1 = cloneArray2;
+  cloneArray_1 = cloneArray3;
   return cloneArray_1;
 }
 var catAndSlice$1;
@@ -10507,7 +10925,7 @@ function requireCatAndSlice$1() {
   if (hasRequiredCatAndSlice$1)
     return catAndSlice$1;
   hasRequiredCatAndSlice$1 = 1;
-  catAndSlice$1 = function catAndSlice2(a3, b, slice3) {
+  catAndSlice$1 = function catAndSlice4(a3, b, slice3) {
     var next = [], i3, j, len2;
     for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
       next[i3] = a3[i3];
@@ -10550,12 +10968,12 @@ function requireFollowReference$1() {
   if (hasRequiredFollowReference$1)
     return followReference$1;
   hasRequiredFollowReference$1 = 1;
-  var cloneArray2 = requireCloneArray();
-  var $ref = requireTypes$1().$ref;
-  var errors2 = requireErrors();
-  followReference$1 = function followReference2(cacheRoot, ref, maxRefFollow) {
+  var cloneArray3 = requireCloneArray();
+  var $ref2 = requireTypes$1().$ref;
+  var errors3 = requireErrors();
+  followReference$1 = function followReference3(cacheRoot, ref3, maxRefFollow) {
     var current = cacheRoot;
-    var refPath = ref;
+    var refPath = ref3;
     var depth = -1;
     var length = refPath.length;
     var key, next, type;
@@ -10564,17 +10982,17 @@ function requireFollowReference$1() {
       key = refPath[depth];
       next = current[key];
       type = next && next.$type;
-      if (!next || type && type !== $ref) {
+      if (!next || type && type !== $ref2) {
         current = next;
         break;
       }
-      if (type && type === $ref && depth + 1 < length) {
-        var err = new Error(errors2.innerReferences);
+      if (type && type === $ref2 && depth + 1 < length) {
+        var err = new Error(errors3.innerReferences);
         err.throwToNext = true;
         throw err;
       }
       if (depth + 1 === length) {
-        if (type === $ref) {
+        if (type === $ref2) {
           depth = -1;
           refPath = next.value;
           length = refPath.length;
@@ -10582,12 +11000,12 @@ function requireFollowReference$1() {
           referenceCount++;
         }
         if (referenceCount > maxRefFollow) {
-          throw new Error(errors2.circularReference);
+          throw new Error(errors3.circularReference);
         }
       }
       current = next;
     }
-    return [current, cloneArray2(refPath)];
+    return [current, cloneArray3(refPath)];
   };
   return followReference$1;
 }
@@ -10597,28 +11015,28 @@ function requireOptimizePathSets$1() {
   if (hasRequiredOptimizePathSets$1)
     return optimizePathSets$1;
   hasRequiredOptimizePathSets$1 = 1;
-  var iterateKeySet2 = requireIterateKeySet();
-  var cloneArray2 = requireCloneArray();
-  var catAndSlice2 = requireCatAndSlice$1();
+  var iterateKeySet4 = requireIterateKeySet();
+  var cloneArray3 = requireCloneArray();
+  var catAndSlice4 = requireCatAndSlice$1();
   var $types = requireTypes$1();
-  var $ref = $types.$ref;
-  var followReference2 = requireFollowReference$1();
-  optimizePathSets$1 = function optimizePathSets2(cache, paths, maxRefFollow) {
+  var $ref2 = $types.$ref;
+  var followReference3 = requireFollowReference$1();
+  optimizePathSets$1 = function optimizePathSets4(cache, paths, maxRefFollow) {
     var optimized = [];
     paths.forEach(function(p) {
-      optimizePathSet(cache, cache, p, 0, optimized, [], maxRefFollow);
+      optimizePathSet2(cache, cache, p, 0, optimized, [], maxRefFollow);
     });
     return optimized;
   };
-  function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+  function optimizePathSet2(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
     if (cache === void 0) {
-      out[out.length] = catAndSlice2(optimizedPath, pathSet, depth);
+      out[out.length] = catAndSlice4(optimizedPath, pathSet, depth);
       return;
     }
-    if (cache === null || cache.$type && cache.$type !== $ref || typeof cache !== "object") {
+    if (cache === null || cache.$type && cache.$type !== $ref2 || typeof cache !== "object") {
       return;
     }
-    if (cache.$type === $ref && depth === pathSet.length) {
+    if (cache.$type === $ref2 && depth === pathSet.length) {
       return;
     }
     var keySet = pathSet[depth];
@@ -10628,7 +11046,7 @@ function requireOptimizePathSets$1() {
     var key = keySet;
     if (isKeySet) {
       iteratorNote = {};
-      key = iterateKeySet2(keySet, iteratorNote);
+      key = iterateKeySet4(keySet, iteratorNote);
     }
     var next, nextOptimized;
     do {
@@ -10637,14 +11055,14 @@ function requireOptimizePathSets$1() {
       if (key !== null) {
         optimizedPath[optimizedPathLength] = key;
       }
-      if (next && next.$type === $ref && nextDepth < pathSet.length) {
-        var refResults = followReference2(cacheRoot, next.value, maxRefFollow);
+      if (next && next.$type === $ref2 && nextDepth < pathSet.length) {
+        var refResults = followReference3(cacheRoot, next.value, maxRefFollow);
         next = refResults[0];
-        nextOptimized = cloneArray2(refResults[1]);
+        nextOptimized = cloneArray3(refResults[1]);
       } else {
         nextOptimized = optimizedPath;
       }
-      optimizePathSet(
+      optimizePathSet2(
         next,
         cacheRoot,
         pathSet,
@@ -10655,7 +11073,7 @@ function requireOptimizePathSets$1() {
       );
       optimizedPath.length = optimizedPathLength;
       if (iteratorNote && !iteratorNote.done) {
-        key = iterateKeySet2(keySet, iteratorNote);
+        key = iterateKeySet4(keySet, iteratorNote);
       }
     } while (iteratorNote && !iteratorNote.done);
   }
@@ -10667,27 +11085,27 @@ function requirePathCount() {
   if (hasRequiredPathCount)
     return pathCount;
   hasRequiredPathCount = 1;
-  function getRangeOrKeySize(rangeOrKey) {
+  function getRangeOrKeySize2(rangeOrKey) {
     if (rangeOrKey == null) {
       return 1;
     } else if (Array.isArray(rangeOrKey)) {
       throw new Error("Unexpected Array found in keySet: " + JSON.stringify(rangeOrKey));
     } else if (typeof rangeOrKey === "object") {
-      return getRangeSize(rangeOrKey);
+      return getRangeSize2(rangeOrKey);
     } else {
       return 1;
     }
   }
-  function getRangeSize(range3) {
-    var to = range3.to;
-    var length = range3.length;
+  function getRangeSize2(range5) {
+    var to = range5.to;
+    var length = range5.length;
     if (to != null) {
       if (isNaN(to) || parseInt(to, 10) !== to) {
-        throw new Error("Invalid range, 'to' is not an integer: " + JSON.stringify(range3));
+        throw new Error("Invalid range, 'to' is not an integer: " + JSON.stringify(range5));
       }
-      var from2 = range3.from || 0;
+      var from2 = range5.from || 0;
       if (isNaN(from2) || parseInt(from2, 10) !== from2) {
-        throw new Error("Invalid range, 'from' is not an integer: " + JSON.stringify(range3));
+        throw new Error("Invalid range, 'from' is not an integer: " + JSON.stringify(range5));
       }
       if (from2 <= to) {
         return to - from2 + 1;
@@ -10696,15 +11114,15 @@ function requirePathCount() {
       }
     } else if (length != null) {
       if (isNaN(length) || parseInt(length, 10) !== length) {
-        throw new Error("Invalid range, 'length' is not an integer: " + JSON.stringify(range3));
+        throw new Error("Invalid range, 'length' is not an integer: " + JSON.stringify(range5));
       } else {
         return length;
       }
     } else {
-      throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range3));
+      throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range5));
     }
   }
-  function getPathCount(pathSet) {
+  function getPathCount2(pathSet) {
     if (pathSet.length === 0) {
       throw new Error("All paths must have length larger than zero.");
     }
@@ -10715,16 +11133,16 @@ function requirePathCount() {
         var numKeys = 0;
         for (var j = 0; j < segment.length; j++) {
           var keySet = segment[j];
-          numKeys += getRangeOrKeySize(keySet);
+          numKeys += getRangeOrKeySize2(keySet);
         }
         numPaths *= numKeys;
       } else {
-        numPaths *= getRangeOrKeySize(segment);
+        numPaths *= getRangeOrKeySize2(segment);
       }
     }
     return numPaths;
   }
-  pathCount = getPathCount;
+  pathCount = getPathCount2;
   return pathCount;
 }
 var lib2;
@@ -10854,9 +11272,9 @@ var matcher$1 = function matcher(rst) {
       collapsedResults.forEach(function(path, i3) {
         var collapsedMatch = reducedMatch[i3];
         var reducedVirtualPath = collapsedMatch.virtual;
-        path.forEach(function(atom, index2) {
+        path.forEach(function(atom3, index2) {
           if (!isRoutedToken2(reducedVirtualPath[index2])) {
-            reducedVirtualPath[index2] = atom;
+            reducedVirtualPath[index2] = atom3;
           }
         });
         collapsedMatch.requested = path;
@@ -10997,13 +11415,13 @@ function requireIsFunction() {
   if (hasRequiredIsFunction)
     return isFunction;
   hasRequiredIsFunction = 1;
-  function isFunction$1(x) {
+  function isFunction$12(x) {
     return typeof x === "function";
   }
-  isFunction.isFunction = isFunction$1;
+  isFunction.isFunction = isFunction$12;
   return isFunction;
 }
-var Subscription = {};
+var Subscription3 = {};
 var isArray2 = {};
 var hasRequiredIsArray;
 function requireIsArray() {
@@ -11021,13 +11439,13 @@ function requireIsObject() {
   if (hasRequiredIsObject)
     return isObject;
   hasRequiredIsObject = 1;
-  function isObject$1(x) {
+  function isObject$12(x) {
     return x != null && typeof x === "object";
   }
-  isObject.isObject = isObject$1;
+  isObject.isObject = isObject$12;
   return isObject;
 }
-var tryCatch = {};
+var tryCatch2 = {};
 var errorObject = {};
 var hasRequiredErrorObject;
 function requireErrorObject() {
@@ -11040,7 +11458,7 @@ function requireErrorObject() {
 var hasRequiredTryCatch;
 function requireTryCatch() {
   if (hasRequiredTryCatch)
-    return tryCatch;
+    return tryCatch2;
   hasRequiredTryCatch = 1;
   var errorObject_1 = requireErrorObject();
   var tryCatchTarget;
@@ -11052,12 +11470,12 @@ function requireTryCatch() {
       return errorObject_1.errorObject;
     }
   }
-  function tryCatch$1(fn) {
+  function tryCatch$12(fn) {
     tryCatchTarget = fn;
     return tryCatcher;
   }
-  tryCatch.tryCatch = tryCatch$1;
-  return tryCatch;
+  tryCatch2.tryCatch = tryCatch$12;
+  return tryCatch2;
 }
 var UnsubscriptionError = {};
 var hasRequiredUnsubscriptionError;
@@ -11076,10 +11494,10 @@ function requireUnsubscriptionError() {
   };
   var UnsubscriptionError$1 = function(_super) {
     __extends(UnsubscriptionError2, _super);
-    function UnsubscriptionError2(errors2) {
+    function UnsubscriptionError2(errors3) {
       _super.call(this);
-      this.errors = errors2;
-      var err = Error.call(this, errors2 ? errors2.length + " errors occurred during unsubscription:\n  " + errors2.map(function(err2, i3) {
+      this.errors = errors3;
+      var err = Error.call(this, errors3 ? errors3.length + " errors occurred during unsubscription:\n  " + errors3.map(function(err2, i3) {
         return i3 + 1 + ") " + err2.toString();
       }).join("\n  ") : "");
       this.name = err.name = "UnsubscriptionError";
@@ -11094,27 +11512,27 @@ function requireUnsubscriptionError() {
 var hasRequiredSubscription;
 function requireSubscription() {
   if (hasRequiredSubscription)
-    return Subscription;
+    return Subscription3;
   hasRequiredSubscription = 1;
   var isArray_1 = requireIsArray();
   var isObject_1 = requireIsObject();
   var isFunction_1 = requireIsFunction();
-  var tryCatch_1 = requireTryCatch();
+  var tryCatch_12 = requireTryCatch();
   var errorObject_1 = requireErrorObject();
   var UnsubscriptionError_1 = requireUnsubscriptionError();
-  var Subscription$1 = function() {
-    function Subscription2(unsubscribe) {
+  var Subscription$12 = function() {
+    function Subscription4(unsubscribe2) {
       this.closed = false;
       this._parent = null;
       this._parents = null;
       this._subscriptions = null;
-      if (unsubscribe) {
-        this._unsubscribe = unsubscribe;
+      if (unsubscribe2) {
+        this._unsubscribe = unsubscribe2;
       }
     }
-    Subscription2.prototype.unsubscribe = function() {
+    Subscription4.prototype.unsubscribe = function() {
       var hasErrors = false;
-      var errors2;
+      var errors3;
       if (this.closed) {
         return;
       }
@@ -11130,10 +11548,10 @@ function requireSubscription() {
         _parent = ++index2 < len2 && _parents[index2] || null;
       }
       if (isFunction_1.isFunction(_unsubscribe)) {
-        var trial = tryCatch_1.tryCatch(_unsubscribe).call(this);
+        var trial = tryCatch_12.tryCatch(_unsubscribe).call(this);
         if (trial === errorObject_1.errorObject) {
           hasErrors = true;
-          errors2 = errors2 || (errorObject_1.errorObject.e instanceof UnsubscriptionError_1.UnsubscriptionError ? flattenUnsubscriptionErrors(errorObject_1.errorObject.e.errors) : [errorObject_1.errorObject.e]);
+          errors3 = errors3 || (errorObject_1.errorObject.e instanceof UnsubscriptionError_1.UnsubscriptionError ? flattenUnsubscriptionErrors(errorObject_1.errorObject.e.errors) : [errorObject_1.errorObject.e]);
         }
       }
       if (isArray_1.isArray(_subscriptions)) {
@@ -11142,27 +11560,27 @@ function requireSubscription() {
         while (++index2 < len2) {
           var sub = _subscriptions[index2];
           if (isObject_1.isObject(sub)) {
-            var trial = tryCatch_1.tryCatch(sub.unsubscribe).call(sub);
+            var trial = tryCatch_12.tryCatch(sub.unsubscribe).call(sub);
             if (trial === errorObject_1.errorObject) {
               hasErrors = true;
-              errors2 = errors2 || [];
+              errors3 = errors3 || [];
               var err = errorObject_1.errorObject.e;
               if (err instanceof UnsubscriptionError_1.UnsubscriptionError) {
-                errors2 = errors2.concat(flattenUnsubscriptionErrors(err.errors));
+                errors3 = errors3.concat(flattenUnsubscriptionErrors(err.errors));
               } else {
-                errors2.push(err);
+                errors3.push(err);
               }
             }
           }
         }
       }
       if (hasErrors) {
-        throw new UnsubscriptionError_1.UnsubscriptionError(errors2);
+        throw new UnsubscriptionError_1.UnsubscriptionError(errors3);
       }
     };
-    Subscription2.prototype.add = function(teardown) {
-      if (!teardown || teardown === Subscription2.EMPTY) {
-        return Subscription2.EMPTY;
+    Subscription4.prototype.add = function(teardown) {
+      if (!teardown || teardown === Subscription4.EMPTY) {
+        return Subscription4.EMPTY;
       }
       if (teardown === this) {
         return this;
@@ -11170,7 +11588,7 @@ function requireSubscription() {
       var subscription = teardown;
       switch (typeof teardown) {
         case "function":
-          subscription = new Subscription2(teardown);
+          subscription = new Subscription4(teardown);
         case "object":
           if (subscription.closed || typeof subscription.unsubscribe !== "function") {
             return subscription;
@@ -11179,7 +11597,7 @@ function requireSubscription() {
             return subscription;
           } else if (typeof subscription._addParent !== "function") {
             var tmp = subscription;
-            subscription = new Subscription2();
+            subscription = new Subscription4();
             subscription._subscriptions = [tmp];
           }
           break;
@@ -11191,7 +11609,7 @@ function requireSubscription() {
       subscription._addParent(this);
       return subscription;
     };
-    Subscription2.prototype.remove = function(subscription) {
+    Subscription4.prototype.remove = function(subscription) {
       var subscriptions = this._subscriptions;
       if (subscriptions) {
         var subscriptionIndex = subscriptions.indexOf(subscription);
@@ -11200,7 +11618,7 @@ function requireSubscription() {
         }
       }
     };
-    Subscription2.prototype._addParent = function(parent) {
+    Subscription4.prototype._addParent = function(parent) {
       var _a = this, _parent = _a._parent, _parents = _a._parents;
       if (!_parent || _parent === parent) {
         this._parent = parent;
@@ -11210,19 +11628,19 @@ function requireSubscription() {
         _parents.push(parent);
       }
     };
-    Subscription2.EMPTY = function(empty2) {
-      empty2.closed = true;
-      return empty2;
-    }(new Subscription2());
-    return Subscription2;
+    Subscription4.EMPTY = function(empty3) {
+      empty3.closed = true;
+      return empty3;
+    }(new Subscription4());
+    return Subscription4;
   }();
-  Subscription.Subscription = Subscription$1;
-  function flattenUnsubscriptionErrors(errors2) {
-    return errors2.reduce(function(errs, err) {
+  Subscription3.Subscription = Subscription$12;
+  function flattenUnsubscriptionErrors(errors3) {
+    return errors3.reduce(function(errs, err) {
       return errs.concat(err instanceof UnsubscriptionError_1.UnsubscriptionError ? err.errors : err);
     }, []);
   }
-  return Subscription;
+  return Subscription3;
 }
 var Observer = {};
 var hasRequiredObserver;
@@ -11273,7 +11691,7 @@ function requireSubscriber() {
   var rxSubscriber_1 = requireRxSubscriber();
   var Subscriber$1 = function(_super) {
     __extends(Subscriber2, _super);
-    function Subscriber2(destinationOrNext, error, complete) {
+    function Subscriber2(destinationOrNext, error3, complete) {
       _super.call(this);
       this.syncErrorValue = null;
       this.syncErrorThrown = false;
@@ -11300,15 +11718,15 @@ function requireSubscriber() {
           }
         default:
           this.syncErrorThrowable = true;
-          this.destination = new SafeSubscriber(this, destinationOrNext, error, complete);
+          this.destination = new SafeSubscriber(this, destinationOrNext, error3, complete);
           break;
       }
     }
     Subscriber2.prototype[rxSubscriber_1.$$rxSubscriber] = function() {
       return this;
     };
-    Subscriber2.create = function(next, error, complete) {
-      var subscriber = new Subscriber2(next, error, complete);
+    Subscriber2.create = function(next, error3, complete) {
+      var subscriber = new Subscriber2(next, error3, complete);
       subscriber.syncErrorThrowable = false;
       return subscriber;
     };
@@ -11363,7 +11781,7 @@ function requireSubscriber() {
   Subscriber.Subscriber = Subscriber$1;
   var SafeSubscriber = function(_super) {
     __extends(SafeSubscriber2, _super);
-    function SafeSubscriber2(_parentSubscriber, observerOrNext, error, complete) {
+    function SafeSubscriber2(_parentSubscriber, observerOrNext, error3, complete) {
       _super.call(this);
       this._parentSubscriber = _parentSubscriber;
       var next;
@@ -11373,7 +11791,7 @@ function requireSubscriber() {
       } else if (observerOrNext) {
         context = observerOrNext;
         next = observerOrNext.next;
-        error = observerOrNext.error;
+        error3 = observerOrNext.error;
         complete = observerOrNext.complete;
         if (isFunction_1.isFunction(context.unsubscribe)) {
           this.add(context.unsubscribe.bind(context));
@@ -11382,7 +11800,7 @@ function requireSubscriber() {
       }
       this._context = context;
       this._next = next;
-      this._error = error;
+      this._error = error3;
       this._complete = complete;
     }
     SafeSubscriber2.prototype.next = function(value) {
@@ -11468,7 +11886,7 @@ function requireToSubscriber() {
   var Subscriber_1 = requireSubscriber();
   var rxSubscriber_1 = requireRxSubscriber();
   var Observer_1 = requireObserver();
-  function toSubscriber$1(nextOrObserver, error, complete) {
+  function toSubscriber$1(nextOrObserver, error3, complete) {
     if (nextOrObserver) {
       if (nextOrObserver instanceof Subscriber_1.Subscriber) {
         return nextOrObserver;
@@ -11477,10 +11895,10 @@ function requireToSubscriber() {
         return nextOrObserver[rxSubscriber_1.$$rxSubscriber]();
       }
     }
-    if (!nextOrObserver && !error && !complete) {
+    if (!nextOrObserver && !error3 && !complete) {
       return new Subscriber_1.Subscriber(Observer_1.empty);
     }
-    return new Subscriber_1.Subscriber(nextOrObserver, error, complete);
+    return new Subscriber_1.Subscriber(nextOrObserver, error3, complete);
   }
   toSubscriber.toSubscriber = toSubscriber$1;
   return toSubscriber;
@@ -11493,19 +11911,19 @@ function requireObservable$1() {
   hasRequiredObservable$1 = 1;
   var root_1 = requireRoot();
   function getSymbolObservable(context) {
-    var $$observable;
+    var $$observable2;
     var Symbol2 = context.Symbol;
     if (typeof Symbol2 === "function") {
       if (Symbol2.observable) {
-        $$observable = Symbol2.observable;
+        $$observable2 = Symbol2.observable;
       } else {
-        $$observable = Symbol2("observable");
-        Symbol2.observable = $$observable;
+        $$observable2 = Symbol2("observable");
+        Symbol2.observable = $$observable2;
       }
     } else {
-      $$observable = "@@observable";
+      $$observable2 = "@@observable";
     }
-    return $$observable;
+    return $$observable2;
   }
   observable.getSymbolObservable = getSymbolObservable;
   observable.$$observable = getSymbolObservable(root_1.root);
@@ -11520,10 +11938,10 @@ function requireObservable() {
   var toSubscriber_1 = requireToSubscriber();
   var observable_1 = requireObservable$1();
   var Observable$1 = function() {
-    function Observable3(subscribe) {
+    function Observable3(subscribe2) {
       this._isScalar = false;
-      if (subscribe) {
-        this._subscribe = subscribe;
+      if (subscribe2) {
+        this._subscribe = subscribe2;
       }
     }
     Observable3.prototype.lift = function(operator) {
@@ -11532,9 +11950,9 @@ function requireObservable() {
       observable2.operator = operator;
       return observable2;
     };
-    Observable3.prototype.subscribe = function(observerOrNext, error, complete) {
+    Observable3.prototype.subscribe = function(observerOrNext, error3, complete) {
       var operator = this.operator;
-      var sink = toSubscriber_1.toSubscriber(observerOrNext, error, complete);
+      var sink = toSubscriber_1.toSubscriber(observerOrNext, error3, complete);
       if (operator) {
         operator.call(sink, this.source);
       } else {
@@ -11590,8 +12008,8 @@ function requireObservable() {
     Observable3.prototype[observable_1.$$observable] = function() {
       return this;
     };
-    Observable3.create = function(subscribe) {
-      return new Observable3(subscribe);
+    Observable3.create = function(subscribe2) {
+      return new Observable3(subscribe2);
     };
     return Observable3;
   }();
@@ -11692,9 +12110,9 @@ function requireAsyncAction() {
         return new Error("executing a cancelled action");
       }
       this.pending = false;
-      var error = this._execute(state, delay);
-      if (error) {
-        return error;
+      var error3 = this._execute(state, delay);
+      if (error3) {
+        return error3;
       } else if (this.pending === false && this.id != null) {
         this.id = this.recycleAsyncId(this.scheduler, this.id, null);
       }
@@ -11795,12 +12213,12 @@ function requireScheduler() {
     return Scheduler;
   hasRequiredScheduler = 1;
   var Scheduler$1 = function() {
-    function Scheduler2(SchedulerAction, now) {
-      if (now === void 0) {
-        now = Scheduler2.now;
+    function Scheduler2(SchedulerAction, now2) {
+      if (now2 === void 0) {
+        now2 = Scheduler2.now;
       }
       this.SchedulerAction = SchedulerAction;
-      this.now = now;
+      this.now = now2;
     }
     Scheduler2.prototype.schedule = function(work, delay, state) {
       if (delay === void 0) {
@@ -11845,19 +12263,19 @@ function requireAsyncScheduler() {
         actions.push(action);
         return;
       }
-      var error;
+      var error3;
       this.active = true;
       do {
-        if (error = action.execute(action.state, action.delay)) {
+        if (error3 = action.execute(action.state, action.delay)) {
           break;
         }
       } while (action = actions.shift());
       this.active = false;
-      if (error) {
+      if (error3) {
         while (action = actions.shift()) {
           action.unsubscribe();
         }
-        throw error;
+        throw error3;
       }
     };
     return AsyncScheduler2;
@@ -11923,19 +12341,19 @@ function requireIterator() {
     return iterator;
   hasRequiredIterator = 1;
   var root_1 = requireRoot();
-  function symbolIteratorPonyfill(root2) {
-    var Symbol2 = root2.Symbol;
+  function symbolIteratorPonyfill(root4) {
+    var Symbol2 = root4.Symbol;
     if (typeof Symbol2 === "function") {
       if (!Symbol2.iterator) {
         Symbol2.iterator = Symbol2("iterator polyfill");
       }
       return Symbol2.iterator;
     } else {
-      var Set_1 = root2.Set;
+      var Set_1 = root4.Set;
       if (Set_1 && typeof new Set_1()["@@iterator"] === "function") {
         return "@@iterator";
       }
-      var Map_1 = root2.Map;
+      var Map_1 = root4.Map;
       if (Map_1) {
         var keys2 = Object.getOwnPropertyNames(Map_1.prototype);
         for (var i3 = 0; i3 < keys2.length; ++i3) {
@@ -11980,8 +12398,8 @@ function requireInnerSubscriber() {
     InnerSubscriber2.prototype._next = function(value) {
       this.parent.notifyNext(this.outerValue, value, this.outerIndex, this.index++, this);
     };
-    InnerSubscriber2.prototype._error = function(error) {
-      this.parent.notifyError(error, this);
+    InnerSubscriber2.prototype._error = function(error3) {
+      this.parent.notifyError(error3, this);
       this.unsubscribe();
     };
     InnerSubscriber2.prototype._complete = function() {
@@ -12006,28 +12424,28 @@ function requireSubscribeToResult() {
   var iterator_1 = requireIterator();
   var InnerSubscriber_1 = requireInnerSubscriber();
   var observable_1 = requireObservable$1();
-  function subscribeToResult$1(outerSubscriber, result2, outerValue, outerIndex) {
+  function subscribeToResult$1(outerSubscriber, result4, outerValue, outerIndex) {
     var destination = new InnerSubscriber_1.InnerSubscriber(outerSubscriber, outerValue, outerIndex);
     if (destination.closed) {
       return null;
     }
-    if (result2 instanceof Observable_1.Observable) {
-      if (result2._isScalar) {
-        destination.next(result2.value);
+    if (result4 instanceof Observable_1.Observable) {
+      if (result4._isScalar) {
+        destination.next(result4.value);
         destination.complete();
         return null;
       } else {
-        return result2.subscribe(destination);
+        return result4.subscribe(destination);
       }
-    } else if (isArray_1.isArray(result2)) {
-      for (var i3 = 0, len2 = result2.length; i3 < len2 && !destination.closed; i3++) {
-        destination.next(result2[i3]);
+    } else if (isArray_1.isArray(result4)) {
+      for (var i3 = 0, len2 = result4.length; i3 < len2 && !destination.closed; i3++) {
+        destination.next(result4[i3]);
       }
       if (!destination.closed) {
         destination.complete();
       }
-    } else if (isPromise_1.isPromise(result2)) {
-      result2.then(function(value2) {
+    } else if (isPromise_1.isPromise(result4)) {
+      result4.then(function(value2) {
         if (!destination.closed) {
           destination.next(value2);
           destination.complete();
@@ -12040,8 +12458,8 @@ function requireSubscribeToResult() {
         });
       });
       return destination;
-    } else if (result2 && typeof result2[iterator_1.$$iterator] === "function") {
-      var iterator2 = result2[iterator_1.$$iterator]();
+    } else if (result4 && typeof result4[iterator_1.$$iterator] === "function") {
+      var iterator2 = result4[iterator_1.$$iterator]();
       do {
         var item = iterator2.next();
         if (item.done) {
@@ -12053,15 +12471,15 @@ function requireSubscribeToResult() {
           break;
         }
       } while (true);
-    } else if (result2 && typeof result2[observable_1.$$observable] === "function") {
-      var obs = result2[observable_1.$$observable]();
+    } else if (result4 && typeof result4[observable_1.$$observable] === "function") {
+      var obs = result4[observable_1.$$observable]();
       if (typeof obs.subscribe !== "function") {
         destination.error(new TypeError("Provided object does not correctly implement Symbol.observable"));
       } else {
         return obs.subscribe(new InnerSubscriber_1.InnerSubscriber(outerSubscriber, outerValue, outerIndex));
       }
     } else {
-      var value = isObject_1.isObject(result2) ? "an invalid object" : "'" + result2 + "'";
+      var value = isObject_1.isObject(result4) ? "an invalid object" : "'" + result4 + "'";
       var msg = "You provided " + value + " where a stream was expected. You can provide an Observable, Promise, Array, or Iterable.";
       destination.error(new TypeError(msg));
     }
@@ -12094,8 +12512,8 @@ function requireOuterSubscriber() {
     OuterSubscriber2.prototype.notifyNext = function(outerValue, innerValue, outerIndex, innerIndex, innerSub) {
       this.destination.next(innerValue);
     };
-    OuterSubscriber2.prototype.notifyError = function(error, innerSub) {
-      this.destination.error(error);
+    OuterSubscriber2.prototype.notifyError = function(error3, innerSub) {
+      this.destination.error(error3);
     };
     OuterSubscriber2.prototype.notifyComplete = function(innerSub) {
       this.destination.complete();
@@ -12152,9 +12570,9 @@ function requireDeferObservable() {
       }
     };
     DeferSubscriber2.prototype._callFactory = function() {
-      var result2 = this.factory();
-      if (result2) {
-        this.add(subscribeToResult_1.subscribeToResult(this, result2));
+      var result4 = this.factory();
+      if (result4) {
+        this.add(subscribeToResult_1.subscribeToResult(this, result4));
       }
     };
     return DeferSubscriber2;
@@ -12546,12 +12964,12 @@ function requireIteratorObservable() {
         subscriber.error(state.error);
         return;
       }
-      var result2 = iterator2.next();
-      if (result2.done) {
+      var result4 = iterator2.next();
+      if (result4.done) {
         subscriber.complete();
         return;
       }
-      subscriber.next(result2.value);
+      subscriber.next(result4.value);
       state.index = index2 + 1;
       if (subscriber.closed) {
         if (typeof iterator2.return === "function") {
@@ -12572,12 +12990,12 @@ function requireIteratorObservable() {
         });
       } else {
         do {
-          var result2 = iterator2.next();
-          if (result2.done) {
+          var result4 = iterator2.next();
+          if (result4.done) {
             subscriber.complete();
             break;
           } else {
-            subscriber.next(result2.value);
+            subscriber.next(result4.value);
           }
           if (subscriber.closed) {
             if (typeof iterator2.return === "function") {
@@ -12773,10 +13191,10 @@ function requireNotification() {
   hasRequiredNotification = 1;
   var Observable_1 = requireObservable();
   var Notification$1 = function() {
-    function Notification2(kind, value, error) {
+    function Notification2(kind, value, error3) {
       this.kind = kind;
       this.value = value;
-      this.error = error;
+      this.error = error3;
       this.hasValue = kind === "N";
     }
     Notification2.prototype.observe = function(observer) {
@@ -12789,22 +13207,22 @@ function requireNotification() {
           return observer.complete && observer.complete();
       }
     };
-    Notification2.prototype.do = function(next, error, complete) {
+    Notification2.prototype.do = function(next, error3, complete) {
       var kind = this.kind;
       switch (kind) {
         case "N":
           return next && next(this.value);
         case "E":
-          return error && error(this.error);
+          return error3 && error3(this.error);
         case "C":
           return complete && complete();
       }
     };
-    Notification2.prototype.accept = function(nextOrObserver, error, complete) {
+    Notification2.prototype.accept = function(nextOrObserver, error3, complete) {
       if (nextOrObserver && typeof nextOrObserver.next === "function") {
         return this.observe(nextOrObserver);
       } else {
-        return this.do(nextOrObserver, error, complete);
+        return this.do(nextOrObserver, error3, complete);
       }
     };
     Notification2.prototype.toObservable = function() {
@@ -13021,28 +13439,28 @@ function requireErrorObservable() {
   var Observable_1 = requireObservable();
   var ErrorObservable$1 = function(_super) {
     __extends(ErrorObservable2, _super);
-    function ErrorObservable2(error, scheduler) {
+    function ErrorObservable2(error3, scheduler) {
       _super.call(this);
-      this.error = error;
+      this.error = error3;
       this.scheduler = scheduler;
     }
-    ErrorObservable2.create = function(error, scheduler) {
-      return new ErrorObservable2(error, scheduler);
+    ErrorObservable2.create = function(error3, scheduler) {
+      return new ErrorObservable2(error3, scheduler);
     };
     ErrorObservable2.dispatch = function(arg) {
-      var error = arg.error, subscriber = arg.subscriber;
-      subscriber.error(error);
+      var error3 = arg.error, subscriber = arg.subscriber;
+      subscriber.error(error3);
     };
     ErrorObservable2.prototype._subscribe = function(subscriber) {
-      var error = this.error;
+      var error3 = this.error;
       var scheduler = this.scheduler;
       if (scheduler) {
         return scheduler.schedule(ErrorObservable2.dispatch, 0, {
-          error,
+          error: error3,
           subscriber
         });
       } else {
-        subscriber.error(error);
+        subscriber.error(error3);
       }
     };
     return ErrorObservable2;
@@ -13157,16 +13575,16 @@ function requireMergeMap$1() {
       }
     };
     MergeMapSubscriber2.prototype._tryNext = function(value) {
-      var result2;
+      var result4;
       var index2 = this.index++;
       try {
-        result2 = this.project(value, index2);
+        result4 = this.project(value, index2);
       } catch (err) {
         this.destination.error(err);
         return;
       }
       this.active++;
-      this._innerSub(result2, value, index2);
+      this._innerSub(result4, value, index2);
     };
     MergeMapSubscriber2.prototype._innerSub = function(ish, value, index2) {
       this.add(subscribeToResult_1.subscribeToResult(this, ish, value, index2));
@@ -13185,14 +13603,14 @@ function requireMergeMap$1() {
       }
     };
     MergeMapSubscriber2.prototype._notifyResultSelector = function(outerValue, innerValue, outerIndex, innerIndex) {
-      var result2;
+      var result4;
       try {
-        result2 = this.resultSelector(outerValue, innerValue, outerIndex, innerIndex);
+        result4 = this.resultSelector(outerValue, innerValue, outerIndex, innerIndex);
       } catch (err) {
         this.destination.error(err);
         return;
       }
-      this.destination.next(result2);
+      this.destination.next(result4);
     };
     MergeMapSubscriber2.prototype.notifyComplete = function(innerSub) {
       var buffer = this.buffer;
@@ -13237,14 +13655,14 @@ function require_do$1() {
     d2.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
   };
   var Subscriber_1 = requireSubscriber();
-  function _do$12(nextOrObserver, error, complete) {
-    return this.lift(new DoOperator(nextOrObserver, error, complete));
+  function _do$12(nextOrObserver, error3, complete) {
+    return this.lift(new DoOperator(nextOrObserver, error3, complete));
   }
   _do._do = _do$12;
   var DoOperator = function() {
-    function DoOperator2(nextOrObserver, error, complete) {
+    function DoOperator2(nextOrObserver, error3, complete) {
       this.nextOrObserver = nextOrObserver;
-      this.error = error;
+      this.error = error3;
       this.complete = complete;
     }
     DoOperator2.prototype.call = function(subscriber, source) {
@@ -13254,9 +13672,9 @@ function require_do$1() {
   }();
   var DoSubscriber = function(_super) {
     __extends(DoSubscriber2, _super);
-    function DoSubscriber2(destination, nextOrObserver, error, complete) {
+    function DoSubscriber2(destination, nextOrObserver, error3, complete) {
       _super.call(this, destination);
-      var safeSubscriber = new Subscriber_1.Subscriber(nextOrObserver, error, complete);
+      var safeSubscriber = new Subscriber_1.Subscriber(nextOrObserver, error3, complete);
       safeSubscriber.syncErrorThrowable = true;
       this.add(safeSubscriber);
       this.safeSubscriber = safeSubscriber;
@@ -13385,10 +13803,10 @@ function requireMaterialize$2() {
   };
   var Subscriber_1 = requireSubscriber();
   var Notification_1 = requireNotification();
-  function materialize2() {
+  function materialize5() {
     return this.lift(new MaterializeOperator());
   }
-  materialize$1.materialize = materialize2;
+  materialize$1.materialize = materialize5;
   var MaterializeOperator = function() {
     function MaterializeOperator2() {
     }
@@ -13445,7 +13863,7 @@ function requireExpand$1() {
     }
     d2.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
   };
-  var tryCatch_1 = requireTryCatch();
+  var tryCatch_12 = requireTryCatch();
   var errorObject_1 = requireErrorObject();
   var OuterSubscriber_1 = requireOuterSubscriber();
   var subscribeToResult_1 = requireSubscribeToResult();
@@ -13487,8 +13905,8 @@ function requireExpand$1() {
       }
     }
     ExpandSubscriber2.dispatch = function(arg) {
-      var subscriber = arg.subscriber, result2 = arg.result, value = arg.value, index2 = arg.index;
-      subscriber.subscribeToProjection(result2, value, index2);
+      var subscriber = arg.subscriber, result4 = arg.result, value = arg.value, index2 = arg.index;
+      subscriber.subscribeToProjection(result4, value, index2);
     };
     ExpandSubscriber2.prototype._next = function(value) {
       var destination = this.destination;
@@ -13499,22 +13917,22 @@ function requireExpand$1() {
       var index2 = this.index++;
       if (this.active < this.concurrent) {
         destination.next(value);
-        var result2 = tryCatch_1.tryCatch(this.project)(value, index2);
-        if (result2 === errorObject_1.errorObject) {
+        var result4 = tryCatch_12.tryCatch(this.project)(value, index2);
+        if (result4 === errorObject_1.errorObject) {
           destination.error(errorObject_1.errorObject.e);
         } else if (!this.scheduler) {
-          this.subscribeToProjection(result2, value, index2);
+          this.subscribeToProjection(result4, value, index2);
         } else {
-          var state = { subscriber: this, result: result2, value, index: index2 };
+          var state = { subscriber: this, result: result4, value, index: index2 };
           this.add(this.scheduler.schedule(ExpandSubscriber2.dispatch, 0, state));
         }
       } else {
         this.buffer.push(value);
       }
     };
-    ExpandSubscriber2.prototype.subscribeToProjection = function(result2, value, index2) {
+    ExpandSubscriber2.prototype.subscribeToProjection = function(result4, value, index2) {
       this.active++;
-      this.add(subscribeToResult_1.subscribeToResult(this, result2, value, index2));
+      this.add(subscribeToResult_1.subscribeToResult(this, result4, value, index2));
     };
     ExpandSubscriber2.prototype._complete = function() {
       this.hasCompleted = true;
@@ -13613,14 +14031,14 @@ function requireReduce$1() {
       }
     };
     ReduceSubscriber2.prototype._tryReduce = function(value) {
-      var result2;
+      var result4;
       try {
-        result2 = this.accumulator(this.acc, value, this.index++);
+        result4 = this.accumulator(this.acc, value, this.index++);
       } catch (err) {
         this.destination.error(err);
         return;
       }
-      this.acc = result2;
+      this.acc = result4;
     };
     ReduceSubscriber2.prototype._complete = function() {
       if (this.hasValue || this.hasSeed) {
@@ -13743,14 +14161,14 @@ function requireMap$1() {
       this.thisArg = thisArg || this;
     }
     MapSubscriber2.prototype._next = function(value) {
-      var result2;
+      var result4;
       try {
-        result2 = this.project.call(this.thisArg, value, this.count++);
+        result4 = this.project.call(this.thisArg, value, this.count++);
       } catch (err) {
         this.destination.error(err);
         return;
       }
-      this.destination.next(result2);
+      this.destination.next(result4);
     };
     return MapSubscriber2;
   }(Subscriber_1.Subscriber);
@@ -13807,14 +14225,14 @@ function requireFilter$1() {
       this.predicate = predicate;
     }
     FilterSubscriber2.prototype._next = function(value) {
-      var result2;
+      var result4;
       try {
-        result2 = this.predicate.call(this.thisArg, value, this.count++);
+        result4 = this.predicate.call(this.thisArg, value, this.count++);
       } catch (err) {
         this.destination.error(err);
         return;
       }
-      if (result2) {
+      if (result4) {
         this.destination.next(value);
       }
     };
@@ -13874,15 +14292,15 @@ function require_catch$1() {
     }
     CatchSubscriber2.prototype.error = function(err) {
       if (!this.isStopped) {
-        var result2 = void 0;
+        var result4 = void 0;
         try {
-          result2 = this.selector(err, this.caught);
+          result4 = this.selector(err, this.caught);
         } catch (err2) {
           _super.prototype.error.call(this, err2);
           return;
         }
         this._unsubscribeAndRecycle();
-        this.add(subscribeToResult_1.subscribeToResult(this, result2));
+        this.add(subscribeToResult_1.subscribeToResult(this, result4));
       }
     };
     return CatchSubscriber2;
@@ -14049,39 +14467,39 @@ function requireRouterRx() {
   RouterRx_1 = RouterRx;
   return RouterRx_1;
 }
-function symbolObservablePonyfill(root2) {
-  var result2;
-  var Symbol2 = root2.Symbol;
+function symbolObservablePonyfill2(root4) {
+  var result4;
+  var Symbol2 = root4.Symbol;
   if (typeof Symbol2 === "function") {
     if (Symbol2.observable) {
-      result2 = Symbol2.observable;
+      result4 = Symbol2.observable;
     } else {
-      result2 = Symbol2("observable");
-      Symbol2.observable = result2;
+      result4 = Symbol2("observable");
+      Symbol2.observable = result4;
     }
   } else {
-    result2 = "@@observable";
+    result4 = "@@observable";
   }
-  return result2;
+  return result4;
 }
-var root;
+var root2;
 if (typeof self !== "undefined") {
-  root = self;
+  root2 = self;
 } else if (typeof window !== "undefined") {
-  root = window;
+  root2 = window;
 } else if (typeof global !== "undefined") {
-  root = global;
+  root2 = global;
 } else if (typeof module !== "undefined") {
-  root = module;
+  root2 = module;
 } else {
-  root = Function("return this")();
+  root2 = Function("return this")();
 }
-var result = symbolObservablePonyfill(root);
-var es = /* @__PURE__ */ Object.freeze({
+var result2 = symbolObservablePonyfill2(root2);
+var es2 = /* @__PURE__ */ Object.freeze({
   __proto__: null,
-  default: result
+  default: result2
 });
-var require$$1 = /* @__PURE__ */ getAugmentedNamespace2(es);
+var require$$1 = /* @__PURE__ */ getAugmentedNamespace3(es2);
 var outputToObservable;
 var hasRequiredOutputToObservable;
 function requireOutputToObservable() {
@@ -14089,8 +14507,8 @@ function requireOutputToObservable() {
     return outputToObservable;
   hasRequiredOutputToObservable = 1;
   var Observable3 = requireRouterRx().Observable;
-  var isArray3 = Array.isArray;
-  var $$observable = require$$1.default;
+  var isArray4 = Array.isArray;
+  var $$observable2 = require$$1.default;
   outputToObservable = function outputToObservable2(valueOrObservable) {
     var value = valueOrObservable;
     if (value instanceof Observable3) {
@@ -14099,7 +14517,7 @@ function requireOutputToObservable() {
     if (!value) {
       return Observable3.of(value);
     }
-    if (value[$$observable]) {
+    if (value[$$observable2]) {
       return Observable3.from(value);
     }
     if (value.subscribe) {
@@ -14126,7 +14544,7 @@ function requireOutputToObservable() {
     if (value.then) {
       return Observable3.from(value);
     }
-    if (isArray3(value)) {
+    if (isArray4(value)) {
       return Observable3.of(value);
     }
     return Observable3.of(value);
@@ -14151,18 +14569,18 @@ function requireErrorToPathValue() {
     return errorToPathValue;
   hasRequiredErrorToPathValue = 1;
   var JSONGraphError3 = JSONGraphErrorExports;
-  errorToPathValue = function errorToPathValue2(error, path) {
+  errorToPathValue = function errorToPathValue2(error3, path) {
     var typeValue = {
       $type: "error",
       value: {}
     };
-    if (error.throwToNext) {
-      throw error;
+    if (error3.throwToNext) {
+      throw error3;
     }
-    if (error instanceof JSONGraphError3) {
-      typeValue = error.typeValue;
-    } else if (error instanceof Error) {
-      typeValue.value.message = error.message;
+    if (error3 instanceof JSONGraphError3) {
+      typeValue = error3.typeValue;
+    } else if (error3 instanceof Error) {
+      typeValue.value.message = error3.message;
     }
     return {
       path,
@@ -14178,7 +14596,7 @@ function requireNoteToJsongOrPV() {
     return noteToJsongOrPV;
   hasRequiredNoteToJsongOrPV = 1;
   var isJSONG2 = requireIsJSONG();
-  var onNext = "N";
+  var onNext2 = "N";
   var errorToPathValue2 = requireErrorToPathValue();
   noteToJsongOrPV = function noteToJsongOrPV2(pathOrPathSet, isPathSet, routerInstance) {
     return function(note) {
@@ -14193,7 +14611,7 @@ function requireNoteToJsongOrPV() {
   function convertNoteToJsongOrPV(pathOrPathSet, note, isPathSet, routerInstance) {
     var incomingJSONGOrPathValues;
     var kind = note.kind;
-    if (kind === onNext) {
+    if (kind === onNext2) {
       incomingJSONGOrPathValues = note.value;
     } else {
       incomingJSONGOrPathValues = errorToPathValue2(note.error, pathOrPathSet);
@@ -14276,10 +14694,10 @@ function requireStripFromRange() {
   if (hasRequiredStripFromRange)
     return stripFromRange;
   hasRequiredStripFromRange = 1;
-  var isArray3 = Array.isArray;
+  var isArray4 = Array.isArray;
   var rangeToArray2 = rangeToArray$2;
   var isNumber2 = isNumber$2;
-  stripFromRange = function stripFromRange2(argToStrip, range3) {
+  stripFromRange = function stripFromRange2(argToStrip, range5) {
     var ranges = [];
     var matches = [];
     var toStrip = argToStrip;
@@ -14288,13 +14706,13 @@ function requireStripFromRange() {
       toStrip = +toStrip;
     }
     if (!toStripIsNumber && typeof toStrip === "string") {
-      ranges = [range3];
-    } else if (isArray3(toStrip)) {
-      var currenRanges = [range3];
-      toStrip.forEach(function(atom) {
+      ranges = [range5];
+    } else if (isArray4(toStrip)) {
+      var currenRanges = [range5];
+      toStrip.forEach(function(atom3) {
         var nextRanges = [];
         currenRanges.forEach(function(currentRename) {
-          var matchAndComplement = stripFromRange2(atom, currentRename);
+          var matchAndComplement = stripFromRange2(atom3, currentRename);
           if (matchAndComplement[0] !== void 0) {
             matches = matches.concat(matchAndComplement[0]);
           }
@@ -14304,36 +14722,36 @@ function requireStripFromRange() {
       });
       ranges = currenRanges;
     } else if (toStripIsNumber) {
-      if (range3.from < toStrip && toStrip < range3.to) {
+      if (range5.from < toStrip && toStrip < range5.to) {
         ranges[0] = {
-          from: range3.from,
+          from: range5.from,
           to: toStrip - 1
         };
         ranges[1] = {
           from: toStrip + 1,
-          to: range3.to
+          to: range5.to
         };
         matches = [toStrip];
-      } else if (range3.from === toStrip && range3.to === toStrip) {
+      } else if (range5.from === toStrip && range5.to === toStrip) {
         ranges = [];
         matches = [toStrip];
-      } else if (range3.from === toStrip) {
+      } else if (range5.from === toStrip) {
         ranges[0] = {
           from: toStrip + 1,
-          to: range3.to
+          to: range5.to
         };
         matches = [toStrip];
-      } else if (range3.to === toStrip) {
+      } else if (range5.to === toStrip) {
         ranges[0] = {
-          from: range3.from,
+          from: range5.from,
           to: toStrip - 1
         };
         matches = [toStrip];
       } else {
-        ranges = [range3];
+        ranges = [range5];
       }
     } else {
-      matches = rangeToArray2(range3);
+      matches = rangeToArray2(range5);
     }
     return [matches, ranges];
   };
@@ -14347,9 +14765,9 @@ function requireStripFromArray() {
   hasRequiredStripFromArray = 1;
   var stripFromRange2 = requireStripFromRange();
   var Keys2 = Keys_1;
-  var isArray3 = Array.isArray;
+  var isArray4 = Array.isArray;
   stripFromArray = function stripFromArray2(toStrip, array) {
-    var complement;
+    var complement3;
     var matches = [];
     var typeToStrip = typeof toStrip;
     var isRangedArray = typeof array[0] === "object";
@@ -14358,35 +14776,35 @@ function requireStripFromArray() {
     var isRoutedToken3 = !isNumber2 && !isString;
     var routeType = isRoutedToken3 && toStrip.type || false;
     var isKeys = routeType === Keys2.keys;
-    var toStripIsArray = isArray3(toStrip);
+    var toStripIsArray = isArray4(toStrip);
     if (isKeys) {
-      complement = [];
+      complement3 = [];
       matches = array;
     } else if (toStripIsArray) {
       var currentArray = array;
-      toStrip.forEach(function(atom) {
-        var results = stripFromArray2(atom, currentArray);
+      toStrip.forEach(function(atom3) {
+        var results = stripFromArray2(atom3, currentArray);
         if (results[0] !== void 0) {
           matches = matches.concat(results[0]);
         }
         currentArray = results[1];
       });
-      complement = currentArray;
+      complement3 = currentArray;
     } else if (!isRangedArray && !isRoutedToken3) {
       matches = [toStrip];
-      complement = array.filter(function(x) {
+      complement3 = array.filter(function(x) {
         return toStrip !== x;
       });
     } else if (isRangedArray && !isRoutedToken3) {
-      complement = array.reduce(function(comp, range3) {
-        var results = stripFromRange2(toStrip, range3);
+      complement3 = array.reduce(function(comp, range5) {
+        var results = stripFromRange2(toStrip, range5);
         if (results[0] !== void 0) {
           matches = matches.concat(results[0]);
         }
         return comp.concat(results[1]);
       }, []);
     } else if (!isRangedArray && isRoutedToken3) {
-      complement = array.filter(function(el) {
+      complement3 = array.filter(function(el) {
         var type = typeof el;
         if (type === "number") {
           matches[matches.length] = el;
@@ -14395,10 +14813,10 @@ function requireStripFromArray() {
         return true;
       });
     } else {
-      complement = [];
+      complement3 = [];
       matches = array;
     }
-    return [matches, complement];
+    return [matches, complement3];
   };
   return stripFromArray;
 }
@@ -14408,14 +14826,14 @@ function requireStrip() {
   if (hasRequiredStrip)
     return strip;
   hasRequiredStrip = 1;
-  var isArray3 = Array.isArray;
+  var isArray4 = Array.isArray;
   var stripFromArray2 = requireStripFromArray();
   var stripFromRange2 = requireStripFromRange();
   strip = function strip2(matchedAtom, virtualAtom) {
     var relativeComplement = [];
     var matchedResults;
     var typeOfMatched = typeof matchedAtom;
-    var isArrayMatched = isArray3(matchedAtom);
+    var isArrayMatched = isArray4(matchedAtom);
     var isObjectMatched = typeOfMatched === "object";
     if (matchedAtom === virtualAtom || String(matchedAtom) === String(virtualAtom)) {
       matchedResults = [matchedAtom];
@@ -14446,7 +14864,7 @@ function requireCatAndSlice() {
   if (hasRequiredCatAndSlice)
     return catAndSlice;
   hasRequiredCatAndSlice = 1;
-  catAndSlice = function catAndSlice2(a3, b, slice3) {
+  catAndSlice = function catAndSlice4(a3, b, slice3) {
     var next = [], i3, j, len2;
     for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
       next[i3] = a3[i3];
@@ -14465,7 +14883,7 @@ function requireStripPath() {
     return stripPath;
   hasRequiredStripPath = 1;
   var strip2 = requireStrip();
-  var catAndSlice2 = requireCatAndSlice();
+  var catAndSlice4 = requireCatAndSlice();
   stripPath = function stripPath2(matchedPath, virtualPath) {
     var relativeComplement = [];
     var exactMatch = [];
@@ -14480,7 +14898,7 @@ function requireStripPath() {
       if (hasComplement) {
         var flattendIC = innerComplement.length === 1 ? innerComplement[0] : innerComplement;
         current[i3] = flattendIC;
-        relativeComplement[relativeComplement.length] = catAndSlice2(current, matchedPath, i3 + 1);
+        relativeComplement[relativeComplement.length] = catAndSlice4(current, matchedPath, i3 + 1);
       }
       exactMatch[i3] = innerMatch;
       current[i3] = innerMatch;
@@ -14495,8 +14913,8 @@ function requireIsRange() {
   if (hasRequiredIsRange)
     return isRange;
   hasRequiredIsRange = 1;
-  isRange = function isRange2(range3) {
-    return range3.hasOwnProperty("to") && range3.hasOwnProperty("from");
+  isRange = function isRange2(range5) {
+    return range5.hasOwnProperty("to") && range5.hasOwnProperty("from");
   };
   return isRange;
 }
@@ -14507,7 +14925,7 @@ function requireHasAtomIntersection() {
     return hasAtomIntersection;
   hasRequiredHasAtomIntersection = 1;
   var Keys2 = Keys_1;
-  var isArray3 = Array.isArray;
+  var isArray4 = Array.isArray;
   var isRoutedToken3 = isRoutedToken$1;
   var isRange2 = requireIsRange();
   hasAtomIntersection = function hasAtomIntersection2(matchedAtom, virtualAtom) {
@@ -14515,7 +14933,7 @@ function requireHasAtomIntersection() {
     var isKeys = virtualIsRoutedToken && virtualAtom.type === Keys2.keys;
     var matched = false;
     var i3, len2;
-    if (isArray3(matchedAtom)) {
+    if (isArray4(matchedAtom)) {
       for (i3 = 0, len2 = matchedAtom.length; i3 < len2 && !matched; ++i3) {
         matched = hasAtomIntersection2(matchedAtom[i3], virtualAtom);
       }
@@ -14525,7 +14943,7 @@ function requireHasAtomIntersection() {
       matched = true;
     } else if (virtualIsRoutedToken) {
       matched = isNumber2(matchedAtom) || isRange2(matchedAtom);
-    } else if (isArray3(virtualAtom)) {
+    } else if (isArray4(virtualAtom)) {
       for (i3 = 0, len2 = virtualAtom.length; i3 < len2 && !matched; ++i3) {
         matched = hasAtomIntersection2(matchedAtom, virtualAtom[i3]);
       }
@@ -14547,7 +14965,7 @@ function requireHasIntersection() {
     return hasIntersection;
   hasRequiredHasIntersection = 1;
   var hasAtomIntersection2 = requireHasAtomIntersection();
-  hasIntersection = function hasIntersection2(matchedPath, virtualPath) {
+  hasIntersection = function hasIntersection4(matchedPath, virtualPath) {
     var intersection = true;
     for (var i3 = 0, len2 = virtualPath.length; i3 < len2 && intersection; ++i3) {
       intersection = hasAtomIntersection2(matchedPath[i3], virtualPath[i3]);
@@ -14562,10 +14980,10 @@ function requireGetExecutableMatches() {
   if (hasRequiredGetExecutableMatches)
     return getExecutableMatches;
   hasRequiredGetExecutableMatches = 1;
-  var pathUtils2 = requireLib();
-  var collapse2 = pathUtils2.collapse;
+  var pathUtils3 = requireLib();
+  var collapse4 = pathUtils3.collapse;
   var stripPath2 = requireStripPath();
-  var hasIntersection2 = requireHasIntersection();
+  var hasIntersection4 = requireHasIntersection();
   getExecutableMatches = function getExecutableMatches2(matches, pathSet) {
     var remainingPaths = pathSet;
     var matchAndPaths = [];
@@ -14578,11 +14996,11 @@ function requireGetExecutableMatches() {
       var match3 = matches[i3];
       remainingPaths = [];
       if (i3 > 0) {
-        availablePaths = collapse2(availablePaths);
+        availablePaths = collapse4(availablePaths);
       }
       for (var j = 0; j < availablePaths.length; ++j) {
         var path = availablePaths[j];
-        if (hasIntersection2(path, match3.virtual)) {
+        if (hasIntersection4(path, match3.virtual)) {
           var stripResults = stripPath2(path, match3.virtual);
           matchAndPaths[matchAndPaths.length] = {
             path: stripResults[0],
@@ -14657,12 +15075,12 @@ function requireFollowReference() {
   if (hasRequiredFollowReference)
     return followReference;
   hasRequiredFollowReference = 1;
-  var cloneArray2 = cloneArray_1$1;
-  var $ref = requireTypes().$ref;
-  var errors2 = exceptions;
-  followReference = function followReference2(cacheRoot, ref, maxRefFollow) {
+  var cloneArray3 = cloneArray_1$1;
+  var $ref2 = requireTypes().$ref;
+  var errors3 = exceptions;
+  followReference = function followReference3(cacheRoot, ref3, maxRefFollow) {
     var current = cacheRoot;
-    var refPath = ref;
+    var refPath = ref3;
     var depth = -1;
     var length = refPath.length;
     var key, next, type;
@@ -14671,17 +15089,17 @@ function requireFollowReference() {
       key = refPath[depth];
       next = current[key];
       type = next && next.$type;
-      if (!next || type && type !== $ref) {
+      if (!next || type && type !== $ref2) {
         current = next;
         break;
       }
-      if (type && type === $ref && depth + 1 < length) {
-        var err = new Error(errors2.innerReferences);
+      if (type && type === $ref2 && depth + 1 < length) {
+        var err = new Error(errors3.innerReferences);
         err.throwToNext = true;
         throw err;
       }
       if (depth + 1 === length) {
-        if (type === $ref) {
+        if (type === $ref2) {
           depth = -1;
           refPath = next.value;
           length = refPath.length;
@@ -14689,12 +15107,12 @@ function requireFollowReference() {
           referenceCount++;
         }
         if (referenceCount > maxRefFollow) {
-          throw new Error(errors2.circularReference);
+          throw new Error(errors3.circularReference);
         }
       }
       current = next;
     }
-    return [current, cloneArray2(refPath)];
+    return [current, cloneArray3(refPath)];
   };
   return followReference;
 }
@@ -14704,49 +15122,49 @@ function requireOptimizePathSets() {
   if (hasRequiredOptimizePathSets)
     return optimizePathSets;
   hasRequiredOptimizePathSets = 1;
-  var iterateKeySet2 = requireLib().iterateKeySet;
-  var cloneArray2 = cloneArray_1$1;
-  var catAndSlice2 = requireCatAndSlice();
+  var iterateKeySet4 = requireLib().iterateKeySet;
+  var cloneArray3 = cloneArray_1$1;
+  var catAndSlice4 = requireCatAndSlice();
   var $types = requireTypes();
-  var $ref = $types.$ref;
-  var followReference2 = requireFollowReference();
-  optimizePathSets = function optimizePathSets2(cache, paths, maxRefFollow) {
+  var $ref2 = $types.$ref;
+  var followReference3 = requireFollowReference();
+  optimizePathSets = function optimizePathSets4(cache, paths, maxRefFollow) {
     var optimized = [];
     paths.forEach(function(p) {
-      optimizePathSet(cache, cache, p, 0, optimized, [], maxRefFollow);
+      optimizePathSet2(cache, cache, p, 0, optimized, [], maxRefFollow);
     });
     return optimized;
   };
-  function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+  function optimizePathSet2(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
     if (cache === void 0) {
-      out[out.length] = catAndSlice2(optimizedPath, pathSet, depth);
+      out[out.length] = catAndSlice4(optimizedPath, pathSet, depth);
       return;
     }
-    if (cache === null || cache.$type && cache.$type !== $ref || typeof cache !== "object") {
+    if (cache === null || cache.$type && cache.$type !== $ref2 || typeof cache !== "object") {
       return;
     }
-    if (cache.$type === $ref && depth === pathSet.length) {
+    if (cache.$type === $ref2 && depth === pathSet.length) {
       return;
     }
     var keySet = pathSet[depth];
     var nextDepth = depth + 1;
     var iteratorNote = {};
     var key, next, nextOptimized;
-    key = iterateKeySet2(keySet, iteratorNote);
+    key = iterateKeySet4(keySet, iteratorNote);
     do {
       next = cache[key];
       var optimizedPathLength = optimizedPath.length;
       if (key !== null) {
         optimizedPath[optimizedPathLength] = key;
       }
-      if (next && next.$type === $ref && nextDepth < pathSet.length) {
-        var refResults = followReference2(cacheRoot, next.value, maxRefFollow);
+      if (next && next.$type === $ref2 && nextDepth < pathSet.length) {
+        var refResults = followReference3(cacheRoot, next.value, maxRefFollow);
         next = refResults[0];
-        nextOptimized = cloneArray2(refResults[1]);
+        nextOptimized = cloneArray3(refResults[1]);
       } else {
         nextOptimized = optimizedPath;
       }
-      optimizePathSet(
+      optimizePathSet2(
         next,
         cacheRoot,
         pathSet,
@@ -14757,7 +15175,7 @@ function requireOptimizePathSets() {
       );
       optimizedPath.length = optimizedPathLength;
       if (!iteratorNote.done) {
-        key = iterateKeySet2(keySet, iteratorNote);
+        key = iterateKeySet4(keySet, iteratorNote);
       }
     } while (!iteratorNote.done);
   }
@@ -14786,13 +15204,13 @@ function requireJsongMerge() {
   if (hasRequiredJsongMerge)
     return jsongMerge;
   hasRequiredJsongMerge = 1;
-  var iterateKeySet2 = requireLib().iterateKeySet;
+  var iterateKeySet4 = requireLib().iterateKeySet;
   var types3 = requireTypes();
-  var $ref = types3.$ref;
-  var $error = types3.$error;
-  var clone3 = requireClone();
-  var cloneArray2 = cloneArray_1$1;
-  var catAndSlice2 = requireCatAndSlice();
+  var $ref2 = types3.$ref;
+  var $error2 = types3.$error;
+  var clone5 = requireClone();
+  var cloneArray3 = cloneArray_1$1;
+  var catAndSlice4 = requireCatAndSlice();
   jsongMerge = function jsongMerge2(cache, jsongEnv, routerInstance) {
     var paths = jsongEnv.paths;
     var j = jsongEnv.jsonGraph;
@@ -14827,20 +15245,20 @@ function requireJsongMerge() {
       requestIdx = ++config.requestIdx;
     }
     if (message === null || typeOfMessage !== "object" || message.$type) {
-      fromParent[fromKey] = clone3(message);
-      if (message && message.$type === $error) {
+      fromParent[fromKey] = clone5(message);
+      if (message && message.$type === $error2) {
         config.router._pathErrorHook({ path, value: message });
       }
-      if (message && message.$type === $ref) {
+      if (message && message.$type === $ref2) {
         var references = config.references;
         references.push({
-          path: cloneArray2(requestedPath),
+          path: cloneArray3(requestedPath),
           value: message.value
         });
       } else {
         var values = config.values;
         values.push({
-          path: cloneArray2(requestedPath),
+          path: cloneArray3(requestedPath),
           value: message && message.type ? message.value : message
         });
       }
@@ -14849,7 +15267,7 @@ function requireJsongMerge() {
     var outerKey = path[depth];
     var iteratorNote = {};
     var key;
-    key = iterateKeySet2(outerKey, iteratorNote);
+    key = iterateKeySet4(outerKey, iteratorNote);
     do {
       var cacheRes = cache[key];
       var messageRes = message[key];
@@ -14863,10 +15281,10 @@ function requireJsongMerge() {
           cacheRes = cache[key] = {};
         }
         var nextIgnoreCount = ignoreCount;
-        if (messageRes && messageRes.$type === $ref && depth < path.length - 1) {
+        if (messageRes && messageRes.$type === $ref2 && depth < path.length - 1) {
           nextDepth = 0;
-          nextPath = catAndSlice2(messageRes.value, path, depth + 1);
-          cache[key] = clone3(messageRes);
+          nextPath = catAndSlice4(messageRes.value, path, depth + 1);
+          cache[key] = clone5(messageRes);
           nextIgnoreCount = messageRes.value.length;
           messageRes = messageRoot;
           cacheRes = cacheRoot;
@@ -14886,7 +15304,7 @@ function requireJsongMerge() {
       if (updateRequestedPath) {
         requestedPath.length = requestIdx;
       }
-      key = iterateKeySet2(outerKey, iteratorNote);
+      key = iterateKeySet4(outerKey, iteratorNote);
     } while (!iteratorNote.done);
   }
   return jsongMerge;
@@ -14897,28 +15315,28 @@ function requirePathValueMerge() {
   if (hasRequiredPathValueMerge)
     return pathValueMerge;
   hasRequiredPathValueMerge = 1;
-  var clone3 = requireClone();
+  var clone5 = requireClone();
   var types3 = requireTypes();
-  var $ref = types3.$ref;
-  var iterateKeySet2 = requireLib().iterateKeySet;
-  pathValueMerge = function pathValueMerge2(cache, pathValue) {
+  var $ref2 = types3.$ref;
+  var iterateKeySet4 = requireLib().iterateKeySet;
+  pathValueMerge = function pathValueMerge2(cache, pathValue2) {
     var refs = [];
     var values = [];
     var invalidations = [];
     var valueType = true;
-    if (pathValue.invalidated === true) {
-      invalidations.push({ path: pathValue.path });
+    if (pathValue2.invalidated === true) {
+      invalidations.push({ path: pathValue2.path });
       valueType = false;
-    } else if (pathValue.value !== null && pathValue.value.$type === $ref) {
+    } else if (pathValue2.value !== null && pathValue2.value.$type === $ref2) {
       refs.push({
-        path: pathValue.path,
-        value: pathValue.value.value
+        path: pathValue2.path,
+        value: pathValue2.value.value
       });
     } else {
-      values.push(pathValue);
+      values.push(pathValue2);
     }
     if (valueType) {
-      innerPathValueMerge(cache, pathValue);
+      innerPathValueMerge(cache, pathValue2);
     }
     return {
       references: refs,
@@ -14926,8 +15344,8 @@ function requirePathValueMerge() {
       invalidations
     };
   };
-  function innerPathValueMerge(cache, pathValue) {
-    var path = pathValue.path;
+  function innerPathValueMerge(cache, pathValue2) {
+    var path = pathValue2.path;
     var curr = cache;
     var next, key, cloned, outerKey, iteratorNote;
     var i3, len2;
@@ -14935,7 +15353,7 @@ function requirePathValueMerge() {
       outerKey = path[i3];
       if (outerKey && typeof outerKey === "object") {
         iteratorNote = {};
-        key = iterateKeySet2(outerKey, iteratorNote);
+        key = iterateKeySet4(outerKey, iteratorNote);
       } else {
         key = outerKey;
         iteratorNote = false;
@@ -14950,11 +15368,11 @@ function requirePathValueMerge() {
             next,
             {
               path: path.slice(i3 + 1),
-              value: pathValue.value
+              value: pathValue2.value
             }
           );
           if (!iteratorNote.done) {
-            key = iterateKeySet2(outerKey, iteratorNote);
+            key = iterateKeySet4(outerKey, iteratorNote);
           }
         } else {
           curr = next;
@@ -14966,12 +15384,12 @@ function requirePathValueMerge() {
     }
     outerKey = path[i3];
     iteratorNote = {};
-    key = iterateKeySet2(outerKey, iteratorNote);
+    key = iterateKeySet4(outerKey, iteratorNote);
     do {
-      cloned = clone3(pathValue.value);
+      cloned = clone5(pathValue2.value);
       curr[key] = cloned;
       if (!iteratorNote.done) {
-        key = iterateKeySet2(outerKey, iteratorNote);
+        key = iterateKeySet4(outerKey, iteratorNote);
       }
     } while (!iteratorNote.done);
   }
@@ -15029,8 +15447,8 @@ function requireMergeCacheAndGatherRefsAndInvalidations() {
         unhandledPaths = unhandledPaths.concat(unhandled);
       }
       if (refs && refs.length) {
-        refs.forEach(function(ref) {
-          references[++len2] = ref;
+        refs.forEach(function(ref3) {
+          references[++len2] = ref3;
         });
       }
     });
@@ -15053,11 +15471,11 @@ function requireRecurseMatchAndExecute() {
   var Rx = requireRouterRx();
   var Observable3 = Rx.Observable;
   var runByPrecedence2 = requireRunByPrecedence();
-  var pathUtils2 = requireLib();
-  var collapse2 = pathUtils2.collapse;
-  var optimizePathSets2 = requireOptimizePathSets();
+  var pathUtils3 = requireLib();
+  var collapse4 = pathUtils3.collapse;
+  var optimizePathSets4 = requireOptimizePathSets();
   var mCGRI = requireMergeCacheAndGatherRefsAndInvalidations();
-  var isArray3 = Array.isArray;
+  var isArray4 = Array.isArray;
   recurseMatchAndExecute = function recurseMatchAndExecute2(match3, actionRunner, paths, method, routerInstance, jsongCache) {
     return _recurseMatchAndExecute(
       match3,
@@ -15090,7 +15508,7 @@ function requireRecurseMatchAndExecute() {
       return runByPrecedence2(nextPaths, matchedResults, actionRunner).flatMap(function(results) {
         var value = results.value;
         var suffix = results.match.suffix;
-        if (!isArray3(value)) {
+        if (!isArray4(value)) {
           value = [value];
         }
         var invsRefsAndValues = mCGRI(jsongCache, value, routerInstance);
@@ -15125,13 +15543,13 @@ function requireRecurseMatchAndExecute() {
             unhandledPaths = unhandledPaths.concat(message.unhandledPaths);
           }
         });
-        pathsToExpand = optimizePathSets2(
+        pathsToExpand = optimizePathSets4(
           jsongCache,
           pathsToExpand,
           routerInstance.maxRefFollow
         );
         if (pathsToExpand.length) {
-          pathsToExpand = collapse2(pathsToExpand);
+          pathsToExpand = collapse4(pathsToExpand);
         }
         return Observable3.from(pathsToExpand);
       }).defaultIfEmpty([]);
@@ -15154,13 +15572,13 @@ function requireNormalize() {
   if (hasRequiredNormalize)
     return normalize2;
   hasRequiredNormalize = 1;
-  normalize2 = function normalize3(range3) {
-    var from2 = range3.from || 0;
+  normalize2 = function normalize3(range5) {
+    var from2 = range5.from || 0;
     var to;
-    if (typeof range3.to === "number") {
-      to = range3.to;
+    if (typeof range5.to === "number") {
+      to = range5.to;
     } else {
-      to = from2 + range3.length - 1;
+      to = from2 + range5.length - 1;
     }
     return { to, from: from2 };
   };
@@ -15192,12 +15610,12 @@ function requireMaterialize() {
     return materialize;
   hasRequiredMaterialize = 1;
   var pathValueMerge2 = requirePathValueMerge();
-  var optimizePathSets2 = requireOptimizePathSets();
-  var $atom = requireTypes().$atom;
+  var optimizePathSets4 = requireOptimizePathSets();
+  var $atom2 = requireTypes().$atom;
   materialize = function materializeMissing(router, paths, jsongEnv) {
     var jsonGraph = jsongEnv.jsonGraph;
-    var materializedAtom = { $type: $atom };
-    optimizePathSets2(jsonGraph, paths, router.maxRefFollow).forEach(function(optMissingPath) {
+    var materializedAtom = { $type: $atom2 };
+    optimizePathSets4(jsonGraph, paths, router.maxRefFollow).forEach(function(optMissingPath) {
       pathValueMerge2(jsonGraph, {
         path: optMissingPath,
         value: materializedAtom
@@ -15229,10 +15647,10 @@ function requireGetPathsCount() {
   if (hasRequiredGetPathsCount)
     return getPathsCount_1;
   hasRequiredGetPathsCount = 1;
-  var falcorPathUtils = requireLib();
+  var falcorPathUtils2 = requireLib();
   function getPathsCount(pathSets) {
     return pathSets.reduce(function(numPaths, pathSet) {
-      return numPaths + falcorPathUtils.pathCount(pathSet);
+      return numPaths + falcorPathUtils2.pathCount(pathSet);
     }, 0);
   }
   getPathsCount_1 = getPathsCount;
@@ -15244,34 +15662,34 @@ function requireRxNewToRxNewAndOld() {
   if (hasRequiredRxNewToRxNewAndOld)
     return rxNewToRxNewAndOld;
   hasRequiredRxNewToRxNewAndOld = 1;
-  function noop() {
+  function noop3() {
   }
   function toRxNewObserver(observer) {
-    var onNext = observer.onNext;
-    var onError = observer.onError;
-    var onCompleted = observer.onCompleted;
-    if (typeof onNext !== "function" && typeof onError !== "function" && typeof onCompleted !== "function") {
+    var onNext2 = observer.onNext;
+    var onError4 = observer.onError;
+    var onCompleted2 = observer.onCompleted;
+    if (typeof onNext2 !== "function" && typeof onError4 !== "function" && typeof onCompleted2 !== "function") {
       return observer;
     }
     return {
-      next: typeof onNext === "function" ? function(x) {
+      next: typeof onNext2 === "function" ? function(x) {
         this.destination.onNext(x);
-      } : noop,
-      error: typeof onError === "function" ? function(err) {
+      } : noop3,
+      error: typeof onError4 === "function" ? function(err) {
         this.destination.onError(err);
-      } : noop,
-      complete: typeof onCompleted === "function" ? function() {
+      } : noop3,
+      complete: typeof onCompleted2 === "function" ? function() {
         this.destination.onCompleted();
-      } : noop,
+      } : noop3,
       destination: observer
     };
   }
   rxNewToRxNewAndOld = function rxNewToRxNewAndOld2(rxNewObservable) {
-    var _subscribe = rxNewObservable.subscribe;
+    var _subscribe5 = rxNewObservable.subscribe;
     rxNewObservable.subscribe = function(observerOrNextFn, errFn, compFn) {
       var subscription;
       if (typeof observerOrNextFn !== "object" || observerOrNextFn === null) {
-        subscription = _subscribe.call(
+        subscription = _subscribe5.call(
           this,
           observerOrNextFn,
           errFn,
@@ -15279,7 +15697,7 @@ function requireRxNewToRxNewAndOld() {
         );
       } else {
         var observer = toRxNewObserver(observerOrNextFn);
-        subscription = _subscribe.call(this, observer);
+        subscription = _subscribe5.call(this, observer);
       }
       var _unsubscribe = subscription.unsubscribe;
       subscription.unsubscribe = subscription.dispose = function() {
@@ -15299,10 +15717,10 @@ function requireGet() {
     return get_1;
   hasRequiredGet = 1;
   var runGetAction2 = requireRunGetAction();
-  var get3 = "get";
+  var get7 = "get";
   var recurseMatchAndExecute2 = requireRecurseMatchAndExecute();
   var normalizePathSets2 = requireNormalizePathSets();
-  var materialize2 = requireMaterialize();
+  var materialize5 = requireMaterialize();
   var Observable3 = requireRouterRx().Observable;
   var mCGRI = requireMergeCacheAndGatherRefsAndInvalidations();
   var MaxPathsExceededError = requireMaxPathsExceededError();
@@ -15322,7 +15740,7 @@ function requireGet() {
           routes: []
         };
       }
-      var result2 = Observable3.defer(function() {
+      var result4 = Observable3.defer(function() {
         var jsongCache = {};
         var action = runGetAction2(router, jsongCache, methodSummary);
         var normPS = normalizePathSets2(paths);
@@ -15333,7 +15751,7 @@ function requireGet() {
           router._matcher,
           action,
           normPS,
-          get3,
+          get7,
           router,
           jsongCache
         ).flatMap(function flatMapAfterRouterGet(details) {
@@ -15354,11 +15772,11 @@ function requireGet() {
           }
           return Observable3.of(out);
         }).map(function(jsonGraphEnvelope) {
-          return materialize2(router, normPS, jsonGraphEnvelope);
+          return materialize5(router, normPS, jsonGraphEnvelope);
         });
       });
       if (router._methodSummaryHook || router._errorHook) {
-        result2 = result2.do(function(response) {
+        result4 = result4.do(function(response) {
           if (router._methodSummaryHook) {
             methodSummary.results.push({
               time: router._now(),
@@ -15381,7 +15799,7 @@ function requireGet() {
           }
         });
       }
-      return result2;
+      return result4;
     }));
   };
   return get_1;
@@ -15392,8 +15810,8 @@ function requireSpreadPaths() {
   if (hasRequiredSpreadPaths)
     return spreadPaths;
   hasRequiredSpreadPaths = 1;
-  var iterateKeySet2 = requireLib().iterateKeySet;
-  var cloneArray2 = cloneArray_1$1;
+  var iterateKeySet4 = requireLib().iterateKeySet;
+  var cloneArray3 = cloneArray_1$1;
   spreadPaths = function spreadPaths2(paths) {
     var allPaths = [];
     paths.forEach(function(x) {
@@ -15404,7 +15822,7 @@ function requireSpreadPaths() {
   function _spread(pathSet, depth, out, currentPath) {
     currentPath = currentPath || [];
     if (depth === pathSet.length) {
-      out[out.length] = cloneArray2(currentPath);
+      out[out.length] = cloneArray3(currentPath);
       return;
     }
     var key = pathSet[depth];
@@ -15414,12 +15832,12 @@ function requireSpreadPaths() {
       return;
     }
     var iteratorNote = {};
-    var innerKey = iterateKeySet2(key, iteratorNote);
+    var innerKey = iterateKeySet4(key, iteratorNote);
     do {
       currentPath[depth] = innerKey;
       _spread(pathSet, depth + 1, out, currentPath);
       currentPath.length = depth;
-      innerKey = iterateKeySet2(key, iteratorNote);
+      innerKey = iterateKeySet4(key, iteratorNote);
     } while (!iteratorNote.done);
   }
   return spreadPaths;
@@ -15430,7 +15848,7 @@ function requireGetValue() {
   if (hasRequiredGetValue)
     return getValue2;
   hasRequiredGetValue = 1;
-  getValue2 = function getValue3(cache, path) {
+  getValue2 = function getValue4(cache, path) {
     return path.reduce(function(acc, key) {
       return acc[key];
     }, cache);
@@ -15446,10 +15864,10 @@ function requireRunSetAction() {
   var outputToObservable2 = requireOutputToObservable();
   var noteToJsongOrPV2 = requireNoteToJsongOrPV();
   var spreadPaths2 = requireSpreadPaths();
-  var getValue3 = requireGetValue();
+  var getValue4 = requireGetValue();
   var jsongMerge2 = requireJsongMerge();
-  var optimizePathSets2 = requireOptimizePathSets();
-  var hasIntersection2 = requireHasIntersection();
+  var optimizePathSets4 = requireOptimizePathSets();
+  var hasIntersection4 = requireHasIntersection();
   var pathValueMerge2 = requirePathValueMerge();
   var Observable3 = requireRouterRx().Observable;
   runSetAction_1 = function outerRunSetAction(routerInstance, modelContext, jsongCache, methodSummary) {
@@ -15471,7 +15889,7 @@ function requireRunSetAction() {
       var paths = spreadPaths2(jsongMessage.paths);
       var optimizedPathsAndPaths = paths.map(function(path) {
         return [
-          optimizePathSets2(
+          optimizePathSets4(
             jsongCache,
             [path],
             routerInstance.maxRefFollow
@@ -15479,7 +15897,7 @@ function requireRunSetAction() {
           path
         ];
       }).filter(function(optimizedAndPath) {
-        return optimizedAndPath[0] && hasIntersection2(optimizedAndPath[0], match3.virtual);
+        return optimizedAndPath[0] && hasIntersection4(optimizedAndPath[0], match3.virtual);
       });
       var optimizedPaths = optimizedPathsAndPaths.map(function(opp) {
         return opp[0];
@@ -15490,7 +15908,7 @@ function requireRunSetAction() {
       var tmpJsonGraph = subSetPaths.reduce(function(json, path, i3) {
         pathValueMerge2(json, {
           path: optimizedPaths[i3],
-          value: getValue3(jsongMessage.jsonGraph, path)
+          value: getValue4(jsongMessage.jsonGraph, path)
         });
         return json;
       }, {});
@@ -15514,11 +15932,11 @@ function requireRunSetAction() {
           };
           methodSummary.routes.push(route);
           return _out.do(
-            function(result2) {
+            function(result4) {
               route.results = route.results || [];
               route.results.push({
                 time: routerInstance._now(),
-                value: result2
+                value: result4
               });
             },
             function(err) {
@@ -15570,19 +15988,19 @@ function requireSet() {
   if (hasRequiredSet)
     return set_1;
   hasRequiredSet = 1;
-  var set2 = "set";
+  var set5 = "set";
   var recurseMatchAndExecute2 = requireRecurseMatchAndExecute();
   var runSetAction = requireRunSetAction();
-  var materialize2 = requireMaterialize();
+  var materialize5 = requireMaterialize();
   var Observable3 = requireRouterRx().Observable;
   var spreadPaths2 = requireSpreadPaths();
   var pathValueMerge2 = requirePathValueMerge();
-  var optimizePathSets2 = requireOptimizePathSets();
+  var optimizePathSets4 = requireOptimizePathSets();
   var hasIntersectionWithTree2 = requireHasIntersectionWithTree();
-  var getValue3 = requireGetValue();
+  var getValue4 = requireGetValue();
   var normalizePathSets2 = requireNormalizePathSets();
-  var pathUtils2 = requireLib();
-  var collapse2 = pathUtils2.collapse;
+  var pathUtils3 = requireLib();
+  var collapse4 = pathUtils3.collapse;
   var mCGRI = requireMergeCacheAndGatherRefsAndInvalidations();
   var MaxPathsExceededError = requireMaxPathsExceededError();
   var getPathsCount = requireGetPathsCount();
@@ -15611,7 +16029,7 @@ function requireSet() {
         router._matcher,
         action,
         jsonGraph.paths,
-        set2,
+        set5,
         router,
         jsongCache
       ).flatMap(function(details) {
@@ -15631,7 +16049,7 @@ function requireSet() {
               // full path
               path,
               // optimized path
-              optimizePathSets2(
+              optimizePathSets4(
                 details.jsonGraph,
                 [path],
                 router.maxRefFollow
@@ -15641,12 +16059,12 @@ function requireSet() {
             return x[1];
           }).map(function(pathAndOPath) {
             var oPath = pathAndOPath[1];
-            var hasIntersection2 = hasIntersectionWithTree2(
+            var hasIntersection4 = hasIntersectionWithTree2(
               oPath,
               unhandledPathsTree
             );
-            if (hasIntersection2) {
-              var value = getValue3(
+            if (hasIntersection4) {
+              var value = getValue4(
                 jsonGraph.jsonGraph,
                 pathAndOPath[0]
               );
@@ -15659,11 +16077,11 @@ function requireSet() {
           }).filter(function(x) {
             return x !== null;
           });
-          pathIntersection.reduce(function(acc, pathValue) {
-            pathValueMerge2(acc, pathValue);
+          pathIntersection.reduce(function(acc, pathValue2) {
+            pathValueMerge2(acc, pathValue2);
             return acc;
           }, jsonGraphFragment);
-          jsonGraphEnvelope.paths = collapse2(
+          jsonGraphEnvelope.paths = collapse4(
             pathIntersection.map(function(pV) {
               return pV.path;
             })
@@ -15680,7 +16098,7 @@ function requireSet() {
         }
         return Observable3.of(out);
       }).map(function(jsonGraphEnvelope) {
-        return materialize2(router, jsonGraph.paths, jsonGraphEnvelope);
+        return materialize5(router, jsonGraph.paths, jsonGraphEnvelope);
       });
       if (router._errorHook || router._methodSummaryHook) {
         innerSource = innerSource.do(
@@ -15830,8 +16248,8 @@ function requireRunCallAction() {
           }
         });
         var invsRefsAndValues = mCGRI(jsongCache, callOutput, routerInstance);
-        invsRefsAndValues.references.forEach(function(ref) {
-          refs[++refLen] = ref;
+        invsRefsAndValues.references.forEach(function(ref3) {
+          refs[++refLen] = ref3;
         });
         values = invsRefsAndValues.values.map(function(pv) {
           return pv.path;
@@ -15851,9 +16269,9 @@ function requireRunCallAction() {
         }
         if (hasSuffixes) {
           var optimizedPathLength = matchedPath.length - 1;
-          refs.forEach(function(ref) {
+          refs.forEach(function(ref3) {
             var deoptimizedPath = callPathSave1.concat(
-              ref.path.slice(optimizedPathLength)
+              ref3.path.slice(optimizedPathLength)
             );
             suffixes.forEach(function(suffix) {
               var additionalPath = deoptimizedPath.concat(suffix);
@@ -15928,14 +16346,14 @@ function requireCall() {
   if (hasRequiredCall)
     return call_1;
   hasRequiredCall = 1;
-  var call2 = "call";
+  var call4 = "call";
   var runCallAction = requireRunCallAction();
   var recurseMatchAndExecute2 = requireRecurseMatchAndExecute();
   var normalizePathSets2 = requireNormalizePathSets();
   var CallNotFoundError2 = requireCallNotFoundError();
-  var materialize2 = requireMaterialize();
-  var pathUtils2 = requireLib();
-  var collapse2 = pathUtils2.collapse;
+  var materialize5 = requireMaterialize();
+  var pathUtils3 = requireLib();
+  var collapse4 = pathUtils3.collapse;
   var Observable3 = requireRouterRx().Observable;
   var MaxPathsExceededError = requireMaxPathsExceededError();
   var getPathsCount = requireGetPathsCount();
@@ -15978,7 +16396,7 @@ function requireCall() {
           router._matcher,
           action,
           callPaths,
-          call2,
+          call4,
           router,
           jsongCache
         ).map(function(jsongResult) {
@@ -15987,7 +16405,7 @@ function requireCall() {
             jsonGraph: jsongResult.jsonGraph
           };
           if (reportedPaths.length) {
-            jsongEnv.paths = collapse2(reportedPaths);
+            jsongEnv.paths = collapse4(reportedPaths);
           } else {
             jsongEnv.paths = [];
             jsongEnv.jsonGraph = {};
@@ -15996,7 +16414,7 @@ function requireCall() {
           if (invalidated && invalidated.length) {
             jsongEnv.invalidated = invalidated;
           }
-          materialize2(router, reportedPaths, jsongEnv);
+          materialize5(router, reportedPaths, jsongEnv);
           return jsongEnv;
         }).catch(function catchException(e2) {
           if (e2 instanceof CallNotFoundError2 && router._unhandled) {
@@ -16209,7 +16627,7 @@ var changes2;
 function doSync(dbs, since, Observable3, _model) {
   let id;
   let i3 = 0;
-  function schedule(action) {
+  function schedule3(action) {
     if (i3 < 5) {
       i3++;
       if (id) {
@@ -16284,7 +16702,7 @@ function doSync(dbs, since, Observable3, _model) {
       jsonGE.paths.push(["_seq"]);
       jsonGE.jsonGraph._seq = { $type: "atom", value: change.seq };
       subscriber.onNext(jsonGE);
-      schedule(() => {
+      schedule3(() => {
         if (!subscriber.isStopped) {
           subscriber.onCompleted();
         }
@@ -16608,7 +17026,7 @@ var sleepRandom = () => {
   return sleep2(ms);
 };
 function escapeId(baseString, doc) {
-  let result2 = "";
+  let result4 = "";
   let char = "";
   let validTest;
   if (doc) {
@@ -16619,12 +17037,12 @@ function escapeId(baseString, doc) {
   for (let i3 = 0; i3 < baseString.length; i3++) {
     char = baseString.charAt(i3);
     if (!validTest.test(char)) {
-      result2 += "(" + char.codePointAt() + ")";
+      result4 += "(" + char.codePointAt() + ")";
     } else {
-      result2 += char;
+      result4 += char;
     }
   }
-  return result2;
+  return result4;
 }
 
 // app/src/lib/req.js
@@ -16705,16 +17123,16 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
 function maxRange(ranges) {
   let from2;
   let to;
-  ranges.forEach((range3) => {
+  ranges.forEach((range5) => {
     if (to === void 0) {
-      to = range3.to;
+      to = range5.to;
     } else {
-      to = Math.max(to, range3.to);
+      to = Math.max(to, range5.to);
     }
     if (from2 === void 0) {
-      from2 = range3.from;
+      from2 = range5.from;
     } else {
-      from2 = Math.min(from2, range3.from);
+      from2 = Math.min(from2, range5.from);
     }
   });
   return { from: from2, to };
@@ -16736,18 +17154,24 @@ function toFalcorRoutes(schema) {
           arguments[0].req = this.req;
           arguments[0].model = this.model;
           arguments[0].maxRange = maxRange;
-          const getRes = handler(...arguments);
+          let getRes = handler(...arguments);
           if (handlerType === "get") {
             const pathArg = arguments[0];
-            if (getRes.value !== void 0 && !getRes.path) {
-              getRes.path = pathArg.length ? [...pathArg] : [pathArg];
-            } else if (typeof getRes.then === "function") {
-              getRes.then((res) => {
-                if (res.value !== void 0 && !res.path) {
-                  res.path = pathArg.length ? [...pathArg] : [pathArg];
-                }
-                return res;
+            const auoWrap = (paAr, res) => {
+              if (!res.value && !res.path || ["boolean", "undefined", "number", "string"].includes(typeof res)) {
+                res = { value: { $type: "atom", value: res } };
+              }
+              if (res.value !== void 0 && !res.path) {
+                res.path = paAr.length ? [...paAr] : [paAr];
+              }
+              return res;
+            };
+            if (typeof getRes.then === "function") {
+              getRes = getRes.then((res) => {
+                return auoWrap(pathArg, res);
               });
+            } else {
+              getRes = auoWrap(pathArg, getRes);
             }
           }
           return getRes;
@@ -16810,7 +17234,6 @@ function makeRouter(dataRoutes) {
             });
             const reqPaths = [...e2.pathSets || [], ...e2.callPath ? [e2.callPath] : [], ...e2.jsonGraphEnvelope?.paths || []];
             if (reqPaths.length > (e2.routes?.length || 0)) {
-              console.log(e2, reqPaths);
               reqPaths.slice(e2.routes.length).forEach((pathSet) => {
                 urlLogger({
                   missing: true,
@@ -16832,6 +17255,5796 @@ function makeRouter(dataRoutes) {
     }
   }
   return AtreyuRouter;
+}
+
+// app/build/deps/falcor.js
+function getDefaultExportFromCjs3(x) {
+  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
+}
+function getAugmentedNamespace4(n2) {
+  if (n2.__esModule)
+    return n2;
+  var f = n2.default;
+  if (typeof f == "function") {
+    var a3 = function a4() {
+      if (this instanceof a4) {
+        return Reflect.construct(f, arguments, this.constructor);
+      }
+      return f.apply(this, arguments);
+    };
+    a3.prototype = f.prototype;
+  } else
+    a3 = {};
+  Object.defineProperty(a3, "__esModule", { value: true });
+  Object.keys(n2).forEach(function(k) {
+    var d2 = Object.getOwnPropertyDescriptor(n2, k);
+    Object.defineProperty(a3, k, d2.get ? d2 : {
+      enumerable: true,
+      get: function() {
+        return n2[k];
+      }
+    });
+  });
+  return a3;
+}
+var functionTypeof = "function";
+var isFunction$5 = function isFunction2(func) {
+  return Boolean(func) && typeof func === functionTypeof;
+};
+var objTypeof$1 = "object";
+var isObject$f = function isObject2(value) {
+  return value !== null && typeof value === objTypeof$1;
+};
+var isObject$e = isObject$f;
+var hasOwn$3 = Object.prototype.hasOwnProperty;
+var hasOwn_1 = function(obj, prop) {
+  return isObject$e(obj) && hasOwn$3.call(obj, prop);
+};
+var isFunction$4 = isFunction$5;
+var hasOwn$2 = hasOwn_1;
+function ModelRoot$1(o) {
+  var options = o || {};
+  this.syncRefCount = 0;
+  this.expired = options.expired || [];
+  this.unsafeMode = options.unsafeMode || false;
+  this.cache = {};
+  if (isFunction$4(options.comparator)) {
+    this.comparator = options.comparator;
+  }
+  if (isFunction$4(options.errorSelector)) {
+    this.errorSelector = options.errorSelector;
+  }
+  if (isFunction$4(options.onChange)) {
+    this.onChange = options.onChange;
+  }
+}
+ModelRoot$1.prototype.errorSelector = function errorSelector(x, y) {
+  return y;
+};
+ModelRoot$1.prototype.comparator = function comparator(cacheNode, messageNode) {
+  if (hasOwn$2(cacheNode, "value") && hasOwn$2(messageNode, "value")) {
+    return cacheNode.value === messageNode.value && cacheNode.$type === messageNode.$type && cacheNode.$expires === messageNode.$expires;
+  }
+  return cacheNode === messageNode;
+};
+var ModelRoot_1 = ModelRoot$1;
+function ModelDataSourceAdapter$1(model) {
+  this._model = model._materialize().treatErrorsAsValues();
+}
+ModelDataSourceAdapter$1.prototype.get = function get3(pathSets) {
+  return this._model.get.apply(this._model, pathSets)._toJSONG();
+};
+ModelDataSourceAdapter$1.prototype.set = function set2(jsongResponse) {
+  return this._model.set(jsongResponse)._toJSONG();
+};
+ModelDataSourceAdapter$1.prototype.call = function call2(path, args, suffixes, paths) {
+  var params = [path, args, suffixes];
+  Array.prototype.push.apply(params, paths);
+  return this._model.call.apply(this._model, params)._toJSONG();
+};
+var ModelDataSourceAdapter_1 = ModelDataSourceAdapter$1;
+var RequestTypes$1 = {
+  GetRequest: "GET"
+};
+var reservedPrefix$1 = "$";
+var reservedPrefix = reservedPrefix$1;
+var privatePrefix$2 = reservedPrefix + "_";
+var ref$1;
+var hasRequiredRef;
+function requireRef() {
+  if (hasRequiredRef)
+    return ref$1;
+  hasRequiredRef = 1;
+  ref$1 = privatePrefix$2 + "ref";
+  return ref$1;
+}
+var __ref$4 = requireRef();
+var createHardlink$2 = function createHardlink(from2, to) {
+  var backRefs = to.$_refsLength || 0;
+  to[__ref$4 + backRefs] = from2;
+  to.$_refsLength = backRefs + 1;
+  from2.$_refIndex = backRefs;
+  from2.$_context = to;
+};
+var ref = "ref";
+var now$3 = Date.now;
+var expiresNow$1 = 0;
+var expiresNever = 1;
+var now$2 = now$3;
+var $now$1 = expiresNow$1;
+var $never$1 = expiresNever;
+var isAlreadyExpired = function isAlreadyExpired2(node) {
+  var exp = node.$expires;
+  return exp != null && exp !== $never$1 && exp !== $now$1 && exp < now$2();
+};
+var objTypeof = "object";
+var isPrimitive$4 = function isPrimitive(value) {
+  return value == null || typeof value !== objTypeof;
+};
+var splice$2 = function lruSplice(root4, object) {
+  var prev = object.$_prev;
+  var next = object.$_next;
+  if (next) {
+    next.$_prev = prev;
+  }
+  if (prev) {
+    prev.$_next = next;
+  }
+  object.$_prev = object.$_next = void 0;
+  if (object === root4.$_head) {
+    root4.$_head = next;
+  }
+  if (object === root4.$_tail) {
+    root4.$_tail = prev;
+  }
+};
+var splice$1 = splice$2;
+var expireNode$5 = function expireNode(node, expired, lru) {
+  if (!node.$_invalidated) {
+    node.$_invalidated = true;
+    expired.push(node);
+    splice$1(lru, node);
+  }
+  return node;
+};
+var isArray$9 = Array.isArray;
+var iterateKeySet$7 = function iterateKeySet2(keySet, note) {
+  if (note.isArray === void 0) {
+    initializeNote(keySet, note);
+  }
+  if (note.isArray) {
+    var nextValue;
+    do {
+      if (note.loaded && note.rangeOffset > note.to) {
+        ++note.arrayOffset;
+        note.loaded = false;
+      }
+      var idx = note.arrayOffset, length = keySet.length;
+      if (idx >= length) {
+        note.done = true;
+        break;
+      }
+      var el = keySet[note.arrayOffset];
+      if (el !== null && typeof el === "object") {
+        if (!note.loaded) {
+          initializeRange(el, note);
+        }
+        if (note.empty) {
+          continue;
+        }
+        nextValue = note.rangeOffset++;
+      } else {
+        ++note.arrayOffset;
+        nextValue = el;
+      }
+    } while (nextValue === void 0);
+    return nextValue;
+  } else if (note.isObject) {
+    if (!note.loaded) {
+      initializeRange(keySet, note);
+    }
+    if (note.rangeOffset > note.to) {
+      note.done = true;
+      return void 0;
+    }
+    return note.rangeOffset++;
+  } else {
+    if (!note.loaded) {
+      note.loaded = true;
+      return keySet;
+    }
+    note.done = true;
+    return void 0;
+  }
+};
+function initializeRange(key, memo) {
+  var from2 = memo.from = key.from || 0;
+  var to = memo.to = key.to || (typeof key.length === "number" && memo.from + key.length - 1 || 0);
+  memo.rangeOffset = memo.from;
+  memo.loaded = true;
+  if (from2 > to) {
+    memo.empty = true;
+  }
+}
+function initializeNote(key, note) {
+  note.done = false;
+  var isObject4 = note.isObject = !!(key && typeof key === "object");
+  note.isArray = isObject4 && isArray$9(key);
+  note.arrayOffset = 0;
+}
+var iterateKeySet$6 = iterateKeySet$7;
+var toTree$2 = function toTree2(paths) {
+  return paths.reduce(__reducer, {});
+};
+function __reducer(acc, path) {
+  innerToTree(acc, path, 0);
+  return acc;
+}
+function innerToTree(seed, path, depth) {
+  var keySet = path[depth];
+  var iteratorNote = {};
+  var key;
+  var nextDepth = depth + 1;
+  key = iterateKeySet$6(keySet, iteratorNote);
+  while (!iteratorNote.done) {
+    var next = Object.prototype.hasOwnProperty.call(seed, key) && seed[key];
+    if (!next) {
+      if (nextDepth === path.length) {
+        seed[key] = null;
+      } else if (key !== void 0) {
+        next = seed[key] = {};
+      }
+    }
+    if (nextDepth < path.length) {
+      innerToTree(next, path, nextDepth);
+    }
+    key = iterateKeySet$6(keySet, iteratorNote);
+  }
+}
+var iterateKeySet$5 = iterateKeySet$7;
+var hasIntersection$2 = function hasIntersection2(tree, path, depth) {
+  var current = tree;
+  var intersects = true;
+  for (; intersects && depth < path.length; ++depth) {
+    var key = path[depth];
+    var keyType = typeof key;
+    if (key && keyType === "object") {
+      var note = {};
+      var innerKey = iterateKeySet$5(key, note);
+      var nextDepth = depth + 1;
+      do {
+        var next = current[innerKey];
+        intersects = next !== void 0;
+        if (intersects) {
+          intersects = hasIntersection2(next, path, nextDepth);
+        }
+        innerKey = iterateKeySet$5(key, note);
+      } while (intersects && !note.done);
+      break;
+    }
+    current = current[key];
+    intersects = current !== void 0;
+  }
+  return intersects;
+};
+var hasIntersection$12 = hasIntersection$2;
+var pathsComplementFromTree2 = function pathsComplementFromTree3(paths, tree) {
+  var out = [];
+  var outLength = -1;
+  for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
+    if (!hasIntersection$12(tree, paths[i3], 0)) {
+      out[++outLength] = paths[i3];
+    }
+  }
+  return out;
+};
+var hasIntersection3 = hasIntersection$2;
+var pathsComplementFromLengthTree2 = function pathsComplementFromLengthTree3(paths, tree) {
+  var out = [];
+  var outLength = -1;
+  for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
+    var path = paths[i3];
+    if (!hasIntersection3(tree[path.length], path, 0)) {
+      out[++outLength] = path;
+    }
+  }
+  return out;
+};
+var jsonKey = {};
+function toJsonKey(obj) {
+  if (Object.prototype.toString.call(obj) === "[object Object]") {
+    var key = JSON.stringify(obj, replacer);
+    if (key[0] === "{") {
+      return key;
+    }
+  }
+  throw new TypeError("Only plain objects can be converted to JSON keys");
+}
+function replacer(key, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+  return Object.keys(value).sort().reduce(function(acc, k) {
+    acc[k] = value[k];
+    return acc;
+  }, {});
+}
+function maybeJsonKey(key) {
+  if (typeof key !== "string" || key[0] !== "{") {
+    return;
+  }
+  var parsed;
+  try {
+    parsed = JSON.parse(key);
+  } catch (e2) {
+    return;
+  }
+  if (JSON.stringify(parsed, replacer) !== key) {
+    return;
+  }
+  return parsed;
+}
+function isJsonKey(key) {
+  return typeof maybeJsonKey(key) !== "undefined";
+}
+jsonKey.toJsonKey = toJsonKey;
+jsonKey.isJsonKey = isJsonKey;
+jsonKey.maybeJsonKey = maybeJsonKey;
+var toPaths$2 = { exports: {} };
+var integerKey = {};
+var MAX_SAFE_INTEGER = 9007199254740991;
+var abs = Math.abs;
+var isSafeInteger = Number.isSafeInteger || function isSafeInteger2(num) {
+  return typeof num === "number" && num % 1 === 0 && abs(num) <= MAX_SAFE_INTEGER;
+};
+function maybeIntegerKey$1(val) {
+  if (typeof val === "string") {
+    var num = Number(val);
+    if (isSafeInteger(num) && String(num) === val) {
+      return num;
+    }
+  } else if (isSafeInteger(val)) {
+    return val;
+  }
+}
+function isIntegerKey$1(val) {
+  if (typeof val === "string") {
+    var num = Number(val);
+    return isSafeInteger(num) && String(num) === val;
+  }
+  return isSafeInteger(val);
+}
+integerKey.isIntegerKey = isIntegerKey$1;
+integerKey.maybeIntegerKey = maybeIntegerKey$1;
+var maybeIntegerKey = integerKey.maybeIntegerKey;
+var isIntegerKey = integerKey.isIntegerKey;
+var isArray$8 = Array.isArray;
+var typeOfObject = "object";
+var typeOfNumber = "number";
+toPaths$2.exports = function toPaths2(lengths) {
+  var pathmap;
+  var allPaths = [];
+  for (var length in lengths) {
+    var num = maybeIntegerKey(length);
+    if (typeof num === typeOfNumber && isObject$d(pathmap = lengths[length])) {
+      var paths = collapsePathMap(pathmap, 0, num).sets;
+      var pathsIndex = -1;
+      var pathsCount = paths.length;
+      while (++pathsIndex < pathsCount) {
+        allPaths.push(collapsePathSetIndexes(paths[pathsIndex]));
+      }
+    }
+  }
+  return allPaths;
+};
+function isObject$d(value) {
+  return value !== null && typeof value === typeOfObject;
+}
+function collapsePathMap(pathmap, depth, length) {
+  var key;
+  var code = getHashCode(String(depth));
+  var subs = /* @__PURE__ */ Object.create(null);
+  var codes = [];
+  var codesIndex = -1;
+  var codesCount = 0;
+  var pathsets = [];
+  var pathsetsCount = 0;
+  var subPath, subCode, subKeys, subKeysIndex, subKeysCount, subSets, subSetsIndex, subSetsCount, pathset, pathsetIndex, pathsetCount, firstSubKey, pathsetClone;
+  subKeys = [];
+  subKeysIndex = -1;
+  if (depth < length - 1) {
+    subKeysCount = getKeys$1(pathmap, subKeys);
+    while (++subKeysIndex < subKeysCount) {
+      key = subKeys[subKeysIndex];
+      subPath = collapsePathMap(pathmap[key], depth + 1, length);
+      subCode = subPath.code;
+      if (subs[subCode]) {
+        subPath = subs[subCode];
+      } else {
+        codes[codesCount++] = subCode;
+        subPath = subs[subCode] = {
+          keys: [],
+          sets: subPath.sets
+        };
+      }
+      code = getHashCode(code + key + subCode);
+      var num = maybeIntegerKey(key);
+      subPath.keys.push(typeof num === typeOfNumber ? num : key);
+    }
+    while (++codesIndex < codesCount) {
+      key = codes[codesIndex];
+      subPath = subs[key];
+      subKeys = subPath.keys;
+      subKeysCount = subKeys.length;
+      if (subKeysCount > 0) {
+        subSets = subPath.sets;
+        subSetsIndex = -1;
+        subSetsCount = subSets.length;
+        firstSubKey = subKeys[0];
+        while (++subSetsIndex < subSetsCount) {
+          pathset = subSets[subSetsIndex];
+          pathsetIndex = -1;
+          pathsetCount = pathset.length;
+          pathsetClone = new Array(pathsetCount + 1);
+          pathsetClone[0] = subKeysCount > 1 && subKeys || firstSubKey;
+          while (++pathsetIndex < pathsetCount) {
+            pathsetClone[pathsetIndex + 1] = pathset[pathsetIndex];
+          }
+          pathsets[pathsetsCount++] = pathsetClone;
+        }
+      }
+    }
+  } else {
+    subKeysCount = getKeys$1(pathmap, subKeys);
+    if (subKeysCount > 1) {
+      pathsets[pathsetsCount++] = [subKeys];
+    } else {
+      pathsets[pathsetsCount++] = subKeys;
+    }
+    while (++subKeysIndex < subKeysCount) {
+      code = getHashCode(code + subKeys[subKeysIndex]);
+    }
+  }
+  return {
+    code,
+    sets: pathsets
+  };
+}
+function collapsePathSetIndexes(pathset) {
+  var keysetIndex = -1;
+  var keysetCount = pathset.length;
+  while (++keysetIndex < keysetCount) {
+    var keyset = pathset[keysetIndex];
+    if (isArray$8(keyset)) {
+      pathset[keysetIndex] = collapseIndex(keyset);
+    }
+  }
+  return pathset;
+}
+function collapseIndex(keyset) {
+  var keyIndex = -1;
+  var keyCount = keyset.length - 1;
+  var isSparseRange = keyCount > 0;
+  while (++keyIndex <= keyCount) {
+    var key = keyset[keyIndex];
+    if (!isIntegerKey(key)) {
+      isSparseRange = false;
+      break;
+    }
+    keyset[keyIndex] = parseInt(key, 10);
+  }
+  if (isSparseRange === true) {
+    keyset.sort(sortListAscending);
+    var from2 = keyset[0];
+    var to = keyset[keyCount];
+    if (to - from2 <= keyCount) {
+      return {
+        from: from2,
+        to
+      };
+    }
+  }
+  return keyset;
+}
+function sortListAscending(a3, b) {
+  return a3 - b;
+}
+function getKeys$1(map2, keys2, sort) {
+  var len2 = 0;
+  for (var key in map2) {
+    keys2[len2++] = key;
+  }
+  return len2;
+}
+function getHashCode(key) {
+  var code = 5381;
+  var index2 = -1;
+  var count = key.length;
+  while (++index2 < count) {
+    code = (code << 5) + code + key.charCodeAt(index2);
+  }
+  return String(code);
+}
+toPaths$2.exports._isSafeNumber = isIntegerKey;
+var toPathsExports = toPaths$2.exports;
+var toPaths$1 = toPathsExports;
+var toTree$1 = toTree$2;
+var collapse2 = function collapse3(paths) {
+  var collapseMap = paths.reduce(function(acc, path) {
+    var len2 = path.length;
+    if (!acc[len2]) {
+      acc[len2] = [];
+    }
+    acc[len2].push(path);
+    return acc;
+  }, {});
+  Object.keys(collapseMap).forEach(function(collapseKey) {
+    collapseMap[collapseKey] = toTree$1(collapseMap[collapseKey]);
+  });
+  return toPaths$1(collapseMap);
+};
+var errors$12 = {
+  innerReferences: "References with inner references are not allowed.",
+  circularReference: "There appears to be a circular reference, maximum reference following exceeded."
+};
+var errors2 = errors$12;
+function followReference$2(cacheRoot, ref3, maxRefFollow) {
+  if (typeof maxRefFollow === "undefined") {
+    maxRefFollow = 5;
+  }
+  var branch = cacheRoot;
+  var node = branch;
+  var refPath = ref3;
+  var depth = -1;
+  var referenceCount = 0;
+  while (++depth < refPath.length) {
+    var key = refPath[depth];
+    node = branch[key];
+    if (node === null || typeof node !== "object" || node.$type && node.$type !== "ref") {
+      break;
+    }
+    if (node.$type === "ref") {
+      if (depth + 1 < refPath.length) {
+        return { error: new Error(errors2.innerReferences) };
+      }
+      if (referenceCount >= maxRefFollow) {
+        return { error: new Error(errors2.circularReference) };
+      }
+      refPath = node.value;
+      depth = -1;
+      branch = cacheRoot;
+      referenceCount++;
+    } else {
+      branch = node;
+    }
+  }
+  return { node, refPath };
+}
+var followReference_1$1 = followReference$2;
+function cloneArray$12(arr, index2) {
+  var a3 = [];
+  var len2 = arr.length;
+  for (var i3 = index2 || 0; i3 < len2; i3++) {
+    a3[i3] = arr[i3];
+  }
+  return a3;
+}
+var cloneArray_12 = cloneArray$12;
+var catAndSlice$12 = function catAndSlice2(a3, b, slice3) {
+  var next = [], i3, j, len2;
+  for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
+    next[i3] = a3[i3];
+  }
+  for (j = slice3 || 0, len2 = b.length; j < len2; ++j, ++i3) {
+    next[i3] = b[j];
+  }
+  return next;
+};
+var iterateKeySet$4 = iterateKeySet$7;
+var cloneArray2 = cloneArray_12;
+var catAndSlice3 = catAndSlice$12;
+var followReference$12 = followReference_1$1;
+var optimizePathSets2 = function optimizePathSets3(cache, paths, maxRefFollow) {
+  if (typeof maxRefFollow === "undefined") {
+    maxRefFollow = 5;
+  }
+  var optimized = [];
+  for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
+    var error3 = optimizePathSet(cache, cache, paths[i3], 0, optimized, [], maxRefFollow);
+    if (error3) {
+      return { error: error3 };
+    }
+  }
+  return { paths: optimized };
+};
+function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+  if (cache === void 0) {
+    out[out.length] = catAndSlice3(optimizedPath, pathSet, depth);
+    return;
+  }
+  if (cache === null || cache.$type && cache.$type !== "ref" || typeof cache !== "object") {
+    return;
+  }
+  if (cache.$type === "ref" && depth === pathSet.length) {
+    return;
+  }
+  var keySet = pathSet[depth];
+  var isKeySet = typeof keySet === "object" && keySet !== null;
+  var nextDepth = depth + 1;
+  var iteratorNote = false;
+  var key = keySet;
+  if (isKeySet) {
+    iteratorNote = {};
+    key = iterateKeySet$4(keySet, iteratorNote);
+  }
+  var next, nextOptimized;
+  do {
+    next = cache[key];
+    var optimizedPathLength = optimizedPath.length;
+    optimizedPath[optimizedPathLength] = key;
+    if (next && next.$type === "ref" && nextDepth < pathSet.length) {
+      var refResults = followReference$12(cacheRoot, next.value, maxRefFollow);
+      if (refResults.error) {
+        return refResults.error;
+      }
+      next = refResults.node;
+      nextOptimized = cloneArray2(refResults.refPath);
+    } else {
+      nextOptimized = optimizedPath;
+    }
+    var error3 = optimizePathSet(
+      next,
+      cacheRoot,
+      pathSet,
+      nextDepth,
+      out,
+      nextOptimized,
+      maxRefFollow
+    );
+    if (error3) {
+      return error3;
+    }
+    optimizedPath.length = optimizedPathLength;
+    if (iteratorNote && !iteratorNote.done) {
+      key = iterateKeySet$4(keySet, iteratorNote);
+    }
+  } while (iteratorNote && !iteratorNote.done);
+}
+function getRangeOrKeySize(rangeOrKey) {
+  if (rangeOrKey == null) {
+    return 1;
+  } else if (Array.isArray(rangeOrKey)) {
+    throw new Error("Unexpected Array found in keySet: " + JSON.stringify(rangeOrKey));
+  } else if (typeof rangeOrKey === "object") {
+    return getRangeSize(rangeOrKey);
+  } else {
+    return 1;
+  }
+}
+function getRangeSize(range5) {
+  var to = range5.to;
+  var length = range5.length;
+  if (to != null) {
+    if (isNaN(to) || parseInt(to, 10) !== to) {
+      throw new Error("Invalid range, 'to' is not an integer: " + JSON.stringify(range5));
+    }
+    var from2 = range5.from || 0;
+    if (isNaN(from2) || parseInt(from2, 10) !== from2) {
+      throw new Error("Invalid range, 'from' is not an integer: " + JSON.stringify(range5));
+    }
+    if (from2 <= to) {
+      return to - from2 + 1;
+    } else {
+      return 0;
+    }
+  } else if (length != null) {
+    if (isNaN(length) || parseInt(length, 10) !== length) {
+      throw new Error("Invalid range, 'length' is not an integer: " + JSON.stringify(range5));
+    } else {
+      return length;
+    }
+  } else {
+    throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range5));
+  }
+}
+function getPathCount(pathSet) {
+  if (pathSet.length === 0) {
+    throw new Error("All paths must have length larger than zero.");
+  }
+  var numPaths = 1;
+  for (var i3 = 0; i3 < pathSet.length; i3++) {
+    var segment = pathSet[i3];
+    if (Array.isArray(segment)) {
+      var numKeys = 0;
+      for (var j = 0; j < segment.length; j++) {
+        var keySet = segment[j];
+        numKeys += getRangeOrKeySize(keySet);
+      }
+      numPaths *= numKeys;
+    } else {
+      numPaths *= getRangeOrKeySize(segment);
+    }
+  }
+  return numPaths;
+}
+var pathCount2 = getPathCount;
+var _escape = function escape(str) {
+  return "_" + str;
+};
+var _unescape = function unescape2(str) {
+  if (str.slice(0, 1) === "_") {
+    return str.slice(1);
+  } else {
+    throw SyntaxError('Expected "_".');
+  }
+};
+var iterateKeySet$3 = iterateKeySet$7;
+var materialize2 = function materialize3(pathSet, value) {
+  return pathSet.reduceRight(function materializeInner(acc, keySet) {
+    var branch = {};
+    if (typeof keySet !== "object" || keySet === null) {
+      branch[keySet] = acc;
+      return branch;
+    }
+    var iteratorNote = {};
+    var key = iterateKeySet$3(keySet, iteratorNote);
+    while (!iteratorNote.done) {
+      branch[key] = acc;
+      key = iterateKeySet$3(keySet, iteratorNote);
+    }
+    return branch;
+  }, value);
+};
+var lib$1 = {
+  iterateKeySet: iterateKeySet$7,
+  toTree: toTree$2,
+  pathsComplementFromTree: pathsComplementFromTree2,
+  pathsComplementFromLengthTree: pathsComplementFromLengthTree2,
+  toJsonKey: jsonKey.toJsonKey,
+  isJsonKey: jsonKey.isJsonKey,
+  maybeJsonKey: jsonKey.maybeJsonKey,
+  hasIntersection: hasIntersection$2,
+  toPaths: toPathsExports,
+  isIntegerKey: integerKey.isIntegerKey,
+  maybeIntegerKey: integerKey.maybeIntegerKey,
+  collapse: collapse2,
+  followReference: followReference_1$1,
+  optimizePathSets: optimizePathSets2,
+  pathCount: pathCount2,
+  escape: _escape,
+  unescape: _unescape,
+  materialize: materialize2
+};
+var incrementVersion$3 = { exports: {} };
+var version$1 = 1;
+incrementVersion$3.exports = function incrementVersion() {
+  return version$1++;
+};
+incrementVersion$3.exports.getCurrentVersion = function getCurrentVersion() {
+  return version$1;
+};
+var incrementVersionExports = incrementVersion$3.exports;
+var error = "error";
+var isObject$c = isObject$f;
+var getSize$6 = function getSize(node) {
+  return isObject$c(node) && node.$size || 0;
+};
+var isObject$b = isObject$f;
+var getTimestamp$2 = function getTimestamp(node) {
+  return isObject$b(node) && node.$timestamp || void 0;
+};
+var now$1 = now$3;
+var $now = expiresNow$1;
+var $never = expiresNever;
+var isExpired$7 = function isExpired(node) {
+  var exp = node.$expires;
+  return exp != null && exp !== $never && (exp === $now || exp < now$1());
+};
+var privatePrefix$1 = privatePrefix$2;
+var hasOwn$1 = hasOwn_1;
+var isArray$7 = Array.isArray;
+var isObject$a = isObject$f;
+var clone$4 = function clone3(value) {
+  var dest = value;
+  if (isObject$a(dest)) {
+    dest = isArray$7(value) ? [] : {};
+    var src3 = value;
+    for (var key in src3) {
+      if (key.lastIndexOf(privatePrefix$1, 0) === 0 || !hasOwn$1(src3, key)) {
+        continue;
+      }
+      dest[key] = src3[key];
+    }
+  }
+  return dest;
+};
+var isObject$9 = isObject$f;
+var getExpires$1 = function getSize2(node) {
+  return isObject$9(node) && node.$expires || void 0;
+};
+var atom;
+var hasRequiredAtom;
+function requireAtom() {
+  if (hasRequiredAtom)
+    return atom;
+  hasRequiredAtom = 1;
+  atom = "atom";
+  return atom;
+}
+var now = now$3;
+var expiresNow = expiresNow$1;
+var atomSize = 50;
+var clone$3 = clone$4;
+var isArray$6 = Array.isArray;
+var getSize$5 = getSize$6;
+var getExpires = getExpires$1;
+var atomType = requireAtom();
+var wrapNode$2 = function wrapNode(nodeArg, typeArg, value) {
+  var size = 0;
+  var node = nodeArg;
+  var type = typeArg;
+  if (type) {
+    var modelCreated = node.$_modelCreated;
+    node = clone$3(node);
+    size = getSize$5(node);
+    node.$type = type;
+    node.$_prev = void 0;
+    node.$_next = void 0;
+    node.$_modelCreated = modelCreated || false;
+  } else {
+    node = {
+      $type: atomType,
+      value,
+      // eslint-disable-next-line camelcase
+      $_prev: void 0,
+      // eslint-disable-next-line camelcase
+      $_next: void 0,
+      // eslint-disable-next-line camelcase
+      $_modelCreated: true
+    };
+  }
+  if (value == null) {
+    size = atomSize + 1;
+  } else if (size == null || size <= 0) {
+    switch (typeof value) {
+      case "object":
+        if (isArray$6(value)) {
+          size = atomSize + value.length;
+        } else {
+          size = atomSize + 1;
+        }
+        break;
+      case "string":
+        size = atomSize + value.length;
+        break;
+      default:
+        size = atomSize + 1;
+        break;
+    }
+  }
+  var expires = getExpires(node);
+  if (typeof expires === "number" && expires < expiresNow) {
+    node.$expires = now() + expires * -1;
+  }
+  node.$size = size;
+  return node;
+};
+var insertNode$2 = function insertNode(node, parent, key, version3, optimizedPath) {
+  node.$_key = key;
+  node.$_parent = parent;
+  if (version3 !== void 0) {
+    node.$_version = version3;
+  }
+  if (!node.$_absolutePath) {
+    if (Array.isArray(key)) {
+      node.$_absolutePath = optimizedPath.slice(0, optimizedPath.index);
+      Array.prototype.push.apply(node.$_absolutePath, key);
+    } else {
+      node.$_absolutePath = optimizedPath.slice(0, optimizedPath.index);
+      node.$_absolutePath.push(key);
+    }
+  }
+  parent[key] = node;
+  return node;
+};
+var __ref$3 = requireRef();
+var transferBackReferences$1 = function transferBackReferences(fromNode, destNode) {
+  var fromNodeRefsLength = fromNode.$_refsLength || 0, destNodeRefsLength = destNode.$_refsLength || 0, i3 = -1;
+  while (++i3 < fromNodeRefsLength) {
+    var ref3 = fromNode[__ref$3 + i3];
+    if (ref3 !== void 0) {
+      ref3.$_context = destNode;
+      destNode[__ref$3 + (destNodeRefsLength + i3)] = ref3;
+      fromNode[__ref$3 + i3] = void 0;
+    }
+  }
+  destNode.$_refsLength = fromNodeRefsLength + destNodeRefsLength;
+  fromNode.$_refsLength = void 0;
+  return destNode;
+};
+var __ref$2 = requireRef();
+var unlinkBackReferences$1 = function unlinkBackReferences(node) {
+  var i3 = -1, n2 = node.$_refsLength || 0;
+  while (++i3 < n2) {
+    var ref3 = node[__ref$2 + i3];
+    if (ref3 != null) {
+      ref3.$_context = ref3.$_refIndex = node[__ref$2 + i3] = void 0;
+    }
+  }
+  node.$_refsLength = void 0;
+  return node;
+};
+var __ref$1 = requireRef();
+var unlinkForwardReference$1 = function unlinkForwardReference(reference) {
+  var destination = reference.$_context;
+  if (destination) {
+    var i3 = (reference.$_refIndex || 0) - 1, n2 = (destination.$_refsLength || 0) - 1;
+    while (++i3 <= n2) {
+      destination[__ref$1 + i3] = destination[__ref$1 + (i3 + 1)];
+    }
+    destination.$_refsLength = n2;
+    reference.$_refIndex = reference.$_context = destination = void 0;
+  }
+  return reference;
+};
+var $ref$6 = ref;
+var splice = splice$2;
+var isObject$8 = isObject$f;
+var unlinkBackReferences2 = unlinkBackReferences$1;
+var unlinkForwardReference2 = unlinkForwardReference$1;
+var removeNode$2 = function removeNode(node, parent, key, lru) {
+  if (isObject$8(node)) {
+    var type = node.$type;
+    if (type) {
+      if (type === $ref$6) {
+        unlinkForwardReference2(node);
+      }
+      splice(lru, node);
+    }
+    unlinkBackReferences2(node);
+    parent[key] = node.$_parent = void 0;
+    return true;
+  }
+  return false;
+};
+var removeNodeAndDescendants$1;
+var hasRequiredRemoveNodeAndDescendants;
+function requireRemoveNodeAndDescendants() {
+  if (hasRequiredRemoveNodeAndDescendants)
+    return removeNodeAndDescendants$1;
+  hasRequiredRemoveNodeAndDescendants = 1;
+  var hasOwn2 = hasOwn_1;
+  var prefix2 = reservedPrefix$1;
+  var removeNode3 = removeNode$2;
+  removeNodeAndDescendants$1 = function removeNodeAndDescendants2(node, parent, key, lru, mergeContext) {
+    if (removeNode3(node, parent, key, lru)) {
+      if (node.$type !== void 0 && mergeContext && node.$_absolutePath) {
+        mergeContext.hasInvalidatedResult = true;
+      }
+      if (node.$type == null) {
+        for (var key2 in node) {
+          if (key2[0] !== prefix2 && hasOwn2(node, key2)) {
+            removeNodeAndDescendants2(node[key2], node, key2, lru, mergeContext);
+          }
+        }
+      }
+      return true;
+    }
+    return false;
+  };
+  return removeNodeAndDescendants$1;
+}
+var isObject$7 = isObject$f;
+var transferBackReferences2 = transferBackReferences$1;
+var removeNodeAndDescendants = requireRemoveNodeAndDescendants();
+var replaceNode$2 = function replaceNode(node, replacement, parent, key, lru, mergeContext) {
+  if (node === replacement) {
+    return node;
+  } else if (isObject$7(node)) {
+    transferBackReferences2(node, replacement);
+    removeNodeAndDescendants(node, parent, key, lru, mergeContext);
+  }
+  parent[key] = replacement;
+  return replacement;
+};
+var __ref = requireRef();
+var updateBackReferenceVersions$2 = function updateBackReferenceVersions(nodeArg, version3) {
+  var stack = [nodeArg];
+  var count = 0;
+  do {
+    var node = stack[count];
+    if (node && node.$_version !== version3) {
+      node.$_version = version3;
+      stack[count++] = node.$_parent;
+      var i3 = -1;
+      var n2 = node.$_refsLength || 0;
+      while (++i3 < n2) {
+        stack[count++] = node[__ref + i3];
+      }
+    }
+  } while (--count > -1);
+  return nodeArg;
+};
+var removeNode$1 = removeNode$2;
+var updateBackReferenceVersions$1 = updateBackReferenceVersions$2;
+var updateNodeAncestors$3 = function updateNodeAncestors(nodeArg, offset, lru, version3) {
+  var child = nodeArg;
+  do {
+    var node = child.$_parent;
+    var size = child.$size = (child.$size || 0) - offset;
+    if (size <= 0 && node != null) {
+      removeNode$1(child, node, child.$_key, lru);
+    } else if (child.$_version !== version3) {
+      updateBackReferenceVersions$1(child, version3);
+    }
+    child = node;
+  } while (child);
+  return nodeArg;
+};
+var reconstructPath$2 = function reconstructPath(currentPath, key) {
+  var path = currentPath.slice(0, currentPath.depth);
+  path[path.length] = key;
+  return path;
+};
+var $ref$5 = ref;
+var $error$4 = error;
+var getSize$4 = getSize$6;
+var getTimestamp$1 = getTimestamp$2;
+var isObject$6 = isObject$f;
+var isExpired$6 = isExpired$7;
+var isFunction$3 = isFunction$5;
+var wrapNode$1 = wrapNode$2;
+var insertNode$1 = insertNode$2;
+var expireNode$4 = expireNode$5;
+var replaceNode$1 = replaceNode$2;
+var updateNodeAncestors$2 = updateNodeAncestors$3;
+var reconstructPath$1 = reconstructPath$2;
+var mergeJSONGraphNode$1 = function mergeJSONGraphNode(parent, node, message, key, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  var sizeOffset;
+  var cType, mType, cIsObject, mIsObject, cTimestamp, mTimestamp;
+  var nodeValue = node && node.value !== void 0 ? node.value : node;
+  if (nodeValue === message) {
+    if (message === null) {
+      node = wrapNode$1(message, void 0, message);
+      parent = updateNodeAncestors$2(parent, -node.$size, lru, version3);
+      node = insertNode$1(node, parent, key, void 0, optimizedPath);
+      return node;
+    } else if (message === void 0) {
+      return message;
+    } else {
+      cIsObject = isObject$6(node);
+      if (cIsObject) {
+        cType = node.$type;
+        if (cType == null) {
+          if (node.$_parent == null) {
+            insertNode$1(node, parent, key, version3, optimizedPath);
+          }
+          return node;
+        }
+      }
+    }
+  } else {
+    cIsObject = isObject$6(node);
+    if (cIsObject) {
+      cType = node.$type;
+    }
+  }
+  if (cType !== $ref$5) {
+    mIsObject = isObject$6(message);
+    if (mIsObject) {
+      mType = message.$type;
+    }
+    if (cIsObject && !cType) {
+      if (message == null || mIsObject && !mType) {
+        return node;
+      }
+    }
+  } else {
+    if (message == null) {
+      if (isExpired$6(node)) {
+        expireNode$4(node, expired, lru);
+        return void 0;
+      }
+      return node;
+    }
+    mIsObject = isObject$6(message);
+    if (mIsObject) {
+      mType = message.$type;
+      if (mType === $ref$5) {
+        if (node === message) {
+          if (node.$_parent != null) {
+            return node;
+          }
+        } else {
+          cTimestamp = node.$timestamp;
+          mTimestamp = message.$timestamp;
+          if (!isExpired$6(node) && !isExpired$6(message) && mTimestamp < cTimestamp) {
+            return void 0;
+          }
+        }
+      }
+    }
+  }
+  if (cType && mIsObject && !mType) {
+    return insertNode$1(replaceNode$1(node, message, parent, key, lru, replacedPaths), parent, key, void 0, optimizedPath);
+  } else if (mType || !mIsObject) {
+    if (mType === $error$4 && isFunction$3(errorSelector2)) {
+      message = errorSelector2(reconstructPath$1(requestedPath, key), message);
+      mType = message.$type || mType;
+    }
+    if (mType && node === message) {
+      if (node.$_parent == null) {
+        node = wrapNode$1(node, mType, node.value);
+        parent = updateNodeAncestors$2(parent, -node.$size, lru, version3);
+        node = insertNode$1(node, parent, key, version3, optimizedPath);
+      }
+    } else {
+      var isDistinct = true;
+      if (cType && !isExpired$6(node) || !cIsObject) {
+        isDistinct = getTimestamp$1(message) < getTimestamp$1(node) === false;
+        if (isDistinct && (cType || mType) && isFunction$3(comparator2)) {
+          isDistinct = !comparator2(nodeValue, message, optimizedPath.slice(0, optimizedPath.index));
+        }
+      }
+      if (isDistinct) {
+        message = wrapNode$1(message, mType, mType ? message.value : message);
+        sizeOffset = getSize$4(node) - getSize$4(message);
+        node = replaceNode$1(node, message, parent, key, lru, replacedPaths);
+        parent = updateNodeAncestors$2(parent, sizeOffset, lru, version3);
+        node = insertNode$1(node, parent, key, version3, optimizedPath);
+      }
+    }
+    if (isExpired$6(node)) {
+      expireNode$4(node, expired, lru);
+    }
+  } else if (node == null) {
+    node = insertNode$1({}, parent, key, void 0, optimizedPath);
+  }
+  return node;
+};
+function applyErrorPrototype$4(errorType) {
+  errorType.prototype = Object.create(Error.prototype, {
+    constructor: {
+      value: Error,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(errorType, Error);
+  } else {
+    errorType.__proto__ = Error;
+  }
+}
+var applyErrorPrototype_1 = applyErrorPrototype$4;
+var applyErrorPrototype$3 = applyErrorPrototype_1;
+function NullInPathError$2() {
+  var instance = new Error("`null` and `undefined` are not allowed in branch key positions");
+  instance.name = "NullInPathError";
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+  }
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(instance, NullInPathError$2);
+  }
+  return instance;
+}
+applyErrorPrototype$3(NullInPathError$2);
+var NullInPathError_1 = NullInPathError$2;
+var createHardlink$1 = createHardlink$2;
+var $ref$4 = ref;
+var isExpired$5 = isAlreadyExpired;
+var isFunction$2 = isFunction$5;
+var isPrimitive$3 = isPrimitive$4;
+var expireNode$3 = expireNode$5;
+var iterateKeySet$2 = lib$1.iterateKeySet;
+var incrementVersion$2 = incrementVersionExports;
+var mergeJSONGraphNode2 = mergeJSONGraphNode$1;
+var NullInPathError$1 = NullInPathError_1;
+var setJSONGraphs$3 = function setJSONGraphs(model, jsonGraphEnvelopes, x, errorSelector2, comparator2, replacedPaths) {
+  var modelRoot = model._root;
+  var lru = modelRoot;
+  var expired = modelRoot.expired;
+  var version3 = incrementVersion$2();
+  var cache = modelRoot.cache;
+  var initialVersion = cache.$_version;
+  var requestedPath = [];
+  var optimizedPath = [];
+  var requestedPaths = [];
+  var optimizedPaths = [];
+  var jsonGraphEnvelopeIndex = -1;
+  var jsonGraphEnvelopeCount = jsonGraphEnvelopes.length;
+  while (++jsonGraphEnvelopeIndex < jsonGraphEnvelopeCount) {
+    var jsonGraphEnvelope = jsonGraphEnvelopes[jsonGraphEnvelopeIndex];
+    var paths = jsonGraphEnvelope.paths;
+    var jsonGraph = jsonGraphEnvelope.jsonGraph;
+    var pathIndex = -1;
+    var pathCount3 = paths.length;
+    while (++pathIndex < pathCount3) {
+      var path = paths[pathIndex];
+      optimizedPath.index = 0;
+      setJSONGraphPathSet(
+        path,
+        0,
+        cache,
+        cache,
+        cache,
+        jsonGraph,
+        jsonGraph,
+        jsonGraph,
+        requestedPaths,
+        optimizedPaths,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2,
+        replacedPaths
+      );
+    }
+  }
+  var newVersion = cache.$_version;
+  var rootChangeHandler = modelRoot.onChange;
+  if (isFunction$2(rootChangeHandler) && initialVersion !== newVersion) {
+    rootChangeHandler();
+  }
+  return [requestedPaths, optimizedPaths];
+};
+function setJSONGraphPathSet(path, depth, root4, parent, node, messageRoot, messageParent, message, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  var note = {};
+  var branch = depth < path.length - 1;
+  var keySet = path[depth];
+  var key = iterateKeySet$2(keySet, note);
+  var optimizedIndex = optimizedPath.index;
+  do {
+    requestedPath.depth = depth;
+    var results = setNode$1(
+      root4,
+      parent,
+      node,
+      messageRoot,
+      messageParent,
+      message,
+      key,
+      branch,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2,
+      replacedPaths
+    );
+    requestedPath[depth] = key;
+    requestedPath.index = depth;
+    optimizedPath[optimizedPath.index++] = key;
+    var nextNode = results[0];
+    var nextParent = results[1];
+    if (nextNode) {
+      if (branch) {
+        setJSONGraphPathSet(
+          path,
+          depth + 1,
+          root4,
+          nextParent,
+          nextNode,
+          messageRoot,
+          results[3],
+          results[2],
+          requestedPaths,
+          optimizedPaths,
+          requestedPath,
+          optimizedPath,
+          version3,
+          expired,
+          lru,
+          comparator2,
+          errorSelector2,
+          replacedPaths
+        );
+      } else {
+        requestedPaths.push(requestedPath.slice(0, requestedPath.index + 1));
+        optimizedPaths.push(optimizedPath.slice(0, optimizedPath.index));
+      }
+    }
+    key = iterateKeySet$2(keySet, note);
+    if (note.done) {
+      break;
+    }
+    optimizedPath.index = optimizedIndex;
+  } while (true);
+}
+var _result = new Array(4);
+function setReference$1(root4, node, messageRoot, message, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  var reference = node.value;
+  optimizedPath.length = 0;
+  optimizedPath.push.apply(optimizedPath, reference);
+  if (isExpired$5(node)) {
+    optimizedPath.index = reference.length;
+    expireNode$3(node, expired, lru);
+    _result[0] = void 0;
+    _result[1] = root4;
+    _result[2] = message;
+    _result[3] = messageRoot;
+    return _result;
+  }
+  var index2 = 0;
+  var container = node;
+  var count = reference.length - 1;
+  var parent = node = root4;
+  var messageParent = message = messageRoot;
+  do {
+    var key = reference[index2];
+    var branch = index2 < count;
+    optimizedPath.index = index2;
+    var results = setNode$1(
+      root4,
+      parent,
+      node,
+      messageRoot,
+      messageParent,
+      message,
+      key,
+      branch,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2,
+      replacedPaths
+    );
+    node = results[0];
+    if (isPrimitive$3(node)) {
+      optimizedPath.index = index2;
+      return results;
+    }
+    parent = results[1];
+    message = results[2];
+    messageParent = results[3];
+  } while (index2++ < count);
+  optimizedPath.index = index2;
+  if (container.$_context !== node) {
+    createHardlink$1(container, node);
+  }
+  _result[0] = node;
+  _result[1] = parent;
+  _result[2] = message;
+  _result[3] = messageParent;
+  return _result;
+}
+function setNode$1(root4, parent, node, messageRoot, messageParent, message, key, branch, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  var type = node.$type;
+  while (type === $ref$4) {
+    var results = setReference$1(
+      root4,
+      node,
+      messageRoot,
+      message,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2,
+      replacedPaths
+    );
+    node = results[0];
+    if (isPrimitive$3(node)) {
+      return results;
+    }
+    parent = results[1];
+    message = results[2];
+    messageParent = results[3];
+    type = node.$type;
+  }
+  if (type !== void 0) {
+    _result[0] = node;
+    _result[1] = parent;
+    _result[2] = message;
+    _result[3] = messageParent;
+    return _result;
+  }
+  if (key == null) {
+    if (branch) {
+      throw new NullInPathError$1();
+    } else if (node) {
+      key = node.$_key;
+    }
+  } else {
+    parent = node;
+    messageParent = message;
+    node = parent[key];
+    message = messageParent && messageParent[key];
+  }
+  node = mergeJSONGraphNode2(
+    parent,
+    node,
+    message,
+    key,
+    requestedPath,
+    optimizedPath,
+    version3,
+    expired,
+    lru,
+    comparator2,
+    errorSelector2,
+    replacedPaths
+  );
+  _result[0] = node;
+  _result[1] = parent;
+  _result[2] = message;
+  _result[3] = messageParent;
+  return _result;
+}
+var promote$3;
+var hasRequiredPromote;
+function requirePromote() {
+  if (hasRequiredPromote)
+    return promote$3;
+  hasRequiredPromote = 1;
+  var EXPIRES_NEVER = expiresNever;
+  promote$3 = function lruPromote(root4, object) {
+    if (object.$expires === EXPIRES_NEVER) {
+      return;
+    }
+    var head5 = root4.$_head;
+    if (!head5) {
+      root4.$_head = root4.$_tail = object;
+      return;
+    }
+    if (head5 === object) {
+      return;
+    }
+    var prev = object.$_prev;
+    var next = object.$_next;
+    if (next) {
+      next.$_prev = prev;
+    }
+    if (prev) {
+      prev.$_next = next;
+    }
+    object.$_prev = void 0;
+    root4.$_head = object;
+    object.$_next = head5;
+    head5.$_prev = object;
+    if (object === root4.$_tail) {
+      root4.$_tail = prev;
+    }
+  };
+  return promote$3;
+}
+var clone$2;
+var hasRequiredClone2;
+function requireClone2() {
+  if (hasRequiredClone2)
+    return clone$2;
+  hasRequiredClone2 = 1;
+  var privatePrefix2 = privatePrefix$2;
+  clone$2 = function clone5(node) {
+    if (node === void 0) {
+      return node;
+    }
+    var outValue = {};
+    for (var k in node) {
+      if (k.lastIndexOf(privatePrefix2, 0) === 0) {
+        continue;
+      }
+      outValue[k] = node[k];
+    }
+    return outValue;
+  };
+  return clone$2;
+}
+var promote$2 = requirePromote();
+var clone$1 = requireClone2();
+var $ref$3 = ref;
+var $atom = requireAtom();
+var $error$3 = error;
+var onValue$2 = function onValue(model, node, seed, depth, outerResults, branchInfo, requestedPath, optimizedPath, optimizedLength, isJSONG2) {
+  if (node) {
+    promote$2(model._root, node);
+  }
+  if (!seed) {
+    return;
+  }
+  var i3, len2, k, key, curr, prev = null, prevK;
+  var materialized = false, valueNode, nodeType = node && node.$type, nodeValue = node && node.value;
+  if (nodeValue === void 0) {
+    materialized = model._materialized;
+  }
+  if (materialized) {
+    valueNode = { $type: $atom };
+  } else if (model._boxed) {
+    valueNode = clone$1(node);
+  } else if (!isJSONG2 && nodeType === $ref$3) {
+    valueNode = void 0;
+  } else if (nodeType === $ref$3 || nodeType === $error$3) {
+    if (isJSONG2) {
+      valueNode = clone$1(node);
+    } else {
+      valueNode = nodeValue;
+    }
+  } else if (isJSONG2) {
+    var isObject4 = nodeValue && typeof nodeValue === "object";
+    var isUserCreatedNode = !node || !node.$_modelCreated;
+    if (isObject4 || isUserCreatedNode) {
+      valueNode = clone$1(node);
+    } else {
+      valueNode = nodeValue;
+    }
+  } else if (node && nodeType === void 0 && nodeValue === void 0) {
+    valueNode = {};
+  } else {
+    valueNode = nodeValue;
+  }
+  var hasValues = false;
+  if (isJSONG2) {
+    curr = seed.jsonGraph;
+    if (!curr) {
+      hasValues = true;
+      curr = seed.jsonGraph = {};
+      seed.paths = [];
+    }
+    for (i3 = 0, len2 = optimizedLength - 1; i3 < len2; i3++) {
+      key = optimizedPath[i3];
+      if (!curr[key]) {
+        hasValues = true;
+        curr[key] = {};
+      }
+      curr = curr[key];
+    }
+    key = optimizedPath[i3];
+    curr[key] = materialized ? { $type: $atom } : valueNode;
+    if (requestedPath) {
+      seed.paths.push(requestedPath.slice(0, depth));
+    }
+  } else if (depth === 0) {
+    hasValues = true;
+    seed.json = valueNode;
+  } else {
+    curr = seed.json;
+    if (!curr) {
+      hasValues = true;
+      curr = seed.json = {};
+    }
+    for (i3 = 0; i3 < depth - 1; i3++) {
+      k = requestedPath[i3];
+      if (!curr[k]) {
+        hasValues = true;
+        curr[k] = branchInfo[i3];
+      }
+      prev = curr;
+      prevK = k;
+      curr = curr[k];
+    }
+    k = requestedPath[i3];
+    if (valueNode !== void 0) {
+      if (k != null) {
+        hasValues = true;
+        if (!curr[k]) {
+          curr[k] = valueNode;
+        }
+      } else {
+        prev[prevK] = valueNode;
+      }
+    }
+  }
+  if (outerResults) {
+    outerResults.hasValues = hasValues;
+  }
+};
+var isExpired$4;
+var hasRequiredIsExpired;
+function requireIsExpired() {
+  if (hasRequiredIsExpired)
+    return isExpired$4;
+  hasRequiredIsExpired = 1;
+  isExpired$4 = isExpired$7;
+  return isExpired$4;
+}
+var followReference_1;
+var hasRequiredFollowReference2;
+function requireFollowReference2() {
+  if (hasRequiredFollowReference2)
+    return followReference_1;
+  hasRequiredFollowReference2 = 1;
+  var createHardlink3 = createHardlink$2;
+  var onValue3 = onValue$2;
+  var isExpired3 = requireIsExpired();
+  var $ref2 = ref;
+  var promote2 = requirePromote();
+  function followReference3(model, root4, nodeArg, referenceContainerArg, referenceArg, seed, isJSONG2) {
+    var node = nodeArg;
+    var reference = referenceArg;
+    var referenceContainer = referenceContainerArg;
+    var depth = 0;
+    var k, next;
+    while (true) {
+      if (depth === 0 && referenceContainer.$_context) {
+        depth = reference.length;
+        next = referenceContainer.$_context;
+      } else {
+        k = reference[depth++];
+        next = node[k];
+      }
+      if (next) {
+        var type = next.$type;
+        var value = type && next.value || next;
+        if (depth < reference.length) {
+          if (type) {
+            node = next;
+            break;
+          }
+          node = next;
+          continue;
+        } else {
+          node = next;
+          if (type && isExpired3(next)) {
+            break;
+          }
+          if (!referenceContainer.$_context) {
+            createHardlink3(referenceContainer, next);
+          }
+          if (type === $ref2) {
+            if (isJSONG2) {
+              onValue3(
+                model,
+                next,
+                seed,
+                null,
+                null,
+                null,
+                null,
+                reference,
+                reference.length,
+                isJSONG2
+              );
+            } else {
+              promote2(model._root, next);
+            }
+            depth = 0;
+            reference = value;
+            referenceContainer = next;
+            node = root4;
+            continue;
+          }
+          break;
+        }
+      } else {
+        node = void 0;
+      }
+      break;
+    }
+    if (depth < reference.length && node !== void 0) {
+      var ref3 = [];
+      for (var i3 = 0; i3 < depth; i3++) {
+        ref3[i3] = reference[i3];
+      }
+      reference = ref3;
+    }
+    return [node, reference, referenceContainer];
+  }
+  followReference_1 = followReference3;
+  return followReference_1;
+}
+var getValueSync;
+var hasRequiredGetValueSync;
+function requireGetValueSync() {
+  if (hasRequiredGetValueSync)
+    return getValueSync;
+  hasRequiredGetValueSync = 1;
+  var followReference3 = requireFollowReference2();
+  var clone5 = requireClone2();
+  var isExpired3 = requireIsExpired();
+  var promote2 = requirePromote();
+  var $ref2 = ref;
+  var $atom2 = requireAtom();
+  var $error2 = error;
+  getValueSync = function getValueSync2(model, simplePath, noClone) {
+    var root4 = model._root.cache;
+    var len2 = simplePath.length;
+    var optimizedPath = [];
+    var shorted = false, shouldShort = false;
+    var depth = 0;
+    var key, i3, next = root4, curr = root4, out = root4, type, ref3, refNode;
+    var found = true;
+    var expired = false;
+    while (next && depth < len2) {
+      key = simplePath[depth++];
+      if (key !== null) {
+        next = curr[key];
+        optimizedPath[optimizedPath.length] = key;
+      }
+      if (!next) {
+        out = void 0;
+        shorted = true;
+        found = false;
+        break;
+      }
+      type = next.$type;
+      if (type === $atom2 && next.value === void 0) {
+        out = void 0;
+        found = false;
+        shorted = depth < len2;
+        break;
+      }
+      if (depth < len2) {
+        if (type === $ref2) {
+          if (isExpired3(next)) {
+            expired = true;
+            out = void 0;
+            break;
+          }
+          ref3 = followReference3(model, root4, root4, next, next.value);
+          refNode = ref3[0];
+          if (!refNode) {
+            out = void 0;
+            next = void 0;
+            found = false;
+            break;
+          }
+          type = refNode.$type;
+          next = refNode;
+          optimizedPath = ref3[1].slice(0);
+        }
+        if (type) {
+          break;
+        }
+      } else {
+        out = next;
+      }
+      curr = next;
+    }
+    if (depth < len2 && !expired) {
+      for (i3 = depth; i3 < len2; ++i3) {
+        if (simplePath[depth] !== null) {
+          shouldShort = true;
+          break;
+        }
+      }
+      if (shouldShort) {
+        shorted = true;
+        out = void 0;
+      } else {
+        out = next;
+      }
+      for (i3 = depth; i3 < len2; ++i3) {
+        if (simplePath[i3] !== null) {
+          optimizedPath[optimizedPath.length] = simplePath[i3];
+        }
+      }
+    }
+    if (out && type) {
+      if (isExpired3(out)) {
+        out = void 0;
+      } else {
+        promote2(model._root, out);
+      }
+    }
+    if (out && type === $error2 && !model._treatErrorsAsValues) {
+      throw {
+        path: depth === len2 ? simplePath : simplePath.slice(0, depth),
+        value: out.value
+      };
+    } else if (out && model._boxed) {
+      out = Boolean(type) && !noClone ? clone5(out) : out;
+    } else if (!out && model._materialized) {
+      out = { $type: $atom2 };
+    } else if (out) {
+      out = out.value;
+    }
+    return {
+      value: out,
+      shorted,
+      optimizedPath,
+      found
+    };
+  };
+  return getValueSync;
+}
+var InvalidModelError_1;
+var hasRequiredInvalidModelError;
+function requireInvalidModelError() {
+  if (hasRequiredInvalidModelError)
+    return InvalidModelError_1;
+  hasRequiredInvalidModelError = 1;
+  var applyErrorPrototype2 = applyErrorPrototype_1;
+  function InvalidModelError2(boundPath, shortedPath) {
+    var instance = new Error("The boundPath of the model is not valid since a value or error was found before the path end.");
+    instance.name = "InvalidModelError";
+    instance.boundPath = boundPath;
+    instance.shortedPath = shortedPath;
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+    }
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(instance, InvalidModelError2);
+    }
+    return instance;
+  }
+  applyErrorPrototype2(InvalidModelError2);
+  InvalidModelError_1 = InvalidModelError2;
+  return InvalidModelError_1;
+}
+var getBoundValue$1;
+var hasRequiredGetBoundValue;
+function requireGetBoundValue() {
+  if (hasRequiredGetBoundValue)
+    return getBoundValue$1;
+  hasRequiredGetBoundValue = 1;
+  var getValueSync2 = requireGetValueSync();
+  var InvalidModelError2 = requireInvalidModelError();
+  getBoundValue$1 = function getBoundValue2(model, pathArg, materialized) {
+    var path = pathArg;
+    var boundPath = pathArg;
+    var boxed, treatErrorsAsValues2, value, shorted, found;
+    boxed = model._boxed;
+    materialized = model._materialized;
+    treatErrorsAsValues2 = model._treatErrorsAsValues;
+    model._boxed = true;
+    model._materialized = materialized === void 0 || materialized;
+    model._treatErrorsAsValues = true;
+    value = getValueSync2(model, path.concat(null), true);
+    model._boxed = boxed;
+    model._materialized = materialized;
+    model._treatErrorsAsValues = treatErrorsAsValues2;
+    path = value.optimizedPath;
+    shorted = value.shorted;
+    found = value.found;
+    value = value.value;
+    while (path.length && path[path.length - 1] === null) {
+      path.pop();
+    }
+    if (found && shorted) {
+      throw new InvalidModelError2(boundPath, path);
+    }
+    return {
+      path,
+      value,
+      shorted,
+      found
+    };
+  };
+  return getBoundValue$1;
+}
+var isObject$5 = isObject$f;
+var getType$1 = function getType(node, anyType) {
+  var type = isObject$5(node) && node.$type || void 0;
+  if (anyType && type) {
+    return "branch";
+  }
+  return type;
+};
+var $ref$2 = ref;
+var $error$2 = error;
+var getType2 = getType$1;
+var getSize$3 = getSize$6;
+var getTimestamp2 = getTimestamp$2;
+var isExpired$3 = isExpired$7;
+var isPrimitive$2 = isPrimitive$4;
+var isFunction$1 = isFunction$5;
+var wrapNode2 = wrapNode$2;
+var expireNode$2 = expireNode$5;
+var insertNode2 = insertNode$2;
+var replaceNode2 = replaceNode$2;
+var updateNodeAncestors$1 = updateNodeAncestors$3;
+var updateBackReferenceVersions2 = updateBackReferenceVersions$2;
+var reconstructPath2 = reconstructPath$2;
+var mergeValueOrInsertBranch$1 = function mergeValueOrInsertBranch(parent, node, key, value, branch, reference, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  var type = getType2(node, reference);
+  if (branch || reference) {
+    if (type && isExpired$3(node)) {
+      type = "expired";
+      expireNode$2(node, expired, lru);
+    }
+    if (type && type !== $ref$2 || isPrimitive$2(node)) {
+      node = replaceNode2(node, {}, parent, key, lru, replacedPaths);
+      node = insertNode2(node, parent, key, version3, optimizedPath);
+      node = updateBackReferenceVersions2(node, version3);
+    }
+  } else {
+    var message = value;
+    var mType = getType2(message);
+    var isDistinct = getTimestamp2(message) < getTimestamp2(node) === false;
+    if ((type || mType) && isFunction$1(comparator2)) {
+      isDistinct = !comparator2(node, message, optimizedPath.slice(0, optimizedPath.index));
+    }
+    if (isDistinct) {
+      if (mType === $error$2 && isFunction$1(errorSelector2)) {
+        message = errorSelector2(reconstructPath2(requestedPath, key), message);
+        mType = message.$type || mType;
+      }
+      message = wrapNode2(message, mType, mType ? message.value : message);
+      var sizeOffset = getSize$3(node) - getSize$3(message);
+      node = replaceNode2(node, message, parent, key, lru, replacedPaths);
+      parent = updateNodeAncestors$1(parent, sizeOffset, lru, version3);
+      node = insertNode2(node, parent, key, version3, optimizedPath);
+    }
+  }
+  return node;
+};
+var setPathValues$2;
+var hasRequiredSetPathValues;
+function requireSetPathValues() {
+  if (hasRequiredSetPathValues)
+    return setPathValues$2;
+  hasRequiredSetPathValues = 1;
+  var createHardlink3 = createHardlink$2;
+  var $ref2 = ref;
+  var getBoundValue2 = requireGetBoundValue();
+  var isExpired3 = isExpired$7;
+  var isFunction4 = isFunction$5;
+  var isPrimitive3 = isPrimitive$4;
+  var expireNode3 = expireNode$5;
+  var iterateKeySet4 = lib$1.iterateKeySet;
+  var incrementVersion3 = incrementVersionExports;
+  var mergeValueOrInsertBranch3 = mergeValueOrInsertBranch$1;
+  var NullInPathError2 = NullInPathError_1;
+  setPathValues$2 = function setPathValues2(model, pathValues, x, errorSelector2, comparator2) {
+    var modelRoot = model._root;
+    var lru = modelRoot;
+    var expired = modelRoot.expired;
+    var version3 = incrementVersion3();
+    var bound = model._path;
+    var cache = modelRoot.cache;
+    var node = bound.length ? getBoundValue2(model, bound).value : cache;
+    var parent = node.$_parent || cache;
+    var initialVersion = cache.$_version;
+    var requestedPath = [];
+    var requestedPaths = [];
+    var optimizedPaths = [];
+    var optimizedIndex = bound.length;
+    var pathValueIndex = -1;
+    var pathValueCount = pathValues.length;
+    while (++pathValueIndex < pathValueCount) {
+      var pathValue2 = pathValues[pathValueIndex];
+      var path = pathValue2.path;
+      var value = pathValue2.value;
+      var optimizedPath = bound.slice(0);
+      optimizedPath.index = optimizedIndex;
+      setPathSet(
+        value,
+        path,
+        0,
+        cache,
+        parent,
+        node,
+        requestedPaths,
+        optimizedPaths,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2
+      );
+    }
+    var newVersion = cache.$_version;
+    var rootChangeHandler = modelRoot.onChange;
+    if (isFunction4(rootChangeHandler) && initialVersion !== newVersion) {
+      rootChangeHandler();
+    }
+    return [requestedPaths, optimizedPaths];
+  };
+  function setPathSet(value, path, depth, root4, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+    var note = {};
+    var branch = depth < path.length - 1;
+    var keySet = path[depth];
+    var key = iterateKeySet4(keySet, note);
+    var optimizedIndex = optimizedPath.index;
+    do {
+      requestedPath.depth = depth;
+      var results = setNode2(
+        root4,
+        parent,
+        node,
+        key,
+        value,
+        branch,
+        false,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2,
+        replacedPaths
+      );
+      requestedPath[depth] = key;
+      requestedPath.index = depth;
+      optimizedPath[optimizedPath.index++] = key;
+      var nextNode = results[0];
+      var nextParent = results[1];
+      if (nextNode) {
+        if (branch) {
+          setPathSet(
+            value,
+            path,
+            depth + 1,
+            root4,
+            nextParent,
+            nextNode,
+            requestedPaths,
+            optimizedPaths,
+            requestedPath,
+            optimizedPath,
+            version3,
+            expired,
+            lru,
+            comparator2,
+            errorSelector2
+          );
+        } else {
+          requestedPaths.push(requestedPath.slice(0, requestedPath.index + 1));
+          optimizedPaths.push(optimizedPath.slice(0, optimizedPath.index));
+        }
+      }
+      key = iterateKeySet4(keySet, note);
+      if (note.done) {
+        break;
+      }
+      optimizedPath.index = optimizedIndex;
+    } while (true);
+  }
+  function setReference2(value, root4, node, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+    var reference = node.value;
+    optimizedPath.length = 0;
+    optimizedPath.push.apply(optimizedPath, reference);
+    if (isExpired3(node)) {
+      optimizedPath.index = reference.length;
+      expireNode3(node, expired, lru);
+      return [void 0, root4];
+    }
+    var container = node;
+    var parent = root4;
+    node = node.$_context;
+    if (node != null) {
+      parent = node.$_parent || root4;
+      optimizedPath.index = reference.length;
+    } else {
+      var index2 = 0;
+      var count = reference.length - 1;
+      parent = node = root4;
+      do {
+        var key = reference[index2];
+        var branch = index2 < count;
+        optimizedPath.index = index2;
+        var results = setNode2(
+          root4,
+          parent,
+          node,
+          key,
+          value,
+          branch,
+          true,
+          requestedPath,
+          optimizedPath,
+          version3,
+          expired,
+          lru,
+          comparator2,
+          errorSelector2,
+          replacedPaths
+        );
+        node = results[0];
+        if (isPrimitive3(node)) {
+          optimizedPath.index = index2;
+          return results;
+        }
+        parent = results[1];
+      } while (index2++ < count);
+      optimizedPath.index = index2;
+      if (container.$_context !== node) {
+        createHardlink3(container, node);
+      }
+    }
+    return [node, parent];
+  }
+  function setNode2(root4, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
+    var type = node.$type;
+    while (type === $ref2) {
+      var results = setReference2(
+        value,
+        root4,
+        node,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2,
+        replacedPaths
+      );
+      node = results[0];
+      if (isPrimitive3(node)) {
+        return results;
+      }
+      parent = results[1];
+      type = node.$type;
+    }
+    if (branch && type !== void 0) {
+      return [node, parent];
+    }
+    if (key == null) {
+      if (branch) {
+        throw new NullInPathError2();
+      } else if (node) {
+        key = node.$_key;
+      }
+    } else {
+      parent = node;
+      node = parent[key];
+    }
+    node = mergeValueOrInsertBranch3(
+      parent,
+      node,
+      key,
+      value,
+      branch,
+      reference,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2,
+      replacedPaths
+    );
+    return [node, parent];
+  }
+  return setPathValues$2;
+}
+var applyErrorPrototype$2 = applyErrorPrototype_1;
+function InvalidSourceError$6(error3) {
+  var instance = new Error("An exception was thrown when making a request.");
+  instance.name = "InvalidSourceError";
+  instance.innerError = error3;
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+  }
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(instance, InvalidSourceError$6);
+  }
+  return instance;
+}
+applyErrorPrototype$2(InvalidSourceError$6);
+var InvalidSourceError_1 = InvalidSourceError$6;
+var setJSONGraphs$2 = setJSONGraphs$3;
+var setPathValues$1 = requireSetPathValues();
+var InvalidSourceError$5 = InvalidSourceError_1;
+var emptyArray$2 = [];
+var emptyDisposable = { dispose: function() {
+} };
+var sendSetRequest$1 = function(originalJsonGraph, model, attemptCount, callback) {
+  var paths = originalJsonGraph.paths;
+  var modelRoot = model._root;
+  var errorSelector2 = modelRoot.errorSelector;
+  var comparator2 = modelRoot.comparator;
+  var boundPath = model._path;
+  var resultingJsonGraphEnvelope;
+  var setObservable;
+  try {
+    setObservable = model._source.set(originalJsonGraph, attemptCount);
+  } catch (e2) {
+    callback(new InvalidSourceError$5());
+    return emptyDisposable;
+  }
+  var disposable = setObservable.subscribe(function onNext2(jsonGraphEnvelope) {
+    if (disposable && disposable.disposed) {
+      return;
+    }
+    model._path = emptyArray$2;
+    var successfulPaths = setJSONGraphs$2(model, [{
+      paths,
+      jsonGraph: jsonGraphEnvelope.jsonGraph
+    }], null, errorSelector2, comparator2);
+    jsonGraphEnvelope.paths = successfulPaths[1];
+    model._path = boundPath;
+    resultingJsonGraphEnvelope = jsonGraphEnvelope;
+  }, function onError4(dataSourceError) {
+    if (disposable && disposable.disposed) {
+      return;
+    }
+    model._path = emptyArray$2;
+    setPathValues$1(model, paths.map(function(path) {
+      return {
+        path,
+        value: dataSourceError
+      };
+    }), null, errorSelector2, comparator2);
+    model._path = boundPath;
+    callback(dataSourceError);
+  }, function onCompleted2() {
+    callback(null, resultingJsonGraphEnvelope);
+  });
+  return disposable;
+};
+var sendSetRequest_1 = sendSetRequest$1;
+var complement$1 = { exports: {} };
+var iterateKeySet$12 = lib$1.iterateKeySet;
+complement$1.exports = function complement(requested, optimized, tree) {
+  var optimizedComplement = [];
+  var requestedComplement = [];
+  var intersection = [];
+  var i3, iLen;
+  for (i3 = 0, iLen = optimized.length; i3 < iLen; ++i3) {
+    var oPath = optimized[i3];
+    var rPath = requested[i3];
+    var subTree = tree[oPath.length];
+    var intersectionData = findPartialIntersections(rPath, oPath, subTree);
+    Array.prototype.push.apply(intersection, intersectionData[0]);
+    Array.prototype.push.apply(optimizedComplement, intersectionData[1]);
+    Array.prototype.push.apply(requestedComplement, intersectionData[2]);
+  }
+  return {
+    intersection,
+    optimizedComplement,
+    requestedComplement
+  };
+};
+function findPartialIntersections(requestedPath, optimizedPath, requestTree) {
+  var depthDiff = requestedPath.length - optimizedPath.length;
+  var i3;
+  for (i3 = 0; requestTree && i3 < -depthDiff; i3++) {
+    requestTree = requestTree[optimizedPath[i3]];
+  }
+  if (!requestTree) {
+    return [[], [optimizedPath], [requestedPath]];
+  }
+  if (depthDiff === 0) {
+    return recurse(requestedPath, optimizedPath, requestTree, 0, [], []);
+  } else if (depthDiff > 0) {
+    return recurse(requestedPath, optimizedPath, requestTree, 0, requestedPath.slice(0, depthDiff), []);
+  } else {
+    return recurse(requestedPath, optimizedPath, requestTree, -depthDiff, [], optimizedPath.slice(0, -depthDiff));
+  }
+}
+function recurse(requestedPath, optimizedPath, currentTree, depth, rCurrentPath, oCurrentPath) {
+  var depthDiff = requestedPath.length - optimizedPath.length;
+  var intersections = [];
+  var rComplementPaths = [];
+  var oComplementPaths = [];
+  var oPathLen = optimizedPath.length;
+  for (; depth < oPathLen; ++depth) {
+    var key = optimizedPath[depth];
+    var keyType = typeof key;
+    if (key && keyType === "object") {
+      var note = {};
+      var innerKey = iterateKeySet$12(key, note);
+      while (!note.done) {
+        var nextTree = currentTree[innerKey];
+        if (nextTree === void 0) {
+          oComplementPaths[oComplementPaths.length] = arrayConcatSlice2(
+            oCurrentPath,
+            innerKey,
+            optimizedPath,
+            depth + 1
+          );
+          rComplementPaths[rComplementPaths.length] = arrayConcatSlice2(
+            rCurrentPath,
+            innerKey,
+            requestedPath,
+            depth + 1 + depthDiff
+          );
+        } else if (depth === oPathLen - 1) {
+          intersections[intersections.length] = arrayConcatElement(rCurrentPath, innerKey);
+        } else {
+          var intersectionData = recurse(
+            requestedPath,
+            optimizedPath,
+            nextTree,
+            depth + 1,
+            arrayConcatElement(rCurrentPath, innerKey),
+            arrayConcatElement(oCurrentPath, innerKey)
+          );
+          Array.prototype.push.apply(intersections, intersectionData[0]);
+          Array.prototype.push.apply(oComplementPaths, intersectionData[1]);
+          Array.prototype.push.apply(rComplementPaths, intersectionData[2]);
+        }
+        innerKey = iterateKeySet$12(key, note);
+      }
+      break;
+    } else {
+      currentTree = currentTree[key];
+      oCurrentPath[oCurrentPath.length] = optimizedPath[depth];
+      rCurrentPath[rCurrentPath.length] = requestedPath[depth + depthDiff];
+      if (currentTree === void 0) {
+        oComplementPaths[oComplementPaths.length] = arrayConcatSlice(
+          oCurrentPath,
+          optimizedPath,
+          depth + 1
+        );
+        rComplementPaths[rComplementPaths.length] = arrayConcatSlice(
+          rCurrentPath,
+          requestedPath,
+          depth + depthDiff + 1
+        );
+        break;
+      } else if (depth === oPathLen - 1) {
+        intersections[intersections.length] = rCurrentPath;
+      }
+    }
+  }
+  return [intersections, oComplementPaths, rComplementPaths];
+}
+complement$1.exports.__test = { findPartialIntersections };
+function arrayConcatSlice(a1, a22, start) {
+  var result4 = a1.slice();
+  var l1 = result4.length;
+  var length = a22.length - start;
+  result4.length = l1 + length;
+  for (var i3 = 0; i3 < length; ++i3) {
+    result4[l1 + i3] = a22[start + i3];
+  }
+  return result4;
+}
+function arrayConcatSlice2(a1, a22, a3, start) {
+  var result4 = a1.concat(a22);
+  var l1 = result4.length;
+  var length = a3.length - start;
+  result4.length = l1 + length;
+  for (var i3 = 0; i3 < length; ++i3) {
+    result4[l1 + i3] = a3[start + i3];
+  }
+  return result4;
+}
+function arrayConcatElement(a1, element) {
+  var result4 = a1.slice();
+  result4.push(element);
+  return result4;
+}
+var complementExports = complement$1.exports;
+var pathUtils2 = lib$1;
+var toTree3 = pathUtils2.toTree;
+var toPaths3 = pathUtils2.toPaths;
+var InvalidSourceError$4 = InvalidSourceError_1;
+var flushGetRequest$1 = function flushGetRequest(request, pathSetArrayBatch, callback) {
+  if (request._count === 0) {
+    request.requestQueue.removeRequest(request);
+    return null;
+  }
+  request.sent = true;
+  request.scheduled = false;
+  var requestPaths;
+  var model = request.requestQueue.model;
+  if (model._enablePathCollapse || model._enableRequestDeduplication) {
+    var pathMap = request._pathMap;
+    var listIdx = 0, listLen = pathSetArrayBatch.length;
+    for (; listIdx < listLen; ++listIdx) {
+      var paths = pathSetArrayBatch[listIdx];
+      for (var j = 0, pathLen = paths.length; j < pathLen; ++j) {
+        var pathSet = paths[j];
+        var len2 = pathSet.length;
+        if (!pathMap[len2]) {
+          pathMap[len2] = [pathSet];
+        } else {
+          var pathSetsByLength = pathMap[len2];
+          pathSetsByLength[pathSetsByLength.length] = pathSet;
+        }
+      }
+    }
+    var pathMapKeys = Object.keys(pathMap);
+    var pathMapIdx = 0, pathMapLen = pathMapKeys.length;
+    for (; pathMapIdx < pathMapLen; ++pathMapIdx) {
+      var pathMapKey = pathMapKeys[pathMapIdx];
+      pathMap[pathMapKey] = toTree3(pathMap[pathMapKey]);
+    }
+  }
+  if (model._enablePathCollapse) {
+    requestPaths = toPaths3(request._pathMap);
+  } else if (pathSetArrayBatch.length === 1) {
+    requestPaths = pathSetArrayBatch[0];
+  } else {
+    requestPaths = Array.prototype.concat.apply([], pathSetArrayBatch);
+  }
+  var getRequest;
+  try {
+    getRequest = model._source.get(requestPaths, request._attemptCount);
+  } catch (e2) {
+    callback(new InvalidSourceError$4());
+    return null;
+  }
+  var jsonGraphData;
+  var disposable = getRequest.subscribe(
+    function(data) {
+      jsonGraphData = data;
+    },
+    function(err) {
+      callback(err, jsonGraphData);
+    },
+    function() {
+      callback(null, jsonGraphData);
+    }
+  );
+  return disposable;
+};
+var currentCacheVersion$2 = {};
+var version2 = null;
+currentCacheVersion$2.setVersion = function setCacheVersion(newVersion) {
+  version2 = newVersion;
+};
+currentCacheVersion$2.getVersion = function getCacheVersion() {
+  return version2;
+};
+var complement2 = complementExports;
+var flushGetRequest2 = flushGetRequest$1;
+var incrementVersion$1 = incrementVersionExports;
+var currentCacheVersion$1 = currentCacheVersion$2;
+var REQUEST_ID = 0;
+var GetRequestType = RequestTypes$1.GetRequest;
+var setJSONGraphs$1 = setJSONGraphs$3;
+var setPathValues = requireSetPathValues();
+var $error$1 = error;
+var emptyArray$1 = [];
+var InvalidSourceError$3 = InvalidSourceError_1;
+var GetRequestV2 = function(scheduler, requestQueue, attemptCount) {
+  this.sent = false;
+  this.scheduled = false;
+  this.requestQueue = requestQueue;
+  this.id = ++REQUEST_ID;
+  this.type = GetRequestType;
+  this._scheduler = scheduler;
+  this._attemptCount = attemptCount;
+  this._pathMap = {};
+  this._optimizedPaths = [];
+  this._requestedPaths = [];
+  this._callbacks = [];
+  this._count = 0;
+  this._disposable = null;
+  this._collapsed = null;
+  this._disposed = false;
+};
+GetRequestV2.prototype = {
+  /**
+   * batches the paths that are passed in.  Once the request is complete,
+   * all callbacks will be called and the request will be removed from
+   * parent queue.
+   * @param {Array} requestedPaths -
+   * @param {Array} optimizedPaths -
+   * @param {Function} callback -
+   */
+  batch: function(requestedPaths, optimizedPaths, callback) {
+    var self2 = this;
+    var batchedOptPathSets = self2._optimizedPaths;
+    var batchedReqPathSets = self2._requestedPaths;
+    var batchedCallbacks = self2._callbacks;
+    var batchIx = batchedOptPathSets.length;
+    batchedOptPathSets[batchIx] = optimizedPaths;
+    batchedReqPathSets[batchIx] = requestedPaths;
+    batchedCallbacks[batchIx] = callback;
+    ++self2._count;
+    if (!self2.scheduled) {
+      self2.scheduled = true;
+      var flushedDisposable;
+      var scheduleDisposable = self2._scheduler.schedule(function() {
+        flushedDisposable = flushGetRequest2(self2, batchedOptPathSets, function(err, data) {
+          var i3, fn, len2;
+          var model = self2.requestQueue.model;
+          self2.requestQueue.removeRequest(self2);
+          self2._disposed = true;
+          if (model._treatDataSourceErrorsAsJSONGraphErrors ? err instanceof InvalidSourceError$3 : !!err) {
+            for (i3 = 0, len2 = batchedCallbacks.length; i3 < len2; ++i3) {
+              fn = batchedCallbacks[i3];
+              if (fn) {
+                fn(err);
+              }
+            }
+            return;
+          }
+          if (self2._count) {
+            var currentVersion = incrementVersion$1.getCurrentVersion();
+            currentCacheVersion$1.setVersion(currentVersion);
+            var mergeContext = { hasInvalidatedResult: false };
+            var pathsErr = model._useServerPaths && data && data.paths === void 0 ? new Error("Server responses must include a 'paths' field when Model._useServerPaths === true") : void 0;
+            if (!pathsErr) {
+              self2._merge(batchedReqPathSets, err, data, mergeContext);
+            }
+            for (i3 = 0, len2 = batchedCallbacks.length; i3 < len2; ++i3) {
+              fn = batchedCallbacks[i3];
+              if (fn) {
+                fn(pathsErr || err, data, mergeContext.hasInvalidatedResult);
+              }
+            }
+            currentCacheVersion$1.setVersion(null);
+          }
+        });
+        self2._disposable = flushedDisposable;
+      });
+      self2._disposable = flushedDisposable || scheduleDisposable;
+    }
+    return createDisposable(self2, batchIx);
+  },
+  /**
+   * Attempts to add paths to the outgoing request.  If there are added
+   * paths then the request callback will be added to the callback list.
+   * Handles adding partial paths as well
+   *
+   * @returns {Array} - whether new requested paths were inserted in this
+   *                    request, the remaining paths that could not be added,
+   *                    and disposable for the inserted requested paths.
+   */
+  add: function(requested, optimized, callback) {
+    var self2 = this;
+    var complementResult = complement2(requested, optimized, self2._pathMap);
+    var inserted = false;
+    var disposable = false;
+    if (complementResult.intersection.length) {
+      inserted = true;
+      var batchIx = self2._callbacks.length;
+      self2._callbacks[batchIx] = callback;
+      self2._requestedPaths[batchIx] = complementResult.intersection;
+      self2._optimizedPaths[batchIx] = [];
+      ++self2._count;
+      disposable = createDisposable(self2, batchIx);
+    }
+    return [inserted, complementResult.requestedComplement, complementResult.optimizedComplement, disposable];
+  },
+  /**
+   * merges the response into the model"s cache.
+   */
+  _merge: function(requested, err, data, mergeContext) {
+    var self2 = this;
+    var model = self2.requestQueue.model;
+    var modelRoot = model._root;
+    var errorSelector2 = modelRoot.errorSelector;
+    var comparator2 = modelRoot.comparator;
+    var boundPath = model._path;
+    model._path = emptyArray$1;
+    var nextPaths = model._useServerPaths ? data.paths : flattenRequestedPaths(requested);
+    if (err && model._treatDataSourceErrorsAsJSONGraphErrors) {
+      var error3 = err;
+      if (error3 instanceof Error) {
+        error3 = {
+          message: error3.message
+        };
+      }
+      if (!error3.$type) {
+        error3 = {
+          $type: $error$1,
+          value: error3
+        };
+      }
+      var pathValues = nextPaths.map(function(x) {
+        return {
+          path: x,
+          value: error3
+        };
+      });
+      setPathValues(model, pathValues, null, errorSelector2, comparator2, mergeContext);
+    } else {
+      setJSONGraphs$1(model, [{
+        paths: nextPaths,
+        jsonGraph: data.jsonGraph
+      }], null, errorSelector2, comparator2, mergeContext);
+    }
+    model._path = boundPath;
+  }
+};
+function createDisposable(request, batchIx) {
+  var disposed = false;
+  return function() {
+    if (disposed || request._disposed) {
+      return;
+    }
+    disposed = true;
+    request._callbacks[batchIx] = null;
+    request._optimizedPaths[batchIx] = [];
+    request._requestedPaths[batchIx] = [];
+    var count = --request._count;
+    var disposable = request._disposable;
+    if (count === 0) {
+      if (disposable.unsubscribe) {
+        disposable.unsubscribe();
+      } else {
+        disposable.dispose();
+      }
+      request.requestQueue.removeRequest(request);
+    }
+  };
+}
+function flattenRequestedPaths(requested) {
+  var out = [];
+  var outLen = -1;
+  for (var i3 = 0, len2 = requested.length; i3 < len2; ++i3) {
+    var paths = requested[i3];
+    for (var j = 0, innerLen = paths.length; j < innerLen; ++j) {
+      out[++outLen] = paths[j];
+    }
+  }
+  return out;
+}
+var GetRequestV2_1 = GetRequestV2;
+var RequestTypes = RequestTypes$1;
+var sendSetRequest = sendSetRequest_1;
+var GetRequest = GetRequestV2_1;
+var falcorPathUtils = lib$1;
+function RequestQueueV2(model, scheduler) {
+  this.model = model;
+  this.scheduler = scheduler;
+  this.requests = this._requests = [];
+}
+RequestQueueV2.prototype = {
+  /**
+   * Sets the scheduler, but will not affect any current requests.
+   */
+  setScheduler: function(scheduler) {
+    this.scheduler = scheduler;
+  },
+  /**
+   * performs a set against the dataSource.  Sets, though are not batched
+   * currently could be batched potentially in the future.  Since no batching
+   * is required the setRequest action is simplified significantly.
+   *
+   * @param {JSONGraphEnvelope} jsonGraph -
+   * @param {number} attemptCount
+   * @param {Function} cb
+   */
+  set: function(jsonGraph, attemptCount, cb) {
+    if (this.model._enablePathCollapse) {
+      jsonGraph.paths = falcorPathUtils.collapse(jsonGraph.paths);
+    }
+    if (cb === void 0) {
+      cb = attemptCount;
+      attemptCount = void 0;
+    }
+    return sendSetRequest(jsonGraph, this.model, attemptCount, cb);
+  },
+  /**
+   * Creates a get request to the dataSource.  Depending on the current
+   * scheduler is how the getRequest will be flushed.
+   * @param {Array} requestedPaths -
+   * @param {Array} optimizedPaths -
+   * @param {number} attemptCount
+   * @param {Function} cb -
+   */
+  get: function(requestedPaths, optimizedPaths, attemptCount, cb) {
+    var self2 = this;
+    var disposables = [];
+    var count = 0;
+    var requests = self2._requests;
+    var i3, len2;
+    var oRemainingPaths = optimizedPaths;
+    var rRemainingPaths = requestedPaths;
+    var disposed = false;
+    var request;
+    if (cb === void 0) {
+      cb = attemptCount;
+      attemptCount = void 0;
+    }
+    for (i3 = 0, len2 = requests.length; i3 < len2; ++i3) {
+      request = requests[i3];
+      if (request.type !== RequestTypes.GetRequest) {
+        continue;
+      }
+      if (request.sent) {
+        if (this.model._enableRequestDeduplication) {
+          var results = request.add(rRemainingPaths, oRemainingPaths, refCountCallback);
+          if (results[0]) {
+            rRemainingPaths = results[1];
+            oRemainingPaths = results[2];
+            disposables[disposables.length] = results[3];
+            ++count;
+            if (!oRemainingPaths.length) {
+              break;
+            }
+          }
+        }
+      } else {
+        request.batch(rRemainingPaths, oRemainingPaths, refCountCallback);
+        oRemainingPaths = null;
+        rRemainingPaths = null;
+        ++count;
+        break;
+      }
+    }
+    if (oRemainingPaths && oRemainingPaths.length) {
+      request = new GetRequest(self2.scheduler, self2, attemptCount);
+      requests[requests.length] = request;
+      ++count;
+      var disposable = request.batch(rRemainingPaths, oRemainingPaths, refCountCallback);
+      disposables[disposables.length] = disposable;
+    }
+    function refCountCallback(err, data, hasInvalidatedResult) {
+      if (disposed) {
+        return;
+      }
+      --count;
+      if (count === 0) {
+        cb(err, data, hasInvalidatedResult);
+      }
+    }
+    return function() {
+      if (disposed || count === 0) {
+        return;
+      }
+      disposed = true;
+      var length = disposables.length;
+      for (var idx = 0; idx < length; ++idx) {
+        disposables[idx]();
+      }
+    };
+  },
+  /**
+   * Removes the request from the request queue.
+   */
+  removeRequest: function(request) {
+    var requests = this._requests;
+    var i3 = requests.length;
+    while (--i3 >= 0) {
+      if (requests[i3].id === request.id) {
+        requests.splice(i3, 1);
+        break;
+      }
+    }
+  }
+};
+var RequestQueueV2_1 = RequestQueueV2;
+var noop$1 = function noop() {
+};
+var noop2 = noop$1;
+function ModelResponseObserver$1(onNextOrObserver, onErrorFn, onCompletedFn) {
+  if (!onNextOrObserver || typeof onNextOrObserver !== "object") {
+    this._observer = {
+      onNext: typeof onNextOrObserver === "function" ? onNextOrObserver : noop2,
+      onError: typeof onErrorFn === "function" ? onErrorFn : noop2,
+      onCompleted: typeof onCompletedFn === "function" ? onCompletedFn : noop2
+    };
+  } else {
+    this._observer = {
+      onNext: typeof onNextOrObserver.onNext === "function" ? function(value) {
+        onNextOrObserver.onNext(value);
+      } : noop2,
+      onError: typeof onNextOrObserver.onError === "function" ? function(error3) {
+        onNextOrObserver.onError(error3);
+      } : noop2,
+      onCompleted: typeof onNextOrObserver.onCompleted === "function" ? function() {
+        onNextOrObserver.onCompleted();
+      } : noop2
+    };
+  }
+}
+ModelResponseObserver$1.prototype = {
+  onNext: function(v2) {
+    if (!this._closed) {
+      this._observer.onNext(v2);
+    }
+  },
+  onError: function(e2) {
+    if (!this._closed) {
+      this._closed = true;
+      this._observer.onError(e2);
+    }
+  },
+  onCompleted: function() {
+    if (!this._closed) {
+      this._closed = true;
+      this._observer.onCompleted();
+    }
+  }
+};
+var ModelResponseObserver_1 = ModelResponseObserver$1;
+function symbolObservablePonyfill3(root4) {
+  var result4;
+  var Symbol2 = root4.Symbol;
+  if (typeof Symbol2 === "function") {
+    if (Symbol2.observable) {
+      result4 = Symbol2.observable;
+    } else {
+      result4 = Symbol2("observable");
+      Symbol2.observable = result4;
+    }
+  } else {
+    result4 = "@@observable";
+  }
+  return result4;
+}
+var root3;
+if (typeof self !== "undefined") {
+  root3 = self;
+} else if (typeof window !== "undefined") {
+  root3 = window;
+} else if (typeof global !== "undefined") {
+  root3 = global;
+} else if (typeof module !== "undefined") {
+  root3 = module;
+} else {
+  root3 = Function("return this")();
+}
+var result3 = symbolObservablePonyfill3(root3);
+var es3 = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  default: result3
+});
+var require$$12 = /* @__PURE__ */ getAugmentedNamespace4(es3);
+function FromEsObserverAdapter(esObserver) {
+  this.esObserver = esObserver;
+}
+FromEsObserverAdapter.prototype = {
+  onNext: function onNext(value) {
+    if (typeof this.esObserver.next === "function") {
+      this.esObserver.next(value);
+    }
+  },
+  onError: function onError(error3) {
+    if (typeof this.esObserver.error === "function") {
+      this.esObserver.error(error3);
+    }
+  },
+  onCompleted: function onCompleted() {
+    if (typeof this.esObserver.complete === "function") {
+      this.esObserver.complete();
+    }
+  }
+};
+function ToEsSubscriptionAdapter(subscription) {
+  this.subscription = subscription;
+}
+ToEsSubscriptionAdapter.prototype.unsubscribe = function unsubscribe() {
+  this.subscription.dispose();
+};
+function toEsObservable$1(_self) {
+  return {
+    subscribe: function subscribe2(observer) {
+      return new ToEsSubscriptionAdapter(_self.subscribe(new FromEsObserverAdapter(observer)));
+    }
+  };
+}
+var toEsObservable_1 = toEsObservable$1;
+var ModelResponseObserver = ModelResponseObserver_1;
+var $$observable = require$$12.default;
+var toEsObservable = toEsObservable_1;
+function ModelResponse$7(subscribe2) {
+  this._subscribe = subscribe2;
+}
+ModelResponse$7.prototype[$$observable] = function SymbolObservable() {
+  return toEsObservable(this);
+};
+ModelResponse$7.prototype._toJSONG = function toJSONG() {
+  return this;
+};
+ModelResponse$7.prototype.progressively = function progressively() {
+  return this;
+};
+ModelResponse$7.prototype.subscribe = ModelResponse$7.prototype.forEach = function subscribe(a3, b, c) {
+  var observer = new ModelResponseObserver(a3, b, c);
+  var subscription = this._subscribe(observer);
+  switch (typeof subscription) {
+    case "function":
+      return {
+        dispose: function() {
+          if (observer._closed) {
+            return;
+          }
+          observer._closed = true;
+          subscription();
+        }
+      };
+    case "object":
+      return {
+        dispose: function() {
+          if (observer._closed) {
+            return;
+          }
+          observer._closed = true;
+          if (subscription !== null) {
+            subscription.dispose();
+          }
+        }
+      };
+    default:
+      return {
+        dispose: function() {
+          observer._closed = true;
+        }
+      };
+  }
+};
+ModelResponse$7.prototype.then = function then(onNext2, onError4) {
+  var self2 = this;
+  if (!self2._promise) {
+    self2._promise = new Promise(function(resolve, reject) {
+      var rejected = false;
+      var values = [];
+      self2.subscribe(
+        function(value) {
+          values[values.length] = value;
+        },
+        function(errors3) {
+          rejected = true;
+          reject(errors3);
+        },
+        function() {
+          var value = values;
+          if (values.length <= 1) {
+            value = values[0];
+          }
+          if (rejected === false) {
+            resolve(value);
+          }
+        }
+      );
+    });
+  }
+  return self2._promise.then(onNext2, onError4);
+};
+var ModelResponse_1 = ModelResponse$7;
+var tokenizer2 = { exports: {} };
+var TokenTypes$62 = {
+  token: "token",
+  dotSeparator: ".",
+  commaSeparator: ",",
+  openingBracket: "[",
+  closingBracket: "]",
+  openingBrace: "{",
+  closingBrace: "}",
+  escape: "\\",
+  space: " ",
+  colon: ":",
+  quote: "quote",
+  unknown: "unknown"
+};
+var TokenTypes_12 = TokenTypes$62;
+var TokenTypes$52 = TokenTypes_12;
+var DOT_SEPARATOR2 = ".";
+var COMMA_SEPARATOR2 = ",";
+var OPENING_BRACKET2 = "[";
+var CLOSING_BRACKET2 = "]";
+var OPENING_BRACE2 = "{";
+var CLOSING_BRACE2 = "}";
+var COLON2 = ":";
+var ESCAPE2 = "\\";
+var DOUBLE_OUOTES2 = '"';
+var SINGE_OUOTES2 = "'";
+var SPACE2 = " ";
+var SPECIAL_CHARACTERS2 = `\\'"[]., `;
+var EXT_SPECIAL_CHARACTERS2 = `\\{}'"[]., :`;
+var Tokenizer$22 = tokenizer2.exports = function(string, ext) {
+  this._string = string;
+  this._idx = -1;
+  this._extended = ext;
+  this.parseString = "";
+};
+Tokenizer$22.prototype = {
+  /**
+   * grabs the next token either from the peek operation or generates the
+   * next token.
+   */
+  next: function() {
+    var nextToken = this._nextToken ? this._nextToken : getNext2(this._string, this._idx, this._extended);
+    this._idx = nextToken.idx;
+    this._nextToken = false;
+    this.parseString += nextToken.token.token;
+    return nextToken.token;
+  },
+  /**
+   * will peak but not increment the tokenizer
+   */
+  peek: function() {
+    var nextToken = this._nextToken ? this._nextToken : getNext2(this._string, this._idx, this._extended);
+    this._nextToken = nextToken;
+    return nextToken.token;
+  }
+};
+Tokenizer$22.toNumber = function toNumber2(x) {
+  if (!isNaN(+x)) {
+    return +x;
+  }
+  return NaN;
+};
+function toOutput2(token, type, done) {
+  return {
+    token,
+    done,
+    type
+  };
+}
+function getNext2(string, idx, ext) {
+  var output = false;
+  var token = "";
+  var specialChars = ext ? EXT_SPECIAL_CHARACTERS2 : SPECIAL_CHARACTERS2;
+  var done;
+  do {
+    done = idx + 1 >= string.length;
+    if (done) {
+      break;
+    }
+    var character = string[idx + 1];
+    if (character !== void 0 && specialChars.indexOf(character) === -1) {
+      token += character;
+      ++idx;
+      continue;
+    } else if (token.length) {
+      break;
+    }
+    ++idx;
+    var type;
+    switch (character) {
+      case DOT_SEPARATOR2:
+        type = TokenTypes$52.dotSeparator;
+        break;
+      case COMMA_SEPARATOR2:
+        type = TokenTypes$52.commaSeparator;
+        break;
+      case OPENING_BRACKET2:
+        type = TokenTypes$52.openingBracket;
+        break;
+      case CLOSING_BRACKET2:
+        type = TokenTypes$52.closingBracket;
+        break;
+      case OPENING_BRACE2:
+        type = TokenTypes$52.openingBrace;
+        break;
+      case CLOSING_BRACE2:
+        type = TokenTypes$52.closingBrace;
+        break;
+      case SPACE2:
+        type = TokenTypes$52.space;
+        break;
+      case DOUBLE_OUOTES2:
+      case SINGE_OUOTES2:
+        type = TokenTypes$52.quote;
+        break;
+      case ESCAPE2:
+        type = TokenTypes$52.escape;
+        break;
+      case COLON2:
+        type = TokenTypes$52.colon;
+        break;
+      default:
+        type = TokenTypes$52.unknown;
+        break;
+    }
+    output = toOutput2(character, type, false);
+    break;
+  } while (!done);
+  if (!output && token.length) {
+    output = toOutput2(token, TokenTypes$52.token, false);
+  }
+  if (!output) {
+    output = { done: true };
+  }
+  return {
+    token: output,
+    idx
+  };
+}
+var tokenizerExports2 = tokenizer2.exports;
+var exceptions2 = {
+  indexer: {
+    nested: "Indexers cannot be nested.",
+    needQuotes: "unquoted indexers must be numeric.",
+    empty: "cannot have empty indexers.",
+    leadingDot: "Indexers cannot have leading dots.",
+    leadingComma: "Indexers cannot have leading comma.",
+    requiresComma: "Indexers require commas between indexer args.",
+    routedTokens: "Only one token can be used per indexer when specifying routed tokens."
+  },
+  range: {
+    precedingNaN: "ranges must be preceded by numbers.",
+    suceedingNaN: "ranges must be suceeded by numbers."
+  },
+  routed: {
+    invalid: "Invalid routed token.  only integers|ranges|keys are supported."
+  },
+  quote: {
+    empty: "cannot have empty quoted keys.",
+    illegalEscape: "Invalid escape character.  Only quotes are escapable."
+  },
+  unexpectedToken: "Unexpected token.",
+  invalidIdentifier: "Invalid Identifier.",
+  invalidPath: "Please provide a valid path.",
+  throwError: function(err, tokenizer3, token) {
+    if (token) {
+      throw err + " -- " + tokenizer3.parseString + " with next token: " + token;
+    }
+    throw err + " -- " + tokenizer3.parseString;
+  }
+};
+var Tokenizer$12 = tokenizerExports2;
+var TokenTypes$42 = TokenTypes_12;
+var E$42 = exceptions2;
+var range$12 = function range3(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.peek();
+  var dotCount = 1;
+  var done = false;
+  var inclusive = true;
+  var idx = state.indexer.length - 1;
+  var from2 = Tokenizer$12.toNumber(state.indexer[idx]);
+  var to;
+  if (isNaN(from2)) {
+    E$42.throwError(E$42.range.precedingNaN, tokenizer3);
+  }
+  while (!done && !token.done) {
+    switch (token.type) {
+      case TokenTypes$42.dotSeparator:
+        if (dotCount === 3) {
+          E$42.throwError(E$42.unexpectedToken, tokenizer3);
+        }
+        ++dotCount;
+        if (dotCount === 3) {
+          inclusive = false;
+        }
+        break;
+      case TokenTypes$42.token:
+        to = Tokenizer$12.toNumber(tokenizer3.next().token);
+        if (isNaN(to)) {
+          E$42.throwError(E$42.range.suceedingNaN, tokenizer3);
+        }
+        done = true;
+        break;
+      default:
+        done = true;
+        break;
+    }
+    if (!done) {
+      tokenizer3.next();
+      token = tokenizer3.peek();
+    } else {
+      break;
+    }
+  }
+  state.indexer[idx] = { from: from2, to: inclusive ? to : to - 1 };
+};
+var TokenTypes$32 = TokenTypes_12;
+var E$32 = exceptions2;
+var quoteE2 = E$32.quote;
+var quote$12 = function quote3(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.next();
+  var innerToken = "";
+  var openingQuote = openingToken.token;
+  var escaping = false;
+  var done = false;
+  while (!token.done) {
+    switch (token.type) {
+      case TokenTypes$32.token:
+      case TokenTypes$32.space:
+      case TokenTypes$32.dotSeparator:
+      case TokenTypes$32.commaSeparator:
+      case TokenTypes$32.openingBracket:
+      case TokenTypes$32.closingBracket:
+      case TokenTypes$32.openingBrace:
+      case TokenTypes$32.closingBrace:
+        if (escaping) {
+          E$32.throwError(quoteE2.illegalEscape, tokenizer3);
+        }
+        innerToken += token.token;
+        break;
+      case TokenTypes$32.quote:
+        if (escaping) {
+          innerToken += token.token;
+          escaping = false;
+        } else if (token.token !== openingQuote) {
+          innerToken += token.token;
+        } else {
+          done = true;
+        }
+        break;
+      case TokenTypes$32.escape:
+        escaping = true;
+        break;
+      default:
+        E$32.throwError(E$32.unexpectedToken, tokenizer3);
+    }
+    if (done) {
+      break;
+    }
+    token = tokenizer3.next();
+  }
+  if (innerToken.length === 0) {
+    E$32.throwError(quoteE2.empty, tokenizer3);
+  }
+  state.indexer[state.indexer.length] = innerToken;
+};
+var RoutedTokens$22 = {
+  integers: "integers",
+  ranges: "ranges",
+  keys: "keys"
+};
+var TokenTypes$22 = TokenTypes_12;
+var RoutedTokens$12 = RoutedTokens$22;
+var E$22 = exceptions2;
+var routedE2 = E$22.routed;
+var routed$12 = function routed3(tokenizer3, openingToken, state, out) {
+  var routeToken = tokenizer3.next();
+  var named = false;
+  var name = "";
+  switch (routeToken.token) {
+    case RoutedTokens$12.integers:
+    case RoutedTokens$12.ranges:
+    case RoutedTokens$12.keys:
+      break;
+    default:
+      E$22.throwError(routedE2.invalid, tokenizer3);
+      break;
+  }
+  var next = tokenizer3.next();
+  if (next.type === TokenTypes$22.colon) {
+    named = true;
+    next = tokenizer3.next();
+    if (next.type !== TokenTypes$22.token) {
+      E$22.throwError(routedE2.invalid, tokenizer3);
+    }
+    name = next.token;
+    next = tokenizer3.next();
+  }
+  if (next.type === TokenTypes$22.closingBrace) {
+    var outputToken = {
+      type: routeToken.token,
+      named,
+      name
+    };
+    state.indexer[state.indexer.length] = outputToken;
+  } else {
+    E$22.throwError(routedE2.invalid, tokenizer3);
+  }
+};
+var TokenTypes$12 = TokenTypes_12;
+var E$12 = exceptions2;
+var idxE2 = E$12.indexer;
+var range4 = range$12;
+var quote4 = quote$12;
+var routed4 = routed$12;
+var indexer$12 = function indexer3(tokenizer3, openingToken, state, out) {
+  var token = tokenizer3.next();
+  var done = false;
+  var allowedMaxLength = 1;
+  var routedIndexer = false;
+  state.indexer = [];
+  while (!token.done) {
+    switch (token.type) {
+      case TokenTypes$12.token:
+      case TokenTypes$12.quote:
+        if (state.indexer.length === allowedMaxLength) {
+          E$12.throwError(idxE2.requiresComma, tokenizer3);
+        }
+        break;
+    }
+    switch (token.type) {
+      case TokenTypes$12.openingBrace:
+        routedIndexer = true;
+        routed4(tokenizer3, token, state);
+        break;
+      case TokenTypes$12.token:
+        var t2 = +token.token;
+        if (isNaN(t2)) {
+          E$12.throwError(idxE2.needQuotes, tokenizer3);
+        }
+        state.indexer[state.indexer.length] = t2;
+        break;
+      case TokenTypes$12.dotSeparator:
+        if (!state.indexer.length) {
+          E$12.throwError(idxE2.leadingDot, tokenizer3);
+        }
+        range4(tokenizer3, token, state);
+        break;
+      case TokenTypes$12.space:
+        break;
+      case TokenTypes$12.closingBracket:
+        done = true;
+        break;
+      case TokenTypes$12.quote:
+        quote4(tokenizer3, token, state);
+        break;
+      case TokenTypes$12.openingBracket:
+        E$12.throwError(idxE2.nested, tokenizer3);
+        break;
+      case TokenTypes$12.commaSeparator:
+        ++allowedMaxLength;
+        break;
+      default:
+        E$12.throwError(E$12.unexpectedToken, tokenizer3);
+        break;
+    }
+    if (done) {
+      break;
+    }
+    token = tokenizer3.next();
+  }
+  if (state.indexer.length === 0) {
+    E$12.throwError(idxE2.empty, tokenizer3);
+  }
+  if (state.indexer.length > 1 && routedIndexer) {
+    E$12.throwError(idxE2.routedTokens, tokenizer3);
+  }
+  if (state.indexer.length === 1) {
+    state.indexer = state.indexer[0];
+  }
+  out[out.length] = state.indexer;
+  state.indexer = void 0;
+};
+var TokenTypes2 = TokenTypes_12;
+var E2 = exceptions2;
+var indexer4 = indexer$12;
+var head$12 = function head3(tokenizer3) {
+  var token = tokenizer3.next();
+  var state = {};
+  var out = [];
+  while (!token.done) {
+    switch (token.type) {
+      case TokenTypes2.token:
+        var first = +token.token[0];
+        if (!isNaN(first)) {
+          E2.throwError(E2.invalidIdentifier, tokenizer3);
+        }
+        out[out.length] = token.token;
+        break;
+      case TokenTypes2.dotSeparator:
+        if (out.length === 0) {
+          E2.throwError(E2.unexpectedToken, tokenizer3);
+        }
+        break;
+      case TokenTypes2.space:
+        break;
+      case TokenTypes2.openingBracket:
+        indexer4(tokenizer3, token, state, out);
+        break;
+      default:
+        E2.throwError(E2.unexpectedToken, tokenizer3);
+        break;
+    }
+    token = tokenizer3.next();
+  }
+  if (out.length === 0) {
+    E2.throwError(E2.invalidPath, tokenizer3);
+  }
+  return out;
+};
+var Tokenizer2 = tokenizerExports2;
+var head4 = head$12;
+var RoutedTokens2 = RoutedTokens$22;
+var parser4 = function parser5(string, extendedRules) {
+  return head4(new Tokenizer2(string, extendedRules));
+};
+var src$1 = parser4;
+parser4.fromPathsOrPathValues = function(paths, ext) {
+  if (!paths) {
+    return [];
+  }
+  var out = [];
+  for (var i3 = 0, len2 = paths.length; i3 < len2; i3++) {
+    if (typeof paths[i3] === "string") {
+      out[i3] = parser4(paths[i3], ext);
+    } else if (typeof paths[i3].path === "string") {
+      out[i3] = {
+        path: parser4(paths[i3].path, ext),
+        value: paths[i3].value
+      };
+    } else {
+      out[i3] = paths[i3];
+    }
+  }
+  return out;
+};
+parser4.fromPath = function(path, ext) {
+  if (!path) {
+    return [];
+  }
+  if (typeof path === "string") {
+    return parser4(path, ext);
+  }
+  return path;
+};
+parser4.RoutedTokens = RoutedTokens2;
+var ModelResponse$6 = ModelResponse_1;
+var InvalidSourceError$2 = InvalidSourceError_1;
+var pathSyntax$5 = src$1;
+function CallResponse$1(model, callPath, args, suffix, paths) {
+  this.callPath = pathSyntax$5.fromPath(callPath);
+  this.args = args;
+  if (paths) {
+    this.paths = paths.map(pathSyntax$5.fromPath);
+  }
+  if (suffix) {
+    this.suffix = suffix.map(pathSyntax$5.fromPath);
+  }
+  this.model = model;
+}
+CallResponse$1.prototype = Object.create(ModelResponse$6.prototype);
+CallResponse$1.prototype._subscribe = function _subscribe(observer) {
+  var callPath = this.callPath;
+  var callArgs = this.args;
+  var suffixes = this.suffix;
+  var extraPaths = this.paths;
+  var model = this.model;
+  var rootModel = model._clone({
+    _path: []
+  });
+  var boundPath = model._path;
+  var boundCallPath = boundPath.concat(callPath);
+  if (!model._source) {
+    observer.onError(new Error("function does not exist"));
+    return;
+  }
+  var response, obs;
+  try {
+    obs = model._source.call(boundCallPath, callArgs, suffixes, extraPaths);
+  } catch (e2) {
+    observer.onError(new InvalidSourceError$2(e2));
+    return;
+  }
+  return obs.subscribe(function(res) {
+    response = res;
+  }, function(err) {
+    observer.onError(err);
+  }, function() {
+    var invalidations = response.invalidated;
+    if (invalidations && invalidations.length) {
+      rootModel.invalidate.apply(rootModel, invalidations);
+    }
+    rootModel.withoutDataSource().set(response).subscribe(function(x) {
+      observer.onNext(x);
+    }, function(err) {
+      observer.onError(err);
+    }, function() {
+      observer.onCompleted();
+    });
+  });
+};
+var CallResponse_1 = CallResponse$1;
+var isArray$5 = Array.isArray;
+var isObject$4 = isObject$f;
+var isPathValue$3 = function isPathValue2(pathValue2) {
+  return isObject$4(pathValue2) && (isArray$5(pathValue2.path) || typeof pathValue2.path === "string");
+};
+var isObject$3 = isObject$f;
+var isJSONEnvelope$4 = function isJSONEnvelope(envelope) {
+  return isObject$3(envelope) && "json" in envelope;
+};
+var isArray$42 = Array.isArray;
+var ModelResponse$5 = ModelResponse_1;
+var isPathValue$2 = isPathValue$3;
+var isJSONEnvelope$3 = isJSONEnvelope$4;
+var empty$2 = { dispose: function() {
+} };
+function InvalidateResponse$1(model, args) {
+  this._model = model;
+  var groups = [];
+  var group, groupType;
+  var argIndex = -1;
+  var argCount = args.length;
+  while (++argIndex < argCount) {
+    var arg = args[argIndex];
+    var argType;
+    if (isArray$42(arg)) {
+      argType = "PathValues";
+    } else if (isPathValue$2(arg)) {
+      argType = "PathValues";
+    } else if (isJSONEnvelope$3(arg)) {
+      argType = "PathMaps";
+    } else {
+      throw new Error("Invalid Input");
+    }
+    if (groupType !== argType) {
+      groupType = argType;
+      group = {
+        inputType: argType,
+        arguments: []
+      };
+      groups.push(group);
+    }
+    group.arguments.push(arg);
+  }
+  this._groups = groups;
+}
+InvalidateResponse$1.prototype = Object.create(ModelResponse$5.prototype);
+InvalidateResponse$1.prototype.progressively = function progressively2() {
+  return this;
+};
+InvalidateResponse$1.prototype._toJSONG = function _toJSONG() {
+  return this;
+};
+InvalidateResponse$1.prototype._subscribe = function _subscribe2(observer) {
+  var model = this._model;
+  this._groups.forEach(function(group) {
+    var inputType = group.inputType;
+    var methodArgs = group.arguments;
+    var operationName = "_invalidate" + inputType;
+    var operationFunc = model[operationName];
+    operationFunc(model, methodArgs);
+  });
+  observer.onCompleted();
+  return empty$2;
+};
+var InvalidateResponse_1 = InvalidateResponse$1;
+function TimeoutScheduler$1(delay) {
+  this.delay = delay;
+}
+var TimerDisposable = function TimerDisposable2(id) {
+  this.id = id;
+  this.disposed = false;
+};
+TimeoutScheduler$1.prototype.schedule = function schedule(action) {
+  var id = setTimeout(action, this.delay);
+  return new TimerDisposable(id);
+};
+TimeoutScheduler$1.prototype.scheduleWithState = function scheduleWithState(state, action) {
+  var self2 = this;
+  var id = setTimeout(function() {
+    action(self2, state);
+  }, this.delay);
+  return new TimerDisposable(id);
+};
+TimerDisposable.prototype.dispose = function() {
+  if (this.disposed) {
+    return;
+  }
+  clearTimeout(this.id);
+  this.disposed = true;
+};
+var TimeoutScheduler_1 = TimeoutScheduler$1;
+var empty$12 = { dispose: function() {
+} };
+function ImmediateScheduler$1() {
+}
+ImmediateScheduler$1.prototype.schedule = function schedule2(action) {
+  action();
+  return empty$12;
+};
+ImmediateScheduler$1.prototype.scheduleWithState = function scheduleWithState2(state, action) {
+  action(this, state);
+  return empty$12;
+};
+var ImmediateScheduler_1 = ImmediateScheduler$1;
+var removeNode2 = removeNode$2;
+var updateNodeAncestors2 = updateNodeAncestors$3;
+var collect = function collect2(lru, expired, totalArg, max, ratioArg, version3) {
+  var total = totalArg;
+  var ratio = ratioArg;
+  if (typeof ratio !== "number") {
+    ratio = 0.75;
+  }
+  var shouldUpdate = typeof version3 === "number";
+  var targetSize = max * ratio;
+  var parent, node, size;
+  node = expired.pop();
+  while (node) {
+    size = node.$size || 0;
+    total -= size;
+    if (shouldUpdate === true) {
+      updateNodeAncestors2(node, size, lru, version3);
+    } else if (parent = node.$_parent) {
+      removeNode2(node, parent, node.$_key, lru);
+    }
+    node = expired.pop();
+  }
+  if (total >= max) {
+    var prev = lru.$_tail;
+    node = prev;
+    while (total >= targetSize && node) {
+      prev = prev.$_prev;
+      size = node.$size || 0;
+      total -= size;
+      if (shouldUpdate === true) {
+        updateNodeAncestors2(node, size, lru, version3);
+      }
+      node = prev;
+    }
+    lru.$_tail = lru.$_prev = node;
+    if (node == null) {
+      lru.$_head = lru.$_next = void 0;
+    } else {
+      node.$_next = void 0;
+    }
+  }
+};
+var isArray$32 = Array.isArray;
+var isObject$2 = isObject$f;
+var isJSONGraphEnvelope$3 = function isJSONGraphEnvelope(envelope) {
+  return isObject$2(envelope) && isArray$32(envelope.paths) && (isObject$2(envelope.jsonGraph) || isObject$2(envelope.jsong) || isObject$2(envelope.json) || isObject$2(envelope.values) || isObject$2(envelope.value));
+};
+var createHardlink2 = createHardlink$2;
+var __prefix = reservedPrefix$1;
+var $ref$1 = ref;
+var getBoundValue = requireGetBoundValue();
+var isArray$22 = Array.isArray;
+var hasOwn = hasOwn_1;
+var isObject$1 = isObject$f;
+var isExpired$2 = isExpired$7;
+var isFunction3 = isFunction$5;
+var isPrimitive$1 = isPrimitive$4;
+var expireNode$1 = expireNode$5;
+var incrementVersion2 = incrementVersionExports;
+var mergeValueOrInsertBranch2 = mergeValueOrInsertBranch$1;
+var NullInPathError = NullInPathError_1;
+var setPathMaps = function setPathMaps2(model, pathMapEnvelopes, x, errorSelector2, comparator2) {
+  var modelRoot = model._root;
+  var lru = modelRoot;
+  var expired = modelRoot.expired;
+  var version3 = incrementVersion2();
+  var bound = model._path;
+  var cache = modelRoot.cache;
+  var node = bound.length ? getBoundValue(model, bound).value : cache;
+  var parent = node.$_parent || cache;
+  var initialVersion = cache.$_version;
+  var requestedPath = [];
+  var requestedPaths = [];
+  var optimizedPaths = [];
+  var optimizedIndex = bound.length;
+  var pathMapIndex = -1;
+  var pathMapCount = pathMapEnvelopes.length;
+  while (++pathMapIndex < pathMapCount) {
+    var pathMapEnvelope = pathMapEnvelopes[pathMapIndex];
+    var optimizedPath = bound.slice(0);
+    optimizedPath.index = optimizedIndex;
+    setPathMap(
+      pathMapEnvelope.json,
+      0,
+      cache,
+      parent,
+      node,
+      requestedPaths,
+      optimizedPaths,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2
+    );
+  }
+  var newVersion = cache.$_version;
+  var rootChangeHandler = modelRoot.onChange;
+  if (isFunction3(rootChangeHandler) && initialVersion !== newVersion) {
+    rootChangeHandler();
+  }
+  return [requestedPaths, optimizedPaths];
+};
+function setPathMap(pathMap, depth, root4, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2) {
+  var keys2 = getKeys(pathMap);
+  if (keys2 && keys2.length) {
+    var keyIndex = 0;
+    var keyCount = keys2.length;
+    var optimizedIndex = optimizedPath.index;
+    do {
+      var key = keys2[keyIndex];
+      var child = pathMap[key];
+      var branch = isObject$1(child) && !child.$type;
+      requestedPath.depth = depth;
+      var results = setNode(
+        root4,
+        parent,
+        node,
+        key,
+        child,
+        branch,
+        false,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2
+      );
+      requestedPath[depth] = key;
+      requestedPath.index = depth;
+      optimizedPath[optimizedPath.index++] = key;
+      var nextNode = results[0];
+      var nextParent = results[1];
+      if (nextNode) {
+        if (branch) {
+          setPathMap(
+            child,
+            depth + 1,
+            root4,
+            nextParent,
+            nextNode,
+            requestedPaths,
+            optimizedPaths,
+            requestedPath,
+            optimizedPath,
+            version3,
+            expired,
+            lru,
+            comparator2,
+            errorSelector2
+          );
+        } else {
+          requestedPaths.push(requestedPath.slice(0, requestedPath.index + 1));
+          optimizedPaths.push(optimizedPath.slice(0, optimizedPath.index));
+        }
+      }
+      if (++keyIndex >= keyCount) {
+        break;
+      }
+      optimizedPath.index = optimizedIndex;
+    } while (true);
+  }
+}
+function setReference(value, root4, node, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2) {
+  var reference = node.value;
+  optimizedPath.length = 0;
+  optimizedPath.push.apply(optimizedPath, reference);
+  if (isExpired$2(node)) {
+    optimizedPath.index = reference.length;
+    expireNode$1(node, expired, lru);
+    return [void 0, root4];
+  }
+  var container = node;
+  var parent = root4;
+  node = node.$_context;
+  if (node != null) {
+    parent = node.$_parent || root4;
+    optimizedPath.index = reference.length;
+  } else {
+    var index2 = 0;
+    var count = reference.length - 1;
+    optimizedPath.index = index2;
+    parent = node = root4;
+    do {
+      var key = reference[index2];
+      var branch = index2 < count;
+      var results = setNode(
+        root4,
+        parent,
+        node,
+        key,
+        value,
+        branch,
+        true,
+        requestedPath,
+        optimizedPath,
+        version3,
+        expired,
+        lru,
+        comparator2,
+        errorSelector2
+      );
+      node = results[0];
+      if (isPrimitive$1(node)) {
+        optimizedPath.index = index2;
+        return results;
+      }
+      parent = results[1];
+    } while (index2++ < count);
+    optimizedPath.index = index2;
+    if (container.$_context !== node) {
+      createHardlink2(container, node);
+    }
+  }
+  return [node, parent];
+}
+function setNode(root4, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2) {
+  var type = node.$type;
+  while (type === $ref$1) {
+    var results = setReference(
+      value,
+      root4,
+      node,
+      requestedPath,
+      optimizedPath,
+      version3,
+      expired,
+      lru,
+      comparator2,
+      errorSelector2
+    );
+    node = results[0];
+    if (isPrimitive$1(node)) {
+      return results;
+    }
+    parent = results[1];
+    type = node && node.$type;
+  }
+  if (type !== void 0) {
+    return [node, parent];
+  }
+  if (key == null) {
+    if (branch) {
+      throw new NullInPathError();
+    } else if (node) {
+      key = node.$_key;
+    }
+  } else {
+    parent = node;
+    node = parent[key];
+  }
+  node = mergeValueOrInsertBranch2(
+    parent,
+    node,
+    key,
+    value,
+    branch,
+    reference,
+    requestedPath,
+    optimizedPath,
+    version3,
+    expired,
+    lru,
+    comparator2,
+    errorSelector2
+  );
+  return [node, parent];
+}
+function getKeys(pathMap) {
+  if (isObject$1(pathMap) && !pathMap.$type) {
+    var keys2 = [];
+    var itr = 0;
+    if (isArray$22(pathMap)) {
+      keys2[itr++] = "length";
+    }
+    for (var key in pathMap) {
+      if (key[0] === __prefix || !hasOwn(pathMap, key)) {
+        continue;
+      }
+      keys2[itr++] = key;
+    }
+    return keys2;
+  }
+  return void 0;
+}
+var pathSyntax$4 = src$1;
+function sentinel(type, value, props) {
+  var copy = /* @__PURE__ */ Object.create(null);
+  if (props != null) {
+    for (var key in props) {
+      copy[key] = props[key];
+    }
+    copy["$type"] = type;
+    copy.value = value;
+    return copy;
+  } else {
+    return { $type: type, value };
+  }
+}
+var src2 = {
+  ref: function ref2(path, props) {
+    return sentinel("ref", pathSyntax$4.fromPath(path), props);
+  },
+  atom: function atom2(value, props) {
+    return sentinel("atom", value, props);
+  },
+  undefined: function() {
+    return sentinel("atom");
+  },
+  error: function error2(errorValue, props) {
+    return sentinel("error", errorValue, props);
+  },
+  pathValue: function pathValue(path, value) {
+    return { path: pathSyntax$4.fromPath(path), value };
+  },
+  pathInvalidation: function pathInvalidation(path) {
+    return { path: pathSyntax$4.fromPath(path), invalidated: true };
+  }
+};
+var isArray$12 = Array.isArray;
+var isPathValue$12 = isPathValue$3;
+var isJSONGraphEnvelope$2 = isJSONGraphEnvelope$3;
+var isJSONEnvelope$2 = isJSONEnvelope$4;
+var pathSyntax$3 = src$1;
+var validateInput$3 = function validateInput(args, allowedInput, method) {
+  for (var i3 = 0, len2 = args.length; i3 < len2; ++i3) {
+    var arg = args[i3];
+    var valid = false;
+    if (isArray$12(arg) && allowedInput.path) {
+      valid = true;
+    } else if (typeof arg === "string" && allowedInput.pathSyntax) {
+      try {
+        pathSyntax$3.fromPath(arg);
+        valid = true;
+      } catch (errorMessage) {
+        return new Error("Path syntax validation error -- " + errorMessage);
+      }
+    } else if (isPathValue$12(arg) && allowedInput.pathValue) {
+      try {
+        arg.path = pathSyntax$3.fromPath(arg.path);
+        valid = true;
+      } catch (errorMessage) {
+        return new Error("Path syntax validation error -- " + errorMessage);
+      }
+    } else if (isJSONGraphEnvelope$2(arg) && allowedInput.jsonGraph) {
+      valid = true;
+    } else if (isJSONEnvelope$2(arg) && allowedInput.json) {
+      valid = true;
+    } else if (typeof arg === "function" && i3 + 1 === len2 && allowedInput.selector) {
+      valid = true;
+    }
+    if (!valid) {
+      return new Error("Unrecognized argument " + typeof arg + " [" + String(arg) + "] to Model#" + method);
+    }
+  }
+  return true;
+};
+var privatePrefix = privatePrefix$2;
+var isInternalKey$1 = function isInternalKey(x) {
+  return x === "$size" || x.lastIndexOf(privatePrefix, 0) === 0;
+};
+var isInternalKey2 = isInternalKey$1;
+var getCache$1 = function getCache(cache) {
+  var out = {};
+  _copyCache(cache, out);
+  return out;
+};
+function cloneBoxedValue(boxedValue) {
+  var clonedValue = {};
+  var keys2 = Object.keys(boxedValue);
+  var key;
+  var i3;
+  var l2;
+  for (i3 = 0, l2 = keys2.length; i3 < l2; i3++) {
+    key = keys2[i3];
+    if (!isInternalKey2(key)) {
+      clonedValue[key] = boxedValue[key];
+    }
+  }
+  return clonedValue;
+}
+function _copyCache(node, out, fromKey) {
+  Object.keys(node).filter(function(k) {
+    return !isInternalKey2(k) && node[k] !== void 0;
+  }).forEach(function(key) {
+    var cacheNext = node[key];
+    var outNext = out[key];
+    if (!outNext) {
+      outNext = out[key] = {};
+    }
+    if (cacheNext.$type) {
+      var isObject4 = cacheNext.value && typeof cacheNext.value === "object";
+      var isUserCreatedcacheNext = !cacheNext.$_modelCreated;
+      var value;
+      if (isObject4 || isUserCreatedcacheNext) {
+        value = cloneBoxedValue(cacheNext);
+      } else {
+        value = cacheNext.value;
+      }
+      out[key] = value;
+      return;
+    }
+    _copyCache(cacheNext, outNext);
+  });
+}
+var getCachePosition$1;
+var hasRequiredGetCachePosition;
+function requireGetCachePosition() {
+  if (hasRequiredGetCachePosition)
+    return getCachePosition$1;
+  hasRequiredGetCachePosition = 1;
+  getCachePosition$1 = function getCachePosition2(model, path) {
+    var currentCachePosition = model._root.cache;
+    var depth = -1;
+    var maxDepth = path.length;
+    while (++depth < maxDepth && currentCachePosition && !currentCachePosition.$type) {
+      currentCachePosition = currentCachePosition[path[depth]];
+    }
+    return currentCachePosition;
+  };
+  return getCachePosition$1;
+}
+var applyErrorPrototype$1 = applyErrorPrototype_1;
+function BoundJSONGraphModelError$1() {
+  var instance = new Error("It is not legal to use the JSON Graph format from a bound Model. JSON Graph format can only be used from a root model.");
+  instance.name = "BoundJSONGraphModelError";
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+  }
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(instance, BoundJSONGraphModelError$1);
+  }
+  return instance;
+}
+applyErrorPrototype$1(BoundJSONGraphModelError$1);
+var BoundJSONGraphModelError_1 = BoundJSONGraphModelError$1;
+var getCachePosition = requireGetCachePosition();
+var InvalidModelError = requireInvalidModelError();
+var BoundJSONGraphModelError = BoundJSONGraphModelError_1;
+function mergeInto(target, obj) {
+  if (target === obj) {
+    return;
+  }
+  if (target === null || typeof target !== "object" || target.$type) {
+    return;
+  }
+  if (obj === null || typeof obj !== "object" || obj.$type) {
+    return;
+  }
+  for (var key in obj) {
+    if (key === "$__path") {
+      continue;
+    }
+    var targetValue = target[key];
+    if (targetValue === void 0) {
+      target[key] = obj[key];
+    } else {
+      mergeInto(targetValue, obj[key]);
+    }
+  }
+}
+function defaultEnvelope(isJSONG2) {
+  return isJSONG2 ? { jsonGraph: {}, paths: [] } : { json: {} };
+}
+var get$3 = function get4(walk, isJSONG2) {
+  return function innerGet(model, paths, seed) {
+    var nextSeed = isJSONG2 ? seed : [{}];
+    var valueNode = nextSeed[0];
+    var results = {
+      values: nextSeed,
+      optimizedPaths: []
+    };
+    var cache = model._root.cache;
+    var boundPath = model._path;
+    var currentCachePosition = cache;
+    var optimizedPath, optimizedLength;
+    var i3, len2;
+    var requestedPath = [];
+    var derefInfo = [];
+    var referenceContainer;
+    if (boundPath.length) {
+      if (isJSONG2) {
+        return {
+          criticalError: new BoundJSONGraphModelError()
+        };
+      }
+      optimizedPath = model._getOptimizedBoundPath();
+      optimizedLength = optimizedPath.length;
+      currentCachePosition = getCachePosition(model, optimizedPath);
+      if (currentCachePosition && currentCachePosition.$type) {
+        return {
+          criticalError: new InvalidModelError(boundPath, optimizedPath)
+        };
+      }
+      referenceContainer = model._referenceContainer;
+    } else {
+      optimizedPath = [];
+      optimizedLength = 0;
+    }
+    for (i3 = 0, len2 = paths.length; i3 < len2; i3++) {
+      walk(
+        model,
+        cache,
+        currentCachePosition,
+        paths[i3],
+        0,
+        valueNode,
+        results,
+        derefInfo,
+        requestedPath,
+        optimizedPath,
+        optimizedLength,
+        isJSONG2,
+        false,
+        referenceContainer
+      );
+    }
+    mergeInto(valueNode, paths.length ? seed[0] : defaultEnvelope(isJSONG2));
+    return results;
+  };
+};
+var promote$1 = requirePromote();
+var clone4 = requireClone2();
+var onError$1 = function onError2(model, node, depth, requestedPath, outerResults) {
+  var value = node.value;
+  if (!outerResults.errors) {
+    outerResults.errors = [];
+  }
+  if (model._boxed) {
+    value = clone4(node);
+  }
+  outerResults.errors.push({
+    path: requestedPath.slice(0, depth),
+    value
+  });
+  promote$1(model._root, node);
+};
+var onMissing$1 = function onMissing(model, path, depth, outerResults, requestedPath, optimizedPath, optimizedLength) {
+  var pathSlice;
+  if (!outerResults.requestedMissingPaths) {
+    outerResults.requestedMissingPaths = [];
+    outerResults.optimizedMissingPaths = [];
+  }
+  if (depth < path.length) {
+    var isEmpty = false;
+    for (var i3 = depth; i3 < path.length && !isEmpty; ++i3) {
+      if (isEmptyAtom(path[i3])) {
+        return;
+      }
+    }
+    pathSlice = path.slice(depth);
+  } else {
+    pathSlice = [];
+  }
+  concatAndInsertMissing(
+    model,
+    pathSlice,
+    depth,
+    requestedPath,
+    optimizedPath,
+    optimizedLength,
+    outerResults
+  );
+};
+function concatAndInsertMissing(model, remainingPath, depth, requestedPath, optimizedPath, optimizedLength, results) {
+  var requested = requestedPath.slice(0, depth);
+  Array.prototype.push.apply(requested, remainingPath);
+  results.requestedMissingPaths[results.requestedMissingPaths.length] = requested;
+  var optimized = optimizedPath.slice(0, optimizedLength);
+  Array.prototype.push.apply(optimized, remainingPath);
+  results.optimizedMissingPaths[results.optimizedMissingPaths.length] = optimized;
+}
+function isEmptyAtom(atom3) {
+  if (atom3 === null || typeof atom3 !== "object") {
+    return false;
+  }
+  var isArray4 = Array.isArray(atom3);
+  if (isArray4 && atom3.length) {
+    return false;
+  } else if (isArray4) {
+    return true;
+  }
+  var from2 = atom3.from;
+  var to = atom3.to;
+  if (from2 === void 0 || from2 <= to) {
+    return false;
+  }
+  return true;
+}
+var isMaterialzed = function isMaterialized(model) {
+  return model._materialized && !model._source;
+};
+var isExpired$1 = requireIsExpired();
+var $error = error;
+var onError3 = onError$1;
+var onValue$1 = onValue$2;
+var onMissing2 = onMissing$1;
+var isMaterialized2 = isMaterialzed;
+var expireNode2 = expireNode$5;
+var currentCacheVersion = currentCacheVersion$2;
+var onValueType$1 = function onValueType(model, node, path, depth, seed, outerResults, branchInfo, requestedPath, optimizedPath, optimizedLength, isJSONG2, fromReference) {
+  var currType = node && node.$type;
+  if (!node || !currType) {
+    var materialized = isMaterialized2(model);
+    if (materialized || !isJSONG2) {
+      onValue$1(
+        model,
+        node,
+        seed,
+        depth,
+        outerResults,
+        branchInfo,
+        requestedPath,
+        optimizedPath,
+        optimizedLength,
+        isJSONG2
+      );
+    }
+    if (!materialized) {
+      onMissing2(
+        model,
+        path,
+        depth,
+        outerResults,
+        requestedPath,
+        optimizedPath,
+        optimizedLength
+      );
+    }
+    return;
+  } else if (isExpired$1(node) && !(node.$_version === currentCacheVersion.getVersion() && node.$expires === 0)) {
+    if (!node.$_invalidated) {
+      expireNode2(node, model._root.expired, model._root);
+    }
+    onMissing2(
+      model,
+      path,
+      depth,
+      outerResults,
+      requestedPath,
+      optimizedPath,
+      optimizedLength
+    );
+  } else if (currType === $error) {
+    if (fromReference) {
+      requestedPath[depth] = null;
+      depth += 1;
+    }
+    if (isJSONG2 || model._treatErrorsAsValues) {
+      onValue$1(
+        model,
+        node,
+        seed,
+        depth,
+        outerResults,
+        branchInfo,
+        requestedPath,
+        optimizedPath,
+        optimizedLength,
+        isJSONG2
+      );
+    } else {
+      onValue$1(
+        model,
+        void 0,
+        seed,
+        depth,
+        outerResults,
+        branchInfo,
+        requestedPath,
+        optimizedPath,
+        optimizedLength,
+        isJSONG2
+      );
+      onError3(model, node, depth, requestedPath, outerResults);
+    }
+  } else {
+    if (fromReference) {
+      requestedPath[depth] = null;
+      depth += 1;
+    }
+    onValue$1(
+      model,
+      node,
+      seed,
+      depth,
+      outerResults,
+      branchInfo,
+      requestedPath,
+      optimizedPath,
+      optimizedLength,
+      isJSONG2
+    );
+  }
+};
+var followReference2 = requireFollowReference2();
+var onValueType2 = onValueType$1;
+var onValue2 = onValue$2;
+var isExpired2 = requireIsExpired();
+var iterateKeySet3 = lib$1.iterateKeySet;
+var $ref = ref;
+var promote = requirePromote();
+var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerResults, branchInfo, requestedPath, optimizedPathArg, optimizedLength, isJSONG2, fromReferenceArg, referenceContainerArg) {
+  var fromReference = fromReferenceArg;
+  var optimizedPath = optimizedPathArg;
+  var referenceContainer = referenceContainerArg;
+  if (!curr || curr.$type || depth === path.length) {
+    onValueType2(
+      model,
+      curr,
+      path,
+      depth,
+      seed,
+      outerResults,
+      branchInfo,
+      requestedPath,
+      optimizedPath,
+      optimizedLength,
+      isJSONG2,
+      fromReference
+    );
+    return;
+  }
+  var keySet = path[depth];
+  var isKeySet = keySet !== null && typeof keySet === "object";
+  var iteratorNote = false;
+  var key = keySet;
+  if (isKeySet) {
+    iteratorNote = {};
+    key = iterateKeySet3(keySet, iteratorNote);
+  }
+  var allowFromWhenceYouCame = model._allowFromWhenceYouCame;
+  var optimizedLengthPlus1 = optimizedLength + 1;
+  var nextDepth = depth + 1;
+  var refPath;
+  do {
+    if (key == null) {
+      onValue2(
+        model,
+        curr,
+        seed,
+        depth,
+        outerResults,
+        branchInfo,
+        requestedPath,
+        optimizedPath,
+        optimizedLength,
+        isJSONG2
+      );
+      if (iteratorNote && !iteratorNote.done) {
+        key = iterateKeySet3(keySet, iteratorNote);
+      }
+      continue;
+    }
+    fromReference = false;
+    optimizedPath[optimizedLength] = key;
+    requestedPath[depth] = key;
+    var next = curr[key];
+    var nextOptimizedPath = optimizedPath;
+    var nextOptimizedLength = optimizedLengthPlus1;
+    if (next) {
+      var nType = next.$type;
+      var value = nType && next.value || next;
+      if (nextDepth < path.length && nType && nType === $ref && !isExpired2(next)) {
+        promote(model._root, next);
+        if (isJSONG2) {
+          onValue2(
+            model,
+            next,
+            seed,
+            nextDepth,
+            outerResults,
+            null,
+            null,
+            optimizedPath,
+            nextOptimizedLength,
+            isJSONG2
+          );
+        }
+        var ref3 = followReference2(
+          model,
+          root4,
+          root4,
+          next,
+          value,
+          seed,
+          isJSONG2
+        );
+        fromReference = true;
+        next = ref3[0];
+        refPath = ref3[1];
+        referenceContainer = ref3[2];
+        nextOptimizedPath = refPath.slice();
+        nextOptimizedLength = refPath.length;
+      }
+      if (next) {
+        var obj;
+        if (referenceContainer && allowFromWhenceYouCame) {
+          obj = {
+            // eslint-disable-next-line camelcase
+            $__path: next.$_absolutePath,
+            // eslint-disable-next-line camelcase
+            $__refPath: referenceContainer.value,
+            // eslint-disable-next-line camelcase
+            $__toReference: referenceContainer.$_absolutePath
+          };
+        } else {
+          obj = {
+            // eslint-disable-next-line camelcase
+            $__path: next.$_absolutePath
+          };
+        }
+        branchInfo[depth] = obj;
+      }
+    }
+    walkPath(
+      model,
+      root4,
+      next,
+      path,
+      nextDepth,
+      seed,
+      outerResults,
+      branchInfo,
+      requestedPath,
+      nextOptimizedPath,
+      nextOptimizedLength,
+      isJSONG2,
+      fromReference,
+      referenceContainer
+    );
+    if (iteratorNote && !iteratorNote.done) {
+      key = iterateKeySet3(keySet, iteratorNote);
+    }
+  } while (iteratorNote && !iteratorNote.done);
+};
+var get$2 = get$3;
+var walkPath2 = walkPath$1;
+var getWithPathsAsPathMap$2 = get$2(walkPath2, false);
+var getWithPathsAsJSONGraph$1 = get$2(walkPath2, true);
+var get_12 = {
+  getValueSync: requireGetValueSync(),
+  getBoundValue: requireGetBoundValue(),
+  getWithPathsAsPathMap: getWithPathsAsPathMap$2,
+  getWithPathsAsJSONGraph: getWithPathsAsJSONGraph$1
+};
+var validInput = {
+  path: true,
+  pathSyntax: true
+};
+var gets = get_12;
+var getWithPathsAsJSONGraph = gets.getWithPathsAsJSONGraph;
+var getWithPathsAsPathMap$1 = gets.getWithPathsAsPathMap;
+var checkCacheAndReport$2 = function checkCacheAndReport(model, requestedPaths, observer, progressive, isJSONG2, seed, errors3) {
+  var results = isJSONG2 ? getWithPathsAsJSONGraph(model, requestedPaths, seed) : getWithPathsAsPathMap$1(model, requestedPaths, seed);
+  var valueNode = results.values && results.values[0];
+  var completed = !results.requestedMissingPaths || !results.requestedMissingPaths.length || !model._source;
+  if (results.errors) {
+    var errs = results.errors;
+    var errorsLength = errors3.length;
+    for (var i3 = 0, len2 = errs.length; i3 < len2; ++i3, ++errorsLength) {
+      errors3[errorsLength] = errs[i3];
+    }
+  }
+  if (progressive || completed && valueNode !== void 0) {
+    observer.onNext(valueNode);
+  }
+  if (results.criticalError) {
+    observer.onError(results.criticalError);
+    return null;
+  }
+  if (completed) {
+    if (errors3.length) {
+      observer.onError(errors3);
+    } else {
+      observer.onCompleted();
+    }
+    return null;
+  }
+  return results;
+};
+var applyErrorPrototype = applyErrorPrototype_1;
+function MaxRetryExceededError$2(missingOptimizedPaths) {
+  var instance = new Error("The allowed number of retries have been exceeded.");
+  instance.name = "MaxRetryExceededError";
+  instance.missingOptimizedPaths = missingOptimizedPaths || [];
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+  }
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(instance, MaxRetryExceededError$2);
+  }
+  return instance;
+}
+applyErrorPrototype(MaxRetryExceededError$2);
+MaxRetryExceededError$2.is = function(e2) {
+  return e2 && e2.name === "MaxRetryExceededError";
+};
+var MaxRetryExceededError_1 = MaxRetryExceededError$2;
+var AssignableDisposable$2 = function AssignableDisposable(disosableCallback) {
+  this.disposed = false;
+  this.currentDisposable = disosableCallback;
+};
+AssignableDisposable$2.prototype = {
+  /**
+   * Disposes of the current disposable.  This would be the getRequestCycle
+   * disposable.
+   */
+  dispose: function dispose() {
+    if (this.disposed || !this.currentDisposable) {
+      return;
+    }
+    this.disposed = true;
+    var currentDisposable = this.currentDisposable;
+    if (currentDisposable.dispose) {
+      currentDisposable.dispose();
+    } else {
+      currentDisposable();
+    }
+  }
+};
+var AssignableDisposable_1 = AssignableDisposable$2;
+var checkCacheAndReport$1 = checkCacheAndReport$2;
+var MaxRetryExceededError$1 = MaxRetryExceededError_1;
+var collectLru$2 = collect;
+var getSize$2 = getSize$6;
+var AssignableDisposable$1 = AssignableDisposable_1;
+var InvalidSourceError$1 = InvalidSourceError_1;
+var getRequestCycle$1 = function getRequestCycle(getResponse, model, results, observer, errors3, count) {
+  if (count > model._maxRetries) {
+    observer.onError(new MaxRetryExceededError$1(results.optimizedMissingPaths));
+    return {
+      dispose: function() {
+      }
+    };
+  }
+  var requestQueue = model._request;
+  var requestedMissingPaths = results.requestedMissingPaths;
+  var optimizedMissingPaths = results.optimizedMissingPaths;
+  var disposable = new AssignableDisposable$1();
+  var boundRequestedMissingPaths = [];
+  var boundPath = model._path;
+  if (boundPath.length) {
+    for (var i3 = 0, len2 = requestedMissingPaths.length; i3 < len2; ++i3) {
+      boundRequestedMissingPaths[i3] = boundPath.concat(requestedMissingPaths[i3]);
+    }
+  } else {
+    boundRequestedMissingPaths = requestedMissingPaths;
+  }
+  var currentRequestDisposable = requestQueue.get(boundRequestedMissingPaths, optimizedMissingPaths, count, function(err, data, hasInvalidatedResult) {
+    if (model._treatDataSourceErrorsAsJSONGraphErrors ? err instanceof InvalidSourceError$1 : !!err) {
+      if (results.hasValues) {
+        observer.onNext(results.values && results.values[0]);
+      }
+      observer.onError(err);
+      return;
+    }
+    var nextRequestedMissingPaths;
+    var nextSeed;
+    if (hasInvalidatedResult) {
+      nextRequestedMissingPaths = getResponse.currentRemainingPaths;
+      nextSeed = [{}];
+    } else {
+      nextRequestedMissingPaths = requestedMissingPaths;
+      nextSeed = results.values;
+    }
+    var nextResults = checkCacheAndReport$1(
+      model,
+      nextRequestedMissingPaths,
+      observer,
+      getResponse.isProgressive,
+      getResponse.isJSONGraph,
+      nextSeed,
+      errors3
+    );
+    if (nextResults) {
+      disposable.currentDisposable = getRequestCycle(
+        getResponse,
+        model,
+        nextResults,
+        observer,
+        errors3,
+        count + 1
+      );
+    } else {
+      var modelRoot = model._root;
+      var modelCache = modelRoot.cache;
+      var currentVersion = modelCache.$_version;
+      collectLru$2(
+        modelRoot,
+        modelRoot.expired,
+        getSize$2(modelCache),
+        model._maxSize,
+        model._collectRatio,
+        currentVersion
+      );
+    }
+  });
+  disposable.currentDisposable = currentRequestDisposable;
+  return disposable;
+};
+var ModelResponse$4 = ModelResponse_1;
+var checkCacheAndReport2 = checkCacheAndReport$2;
+var getRequestCycle2 = getRequestCycle$1;
+var empty2 = { dispose: function() {
+} };
+var collectLru$1 = collect;
+var getSize$1 = getSize$6;
+var GetResponse$3 = function GetResponse(model, paths, isJSONGraph, isProgressive, forceCollect) {
+  this.model = model;
+  this.currentRemainingPaths = paths;
+  this.isJSONGraph = isJSONGraph || false;
+  this.isProgressive = isProgressive || false;
+  this.forceCollect = forceCollect || false;
+};
+GetResponse$3.prototype = Object.create(ModelResponse$4.prototype);
+GetResponse$3.prototype._toJSONG = function _toJSONGraph() {
+  return new GetResponse$3(
+    this.model,
+    this.currentRemainingPaths,
+    true,
+    this.isProgressive,
+    this.forceCollect
+  );
+};
+GetResponse$3.prototype.progressively = function progressively3() {
+  return new GetResponse$3(
+    this.model,
+    this.currentRemainingPaths,
+    this.isJSONGraph,
+    true,
+    this.forceCollect
+  );
+};
+GetResponse$3.prototype._subscribe = function _subscribe3(observer) {
+  var seed = [{}];
+  var errors3 = [];
+  var model = this.model;
+  var isJSONG2 = observer.isJSONG = this.isJSONGraph;
+  var isProgressive = this.isProgressive;
+  var results = checkCacheAndReport2(
+    model,
+    this.currentRemainingPaths,
+    observer,
+    isProgressive,
+    isJSONG2,
+    seed,
+    errors3
+  );
+  if (!results) {
+    if (this.forceCollect) {
+      var modelRoot = model._root;
+      var modelCache = modelRoot.cache;
+      var currentVersion = modelCache.$_version;
+      collectLru$1(
+        modelRoot,
+        modelRoot.expired,
+        getSize$1(modelCache),
+        model._maxSize,
+        model._collectRatio,
+        currentVersion
+      );
+    }
+    return empty2;
+  }
+  return getRequestCycle2(
+    this,
+    model,
+    results,
+    observer,
+    errors3,
+    1
+  );
+};
+var GetResponse_1 = GetResponse$3;
+var pathSyntax$2 = src$1;
+var ModelResponse$3 = ModelResponse_1;
+var GET_VALID_INPUT$1 = validInput;
+var validateInput$2 = validateInput$3;
+var GetResponse$2 = GetResponse_1;
+var get$1 = function get5() {
+  var out = validateInput$2(arguments, GET_VALID_INPUT$1, "get");
+  if (out !== true) {
+    return new ModelResponse$3(function(o) {
+      o.onError(out);
+    });
+  }
+  var paths = pathSyntax$2.fromPathsOrPathValues(arguments);
+  return new GetResponse$2(this, paths);
+};
+var GetResponse$1 = GetResponse_1;
+var getWithPaths = function getWithPaths2(paths) {
+  return new GetResponse$1(this, paths);
+};
+var setValidInput$1 = {
+  pathValue: true,
+  pathSyntax: true,
+  json: true,
+  jsonGraph: true
+};
+var arrayFlatMap$1 = function arrayFlatMap(array, selector) {
+  var index2 = -1;
+  var i3 = -1;
+  var n2 = array.length;
+  var array2 = [];
+  while (++i3 < n2) {
+    var array3 = selector(array[i3], i3, array);
+    var j = -1;
+    var k = array3.length;
+    while (++j < k) {
+      array2[++index2] = array3[j];
+    }
+  }
+  return array2;
+};
+var arrayFlatMap2 = arrayFlatMap$1;
+var setGroupsIntoCache$1 = function setGroupsIntoCache(model, groups) {
+  var modelRoot = model._root;
+  var errorSelector2 = modelRoot.errorSelector;
+  var groupIndex = -1;
+  var groupCount = groups.length;
+  var requestedPaths = [];
+  var optimizedPaths = [];
+  var returnValue = {
+    requestedPaths,
+    optimizedPaths
+  };
+  while (++groupIndex < groupCount) {
+    var group = groups[groupIndex];
+    var inputType = group.inputType;
+    var methodArgs = group.arguments;
+    if (methodArgs.length > 0) {
+      var operationName = "_set" + inputType;
+      var operationFunc = model[operationName];
+      var successfulPaths = operationFunc(model, methodArgs, null, errorSelector2);
+      optimizedPaths.push.apply(optimizedPaths, successfulPaths[1]);
+      if (inputType === "PathValues") {
+        requestedPaths.push.apply(requestedPaths, methodArgs.map(pluckPath));
+      } else if (inputType === "JSONGs") {
+        requestedPaths.push.apply(requestedPaths, arrayFlatMap2(methodArgs, pluckEnvelopePaths));
+      } else {
+        requestedPaths.push.apply(requestedPaths, successfulPaths[0]);
+      }
+    }
+  }
+  return returnValue;
+};
+function pluckPath(pathValue2) {
+  return pathValue2.path;
+}
+function pluckEnvelopePaths(jsonGraphEnvelope) {
+  return jsonGraphEnvelope.paths;
+}
+var emptyArray = [];
+var AssignableDisposable2 = AssignableDisposable_1;
+var GetResponse2 = GetResponse_1;
+var setGroupsIntoCache2 = setGroupsIntoCache$1;
+var getWithPathsAsPathMap = get_12.getWithPathsAsPathMap;
+var InvalidSourceError = InvalidSourceError_1;
+var MaxRetryExceededError = MaxRetryExceededError_1;
+var setRequestCycle$1 = function setRequestCycle(model, observer, groups, isJSONGraph, isProgressive, count) {
+  var requestedAndOptimizedPaths = setGroupsIntoCache2(model, groups);
+  var optimizedPaths = requestedAndOptimizedPaths.optimizedPaths;
+  var requestedPaths = requestedAndOptimizedPaths.requestedPaths;
+  if (count > model._maxRetries) {
+    observer.onError(new MaxRetryExceededError(optimizedPaths));
+    return {
+      dispose: function() {
+      }
+    };
+  }
+  var isMaster = model._source === void 0;
+  if (isMaster) {
+    return subscribeToFollowupGet(
+      model,
+      observer,
+      requestedPaths,
+      isJSONGraph,
+      isProgressive
+    );
+  }
+  var prevVersion;
+  if (isProgressive) {
+    var results = getWithPathsAsPathMap(model, requestedPaths, [{}]);
+    if (results.criticalError) {
+      observer.onError(results.criticalError);
+      return null;
+    }
+    observer.onNext(results.values[0]);
+    prevVersion = model._root.cache.$_version;
+  }
+  var currentJSONGraph = getJSONGraph(model, optimizedPaths);
+  var disposable = new AssignableDisposable2();
+  var requestDisposable = model._request.set(currentJSONGraph, count, function(error3, jsonGraphEnv) {
+    if (error3 instanceof InvalidSourceError) {
+      observer.onError(error3);
+      return;
+    }
+    var isCompleted = false;
+    if (error3 || optimizedPaths.length === jsonGraphEnv.paths.length) {
+      isCompleted = true;
+    }
+    if (isProgressive) {
+      var nextVersion = model._root.cache.$_version;
+      var versionChanged = nextVersion !== prevVersion;
+      if (!versionChanged) {
+        observer.onCompleted();
+        return;
+      }
+    }
+    if (isCompleted) {
+      disposable.currentDisposable = subscribeToFollowupGet(
+        model,
+        observer,
+        requestedPaths,
+        isJSONGraph,
+        isProgressive
+      );
+    } else {
+      setRequestCycle(
+        model,
+        observer,
+        groups,
+        isJSONGraph,
+        isProgressive,
+        count + 1
+      );
+    }
+  });
+  disposable.currentDisposable = requestDisposable;
+  return disposable;
+};
+function getJSONGraph(model, optimizedPaths) {
+  var boundPath = model._path;
+  var envelope = {};
+  model._path = emptyArray;
+  model._getPathValuesAsJSONG(model._materialize().withoutDataSource(), optimizedPaths, [envelope]);
+  model._path = boundPath;
+  return envelope;
+}
+function subscribeToFollowupGet(model, observer, requestedPaths, isJSONGraph, isProgressive) {
+  var response = new GetResponse2(
+    model,
+    requestedPaths,
+    isJSONGraph,
+    isProgressive,
+    true
+  );
+  return response.subscribe(observer);
+}
+var ModelResponse$2 = ModelResponse_1;
+var pathSyntax$1 = src$1;
+var isArray3 = Array.isArray;
+var isPathValue3 = isPathValue$3;
+var isJSONGraphEnvelope$1 = isJSONGraphEnvelope$3;
+var isJSONEnvelope$1 = isJSONEnvelope$4;
+var setRequestCycle2 = setRequestCycle$1;
+var SetResponse$1 = function SetResponse(model, args, isJSONGraph, isProgressive) {
+  this._model = model;
+  this._isJSONGraph = isJSONGraph || false;
+  this._isProgressive = isProgressive || false;
+  this._initialArgs = args;
+  this._value = [{}];
+  var groups = [];
+  var group, groupType;
+  var argIndex = -1;
+  var argCount = args.length;
+  while (++argIndex < argCount) {
+    var arg = args[argIndex];
+    var argType;
+    if (isArray3(arg) || typeof arg === "string") {
+      arg = pathSyntax$1.fromPath(arg);
+      argType = "PathValues";
+    } else if (isPathValue3(arg)) {
+      arg.path = pathSyntax$1.fromPath(arg.path);
+      argType = "PathValues";
+    } else if (isJSONGraphEnvelope$1(arg)) {
+      argType = "JSONGs";
+    } else if (isJSONEnvelope$1(arg)) {
+      argType = "PathMaps";
+    }
+    if (groupType !== argType) {
+      groupType = argType;
+      group = {
+        inputType: argType,
+        arguments: []
+      };
+      groups.push(group);
+    }
+    group.arguments.push(arg);
+  }
+  this._groups = groups;
+};
+SetResponse$1.prototype = Object.create(ModelResponse$2.prototype);
+SetResponse$1.prototype._subscribe = function _subscribe4(observer) {
+  var groups = this._groups;
+  var model = this._model;
+  var isJSONGraph = this._isJSONGraph;
+  var isProgressive = this._isProgressive;
+  return setRequestCycle2(
+    model,
+    observer,
+    groups,
+    isJSONGraph,
+    isProgressive,
+    1
+  );
+};
+SetResponse$1.prototype._toJSONG = function _toJSONGraph2() {
+  return new SetResponse$1(
+    this._model,
+    this._initialArgs,
+    true,
+    this._isProgressive
+  );
+};
+SetResponse$1.prototype.progressively = function progressively4() {
+  return new SetResponse$1(
+    this._model,
+    this._initialArgs,
+    this._isJSONGraph,
+    true
+  );
+};
+var SetResponse_1 = SetResponse$1;
+var setValidInput = setValidInput$1;
+var validateInput$1 = validateInput$3;
+var SetResponse2 = SetResponse_1;
+var ModelResponse$1 = ModelResponse_1;
+var set3 = function set4() {
+  var out = validateInput$1(arguments, setValidInput, "set");
+  if (out !== true) {
+    return new ModelResponse$1(function(o) {
+      o.onError(out);
+    });
+  }
+  var argsIdx = -1;
+  var argsLen = arguments.length;
+  var args = [];
+  while (++argsIdx < argsLen) {
+    args[argsIdx] = arguments[argsIdx];
+  }
+  return new SetResponse2(this, args);
+};
+var InvalidDerefInputError_1;
+var hasRequiredInvalidDerefInputError;
+function requireInvalidDerefInputError() {
+  if (hasRequiredInvalidDerefInputError)
+    return InvalidDerefInputError_1;
+  hasRequiredInvalidDerefInputError = 1;
+  var applyErrorPrototype2 = applyErrorPrototype_1;
+  function InvalidDerefInputError() {
+    var instance = new Error("Deref can only be used with a non-primitive object from get, set, or call.");
+    instance.name = "InvalidDerefInputError";
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+    }
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(instance, InvalidDerefInputError);
+    }
+    return instance;
+  }
+  applyErrorPrototype2(InvalidDerefInputError);
+  InvalidDerefInputError_1 = InvalidDerefInputError;
+  return InvalidDerefInputError_1;
+}
+var deref;
+var hasRequiredDeref;
+function requireDeref() {
+  if (hasRequiredDeref)
+    return deref;
+  hasRequiredDeref = 1;
+  var InvalidDerefInputError = requireInvalidDerefInputError();
+  var getCachePosition2 = requireGetCachePosition();
+  var CONTAINER_DOES_NOT_EXIST = "e";
+  var $ref2 = ref;
+  deref = function deref2(boundJSONArg) {
+    var absolutePath = boundJSONArg && boundJSONArg.$__path;
+    var refPath = boundJSONArg && boundJSONArg.$__refPath;
+    var toReference = boundJSONArg && boundJSONArg.$__toReference;
+    var referenceContainer;
+    if (absolutePath) {
+      var validContainer = CONTAINER_DOES_NOT_EXIST;
+      if (toReference) {
+        validContainer = false;
+        referenceContainer = getCachePosition2(this, toReference);
+        if (refPath && referenceContainer && referenceContainer.$type === $ref2) {
+          var containerPath = referenceContainer.value;
+          var i3 = 0;
+          var len2 = refPath.length;
+          validContainer = true;
+          for (; validContainer && i3 < len2; ++i3) {
+            if (containerPath[i3] !== refPath[i3]) {
+              validContainer = false;
+            }
+          }
+        }
+      }
+      if (!validContainer) {
+        referenceContainer = false;
+      } else if (validContainer === CONTAINER_DOES_NOT_EXIST) {
+        referenceContainer = true;
+      }
+      return this._clone({
+        _path: absolutePath,
+        _referenceContainer: referenceContainer
+      });
+    }
+    throw new InvalidDerefInputError();
+  };
+  return deref;
+}
+var hasValidParentReference;
+var hasRequiredHasValidParentReference;
+function requireHasValidParentReference() {
+  if (hasRequiredHasValidParentReference)
+    return hasValidParentReference;
+  hasRequiredHasValidParentReference = 1;
+  hasValidParentReference = function fromWhenceYeCame() {
+    var reference = this._referenceContainer;
+    if (!this._allowFromWhenceYouCame) {
+      return true;
+    }
+    if (reference === true) {
+      return true;
+    }
+    if (reference === false) {
+      return false;
+    }
+    if (reference && reference.$_parent === void 0) {
+      return false;
+    }
+    if (reference && reference.$_invalidated) {
+      return false;
+    }
+    return true;
+  };
+  return hasValidParentReference;
+}
+var getValue3;
+var hasRequiredGetValue2;
+function requireGetValue2() {
+  if (hasRequiredGetValue2)
+    return getValue3;
+  hasRequiredGetValue2 = 1;
+  var ModelResponse2 = ModelResponse_1;
+  var pathSyntax3 = src$1;
+  getValue3 = function getValue4(path) {
+    var parsedPath = pathSyntax3.fromPath(path);
+    var pathIdx = 0;
+    var pathLen = parsedPath.length;
+    while (++pathIdx < pathLen) {
+      if (typeof parsedPath[pathIdx] === "object") {
+        return new ModelResponse2(function(o) {
+          o.onError(new Error("Paths must be simple paths"));
+        });
+      }
+    }
+    var self2 = this;
+    return new ModelResponse2(function(obs) {
+      return self2.get(parsedPath).subscribe(function(data) {
+        var curr = data.json;
+        var depth = -1;
+        var length = parsedPath.length;
+        while (curr && ++depth < length) {
+          curr = curr[parsedPath[depth]];
+        }
+        obs.onNext(curr);
+      }, function(err) {
+        obs.onError(err);
+      }, function() {
+        obs.onCompleted();
+      });
+    });
+  };
+  return getValue3;
+}
+var setValue;
+var hasRequiredSetValue;
+function requireSetValue() {
+  if (hasRequiredSetValue)
+    return setValue;
+  hasRequiredSetValue = 1;
+  var jsong2 = src2;
+  var ModelResponse2 = ModelResponse_1;
+  var isPathValue4 = isPathValue$3;
+  setValue = function setValue2(pathArg, valueArg) {
+    var value = isPathValue4(pathArg) ? pathArg : jsong2.pathValue(pathArg, valueArg);
+    var pathIdx = 0;
+    var path = value.path;
+    var pathLen = path.length;
+    while (++pathIdx < pathLen) {
+      if (typeof path[pathIdx] === "object") {
+        return new ModelResponse2(function(o) {
+          o.onError(new Error("Paths must be simple paths"));
+        });
+      }
+    }
+    var self2 = this;
+    return new ModelResponse2(function(obs) {
+      return self2.set(value).subscribe(function(data) {
+        var curr = data.json;
+        var depth = -1;
+        var length = path.length;
+        while (curr && ++depth < length) {
+          curr = curr[path[depth]];
+        }
+        obs.onNext(curr);
+      }, function(err) {
+        obs.onError(err);
+      }, function() {
+        obs.onCompleted();
+      });
+    });
+  };
+  return setValue;
+}
+var sync$2;
+var hasRequiredSync$2;
+function requireSync$2() {
+  if (hasRequiredSync$2)
+    return sync$2;
+  hasRequiredSync$2 = 1;
+  var pathSyntax3 = src$1;
+  var getValueSync2 = requireGetValueSync();
+  sync$2 = function _getValueSync(pathArg) {
+    var path = pathSyntax3.fromPath(pathArg);
+    if (Array.isArray(path) === false) {
+      throw new Error("Model#_getValueSync must be called with an Array path.");
+    }
+    if (this._path.length) {
+      path = this._path.concat(path);
+    }
+    this._syncCheck("getValueSync");
+    return getValueSync2(this, path).value;
+  };
+  return sync$2;
+}
+var sync$1;
+var hasRequiredSync$1;
+function requireSync$1() {
+  if (hasRequiredSync$1)
+    return sync$1;
+  hasRequiredSync$1 = 1;
+  var pathSyntax3 = src$1;
+  var isPathValue4 = isPathValue$3;
+  var setPathValues2 = requireSetPathValues();
+  sync$1 = function setValueSync(pathArg, valueArg, errorSelectorArg, comparatorArg) {
+    var path = pathSyntax3.fromPath(pathArg);
+    var value = valueArg;
+    var errorSelector2 = errorSelectorArg;
+    var comparator2 = comparatorArg;
+    if (isPathValue4(path)) {
+      comparator2 = errorSelector2;
+      errorSelector2 = value;
+      value = path;
+    } else {
+      value = {
+        path,
+        value
+      };
+    }
+    if (isPathValue4(value) === false) {
+      throw new Error("Model#setValueSync must be called with an Array path.");
+    }
+    if (typeof errorSelector2 !== "function") {
+      errorSelector2 = this._root._errorSelector;
+    }
+    if (typeof comparator2 !== "function") {
+      comparator2 = this._root._comparator;
+    }
+    this._syncCheck("setValueSync");
+    setPathValues2(this, [value]);
+    return this._getValueSync(value.path);
+  };
+  return sync$1;
+}
+var sync2;
+var hasRequiredSync;
+function requireSync() {
+  if (hasRequiredSync)
+    return sync2;
+  hasRequiredSync = 1;
+  var pathSyntax3 = src$1;
+  var getBoundValue2 = requireGetBoundValue();
+  var InvalidModelError2 = requireInvalidModelError();
+  sync2 = function derefSync(boundPathArg) {
+    var boundPath = pathSyntax3.fromPath(boundPathArg);
+    if (!Array.isArray(boundPath)) {
+      throw new Error("Model#derefSync must be called with an Array path.");
+    }
+    var boundValue = getBoundValue2(this, this._path.concat(boundPath), false);
+    var path = boundValue.path;
+    var node = boundValue.value;
+    var found = boundValue.found;
+    if (!found || node === void 0) {
+      return void 0;
+    }
+    if (node.$type) {
+      throw new InvalidModelError2(path, path);
+    }
+    return this._clone({ _path: path });
+  };
+  return sync2;
+}
+var getVersion;
+var hasRequiredGetVersion;
+function requireGetVersion() {
+  if (hasRequiredGetVersion)
+    return getVersion;
+  hasRequiredGetVersion = 1;
+  var getValueSync2 = requireGetValueSync();
+  getVersion = function _getVersion(model, path) {
+    var gen = getValueSync2({
+      _boxed: true,
+      _root: model._root,
+      _treatErrorsAsValues: model._treatErrorsAsValues
+    }, path, true).value;
+    var version3 = gen && gen.$_version;
+    return version3 == null ? -1 : version3;
+  };
+  return getVersion;
+}
+var invalidatePathSets;
+var hasRequiredInvalidatePathSets;
+function requireInvalidatePathSets() {
+  if (hasRequiredInvalidatePathSets)
+    return invalidatePathSets;
+  hasRequiredInvalidatePathSets = 1;
+  var __ref2 = requireRef();
+  var $ref2 = ref;
+  var getBoundValue2 = requireGetBoundValue();
+  var promote2 = requirePromote();
+  var getSize4 = getSize$6;
+  var isExpired3 = isExpired$7;
+  var isFunction4 = isFunction$5;
+  var isPrimitive3 = isPrimitive$4;
+  var expireNode3 = expireNode$5;
+  var iterateKeySet4 = lib$1.iterateKeySet;
+  var incrementVersion3 = incrementVersionExports;
+  var updateNodeAncestors3 = updateNodeAncestors$3;
+  var removeNodeAndDescendants2 = requireRemoveNodeAndDescendants();
+  invalidatePathSets = function invalidatePathSets2(model, paths) {
+    var modelRoot = model._root;
+    var lru = modelRoot;
+    var expired = modelRoot.expired;
+    var version3 = incrementVersion3();
+    var bound = model._path;
+    var cache = modelRoot.cache;
+    var node = bound.length ? getBoundValue2(model, bound).value : cache;
+    var parent = node.$_parent || cache;
+    var initialVersion = cache.$_version;
+    var pathIndex = -1;
+    var pathCount3 = paths.length;
+    while (++pathIndex < pathCount3) {
+      var path = paths[pathIndex];
+      invalidatePathSet(path, 0, cache, parent, node, version3, expired, lru);
+    }
+    var newVersion = cache.$_version;
+    var rootChangeHandler = modelRoot.onChange;
+    if (isFunction4(rootChangeHandler) && initialVersion !== newVersion) {
+      rootChangeHandler();
+    }
+  };
+  function invalidatePathSet(path, depth, root4, parent, node, version3, expired, lru) {
+    var note = {};
+    var branch = depth < path.length - 1;
+    var keySet = path[depth];
+    var key = iterateKeySet4(keySet, note);
+    do {
+      var results = invalidateNode(root4, parent, node, key, branch, expired, lru);
+      var nextNode = results[0];
+      var nextParent = results[1];
+      if (nextNode) {
+        if (branch) {
+          invalidatePathSet(
+            path,
+            depth + 1,
+            root4,
+            nextParent,
+            nextNode,
+            version3,
+            expired,
+            lru
+          );
+        } else if (removeNodeAndDescendants2(nextNode, nextParent, key, lru, void 0)) {
+          updateNodeAncestors3(nextParent, getSize4(nextNode), lru, version3);
+        }
+      }
+      key = iterateKeySet4(keySet, note);
+    } while (!note.done);
+  }
+  function invalidateReference(root4, node, expired, lru) {
+    if (isExpired3(node)) {
+      expireNode3(node, expired, lru);
+      return [void 0, root4];
+    }
+    promote2(lru, node);
+    var container = node;
+    var reference = node.value;
+    var parent = root4;
+    node = node.$_context;
+    if (node != null) {
+      parent = node.$_parent || root4;
+    } else {
+      var index2 = 0;
+      var count = reference.length - 1;
+      parent = node = root4;
+      do {
+        var key = reference[index2];
+        var branch = index2 < count;
+        var results = invalidateNode(root4, parent, node, key, branch, expired, lru);
+        node = results[0];
+        if (isPrimitive3(node)) {
+          return results;
+        }
+        parent = results[1];
+      } while (index2++ < count);
+      if (container.$_context !== node) {
+        var backRefs = node.$_refsLength || 0;
+        node.$_refsLength = backRefs + 1;
+        node[__ref2 + backRefs] = container;
+        container.$_context = node;
+        container.$_refIndex = backRefs;
+      }
+    }
+    return [node, parent];
+  }
+  function invalidateNode(root4, parent, node, key, branch, expired, lru) {
+    var type = node.$type;
+    while (type === $ref2) {
+      var results = invalidateReference(root4, node, expired, lru);
+      node = results[0];
+      if (isPrimitive3(node)) {
+        return results;
+      }
+      parent = results[1];
+      type = node.$type;
+    }
+    if (type !== void 0) {
+      return [node, parent];
+    }
+    if (key == null) {
+      if (branch) {
+        throw new Error("`null` is not allowed in branch key positions.");
+      } else if (node) {
+        key = node.$_key;
+      }
+    } else {
+      parent = node;
+      node = parent[key];
+    }
+    return [node, parent];
+  }
+  return invalidatePathSets;
+}
+var invalidatePathMaps;
+var hasRequiredInvalidatePathMaps;
+function requireInvalidatePathMaps() {
+  if (hasRequiredInvalidatePathMaps)
+    return invalidatePathMaps;
+  hasRequiredInvalidatePathMaps = 1;
+  var createHardlink3 = createHardlink$2;
+  var __prefix2 = reservedPrefix$1;
+  var $ref2 = ref;
+  var getBoundValue2 = requireGetBoundValue();
+  var promote2 = requirePromote();
+  var getSize4 = getSize$6;
+  var hasOwn2 = hasOwn_1;
+  var isObject4 = isObject$f;
+  var isExpired3 = isExpired$7;
+  var isFunction4 = isFunction$5;
+  var isPrimitive3 = isPrimitive$4;
+  var expireNode3 = expireNode$5;
+  var incrementVersion3 = incrementVersionExports;
+  var updateNodeAncestors3 = updateNodeAncestors$3;
+  var removeNodeAndDescendants2 = requireRemoveNodeAndDescendants();
+  invalidatePathMaps = function invalidatePathMaps2(model, pathMapEnvelopes) {
+    var modelRoot = model._root;
+    var lru = modelRoot;
+    var expired = modelRoot.expired;
+    var version3 = incrementVersion3();
+    var bound = model._path;
+    var cache = modelRoot.cache;
+    var node = bound.length ? getBoundValue2(model, bound).value : cache;
+    var parent = node.$_parent || cache;
+    var initialVersion = cache.$_version;
+    var pathMapIndex = -1;
+    var pathMapCount = pathMapEnvelopes.length;
+    while (++pathMapIndex < pathMapCount) {
+      var pathMapEnvelope = pathMapEnvelopes[pathMapIndex];
+      invalidatePathMap(pathMapEnvelope.json, cache, parent, node, version3, expired, lru);
+    }
+    var newVersion = cache.$_version;
+    var rootChangeHandler = modelRoot.onChange;
+    if (isFunction4(rootChangeHandler) && initialVersion !== newVersion) {
+      rootChangeHandler();
+    }
+  };
+  function invalidatePathMap(pathMap, root4, parent, node, version3, expired, lru) {
+    if (isPrimitive3(pathMap) || pathMap.$type) {
+      return;
+    }
+    for (var key in pathMap) {
+      if (key[0] !== __prefix2 && hasOwn2(pathMap, key)) {
+        var child = pathMap[key];
+        var branch = isObject4(child) && !child.$type;
+        var results = invalidateNode(root4, parent, node, key, branch, expired, lru);
+        var nextNode = results[0];
+        var nextParent = results[1];
+        if (nextNode) {
+          if (branch) {
+            invalidatePathMap(child, root4, nextParent, nextNode, version3, expired, lru);
+          } else if (removeNodeAndDescendants2(nextNode, nextParent, key, lru)) {
+            updateNodeAncestors3(nextParent, getSize4(nextNode), lru, version3);
+          }
+        }
+      }
+    }
+  }
+  function invalidateReference(root4, node, expired, lru) {
+    if (isExpired3(node)) {
+      expireNode3(node, expired, lru);
+      return [void 0, root4];
+    }
+    promote2(lru, node);
+    var container = node;
+    var reference = node.value;
+    var parent = root4;
+    node = node.$_context;
+    if (node != null) {
+      parent = node.$_parent || root4;
+    } else {
+      var index2 = 0;
+      var count = reference.length - 1;
+      parent = node = root4;
+      do {
+        var key = reference[index2];
+        var branch = index2 < count;
+        var results = invalidateNode(root4, parent, node, key, branch, expired, lru);
+        node = results[0];
+        if (isPrimitive3(node)) {
+          return results;
+        }
+        parent = results[1];
+      } while (index2++ < count);
+      if (container.$_context !== node) {
+        createHardlink3(container, node);
+      }
+    }
+    return [node, parent];
+  }
+  function invalidateNode(root4, parent, node, key, branch, expired, lru) {
+    var type = node.$type;
+    while (type === $ref2) {
+      var results = invalidateReference(root4, node, expired, lru);
+      node = results[0];
+      if (isPrimitive3(node)) {
+        return results;
+      }
+      parent = results[1];
+      type = node && node.$type;
+    }
+    if (type !== void 0) {
+      return [node, parent];
+    }
+    if (key == null) {
+      if (branch) {
+        throw new Error("`null` is not allowed in branch key positions.");
+      } else if (node) {
+        key = node.$_key;
+      }
+    } else {
+      parent = node;
+      node = parent[key];
+    }
+    return [node, parent];
+  }
+  return invalidatePathMaps;
+}
+var ModelRoot = ModelRoot_1;
+var ModelDataSourceAdapter = ModelDataSourceAdapter_1;
+var RequestQueue = RequestQueueV2_1;
+var ModelResponse = ModelResponse_1;
+var CallResponse = CallResponse_1;
+var InvalidateResponse = InvalidateResponse_1;
+var TimeoutScheduler = TimeoutScheduler_1;
+var ImmediateScheduler = ImmediateScheduler_1;
+var collectLru = collect;
+var pathSyntax2 = src$1;
+var getSize3 = getSize$6;
+var isObject3 = isObject$f;
+var isPrimitive2 = isPrimitive$4;
+var isJSONEnvelope2 = isJSONEnvelope$4;
+var isJSONGraphEnvelope2 = isJSONGraphEnvelope$3;
+var setCache = setPathMaps;
+var setJSONGraphs2 = setJSONGraphs$3;
+var jsong = src2;
+var ID = 0;
+var validateInput2 = validateInput$3;
+var noOp3 = function() {
+};
+var getCache2 = getCache$1;
+var get6 = get_12;
+var GET_VALID_INPUT = validInput;
+var Model_1 = Model;
+Model.ref = jsong.ref;
+Model.atom = jsong.atom;
+Model.error = jsong.error;
+Model.pathValue = jsong.pathValue;
+function Model(o) {
+  var options = o || {};
+  this._root = options._root || new ModelRoot(options);
+  this._path = options.path || options._path || [];
+  this._source = options.source || options._source;
+  this._request = options.request || options._request || new RequestQueue(this, options.scheduler || new ImmediateScheduler());
+  this._ID = ID++;
+  if (typeof options.maxSize === "number") {
+    this._maxSize = options.maxSize;
+  } else {
+    this._maxSize = options._maxSize || Model.prototype._maxSize;
+  }
+  if (typeof options.maxRetries === "number") {
+    this._maxRetries = options.maxRetries;
+  } else {
+    this._maxRetries = options._maxRetries || Model.prototype._maxRetries;
+  }
+  if (typeof options.collectRatio === "number") {
+    this._collectRatio = options.collectRatio;
+  } else {
+    this._collectRatio = options._collectRatio || Model.prototype._collectRatio;
+  }
+  if (options.boxed || options.hasOwnProperty("_boxed")) {
+    this._boxed = options.boxed || options._boxed;
+  }
+  if (options.materialized || options.hasOwnProperty("_materialized")) {
+    this._materialized = options.materialized || options._materialized;
+  }
+  if (typeof options.treatErrorsAsValues === "boolean") {
+    this._treatErrorsAsValues = options.treatErrorsAsValues;
+  } else if (options.hasOwnProperty("_treatErrorsAsValues")) {
+    this._treatErrorsAsValues = options._treatErrorsAsValues;
+  } else {
+    this._treatErrorsAsValues = false;
+  }
+  if (typeof options.disablePathCollapse === "boolean") {
+    this._enablePathCollapse = !options.disablePathCollapse;
+  } else if (options.hasOwnProperty("_enablePathCollapse")) {
+    this._enablePathCollapse = options._enablePathCollapse;
+  } else {
+    this._enablePathCollapse = true;
+  }
+  if (typeof options.disableRequestDeduplication === "boolean") {
+    this._enableRequestDeduplication = !options.disableRequestDeduplication;
+  } else if (options.hasOwnProperty("_enableRequestDeduplication")) {
+    this._enableRequestDeduplication = options._enableRequestDeduplication;
+  } else {
+    this._enableRequestDeduplication = true;
+  }
+  this._useServerPaths = options._useServerPaths || false;
+  this._allowFromWhenceYouCame = options.allowFromWhenceYouCame || options._allowFromWhenceYouCame || false;
+  this._treatDataSourceErrorsAsJSONGraphErrors = options._treatDataSourceErrorsAsJSONGraphErrors || false;
+  if (options.cache) {
+    this.setCache(options.cache);
+  }
+}
+Model.prototype.constructor = Model;
+Model.prototype._materialized = false;
+Model.prototype._boxed = false;
+Model.prototype._progressive = false;
+Model.prototype._treatErrorsAsValues = false;
+Model.prototype._maxSize = Math.pow(2, 53) - 1;
+Model.prototype._maxRetries = 3;
+Model.prototype._collectRatio = 0.75;
+Model.prototype._enablePathCollapse = true;
+Model.prototype._enableRequestDeduplication = true;
+Model.prototype.get = get$1;
+Model.prototype._getOptimizedBoundPath = function _getOptimizedBoundPath() {
+  return this._path ? this._path.slice() : this._path;
+};
+Model.prototype._getWithPaths = getWithPaths;
+Model.prototype.set = set3;
+Model.prototype.preload = function preload() {
+  var out = validateInput2(arguments, GET_VALID_INPUT, "preload");
+  if (out !== true) {
+    return new ModelResponse(function(o) {
+      o.onError(out);
+    });
+  }
+  var args = Array.prototype.slice.call(arguments);
+  var self2 = this;
+  return new ModelResponse(function(obs) {
+    return self2.get.apply(self2, args).subscribe(
+      function() {
+      },
+      function(err) {
+        obs.onError(err);
+      },
+      function() {
+        obs.onCompleted();
+      }
+    );
+  });
+};
+Model.prototype.call = function call3() {
+  var args;
+  var argsIdx = -1;
+  var argsLen = arguments.length;
+  args = new Array(argsLen);
+  while (++argsIdx < argsLen) {
+    var arg = arguments[argsIdx];
+    args[argsIdx] = arg;
+    var argType = typeof arg;
+    if (argsIdx > 1 && !Array.isArray(arg) || argsIdx === 0 && !Array.isArray(arg) && argType !== "string" || argsIdx === 1 && !Array.isArray(arg) && !isPrimitive2(arg)) {
+      return new ModelResponse(function(o) {
+        o.onError(new Error("Invalid argument"));
+      });
+    }
+  }
+  return new CallResponse(this, args[0], args[1], args[2], args[3]);
+};
+Model.prototype.invalidate = function invalidate() {
+  var args;
+  var argsIdx = -1;
+  var argsLen = arguments.length;
+  args = [];
+  while (++argsIdx < argsLen) {
+    args[argsIdx] = pathSyntax2.fromPath(arguments[argsIdx]);
+    if (!Array.isArray(args[argsIdx]) || !args[argsIdx].length) {
+      throw new Error("Invalid argument");
+    }
+  }
+  new InvalidateResponse(this, args).subscribe(noOp3, function(e2) {
+    throw e2;
+  });
+};
+Model.prototype.deref = requireDeref();
+Model.prototype._hasValidParentReference = requireHasValidParentReference();
+Model.prototype.getValue = requireGetValue2();
+Model.prototype.setValue = requireSetValue();
+Model.prototype._getValueSync = requireSync$2();
+Model.prototype._setValueSync = requireSync$1();
+Model.prototype._derefSync = requireSync();
+Model.prototype.setCache = function modelSetCache(cacheOrJSONGraphEnvelope) {
+  var cache = this._root.cache;
+  if (cacheOrJSONGraphEnvelope !== cache) {
+    var modelRoot = this._root;
+    var boundPath = this._path;
+    this._path = [];
+    this._root.cache = {};
+    if (typeof cache !== "undefined") {
+      collectLru(modelRoot, modelRoot.expired, getSize3(cache), 0);
+    }
+    var out;
+    if (isJSONGraphEnvelope2(cacheOrJSONGraphEnvelope)) {
+      out = setJSONGraphs2(this, [cacheOrJSONGraphEnvelope])[0];
+    } else if (isJSONEnvelope2(cacheOrJSONGraphEnvelope)) {
+      out = setCache(this, [cacheOrJSONGraphEnvelope])[0];
+    } else if (isObject3(cacheOrJSONGraphEnvelope)) {
+      out = setCache(this, [{ json: cacheOrJSONGraphEnvelope }])[0];
+    }
+    if (out) {
+      get6.getWithPathsAsPathMap(this, out, []);
+    }
+    this._path = boundPath;
+  } else if (typeof cache === "undefined") {
+    this._root.cache = {};
+  }
+  return this;
+};
+Model.prototype.getCache = function _getCache() {
+  var paths = Array.prototype.slice.call(arguments);
+  if (paths.length === 0) {
+    return getCache2(this._root.cache);
+  }
+  var result4 = [{}];
+  var path = this._path;
+  get6.getWithPathsAsJSONGraph(this, paths, result4);
+  this._path = path;
+  return result4[0].jsonGraph;
+};
+Model.prototype._setMaxSize = function setMaxSize(maxSize) {
+  var oldMaxSize = this._maxSize;
+  this._maxSize = maxSize;
+  if (maxSize < oldMaxSize) {
+    var modelRoot = this._root;
+    var modelCache = modelRoot.cache;
+    var currentVersion = modelCache.$_version;
+    collectLru(
+      modelRoot,
+      modelRoot.expired,
+      getSize3(modelCache),
+      this._maxSize,
+      this._collectRatio,
+      currentVersion
+    );
+  }
+};
+Model.prototype.getVersion = function getVersion2(pathArg) {
+  var path = pathArg && pathSyntax2.fromPath(pathArg) || [];
+  if (Array.isArray(path) === false) {
+    throw new Error("Model#getVersion must be called with an Array path.");
+  }
+  if (this._path.length) {
+    path = this._path.concat(path);
+  }
+  return this._getVersion(this, path);
+};
+Model.prototype._syncCheck = function syncCheck(name) {
+  if (Boolean(this._source) && this._root.syncRefCount <= 0 && this._root.unsafeMode === false) {
+    throw new Error("Model#" + name + " may only be called within the context of a request selector.");
+  }
+  return true;
+};
+Model.prototype._clone = function cloneModel(opts) {
+  var clone5 = new this.constructor(this);
+  for (var key in opts) {
+    var value = opts[key];
+    if (value === "delete") {
+      delete clone5[key];
+    } else {
+      clone5[key] = value;
+    }
+  }
+  clone5.setCache = void 0;
+  return clone5;
+};
+Model.prototype.batch = function batch(schedulerOrDelay) {
+  var scheduler;
+  if (typeof schedulerOrDelay === "number") {
+    scheduler = new TimeoutScheduler(Math.round(Math.abs(schedulerOrDelay)));
+  } else if (!schedulerOrDelay || !schedulerOrDelay.schedule) {
+    scheduler = new TimeoutScheduler(1);
+  } else {
+    scheduler = schedulerOrDelay;
+  }
+  var clone5 = this._clone();
+  clone5._request = new RequestQueue(clone5, scheduler);
+  return clone5;
+};
+Model.prototype.unbatch = function unbatch() {
+  var clone5 = this._clone();
+  clone5._request = new RequestQueue(clone5, new ImmediateScheduler());
+  return clone5;
+};
+Model.prototype.treatErrorsAsValues = function treatErrorsAsValues() {
+  return this._clone({
+    _treatErrorsAsValues: true
+  });
+};
+Model.prototype.asDataSource = function asDataSource() {
+  return new ModelDataSourceAdapter(this);
+};
+Model.prototype._materialize = function materialize4() {
+  return this._clone({
+    _materialized: true
+  });
+};
+Model.prototype._dematerialize = function dematerialize() {
+  return this._clone({
+    _materialized: "delete"
+  });
+};
+Model.prototype.boxValues = function boxValues() {
+  return this._clone({
+    _boxed: true
+  });
+};
+Model.prototype.unboxValues = function unboxValues() {
+  return this._clone({
+    _boxed: "delete"
+  });
+};
+Model.prototype.withoutDataSource = function withoutDataSource() {
+  return this._clone({
+    _source: "delete"
+  });
+};
+Model.prototype.toJSON = function toJSON2() {
+  return {
+    $type: "ref",
+    value: this._path
+  };
+};
+Model.prototype.getPath = function getPath() {
+  return this._path ? this._path.slice() : this._path;
+};
+Model.prototype._fromWhenceYouCame = function fromWhenceYouCame(allow) {
+  return this._clone({
+    _allowFromWhenceYouCame: allow === void 0 ? true : allow
+  });
+};
+Model.prototype._getBoundValue = requireGetBoundValue();
+Model.prototype._getVersion = requireGetVersion();
+Model.prototype._getPathValuesAsPathMap = get6.getWithPathsAsPathMap;
+Model.prototype._getPathValuesAsJSONG = get6.getWithPathsAsJSONGraph;
+Model.prototype._setPathValues = requireSetPathValues();
+Model.prototype._setPathMaps = setPathMaps;
+Model.prototype._setJSONGs = setJSONGraphs$3;
+Model.prototype._setCache = setPathMaps;
+Model.prototype._invalidatePathValues = requireInvalidatePathSets();
+Model.prototype._invalidatePathMaps = requireInvalidatePathMaps();
+function falcor(opts) {
+  return new falcor.Model(opts);
+}
+falcor.keys = function getJSONKeys(json) {
+  if (!json) {
+    return void 0;
+  }
+  return Object.keys(json).filter(function(key) {
+    return key !== "$__path";
+  });
+};
+var lib3 = falcor;
+falcor.Model = Model_1;
+var index = /* @__PURE__ */ getDefaultExportFromCjs3(lib3);
+
+// app/src/store/helpers.js
+function extractFromCache({ obj, path, idx = 0, root: root4 = obj, parentAtom, verbose }) {
+  if (verbose) {
+    console.log({ obj, path, idx });
+  }
+  if (obj && obj.$type === "atom" && path.length - idx !== 0) {
+    const step = path[idx];
+    if (obj.value === void 0) {
+      return { value: void 0, parentAtom, $type: obj.$type };
+    }
+    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root4, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
+  } else if (obj && obj.$type === "ref") {
+    const newPath = obj.value.concat(path.slice(idx));
+    return extractFromCache({ obj: root4, path: newPath, verbose });
+  } else if (path.length - idx === 0) {
+    if (obj && obj.$type === "error") {
+      return { value: void 0, parentAtom, $type: obj.$type };
+    } else if (obj && obj.$type) {
+      return { value: obj.value, parentAtom, $type: obj.$type };
+    } else {
+      return { value: obj, parentAtom };
+    }
+  } else if (obj === null || obj === void 0) {
+    return { value: obj, parentAtom };
+  } else {
+    const step = path[idx];
+    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root: root4, verbose });
+  }
 }
 
 // app/src/service-worker/falcor-server.js
@@ -16863,8 +23076,7 @@ function falcor_server_default({
   dbs,
   session
 }) {
-  const dataRoutes = toFalcorRoutes(schema);
-  const FalcorRouter = makeRouter(dataRoutes);
+  const FalcorRouter = makeRouter(toFalcorRoutes(schema));
   const routerInstance = new FalcorRouter({ dbs, session });
   const serverModel = index({
     source: routerInstance,
@@ -17056,14 +23268,14 @@ var falcor_paths_default = {
         if (!Array.isArray(docs)) {
           docs = [docs];
         }
-        const result2 = await dbs.pouch.bulkDocs(docs.map((doc) => {
+        const result4 = await dbs.pouch.bulkDocs(docs.map((doc) => {
           if (!doc._id) {
             doc._id = `${Math.floor(Math.random() * 1e3)}:${Math.floor(Math.random() * 1e9)}`;
           }
           doc.changes = [{ userId: session.userId, action: "created", date: Date.now() }];
           return doc;
         }));
-        return result2.map((_doc, i3) => {
+        return result4.map((_doc, i3) => {
           return { path: ["_docs", docs[i3]._id], value: docs[i3] };
         });
       }
@@ -17146,7 +23358,7 @@ var falcor_paths_default = {
     },
     set: {
       handler: async ({ _docs, dbs, session }) => {
-        const result2 = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
+        const result4 = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
           if (!value.changes) {
             value.changes = [];
           }
@@ -17163,7 +23375,7 @@ var falcor_paths_default = {
           }
           return value;
         }));
-        result2.forEach((res) => {
+        result4.forEach((res) => {
           if (res.ok) {
             _docs[res.id].value._rev = res.rev;
           } else {
@@ -17315,7 +23527,7 @@ function falcor_worker_default({
             headers: {
               "X-Requested-With": "XMLHttpRequest"
             }
-          }).catch((error) => ({ ok: false, error }));
+          }).catch((error3) => ({ ok: false, error: error3 }));
           if (sessionReq.ok) {
             newSession = await sessionReq.json();
           }
@@ -17449,19 +23661,18 @@ function falcor_worker_default({
       return e2.source.postMessage(JSON.stringify({ id: reqId, error: "logged out / no falcor server session active" }));
     }
     const exec = self.session.falcorServer.execute(data).subscribe(
-      (result2) => {
+      (result4) => {
         if (data[1] === "call" && data[2]?.[0] === "_sync") {
           onChange?.({
             model: self.session.falcorServer.dataSource._model,
-            data: result2.json,
+            data: result4.json,
             _where: "service-worker"
           });
         }
-        e2.source.postMessage(JSON.stringify({ id: reqId, value: result2 }));
+        e2.source.postMessage(JSON.stringify({ id: reqId, value: result4 }));
       },
-      (error) => {
-        console.log("falcor error in executer", error);
-        e2.source.postMessage(JSON.stringify({ id: reqId, error }));
+      (error3) => {
+        e2.source.postMessage(JSON.stringify({ id: reqId, error: error3 }));
       },
       async (_done) => {
         await e2.source.postMessage(JSON.stringify({ id: reqId, done: true }));

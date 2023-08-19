@@ -36,20 +36,20 @@ class frameScheduler {
 /* eslint-enable functional/no-this-expression, functional/no-class */
 
 
-export default function makeDataStore ({ source, maxSize, collectRatio, maxRetries, cache, onChange = () => {}, onModelChange, errorSelector, onAccess } = {}) {
+export default function makeDataStore ({ source, batched = true, maxSize, collectRatio, maxRetries, cache, onChange = () => {}, onModelChange, errorSelector, onAccess } = {}) {
   // let invalidationHandler
 
   if (typeof source === 'undefined') {
     source = new ServiceWorkerSource({ wake: 20_000 })
   }
-  const model = falcor({
+  let model = falcor({
     source: source || undefined,
     maxSize: maxSize || 500000,
     collectRatio: collectRatio || 0.75,
     maxRetries: maxRetries || 1, // todo 0 requires fix in falcor due to falsy check
     // _useServerPaths: true,
     cache,
-    scheduler: frameScheduler, // this is the internal scheduler, default to immediate
+    scheduler: batched ? frameScheduler : undefined, // this is the internal scheduler, default to immediate
     // beforeInvalidate: paths => {
     //   console.log('before invalidate does not work', paths)
     //   // if (invalidationHandler) {
@@ -102,8 +102,11 @@ export default function makeDataStore ({ source, maxSize, collectRatio, maxRetri
     }
   })
     .treatErrorsAsValues()
-    .batch((new frameScheduler())) // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
+     // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
 
+  if (batched) {
+    model = model.batch((new frameScheduler()))
+  }
   // .treatErrorsAsValues() + boxValues() as standard!!, to se what are errors!
 
   // TODO: make batch configurable for debugging
