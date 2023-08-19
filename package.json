@@ -1,12 +1,16 @@
 {
   "name": "atreyu",
-  "version": "0.9.52",
+  "version": "0.9.53",
   "scripts": {
     "build": "rollup -c ./rollup.config.mjs",
     "lint": "eslint '**/*.{js,svelte,ts}'"
   },
   "type": "module",
-  "files": [ "./npm-dist/data.js","./npm-dist/falcor-worker.js","./npm-dist/start-worker.js" ],
+  "files": [
+    "./npm-dist/data.js",
+    "./npm-dist/falcor-worker.js",
+    "./npm-dist/start-worker.js"
+  ],
   "exports": {
     "./data.js": "./npm-dist/data.js",
     "./falcor-worker.js": "./npm-dist/falcor-worker.js",
