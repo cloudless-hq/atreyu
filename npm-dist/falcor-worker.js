@@ -8943,7 +8943,7 @@ function replication(PouchDB2) {
 }
 PouchDB.plugin(IndexedDbPouch).plugin(HttpPouch$1).plugin(mapreduce).plugin(replication);
 
-// app/src/service-worker/make-pouch.js
+// app/src/make-pouch.js
 var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 var awaitableApis = ["/_view/", "/_search/", "/_all_docs", "/_design_docs", "/_find"];
 var activePush;
@@ -16538,6 +16538,379 @@ Router.JSONGraphError = JSONGraphError2;
 var Router_1 = Router;
 var Router$1 = /* @__PURE__ */ getDefaultExportFromCjs2(Router_1);
 
+// app/src/schema/helpers.js
+function addPathTags(paths, tags) {
+  if (typeof tags === "string") {
+    tags = [tags];
+  }
+  Object.values(paths).forEach((pathConf) => {
+    if (tags.includes("window") && !pathConf.get) {
+      pathConf.get = {};
+    }
+    const methodConfs = Object.values(pathConf).filter((conf) => typeof conf === "object");
+    methodConfs.forEach((conf) => {
+      tags.forEach((tag) => {
+        if (!conf.tags) {
+          conf.tags = [tag];
+        } else if (!conf.tags.includes(tag)) {
+          conf.tags.push(tag);
+        }
+      });
+    });
+  });
+  return paths;
+}
+
+// app/src/schema/falcor-paths.js
+var falcor_paths_default = {
+  "_sync": {
+    call: {
+      operationId: "_sync"
+    }
+  },
+  "_users": {
+    get: {
+      handler: async ({ dbs, session: { org, userId } }) => {
+        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
+          partition: "system",
+          reduce: false,
+          include_docs: true,
+          startkey: ["session"],
+          endkey: ["session", {}]
+        });
+        const users = sessions.map((row) => row.doc).sort((a3, b) => b.lastLogin - a3.lastLogin).reduce((agg, session) => {
+          if (!agg[session.title]) {
+            agg[session.title] = session;
+            agg[session.title].numSessions = 1;
+          } else {
+            agg[session.title].numSessions += 1;
+          }
+          return agg;
+        }, {});
+        return {
+          jsonGraph: {
+            _users: { $type: "atom", value: Object.values(users) }
+          }
+        };
+      }
+    }
+  },
+  "_sessions": {
+    get: {
+      handler: async ({ dbs, session: { org, userId } }) => {
+        const sessionName = userId + (org ? ` (${org})` : "");
+        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
+          partition: "system",
+          reduce: false,
+          include_docs: true,
+          startkey: ["session", sessionName],
+          endkey: ["session", sessionName, {}]
+        });
+        return {
+          jsonGraph: {
+            _sessions: { $type: "atom", value: sessions.map((row) => row.doc).sort((a3, b) => b.lastLogin - a3.lastLogin) }
+          }
+        };
+      }
+    }
+  },
+  "_pouch": {
+    get: {
+      handler: async ({ dbs }) => {
+        return {
+          jsonGraph: {
+            _pouch: { $type: "atom", value: await dbs.pouch.info() }
+          }
+        };
+      }
+    }
+  },
+  "_couch": {
+    get: {
+      handler: async ({ dbs }) => {
+        return {
+          jsonGraph: {
+            _couch: { $type: "atom", value: await dbs.couch?.info?.() }
+          }
+        };
+      }
+    }
+  },
+  // // fetch(`/_api/_couch/${loggedInDbName}/${session.sessionId}`)
+  "_session[{keys:keys}]": {
+    get: {
+      handler: ({ _keys, session }) => {
+        return {
+          jsonGraph: {
+            _session: session
+          }
+        };
+      }
+    }
+  },
+  "_hash": {
+    get: {
+      handler: () => {
+        return {
+          jsonGraph: {
+            _hash: { $type: "atom", value: self.ipfsHash }
+          }
+        };
+      }
+    }
+  },
+  "_updating": {
+    get: {
+      handler: () => {
+        return {
+          jsonGraph: {
+            _updating: self.updating
+          }
+        };
+      }
+    },
+    set: {
+      handler: ({ _updating, model }) => {
+        self.updating = _updating;
+        model.invalidate("_hash");
+        return {
+          jsonGraph: {
+            _updating
+          }
+        };
+      }
+    }
+  },
+  // '_changes.length': {
+  //   get: {
+  //     handler: async ({ dbs }) => {
+  //       const pouchRes = await dbs.pouch.info()
+  //       return { path: ['_changes', 'length'], value: pouchRes.update_seq }
+  //     }
+  //   }
+  // },
+  // '_changes': {
+  //   get: {
+  //     handler: ({ _ids, _keys, _dbs }) => {
+  //       consoe.log('fixme')
+  //       // const _pouchRes = await db.allDocs({
+  //       //   include_docs: true,
+  //       //   conflicts: true,
+  //       //   keys: ids
+  //       // })
+  //     }
+  //   }
+  // },
+  "_docs.create": {
+    call: {
+      handler: async ({ dbs, session, _Observable }, [docs]) => {
+        if (!Array.isArray(docs)) {
+          docs = [docs];
+        }
+        const result4 = await dbs.pouch.bulkDocs(docs.map((doc) => {
+          if (!doc._id) {
+            doc._id = `${Math.floor(Math.random() * 1e3)}:${Math.floor(Math.random() * 1e9)}`;
+          }
+          doc.changes = [{ userId: session.userId, action: "created", date: Date.now() }];
+          return doc;
+        }));
+        return result4.map((_doc, i3) => {
+          return { path: ["_docs", docs[i3]._id], value: docs[i3] };
+        });
+      }
+    }
+  },
+  // this route handles subkey upsert and subset key requests
+  // '_docs[{keys:ids}][{keys:keys}]': {
+  //   set: {
+  //     handler: async ({ _docs, db, _userId, keys, ids }) => {
+  //       console.log(_docs, keys, ids)
+  //       const result = await db.bulkDocs(Object.values(_docs).map(({value}) => {
+  //         if (!value.changes) {
+  //           value.changes = []
+  //         }
+  //         if (value.deleted) {
+  //           value.changes.push({ userId: session.userId, action: 'deleted',  date: Date.now() })
+  //         } else if (!value._rev) {
+  //           value.changes.push({ userId: session.userId, action: 'created',  date: Date.now() })
+  //         } else {
+  //           value.changes.push({ userId: session.userId, action: 'updated',  date: Date.now() })
+  //         }
+  //         return value
+  //       }))
+  //       result.forEach(res => {
+  //         if (res.ok) {
+  //           _docs[res.id].value._rev = res.rev
+  //         } else {
+  //           console.error('set doc error', res)
+  //         }
+  //       })
+  //       return  {
+  //         jsonGraph: {
+  //           _docs
+  //         }
+  //       }
+  //     }
+  //   },
+  //   get: {
+  //     handler: async ({ ids, keys, db }) => {
+  //       console.log( keys, ids)
+  //       const pouchRes = await db.allDocs({
+  //         include_docs: true,
+  //         conflicts: true,
+  //         keys: ids
+  //       })
+  //       // console.log(ids, pouchRes)
+  //       const missingIds = []
+  //       const _docs = {}
+  //       pouchRes.rows.forEach(row => {
+  //         if (row.error === 'not_found') {
+  //           missingIds.push(row.key)
+  //         } else if (!row.error) {
+  //           if (row.doc) {
+  //             _docs[row.key] = { $type: 'atom', value: row.doc }
+  //             if (row.doc.type) {
+  //               _docs[row.key].$schema = { $ref: row.doc.type }
+  //             } else if (row.doc.types?.length === 1) {
+  //               _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
+  //             } else if (row.doc.types?.length > 1) {
+  //               _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => {$ref: type.profile}) }
+  //             }
+  //           } else {
+  //             console.warn(row)
+  //           }
+  //         } else {
+  //           console.error(row)
+  //         }
+  //       })
+  //       return {
+  //         jsonGraph: {
+  //           _docs
+  //         }
+  //       }
+  //     }
+  //   }
+  // },
+  "_docs[{keys:ids}]": {
+    get: {
+      operationId: "getDocs"
+    },
+    set: {
+      handler: async ({ _docs, dbs, session }) => {
+        const result4 = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
+          if (!value.changes) {
+            value.changes = [];
+          }
+          if (value.changes.length > 12) {
+            value.changes.splice(2, value.changes.length - 4);
+            value.changes.push({ userId: session.userId, action: "aggregated", date: Date.now() });
+          }
+          if (value.deleted) {
+            value.changes.push({ userId: session.userId, action: "deleted", date: Date.now() });
+          } else if (!value._rev) {
+            value.changes.push({ userId: session.userId, action: "created", date: Date.now() });
+          } else {
+            value.changes.push({ userId: session.userId, action: "updated", date: Date.now() });
+          }
+          return value;
+        }));
+        result4.forEach((res) => {
+          if (res.ok) {
+            _docs[res.id].value._rev = res.rev;
+          } else {
+            console.error("set doc error", res);
+          }
+        });
+        return {
+          jsonGraph: {
+            _docs
+          }
+        };
+      }
+    }
+  }
+};
+
+// app/src/schema/window-paths.js
+var window_paths_default = {
+  "/(#/):_page(/:_subPage)(/*_)": {}
+};
+
+// app/src/schema/default-routes.js
+var default_routes_default = {
+  ...addPathTags(falcor_paths_default, "falcor"),
+  ...addPathTags(window_paths_default, "window"),
+  "/*": {
+    get: {
+      tags: ["edge", "service-worker"],
+      operationId: "_ipfs"
+    }
+  },
+  // '/_debug': {
+  //   get: {
+  //     tags: [ 'edge' ],
+  //     operationId: '_debug'
+  //   }
+  // },
+  // codespace support TODO: remove
+  // '/signin*': {
+  //   get: {
+  //     operationId: '_bypass'
+  //   }
+  // },
+  // TODO: not required anymore?
+  // '/_ayu/accounts*': {
+  //   get: {
+  //     operationId: '_bypass' // '_accounts'
+  //   }
+  // },
+  // '/_api/_feed/*': {
+  //   get: {
+  //     tags: [ 'edge' ],
+  //     operationId: '_feed'
+  //   }
+  // },
+  "/_api/_session*": {
+    get: {
+      tags: ["edge"],
+      operationId: "_session"
+    },
+    post: {
+      tags: ["edge"],
+      operationId: "_session"
+    },
+    delete: {
+      tags: ["edge"],
+      operationId: "_session"
+    }
+  },
+  "/_api/_couch/*": {
+    get: {
+      tags: ["edge"],
+      operationId: "_couch"
+    },
+    put: {
+      tags: ["edge"],
+      operationId: "_couch"
+    },
+    post: {
+      tags: ["edge"],
+      operationId: "_couch"
+    },
+    options: {
+      tags: ["edge"],
+      operationId: "_couch"
+    }
+  },
+  // cloudflare access support
+  "/cdn-cgi/access*": {
+    get: {
+      tags: ["service-worker"],
+      operationId: "_bypass"
+    }
+  }
+};
+
 // app/src/lib/url-logger.js
 function urlLogger({ missing, continued, scope, method, url, origUrl, cached, corsConf, body, duration, res, richConsole = true, verbose }) {
   let badgeColor = "";
@@ -17119,7 +17492,16 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
   };
 }
 
-// app/src/service-worker/falcor-router.js
+// app/src/falcor/router.js
+function falcorTags(routes) {
+  Object.keys(routes).forEach((key) => {
+    Object.keys(routes[key]).forEach((method) => {
+      const tags = routes[key][method].tags;
+      routes[key][method].tags = tags ? tags : ["falcor"];
+    });
+  });
+  return routes;
+}
 function maxRange(ranges) {
   let from2;
   let to;
@@ -17142,7 +17524,7 @@ function toFalcorRoutes(schema) {
   [...Object.entries(schema.paths)].forEach(([path, handlerArgs]) => {
     const handlers = {};
     Object.entries(handlerArgs).forEach(([handlerType, handlerConf]) => {
-      if (handlerConf.tags?.includes("falcor")) {
+      if (handlerConf.tags?.includes?.("falcor")) {
         if (!["get", "set", "call"].includes(handlerType)) {
           console.error("unsupported falcor handler type " + handlerType);
         }
@@ -17152,13 +17534,20 @@ function toFalcorRoutes(schema) {
           arguments[0].session = this.session;
           arguments[0].Observable = this.Observable;
           arguments[0].req = this.req;
+          arguments[0].fetch = this.fetch;
           arguments[0].model = this.model;
           arguments[0].maxRange = maxRange;
           let getRes = handler(...arguments);
           if (handlerType === "get") {
             const pathArg = arguments[0];
             const auoWrap = (paAr, res) => {
-              if (!res.value && !res.path || ["boolean", "undefined", "number", "string"].includes(typeof res)) {
+              if (res.jsonGraph) {
+                return res;
+              }
+              if (res?.length && res?.[0]?.path) {
+                return res;
+              }
+              if (["boolean", "undefined", "number", "string"].includes(typeof res) || !res.value && !res.path) {
                 res = { value: { $type: "atom", value: res } };
               }
               if (res.value !== void 0 && !res.path) {
@@ -17187,10 +17576,18 @@ function toFalcorRoutes(schema) {
   });
   return routes;
 }
-function makeRouter(dataRoutes) {
+function makeRouter({ dataRoutes, schema }) {
+  if (!dataRoutes && schema) {
+    if (typeof schema === "function") {
+      schema = schema({ defaultPaths: default_routes_default, addPathTags });
+    } else if (schema) {
+      schema.paths = { ...default_routes_default, ...falcorTags(schema.paths) };
+    }
+    dataRoutes = toFalcorRoutes(schema);
+  }
   class AtreyuRouter extends Router$1.createClass(dataRoutes) {
     // eslint-disable-line functional/no-class
-    constructor({ session, dbs }) {
+    constructor({ session, dbs, fetch: internalFetch }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
         debug: false,
@@ -17251,6 +17648,7 @@ function makeRouter(dataRoutes) {
       this.session = session;
       this.dbs = dbs;
       this.req = req;
+      this.fetch = internalFetch;
       this.Observable = Observable;
     }
   }
@@ -23047,10 +23445,11 @@ function extractFromCache({ obj, path, idx = 0, root: root4 = obj, parentAtom, v
   }
 }
 
-// app/src/service-worker/falcor-server.js
-var WorkerServer = class {
-  constructor(dataSource) {
-    this.dataSource = dataSource;
+// app/src/falcor/server.js
+var Server = class {
+  constructor(model) {
+    this.dataSource = model.asDataSource();
+    this.model = model;
   }
   execute(action) {
     const method = action[1];
@@ -23067,18 +23466,23 @@ var WorkerServer = class {
         return this.dataSource.set(jsonGraphEnvelope)._toJSONG();
       case "call":
         paths = action[5] || [];
+        console.log({ callPath, args, pathSuffixes, paths });
         return this.dataSource.call(callPath, args, pathSuffixes, paths)._toJSONG();
     }
   }
 };
-function falcor_server_default({
+function server_default({
   schema,
+  useAll,
+  cache,
   dbs,
-  session
+  session,
+  fetch: fetch2
 }) {
-  const FalcorRouter = makeRouter(toFalcorRoutes(schema));
-  const routerInstance = new FalcorRouter({ dbs, session });
+  const FalcorRouter = makeRouter(toFalcorRoutes(schema, useAll));
+  const routerInstance = new FalcorRouter({ dbs, session, fetch: fetch2 });
   const serverModel = index({
+    cache,
     source: routerInstance,
     maxSize: 5e5,
     collectRatio: 0.75,
@@ -23094,383 +23498,8 @@ function falcor_server_default({
     }
     return { index: 0 };
   };
-  const dataSource = serverModel.asDataSource();
-  const workerServer = new WorkerServer(dataSource);
-  return workerServer;
+  return new Server(serverModel);
 }
-
-// app/src/schema/helpers.js
-function addPathTags(paths, tags) {
-  if (typeof tags === "string") {
-    tags = [tags];
-  }
-  Object.values(paths).forEach((pathConf) => {
-    if (tags.includes("window") && !pathConf.get) {
-      pathConf.get = {};
-    }
-    const methodConfs = Object.values(pathConf).filter((conf) => typeof conf === "object");
-    methodConfs.forEach((conf) => {
-      tags.forEach((tag) => {
-        if (!conf.tags) {
-          conf.tags = [tag];
-        } else if (!conf.tags.includes(tag)) {
-          conf.tags.push(tag);
-        }
-      });
-    });
-  });
-  return paths;
-}
-
-// app/src/schema/falcor-paths.js
-var falcor_paths_default = {
-  "_sync": {
-    call: {
-      operationId: "_sync"
-    }
-  },
-  "_users": {
-    get: {
-      handler: async ({ dbs, session: { org, userId } }) => {
-        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
-          partition: "system",
-          reduce: false,
-          include_docs: true,
-          startkey: ["session"],
-          endkey: ["session", {}]
-        });
-        const users = sessions.map((row) => row.doc).sort((a3, b) => b.lastLogin - a3.lastLogin).reduce((agg, session) => {
-          if (!agg[session.title]) {
-            agg[session.title] = session;
-            agg[session.title].numSessions = 1;
-          } else {
-            agg[session.title].numSessions += 1;
-          }
-          return agg;
-        }, {});
-        return {
-          jsonGraph: {
-            _users: { $type: "atom", value: Object.values(users) }
-          }
-        };
-      }
-    }
-  },
-  "_sessions": {
-    get: {
-      handler: async ({ dbs, session: { org, userId } }) => {
-        const sessionName = userId + (org ? ` (${org})` : "");
-        const { rows: sessions } = await dbs.couch.query(`ayu_main/by_type_and_title`, {
-          partition: "system",
-          reduce: false,
-          include_docs: true,
-          startkey: ["session", sessionName],
-          endkey: ["session", sessionName, {}]
-        });
-        return {
-          jsonGraph: {
-            _sessions: { $type: "atom", value: sessions.map((row) => row.doc).sort((a3, b) => b.lastLogin - a3.lastLogin) }
-          }
-        };
-      }
-    }
-  },
-  "_pouch": {
-    get: {
-      handler: async ({ dbs }) => {
-        return {
-          jsonGraph: {
-            _pouch: { $type: "atom", value: await dbs.pouch.info() }
-          }
-        };
-      }
-    }
-  },
-  "_couch": {
-    get: {
-      handler: async ({ dbs }) => {
-        return {
-          jsonGraph: {
-            _couch: { $type: "atom", value: await dbs.couch?.info?.() }
-          }
-        };
-      }
-    }
-  },
-  // // fetch(`/_api/_couch/${loggedInDbName}/${session.sessionId}`)
-  "_session[{keys:keys}]": {
-    get: {
-      handler: ({ _keys, session }) => {
-        return {
-          jsonGraph: {
-            _session: session
-          }
-        };
-      }
-    }
-  },
-  "_hash": {
-    get: {
-      handler: () => {
-        return {
-          jsonGraph: {
-            _hash: { $type: "atom", value: self.ipfsHash }
-          }
-        };
-      }
-    }
-  },
-  "_updating": {
-    get: {
-      handler: () => {
-        return {
-          jsonGraph: {
-            _updating: self.updating
-          }
-        };
-      }
-    },
-    set: {
-      handler: ({ _updating, model }) => {
-        self.updating = _updating;
-        model.invalidate("_hash");
-        return {
-          jsonGraph: {
-            _updating
-          }
-        };
-      }
-    }
-  },
-  // '_changes.length': {
-  //   get: {
-  //     handler: async ({ dbs }) => {
-  //       const pouchRes = await dbs.pouch.info()
-  //       return { path: ['_changes', 'length'], value: pouchRes.update_seq }
-  //     }
-  //   }
-  // },
-  // '_changes': {
-  //   get: {
-  //     handler: ({ _ids, _keys, _dbs }) => {
-  //       consoe.log('fixme')
-  //       // const _pouchRes = await db.allDocs({
-  //       //   include_docs: true,
-  //       //   conflicts: true,
-  //       //   keys: ids
-  //       // })
-  //     }
-  //   }
-  // },
-  "_docs.create": {
-    call: {
-      handler: async ({ dbs, session, _Observable }, [docs]) => {
-        if (!Array.isArray(docs)) {
-          docs = [docs];
-        }
-        const result4 = await dbs.pouch.bulkDocs(docs.map((doc) => {
-          if (!doc._id) {
-            doc._id = `${Math.floor(Math.random() * 1e3)}:${Math.floor(Math.random() * 1e9)}`;
-          }
-          doc.changes = [{ userId: session.userId, action: "created", date: Date.now() }];
-          return doc;
-        }));
-        return result4.map((_doc, i3) => {
-          return { path: ["_docs", docs[i3]._id], value: docs[i3] };
-        });
-      }
-    }
-  },
-  // this route handles subkey upsert and subset key requests
-  // '_docs[{keys:ids}][{keys:keys}]': {
-  //   set: {
-  //     handler: async ({ _docs, db, _userId, keys, ids }) => {
-  //       console.log(_docs, keys, ids)
-  //       const result = await db.bulkDocs(Object.values(_docs).map(({value}) => {
-  //         if (!value.changes) {
-  //           value.changes = []
-  //         }
-  //         if (value.deleted) {
-  //           value.changes.push({ userId: session.userId, action: 'deleted',  date: Date.now() })
-  //         } else if (!value._rev) {
-  //           value.changes.push({ userId: session.userId, action: 'created',  date: Date.now() })
-  //         } else {
-  //           value.changes.push({ userId: session.userId, action: 'updated',  date: Date.now() })
-  //         }
-  //         return value
-  //       }))
-  //       result.forEach(res => {
-  //         if (res.ok) {
-  //           _docs[res.id].value._rev = res.rev
-  //         } else {
-  //           console.error('set doc error', res)
-  //         }
-  //       })
-  //       return  {
-  //         jsonGraph: {
-  //           _docs
-  //         }
-  //       }
-  //     }
-  //   },
-  //   get: {
-  //     handler: async ({ ids, keys, db }) => {
-  //       console.log( keys, ids)
-  //       const pouchRes = await db.allDocs({
-  //         include_docs: true,
-  //         conflicts: true,
-  //         keys: ids
-  //       })
-  //       // console.log(ids, pouchRes)
-  //       const missingIds = []
-  //       const _docs = {}
-  //       pouchRes.rows.forEach(row => {
-  //         if (row.error === 'not_found') {
-  //           missingIds.push(row.key)
-  //         } else if (!row.error) {
-  //           if (row.doc) {
-  //             _docs[row.key] = { $type: 'atom', value: row.doc }
-  //             if (row.doc.type) {
-  //               _docs[row.key].$schema = { $ref: row.doc.type }
-  //             } else if (row.doc.types?.length === 1) {
-  //               _docs[row.key].$schema = { $ref: row.doc.types[0].profile }
-  //             } else if (row.doc.types?.length > 1) {
-  //               _docs[row.key].$schema = { anyOf: _row.doc.types.map(type => {$ref: type.profile}) }
-  //             }
-  //           } else {
-  //             console.warn(row)
-  //           }
-  //         } else {
-  //           console.error(row)
-  //         }
-  //       })
-  //       return {
-  //         jsonGraph: {
-  //           _docs
-  //         }
-  //       }
-  //     }
-  //   }
-  // },
-  "_docs[{keys:ids}]": {
-    get: {
-      operationId: "getDocs"
-    },
-    set: {
-      handler: async ({ _docs, dbs, session }) => {
-        const result4 = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
-          if (!value.changes) {
-            value.changes = [];
-          }
-          if (value.changes.length > 12) {
-            value.changes.splice(2, value.changes.length - 4);
-            value.changes.push({ userId: session.userId, action: "aggregated", date: Date.now() });
-          }
-          if (value.deleted) {
-            value.changes.push({ userId: session.userId, action: "deleted", date: Date.now() });
-          } else if (!value._rev) {
-            value.changes.push({ userId: session.userId, action: "created", date: Date.now() });
-          } else {
-            value.changes.push({ userId: session.userId, action: "updated", date: Date.now() });
-          }
-          return value;
-        }));
-        result4.forEach((res) => {
-          if (res.ok) {
-            _docs[res.id].value._rev = res.rev;
-          } else {
-            console.error("set doc error", res);
-          }
-        });
-        return {
-          jsonGraph: {
-            _docs
-          }
-        };
-      }
-    }
-  }
-};
-
-// app/src/schema/window-paths.js
-var window_paths_default = {
-  "/(#/):_page(/:_subPage)(/*_)": {}
-};
-
-// app/src/schema/default-routes.js
-var default_routes_default = {
-  ...addPathTags(falcor_paths_default, "falcor"),
-  ...addPathTags(window_paths_default, "window"),
-  "/*": {
-    get: {
-      tags: ["edge", "service-worker"],
-      operationId: "_ipfs"
-    }
-  },
-  // '/_debug': {
-  //   get: {
-  //     tags: [ 'edge' ],
-  //     operationId: '_debug'
-  //   }
-  // },
-  // codespace support TODO: remove
-  // '/signin*': {
-  //   get: {
-  //     operationId: '_bypass'
-  //   }
-  // },
-  // TODO: not required anymore?
-  // '/_ayu/accounts*': {
-  //   get: {
-  //     operationId: '_bypass' // '_accounts'
-  //   }
-  // },
-  // '/_api/_feed/*': {
-  //   get: {
-  //     tags: [ 'edge' ],
-  //     operationId: '_feed'
-  //   }
-  // },
-  "/_api/_session*": {
-    get: {
-      tags: ["edge"],
-      operationId: "_session"
-    },
-    post: {
-      tags: ["edge"],
-      operationId: "_session"
-    },
-    delete: {
-      tags: ["edge"],
-      operationId: "_session"
-    }
-  },
-  "/_api/_couch/*": {
-    get: {
-      tags: ["edge"],
-      operationId: "_couch"
-    },
-    put: {
-      tags: ["edge"],
-      operationId: "_couch"
-    },
-    post: {
-      tags: ["edge"],
-      operationId: "_couch"
-    },
-    options: {
-      tags: ["edge"],
-      operationId: "_couch"
-    }
-  },
-  // cloudflare access support
-  "/cdn-cgi/access*": {
-    get: {
-      tags: ["service-worker"],
-      operationId: "_bypass"
-    }
-  }
-};
 
 // app/src/service-worker/falcor-worker.js
 function falcor_worker_default({
@@ -23487,7 +23516,7 @@ function falcor_worker_default({
   if (typeof schema === "function") {
     schema = schema({ defaultPaths: default_routes_default, addPathTags });
   } else if (schema) {
-    schema.paths = { ...default_routes_default, ...schema.paths };
+    schema.paths = { ...default_routes_default, ...falcorTags(schema.paths) };
   }
   self.session = {
     loaded: false,
@@ -23554,7 +23583,7 @@ function falcor_worker_default({
             preload: newDbConf.preload,
             clientDesignDocs: newDbConf[clientDbName]
           });
-          self.session.falcorServer = falcor_server_default({ dbs: self.session.dbs, schema, session: newSession });
+          self.session.falcorServer = server_default({ dbs: self.session.dbs, schema, session: newSession });
           if (newSession.userId && !self.session.loaded) {
             redirectOtherClients = "continue";
           }

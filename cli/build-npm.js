@@ -42,7 +42,15 @@ function arrEqual (a, b) {
 }
 
 let buildCtx
-const entryPoints = ['./app/src/store/data.js', './app/src/service-worker/falcor-worker.js', './app/src/service-worker/start-worker.js']
+const entryPoints = [
+  './app/src/store/data.js',
+
+  './app/src/service-worker/falcor-worker.js',
+  './app/src/service-worker/start-worker.js',
+
+  './app/src/falcor/service-worker-source.js',
+  './app/src/falcor/router.js'
+]
 
 buildCtx = await esbContext({
   entryPoints,

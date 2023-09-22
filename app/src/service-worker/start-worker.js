@@ -1,4 +1,7 @@
 export default async function startWorker ({ reloadAfterInstall, workerPath = '/build/service-worker.js', isModule } = {}) {
+  if(!('navigator' in window) || !('serviceWorker' in navigator)) {
+    return
+  }
   let regs
   let firstStart = false
   try {

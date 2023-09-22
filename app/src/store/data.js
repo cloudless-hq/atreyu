@@ -1,47 +1,24 @@
 import { makeProxy } from '../lib/proxy-object.js'
 import { falcor } from '/_ayu/build/deps/falcor.js'
 import { extractFromCache, setPathValue, getJsonPath } from './helpers.js'
-import ServiceWorkerSource from './service-worker-source.js'
+import { TimeoutScheduler, FrameScheduler } from '../falcor/schedulers.js'
 
 const _undefined = Symbol('undefined')
 
-/* eslint-disable functional/no-this-expression, functional/no-class */
-// Implemented like this for compatibilty with practices in falcor
-class frameScheduler {
-  schedule (action) {
-    let id = requestAnimationFrame(action)
-    return {
-      dispose: () => {
-        if (id) {
-          cancelAnimationFrame(id)
-          id = null
-        }
-      }
-    }
-  }
-  scheduleWithState (state, action) {
-    let id = requestAnimationFrame(() => {
-      action(this, state)
-    })
-    return {
-      dispose: () => {
-        if (id) {
-          cancelAnimationFrame(id)
-          id = null
-        }
-      }
-    }
+function getScheduler () {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    return FrameScheduler
+  } else {
+    return TimeoutScheduler
   }
 }
-/* eslint-enable functional/no-this-expression, functional/no-class */
 
+const ontick = typeof requestAnimationFrame === 'undefined' ? function (cb) { return setTimeout(cb, 0) } : requestAnimationFrame
 
 export default function makeDataStore ({ source, batched = true, maxSize, collectRatio, maxRetries, cache, onChange = () => {}, onModelChange, errorSelector, onAccess } = {}) {
   // let invalidationHandler
+  const subscribers = new Set()
 
-  if (typeof source === 'undefined') {
-    source = new ServiceWorkerSource({ wake: 20_000 })
-  }
   let model = falcor({
     source: source || undefined,
     maxSize: maxSize || 500000,
@@ -49,7 +26,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     maxRetries: maxRetries || 1, // todo 0 requires fix in falcor due to falsy check
     // _useServerPaths: true,
     cache,
-    scheduler: batched ? frameScheduler : undefined, // this is the internal scheduler, default to immediate
+    scheduler: batched ? getScheduler() : undefined, // this is the internal scheduler, default to timeout scheduler 1ms
     // beforeInvalidate: paths => {
     //   console.log('before invalidate does not work', paths)
     //   // if (invalidationHandler) {
@@ -60,6 +37,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     onChange: () => {
       // TODO: batch by frame or already done by internal scheduler?
       // console.log('falcor model change')
+      // setTimeout(() => update(), 100)
       update()
       onModelChange?.()
     },
@@ -104,10 +82,13 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     .treatErrorsAsValues()
      // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
 
+  source.model = model.withoutDataSource()
+
   if (batched) {
-    model = model.batch((new frameScheduler()))
+    const scheduler = getScheduler()
+    model = scheduler ? model.batch(new scheduler()) : model.batch()
   }
-  // .treatErrorsAsValues() + boxValues() as standard!!, to se what are errors!
+  // .treatErrorsAsValues() + boxValues() as standard? how best to see what are errors...
 
   // TODO: make batch configurable for debugging
 
@@ -208,7 +189,10 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
           falcorCacheVal = cacheVEnvelope?.$value ? { $type: 'error', value: { message: 'tried using value as reference', val: cacheVEnvelope?.$value } } : _undefined
         }
       } else {
-        const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path })
+        const falcorCacheRef = adjustedModel._root.cache
+        // Object.keys is too expensive to check if falcor cache is initialized and _session is always set even when not used its an empty object
+        const usePreCache = !falcorCacheRef?._session && cache
+        const falcorCacheRes = extractFromCache({ obj: usePreCache ? cache : falcorCacheRef, path })
         falcorCacheVal = (falcorCacheRes?.value === undefined && falcorCacheRes?.$type === 'atom') ? _undefined : falcorCacheRes.value
       }
 
@@ -227,7 +211,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
         // start new tick interval
         ++latestTick
 
-        ticker = requestAnimationFrame(() => {
+        ticker = ontick(() => {
           // end the current tick interval, from now everything will request an update from falcor again
           ++latestTick
           // we dont need to tick every eventloop, but only the loops with ayu get requests
@@ -434,7 +418,8 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       } else if (delim === '$loading') {
         return loadingFirstValue
       } else if (delim === '$not') {
-        return loadingFirstValue ? { toString: () => {''} } : !value
+        // FIXME: needs lots of test cases!
+        return loadingFirstValue ? '' : !value
       } else {
         if (value?.$type === 'atom') {
           console.warn('Missing data in ayu data store at:', path)
@@ -473,20 +458,19 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       }
 
       adjustedModel.setValue(path, newValue)
-        .then(() => {})
-        .catch(err => console.error(err))
+        .then(res => res)
 
       return true
     },
 
     call: (path, args, _delim, _id) => {
-      return (subModel || model).call(path, args)
+      return (subModel || model).call(path, args, [])
+        .then(res => res)
     },
     delims
   })
 
   const runQueue = new Set()
-  const subscribers = new Set()
   function update () {
     // console.log('svelte store subscribers updating')
     if (subscribers.size > 0) {
@@ -528,6 +512,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
 
   let subscrCounter = 0
   function subscribe (run, invalidate, subModel) {
+    // console.log('subscribing store')
     const id = `${subscribers.size}_${subscrCounter++}`
     const subscriptionProxy = makeAyuProxy(id, subModel)
 
@@ -578,6 +563,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
 
   async function init () {
     const userId = await model.getValue(['_session', 'userId'])
+    // FIXME: do not count init change event for triggering SSR model completion, add new onFirstUpdate, that excludes init call
     if (userId) {
       doSync()
     }
@@ -585,15 +571,17 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
   init()
 
   // page was restored from the bfcache, sync is broken and needs to be re-initialized
-  self.addEventListener('pageshow', e => {
-    if (e.persisted) {
-      console.log('bf cache resume, retriggering _sync init')
-      clearTimeout(timeout)
-      init()
-    }
-  })
+  if (typeof self !== 'undefined') {
+    self.addEventListener('pageshow', e => {
+      if (e.persisted) {
+        console.log('bf cache resume, retriggering _sync init')
+        clearTimeout(timeout)
+        init()
+      }
+    })
+  }
 
-  return {
+  const dataStore = {
     deref: paths => {
       return paths.map(path => {
         const subModel = model.deref({ '$__path': path })
@@ -611,8 +599,15 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     subscribe,
     set: () => {},
     falcor: model,
+    // falcorL: falcor,
     deps
   }
+
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window._ayu = dataStore
+  }
+  return dataStore
 }
 
 // change path detection feature postponed for performance reasons:

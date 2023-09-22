@@ -1,14 +1,14 @@
 import ipfsHandler from './handlers/ipfs.js'
 import proxyHandler from './handlers/proxy.js'
 
-import makePouch from './make-pouch.js'
-import makeFalcorServer from './falcor-server.js'
+import makePouch from '../falcor/make-pouch.js'
+import makeFalcorServer from '../falcor/server.js'
 import { escapeId } from '../lib/helpers.js'
 import { parse, match } from '../lib/routing.js'
 import { addPathTags } from '../schema/helpers.js'
 import defaultPaths from '../schema/default-routes.js'
 
-// FIXME: LEGACY, replace with importing falcor and fetch workers here!
+// FIXME: this is LEGACY, replace with importing falcor and fetch workers seperately here!
 // TODO: support addtional dataSources
 export default function ({
   dbConf = {},

@@ -1,18 +1,21 @@
 {
   "name": "atreyu",
-  "version": "0.9.52",
+  "version": "0.9.54",
   "scripts": {
     "build": "rollup -c ./rollup.config.mjs",
     "lint": "eslint '**/*.{js,svelte,ts}'"
   },
   "type": "module",
+  "types": "./types.d.ts",
   "files": [
-    "npm-dist/*"
+    "npm-dist"
   ],
   "exports": {
     "./data.js": "./npm-dist/data.js",
     "./falcor-worker.js": "./npm-dist/falcor-worker.js",
-    "./start-worker.js": "./npm-dist/start-worker.js"
+    "./start-worker.js": "./npm-dist/start-worker.js",
+    "./service-worker-source.js": "./npm-dist/service-worker-source.js",
+    "./router.js": "./npm-dist/router.js"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "25.0.3",
@@ -27,8 +30,8 @@
     "events": "3.3.0",
     "falcor": "2.3.2",
     "falcor-observable": "1.3.0",
-    "falcor-router": "0.8.3",
     "falcor-path-utils": "0.7.5",
+    "falcor-router": "0.8.3",
     "immediate": "3.3.0",
     "lodash": "4.17.21",
     "rollup": "3.27.2",

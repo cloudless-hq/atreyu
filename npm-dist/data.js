@@ -1,5 +1,5 @@
 // app/src/store/helpers.js
-function extractFromCache({ obj, path, idx = 0, root: root3 = obj, parentAtom, verbose }) {
+function extractFromCache({ obj, path, idx = 0, root: root2 = obj, parentAtom, verbose }) {
   if (verbose) {
     console.log({ obj, path, idx });
   }
@@ -8,10 +8,10 @@ function extractFromCache({ obj, path, idx = 0, root: root3 = obj, parentAtom, v
     if (obj.value === void 0) {
       return { value: void 0, parentAtom, $type: obj.$type };
     }
-    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root3, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
+    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root2, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
   } else if (obj && obj.$type === "ref") {
     const newPath = obj.value.concat(path.slice(idx));
-    return extractFromCache({ obj: root3, path: newPath, verbose });
+    return extractFromCache({ obj: root2, path: newPath, verbose });
   } else if (path.length - idx === 0) {
     if (obj && obj.$type === "error") {
       return { value: void 0, parentAtom, $type: obj.$type };
@@ -24,7 +24,7 @@ function extractFromCache({ obj, path, idx = 0, root: root3 = obj, parentAtom, v
     return { value: obj, parentAtom };
   } else {
     const step = path[idx];
-    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root: root3, verbose });
+    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root: root2, verbose });
   }
 }
 function getJsonPath(obj, path) {
@@ -40,19 +40,19 @@ function getJsonPath(obj, path) {
   }
   return current;
 }
-function setPathValue(o, [head3, ...tail], newValue, root3) {
-  if (!root3) {
+function setPathValue(o, [head3, ...tail], newValue, root2) {
+  if (!root2) {
     o = structuredClone(o);
-    root3 = o;
+    root2 = o;
   }
   if (tail.length) {
     if (!o[head3]) {
       o[head3] = {};
     }
-    setPathValue(o[head3], tail, newValue, root3);
+    setPathValue(o[head3], tail, newValue, root2);
   } else {
     o[head3] = newValue;
-    return root3;
+    return root2;
   }
 }
 
@@ -329,7 +329,7 @@ var objTypeof = "object";
 var isPrimitive$4 = function isPrimitive(value) {
   return value == null || typeof value !== objTypeof;
 };
-var splice$2 = function lruSplice(root3, object) {
+var splice$2 = function lruSplice(root2, object) {
   var prev = object.$_prev;
   var next = object.$_next;
   if (next) {
@@ -339,11 +339,11 @@ var splice$2 = function lruSplice(root3, object) {
     prev.$_next = next;
   }
   object.$_prev = object.$_next = void 0;
-  if (object === root3.$_head) {
-    root3.$_head = next;
+  if (object === root2.$_head) {
+    root2.$_head = next;
   }
-  if (object === root3.$_tail) {
-    root3.$_tail = prev;
+  if (object === root2.$_tail) {
+    root2.$_tail = prev;
   }
 };
 var splice$1 = splice$2;
@@ -1441,7 +1441,7 @@ var setJSONGraphs$3 = function setJSONGraphs(model, jsonGraphEnvelopes, x, error
   }
   return [requestedPaths, optimizedPaths];
 };
-function setJSONGraphPathSet(path, depth, root3, parent, node, messageRoot, messageParent, message, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+function setJSONGraphPathSet(path, depth, root2, parent, node, messageRoot, messageParent, message, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
   var note = {};
   var branch = depth < path.length - 1;
   var keySet = path[depth];
@@ -1450,7 +1450,7 @@ function setJSONGraphPathSet(path, depth, root3, parent, node, messageRoot, mess
   do {
     requestedPath.depth = depth;
     var results = setNode$1(
-      root3,
+      root2,
       parent,
       node,
       messageRoot,
@@ -1477,7 +1477,7 @@ function setJSONGraphPathSet(path, depth, root3, parent, node, messageRoot, mess
         setJSONGraphPathSet(
           path,
           depth + 1,
-          root3,
+          root2,
           nextParent,
           nextNode,
           messageRoot,
@@ -1507,7 +1507,7 @@ function setJSONGraphPathSet(path, depth, root3, parent, node, messageRoot, mess
   } while (true);
 }
 var _result = new Array(4);
-function setReference$1(root3, node, messageRoot, message, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+function setReference$1(root2, node, messageRoot, message, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
   var reference = node.value;
   optimizedPath.length = 0;
   optimizedPath.push.apply(optimizedPath, reference);
@@ -1515,7 +1515,7 @@ function setReference$1(root3, node, messageRoot, message, requestedPath, optimi
     optimizedPath.index = reference.length;
     expireNode$3(node, expired, lru);
     _result[0] = void 0;
-    _result[1] = root3;
+    _result[1] = root2;
     _result[2] = message;
     _result[3] = messageRoot;
     return _result;
@@ -1523,14 +1523,14 @@ function setReference$1(root3, node, messageRoot, message, requestedPath, optimi
   var index2 = 0;
   var container = node;
   var count = reference.length - 1;
-  var parent = node = root3;
+  var parent = node = root2;
   var messageParent = message = messageRoot;
   do {
     var key = reference[index2];
     var branch = index2 < count;
     optimizedPath.index = index2;
     var results = setNode$1(
-      root3,
+      root2,
       parent,
       node,
       messageRoot,
@@ -1566,11 +1566,11 @@ function setReference$1(root3, node, messageRoot, message, requestedPath, optimi
   _result[3] = messageParent;
   return _result;
 }
-function setNode$1(root3, parent, node, messageRoot, messageParent, message, key, branch, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+function setNode$1(root2, parent, node, messageRoot, messageParent, message, key, branch, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
   var type = node.$type;
   while (type === $ref$4) {
     var results = setReference$1(
-      root3,
+      root2,
       node,
       messageRoot,
       message,
@@ -1638,13 +1638,13 @@ function requirePromote() {
     return promote$3;
   hasRequiredPromote = 1;
   var EXPIRES_NEVER = expiresNever;
-  promote$3 = function lruPromote(root3, object) {
+  promote$3 = function lruPromote(root2, object) {
     if (object.$expires === EXPIRES_NEVER) {
       return;
     }
-    var head3 = root3.$_head;
+    var head3 = root2.$_head;
     if (!head3) {
-      root3.$_head = root3.$_tail = object;
+      root2.$_head = root2.$_tail = object;
       return;
     }
     if (head3 === object) {
@@ -1659,11 +1659,11 @@ function requirePromote() {
       prev.$_next = next;
     }
     object.$_prev = void 0;
-    root3.$_head = object;
+    root2.$_head = object;
     object.$_next = head3;
     head3.$_prev = object;
-    if (object === root3.$_tail) {
-      root3.$_tail = prev;
+    if (object === root2.$_tail) {
+      root2.$_tail = prev;
     }
   };
   return promote$3;
@@ -1808,7 +1808,7 @@ function requireFollowReference() {
   var isExpired3 = requireIsExpired();
   var $ref2 = ref;
   var promote2 = requirePromote();
-  function followReference2(model, root3, nodeArg, referenceContainerArg, referenceArg, seed, isJSONG) {
+  function followReference2(model, root2, nodeArg, referenceContainerArg, referenceArg, seed, isJSONG) {
     var node = nodeArg;
     var reference = referenceArg;
     var referenceContainer = referenceContainerArg;
@@ -1860,7 +1860,7 @@ function requireFollowReference() {
             depth = 0;
             reference = value;
             referenceContainer = next;
-            node = root3;
+            node = root2;
             continue;
           }
           break;
@@ -1896,12 +1896,12 @@ function requireGetValueSync() {
   var $atom2 = requireAtom();
   var $error2 = error;
   getValueSync = function getValueSync2(model, simplePath, noClone) {
-    var root3 = model._root.cache;
+    var root2 = model._root.cache;
     var len = simplePath.length;
     var optimizedPath = [];
     var shorted = false, shouldShort = false;
     var depth = 0;
-    var key, i, next = root3, curr = root3, out = root3, type, ref3, refNode;
+    var key, i, next = root2, curr = root2, out = root2, type, ref3, refNode;
     var found = true;
     var expired = false;
     while (next && depth < len) {
@@ -1930,7 +1930,7 @@ function requireGetValueSync() {
             out = void 0;
             break;
           }
-          ref3 = followReference2(model, root3, root3, next, next.value);
+          ref3 = followReference2(model, root2, root2, next, next.value);
           refNode = ref3[0];
           if (!refNode) {
             out = void 0;
@@ -2182,7 +2182,7 @@ function requireSetPathValues() {
     }
     return [requestedPaths, optimizedPaths];
   };
-  function setPathSet(value, path, depth, root3, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  function setPathSet(value, path, depth, root2, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
     var note = {};
     var branch = depth < path.length - 1;
     var keySet = path[depth];
@@ -2191,7 +2191,7 @@ function requireSetPathValues() {
     do {
       requestedPath.depth = depth;
       var results = setNode2(
-        root3,
+        root2,
         parent,
         node,
         key,
@@ -2218,7 +2218,7 @@ function requireSetPathValues() {
             value,
             path,
             depth + 1,
-            root3,
+            root2,
             nextParent,
             nextNode,
             requestedPaths,
@@ -2243,31 +2243,31 @@ function requireSetPathValues() {
       optimizedPath.index = optimizedIndex;
     } while (true);
   }
-  function setReference2(value, root3, node, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  function setReference2(value, root2, node, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
     var reference = node.value;
     optimizedPath.length = 0;
     optimizedPath.push.apply(optimizedPath, reference);
     if (isExpired3(node)) {
       optimizedPath.index = reference.length;
       expireNode3(node, expired, lru);
-      return [void 0, root3];
+      return [void 0, root2];
     }
     var container = node;
-    var parent = root3;
+    var parent = root2;
     node = node.$_context;
     if (node != null) {
-      parent = node.$_parent || root3;
+      parent = node.$_parent || root2;
       optimizedPath.index = reference.length;
     } else {
       var index2 = 0;
       var count = reference.length - 1;
-      parent = node = root3;
+      parent = node = root2;
       do {
         var key = reference[index2];
         var branch = index2 < count;
         optimizedPath.index = index2;
         var results = setNode2(
-          root3,
+          root2,
           parent,
           node,
           key,
@@ -2297,12 +2297,12 @@ function requireSetPathValues() {
     }
     return [node, parent];
   }
-  function setNode2(root3, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
+  function setNode2(root2, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2, replacedPaths) {
     var type = node.$type;
     while (type === $ref2) {
       var results = setReference2(
         value,
-        root3,
+        root2,
         node,
         requestedPath,
         optimizedPath,
@@ -2528,29 +2528,29 @@ function recurse(requestedPath, optimizedPath, currentTree, depth, rCurrentPath,
 }
 complement$1.exports.__test = { findPartialIntersections };
 function arrayConcatSlice(a1, a2, start) {
-  var result3 = a1.slice();
-  var l1 = result3.length;
+  var result2 = a1.slice();
+  var l1 = result2.length;
   var length = a2.length - start;
-  result3.length = l1 + length;
+  result2.length = l1 + length;
   for (var i = 0; i < length; ++i) {
-    result3[l1 + i] = a2[start + i];
+    result2[l1 + i] = a2[start + i];
   }
-  return result3;
+  return result2;
 }
 function arrayConcatSlice2(a1, a2, a3, start) {
-  var result3 = a1.concat(a2);
-  var l1 = result3.length;
+  var result2 = a1.concat(a2);
+  var l1 = result2.length;
   var length = a3.length - start;
-  result3.length = l1 + length;
+  result2.length = l1 + length;
   for (var i = 0; i < length; ++i) {
-    result3[l1 + i] = a3[start + i];
+    result2[l1 + i] = a3[start + i];
   }
-  return result3;
+  return result2;
 }
 function arrayConcatElement(a1, element) {
-  var result3 = a1.slice();
-  result3.push(element);
-  return result3;
+  var result2 = a1.slice();
+  result2.push(element);
+  return result2;
 }
 var complementExports = complement$1.exports;
 var pathUtils = lib$1;
@@ -2982,20 +2982,20 @@ ModelResponseObserver$1.prototype = {
   }
 };
 var ModelResponseObserver_1 = ModelResponseObserver$1;
-function symbolObservablePonyfill(root3) {
-  var result3;
-  var Symbol2 = root3.Symbol;
+function symbolObservablePonyfill(root2) {
+  var result2;
+  var Symbol2 = root2.Symbol;
   if (typeof Symbol2 === "function") {
     if (Symbol2.observable) {
-      result3 = Symbol2.observable;
+      result2 = Symbol2.observable;
     } else {
-      result3 = Symbol2("observable");
-      Symbol2.observable = result3;
+      result2 = Symbol2("observable");
+      Symbol2.observable = result2;
     }
   } else {
-    result3 = "@@observable";
+    result2 = "@@observable";
   }
-  return result3;
+  return result2;
 }
 var root;
 if (typeof self !== "undefined") {
@@ -3849,7 +3849,7 @@ var setPathMaps = function setPathMaps2(model, pathMapEnvelopes, x, errorSelecto
   }
   return [requestedPaths, optimizedPaths];
 };
-function setPathMap(pathMap, depth, root3, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
+function setPathMap(pathMap, depth, root2, parent, node, requestedPaths, optimizedPaths, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
   var keys = getKeys(pathMap);
   if (keys && keys.length) {
     var keyIndex = 0;
@@ -3861,7 +3861,7 @@ function setPathMap(pathMap, depth, root3, parent, node, requestedPaths, optimiz
       var branch = isObject$1(child) && !child.$type;
       requestedPath.depth = depth;
       var results = setNode(
-        root3,
+        root2,
         parent,
         node,
         key,
@@ -3886,7 +3886,7 @@ function setPathMap(pathMap, depth, root3, parent, node, requestedPaths, optimiz
           setPathMap(
             child,
             depth + 1,
-            root3,
+            root2,
             nextParent,
             nextNode,
             requestedPaths,
@@ -3911,31 +3911,31 @@ function setPathMap(pathMap, depth, root3, parent, node, requestedPaths, optimiz
     } while (true);
   }
 }
-function setReference(value, root3, node, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
+function setReference(value, root2, node, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
   var reference = node.value;
   optimizedPath.length = 0;
   optimizedPath.push.apply(optimizedPath, reference);
   if (isExpired$2(node)) {
     optimizedPath.index = reference.length;
     expireNode$1(node, expired, lru);
-    return [void 0, root3];
+    return [void 0, root2];
   }
   var container = node;
-  var parent = root3;
+  var parent = root2;
   node = node.$_context;
   if (node != null) {
-    parent = node.$_parent || root3;
+    parent = node.$_parent || root2;
     optimizedPath.index = reference.length;
   } else {
     var index2 = 0;
     var count = reference.length - 1;
     optimizedPath.index = index2;
-    parent = node = root3;
+    parent = node = root2;
     do {
       var key = reference[index2];
       var branch = index2 < count;
       var results = setNode(
-        root3,
+        root2,
         parent,
         node,
         key,
@@ -3964,12 +3964,12 @@ function setReference(value, root3, node, requestedPath, optimizedPath, version2
   }
   return [node, parent];
 }
-function setNode(root3, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
+function setNode(root2, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version2, expired, lru, comparator2, errorSelector2) {
   var type = node.$type;
   while (type === $ref$1) {
     var results = setReference(
       value,
-      root3,
+      root2,
       node,
       requestedPath,
       optimizedPath,
@@ -4450,7 +4450,7 @@ var isExpired2 = requireIsExpired();
 var iterateKeySet2 = lib$1.iterateKeySet;
 var $ref = ref;
 var promote = requirePromote();
-var walkPath$1 = function walkPath(model, root3, curr, path, depth, seed, outerResults, branchInfo, requestedPath, optimizedPathArg, optimizedLength, isJSONG, fromReferenceArg, referenceContainerArg) {
+var walkPath$1 = function walkPath(model, root2, curr, path, depth, seed, outerResults, branchInfo, requestedPath, optimizedPathArg, optimizedLength, isJSONG, fromReferenceArg, referenceContainerArg) {
   var fromReference = fromReferenceArg;
   var optimizedPath = optimizedPathArg;
   var referenceContainer = referenceContainerArg;
@@ -4529,8 +4529,8 @@ var walkPath$1 = function walkPath(model, root3, curr, path, depth, seed, outerR
         }
         var ref3 = followReference(
           model,
-          root3,
-          root3,
+          root2,
+          root2,
           next,
           value,
           seed,
@@ -4565,7 +4565,7 @@ var walkPath$1 = function walkPath(model, root3, curr, path, depth, seed, outerR
     }
     walkPath(
       model,
-      root3,
+      root2,
       next,
       path,
       nextDepth,
@@ -5412,13 +5412,13 @@ function requireInvalidatePathSets() {
       rootChangeHandler();
     }
   };
-  function invalidatePathSet(path, depth, root3, parent, node, version2, expired, lru) {
+  function invalidatePathSet(path, depth, root2, parent, node, version2, expired, lru) {
     var note = {};
     var branch = depth < path.length - 1;
     var keySet = path[depth];
     var key = iterateKeySet3(keySet, note);
     do {
-      var results = invalidateNode(root3, parent, node, key, branch, expired, lru);
+      var results = invalidateNode(root2, parent, node, key, branch, expired, lru);
       var nextNode = results[0];
       var nextParent = results[1];
       if (nextNode) {
@@ -5426,7 +5426,7 @@ function requireInvalidatePathSets() {
           invalidatePathSet(
             path,
             depth + 1,
-            root3,
+            root2,
             nextParent,
             nextNode,
             version2,
@@ -5440,26 +5440,26 @@ function requireInvalidatePathSets() {
       key = iterateKeySet3(keySet, note);
     } while (!note.done);
   }
-  function invalidateReference(root3, node, expired, lru) {
+  function invalidateReference(root2, node, expired, lru) {
     if (isExpired3(node)) {
       expireNode3(node, expired, lru);
-      return [void 0, root3];
+      return [void 0, root2];
     }
     promote2(lru, node);
     var container = node;
     var reference = node.value;
-    var parent = root3;
+    var parent = root2;
     node = node.$_context;
     if (node != null) {
-      parent = node.$_parent || root3;
+      parent = node.$_parent || root2;
     } else {
       var index2 = 0;
       var count = reference.length - 1;
-      parent = node = root3;
+      parent = node = root2;
       do {
         var key = reference[index2];
         var branch = index2 < count;
-        var results = invalidateNode(root3, parent, node, key, branch, expired, lru);
+        var results = invalidateNode(root2, parent, node, key, branch, expired, lru);
         node = results[0];
         if (isPrimitive3(node)) {
           return results;
@@ -5476,10 +5476,10 @@ function requireInvalidatePathSets() {
     }
     return [node, parent];
   }
-  function invalidateNode(root3, parent, node, key, branch, expired, lru) {
+  function invalidateNode(root2, parent, node, key, branch, expired, lru) {
     var type = node.$type;
     while (type === $ref2) {
-      var results = invalidateReference(root3, node, expired, lru);
+      var results = invalidateReference(root2, node, expired, lru);
       node = results[0];
       if (isPrimitive3(node)) {
         return results;
@@ -5547,7 +5547,7 @@ function requireInvalidatePathMaps() {
       rootChangeHandler();
     }
   };
-  function invalidatePathMap(pathMap, root3, parent, node, version2, expired, lru) {
+  function invalidatePathMap(pathMap, root2, parent, node, version2, expired, lru) {
     if (isPrimitive3(pathMap) || pathMap.$type) {
       return;
     }
@@ -5555,12 +5555,12 @@ function requireInvalidatePathMaps() {
       if (key[0] !== __prefix2 && hasOwn2(pathMap, key)) {
         var child = pathMap[key];
         var branch = isObject3(child) && !child.$type;
-        var results = invalidateNode(root3, parent, node, key, branch, expired, lru);
+        var results = invalidateNode(root2, parent, node, key, branch, expired, lru);
         var nextNode = results[0];
         var nextParent = results[1];
         if (nextNode) {
           if (branch) {
-            invalidatePathMap(child, root3, nextParent, nextNode, version2, expired, lru);
+            invalidatePathMap(child, root2, nextParent, nextNode, version2, expired, lru);
           } else if (removeNodeAndDescendants2(nextNode, nextParent, key, lru)) {
             updateNodeAncestors3(nextParent, getSize4(nextNode), lru, version2);
           }
@@ -5568,26 +5568,26 @@ function requireInvalidatePathMaps() {
       }
     }
   }
-  function invalidateReference(root3, node, expired, lru) {
+  function invalidateReference(root2, node, expired, lru) {
     if (isExpired3(node)) {
       expireNode3(node, expired, lru);
-      return [void 0, root3];
+      return [void 0, root2];
     }
     promote2(lru, node);
     var container = node;
     var reference = node.value;
-    var parent = root3;
+    var parent = root2;
     node = node.$_context;
     if (node != null) {
-      parent = node.$_parent || root3;
+      parent = node.$_parent || root2;
     } else {
       var index2 = 0;
       var count = reference.length - 1;
-      parent = node = root3;
+      parent = node = root2;
       do {
         var key = reference[index2];
         var branch = index2 < count;
-        var results = invalidateNode(root3, parent, node, key, branch, expired, lru);
+        var results = invalidateNode(root2, parent, node, key, branch, expired, lru);
         node = results[0];
         if (isPrimitive3(node)) {
           return results;
@@ -5600,10 +5600,10 @@ function requireInvalidatePathMaps() {
     }
     return [node, parent];
   }
-  function invalidateNode(root3, parent, node, key, branch, expired, lru) {
+  function invalidateNode(root2, parent, node, key, branch, expired, lru) {
     var type = node.$type;
     while (type === $ref2) {
-      var results = invalidateReference(root3, node, expired, lru);
+      var results = invalidateReference(root2, node, expired, lru);
       node = results[0];
       if (isPrimitive3(node)) {
         return results;
@@ -5823,11 +5823,11 @@ Model.prototype.getCache = function _getCache() {
   if (paths.length === 0) {
     return getCache2(this._root.cache);
   }
-  var result3 = [{}];
+  var result2 = [{}];
   var path = this._path;
-  get4.getWithPathsAsJSONGraph(this, paths, result3);
+  get4.getWithPathsAsJSONGraph(this, paths, result2);
   this._path = path;
-  return result3[0].jsonGraph;
+  return result2[0].jsonGraph;
 };
 Model.prototype._setMaxSize = function setMaxSize(maxSize) {
   var oldMaxSize = this._maxSize;
@@ -5965,522 +5965,47 @@ var lib = falcor;
 falcor.Model = Model_1;
 var index = /* @__PURE__ */ getDefaultExportFromCjs(lib);
 
-// app/build/deps/falcor-observable.js
-function getAugmentedNamespace2(n) {
-  if (n.__esModule)
-    return n;
-  var f = n.default;
-  if (typeof f == "function") {
-    var a = function a2() {
-      if (this instanceof a2) {
-        return Reflect.construct(f, arguments, this.constructor);
-      }
-      return f.apply(this, arguments);
-    };
-    a.prototype = f.prototype;
-  } else
-    a = {};
-  Object.defineProperty(a, "__esModule", { value: true });
-  Object.keys(n).forEach(function(k) {
-    var d = Object.getOwnPropertyDescriptor(n, k);
-    Object.defineProperty(a, k, d.get ? d : {
-      enumerable: true,
-      get: function() {
-        return n[k];
-      }
-    });
-  });
-  return a;
-}
-function symbolObservablePonyfill2(root3) {
-  var result3;
-  var Symbol2 = root3.Symbol;
-  if (typeof Symbol2 === "function") {
-    if (Symbol2.observable) {
-      result3 = Symbol2.observable;
-    } else {
-      result3 = Symbol2("observable");
-      Symbol2.observable = result3;
-    }
-  } else {
-    result3 = "@@observable";
-  }
-  return result3;
-}
-var root2;
-if (typeof self !== "undefined") {
-  root2 = self;
-} else if (typeof window !== "undefined") {
-  root2 = window;
-} else if (typeof global !== "undefined") {
-  root2 = global;
-} else if (typeof module !== "undefined") {
-  root2 = module;
-} else {
-  root2 = Function("return this")();
-}
-var result2 = symbolObservablePonyfill2(root2);
-var es2 = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  default: result2
-});
-var require$$0 = /* @__PURE__ */ getAugmentedNamespace2(es2);
-var symbolError$1 = Symbol("try-catch-error");
-var lastError = null;
-function popError$1() {
-  if (!lastError) {
-    throw new Error("popError may only be called once");
-  }
-  const { e } = lastError;
-  lastError = null;
-  return e;
-}
-var tryCatch$1;
-var tryCatchResult$1;
-{
-  const throwError = (e) => {
-    throw e;
-  };
-  tryCatch$1 = function doTryCatch(f, ...args) {
-    try {
-      f.call(this, ...args);
-    } catch (e) {
-      setTimeout(() => {
-        throwError(e);
-      }, 0);
-    }
-  };
-  tryCatchResult$1 = function doTryCatchResult(f, ...args) {
-    try {
-      return f.call(this, ...args);
-    } catch (e) {
-      lastError = { e };
-      return symbolError$1;
-    }
-  };
-}
-var tryCatch_1 = { tryCatch: tryCatch$1, tryCatchResult: tryCatchResult$1, symbolError: symbolError$1, popError: popError$1 };
-var symbolObservable = require$$0.default;
-var {
-  tryCatch,
-  tryCatchResult,
-  symbolError,
-  popError
-} = tryCatch_1;
-function callNext(observer, value) {
-  const { next } = observer;
-  if (typeof next === "function") {
-    next.call(observer, value);
-  }
-}
-function callError(observer, errorValue) {
-  const { error: error3 } = observer;
-  if (typeof error3 === "function") {
-    error3.call(observer, errorValue);
-  }
-}
-function callComplete(observer) {
-  const { complete } = observer;
-  if (typeof complete === "function") {
-    complete.call(observer);
-  }
-}
-function callStart(observer, subscription) {
-  const { start } = observer;
-  if (typeof start === "function") {
-    start.call(observer, subscription);
-  }
-}
-function callCleanup(subscription) {
-  const cleanup = subscription._cleanup;
-  if (typeof cleanup === "function") {
-    subscription._cleanup = void 0;
-    cleanup();
-  } else if (typeof cleanup === "object" && cleanup !== null) {
-    subscription._cleanup = void 0;
-    cleanup.unsubscribe();
-  }
-}
-var SubscriptionObserver = class {
-  constructor(subscription) {
-    this._subscription = subscription;
-  }
-  next(value) {
-    const subscription = this._subscription;
-    const observer = subscription._observer;
-    if (typeof observer === "undefined") {
-      return;
-    }
-    tryCatch(callNext, observer, value);
-  }
-  error(errorValue) {
-    const subscription = this._subscription;
-    const observer = subscription._observer;
-    if (typeof observer === "undefined") {
-      return;
-    }
-    subscription._observer = void 0;
-    tryCatch(callError, observer, errorValue);
-    tryCatch(callCleanup, subscription);
-  }
-  complete() {
-    const subscription = this._subscription;
-    const observer = subscription._observer;
-    if (typeof observer === "undefined") {
-      return;
-    }
-    subscription._observer = void 0;
-    tryCatch(callComplete, observer);
-    tryCatch(callCleanup, subscription);
-  }
-  get closed() {
-    return typeof this._subscription._observer === "undefined";
-  }
-  onNext(value) {
-    this.next(value);
-  }
-  onError(errorValue) {
-    this.error(errorValue);
-  }
-  onCompleted() {
-    this.complete();
-  }
-  get isStopped() {
-    return this.closed;
+// app/src/falcor/schedulers.js
+var empty2 = {
+  dispose: function() {
   }
 };
-var Subscription$1 = class Subscription {
-  constructor(subscriber, observer) {
-    this._observer = observer;
-    tryCatch(callStart, observer, this);
-    if (typeof this._observer === "undefined") {
-      return;
-    }
-    const subscriptionObserver = new SubscriptionObserver(this);
-    const subscriberResult = tryCatchResult(subscriber, subscriptionObserver);
-    if (subscriberResult === symbolError) {
-      subscriptionObserver.error(popError());
-      return;
-    }
-    const cleanup = subscriberResult;
-    if (cleanup === null || typeof cleanup === "undefined") {
-      return;
-    }
-    if (typeof cleanup !== "function" && typeof cleanup !== "object") {
-      throw new TypeError(
-        "unexpected subscriber result type " + typeof cleanup
-      );
-    }
-    if (typeof cleanup === "object" && typeof cleanup.unsubscribe !== "function") {
-      throw new TypeError("expected unsubscribe property to be a function");
-    }
-    this._cleanup = cleanup;
-    if (typeof this._observer === "undefined") {
-      tryCatch(callCleanup, this);
-    }
-  }
-  unsubscribe() {
-    const observer = this._observer;
-    if (typeof observer === "undefined") {
-      return;
-    }
-    this._observer = void 0;
-    tryCatch(callCleanup, this);
-  }
-  get closed() {
-    return typeof this._observer === "undefined";
-  }
-  dispose() {
-    this.unsubscribe();
-  }
-  get isDisposed() {
-    return this.closed;
-  }
+function ImmediateScheduler2() {
+}
+ImmediateScheduler2.prototype.schedule = function schedule3(action) {
+  action();
+  return empty2;
 };
-var EsObservable;
-var BaseObservable$1 = class BaseObservable {
-  constructor(subscriber) {
-    if (typeof subscriber !== "function") {
-      throw new TypeError("Function expected");
-    }
-    this._subscriber = subscriber;
-  }
-  // $FlowFixMe: No symbol or computed property support.
-  [symbolObservable]() {
-    return new EsObservable(this._subscriber);
-  }
-  // Flow doesn't support returning a differently parameterized this type so
-  // specify types on subclasses instead.
-  pipe(...operators) {
-    return this.constructor.from(
-      // $FlowFixMe: No symbol support.
-      operators.reduce((acc, curr) => curr(acc), this[symbolObservable]())
-    );
-  }
-  static of(...values) {
-    return new this((observer) => {
-      for (const value of values) {
-        observer.next(value);
-      }
-      observer.complete();
-    });
-  }
-  static from(input) {
-    if (typeof input === "undefined" || input === null) {
-      throw new TypeError();
-    }
-    if (typeof input === "object") {
-      const observableProp = (
-        // $FlowFixMe: No symbol support.
-        input[symbolObservable]
-      );
-      if (typeof observableProp === "function") {
-        const observable = observableProp.call(input);
-        if (typeof observable !== "object" || observable === null) {
-          throw new TypeError();
-        }
-        if (observable.constructor === this) {
-          return observable;
-        }
-        if (observable instanceof BaseObservable) {
-          return new this(observable._subscriber);
-        }
-        return new this((observer) => observable.subscribe(observer));
-      }
-      if (typeof input.subscribe === "function") {
-        const classic = input;
-        return new this((observer) => {
-          const disposable = classic.subscribe(observer);
-          return () => disposable.dispose();
-        });
-      }
-      if (typeof input.then === "function") {
-        const promiseLike = input;
-        return new this((observer) => {
-          promiseLike.then(
-            (value) => {
-              observer.next(value);
-              observer.complete();
-            },
-            (errorValue) => {
-              observer.error(errorValue);
-            }
-          );
-        });
-      }
-    }
-    if (typeof input[Symbol.iterator] === "function") {
-      return new this((observer) => {
-        for (const value of input) {
-          observer.next(value);
-        }
-        observer.complete();
-      });
-    }
-    throw new TypeError();
-  }
-  static fromClassicObservable(classic) {
-    return this.from(classic);
-  }
-  static empty() {
-    return new this((observer) => {
-      observer.complete();
-    });
-  }
-  static throw(errorValue) {
-    return new this((observer) => {
-      observer.error(errorValue);
-    });
-  }
-  static defer(factory) {
-    return new this((observer) => {
-      const result3 = factory();
-      const obs = this.from(result3);
-      return new Subscription$1(obs._subscriber, observer);
-    });
-  }
+ImmediateScheduler2.prototype.scheduleWithState = function scheduleWithState3(state, action) {
+  action(this, state);
+  return empty2;
 };
-EsObservable = class EsObservable2 extends BaseObservable$1 {
-  subscribe(observerOrOnNext, onError4, onComplete) {
-    const observer = typeof observerOrOnNext === "object" && observerOrOnNext !== null ? observerOrOnNext : {
-      next: observerOrOnNext,
-      error: onError4,
-      complete: onComplete
-    };
-    return new Subscription$1(this._subscriber, observer);
-  }
-  // $FlowFixMe: No symbol or computed property support.
-  [symbolObservable]() {
-    return this;
-  }
-  // To pass ES Observable tests these static functions must work without this.
-  static of(...values) {
-    const C = typeof this === "function" ? this : EsObservable2;
-    return super.of.call(C, ...values);
-  }
-  static from(input) {
-    const C = typeof this === "function" ? this : EsObservable2;
-    return super.from.call(C, input);
-  }
+function TimeoutScheduler2(delay = 1) {
+  this.delay = delay;
+}
+var TimerDisposable3 = function TimerDisposable4(id) {
+  this.id = id;
+  this.disposed = false;
 };
-var esObservable = {
-  BaseObservable: BaseObservable$1,
-  Observable: EsObservable,
-  Subscription: Subscription$1
+TimeoutScheduler2.prototype.schedule = function schedule4(action) {
+  const id = setTimeout(action, this.delay);
+  return new TimerDisposable3(id);
 };
-var { BaseObservable: BaseObservable2, Subscription: Subscription2 } = esObservable;
-var EsFromClassicObserver = class {
-  constructor(observer) {
-    this._observer = observer;
-  }
-  next(value) {
-    const observer = this._observer;
-    const { onNext: onNext2 } = observer;
-    if (typeof onNext2 === "function") {
-      onNext2.call(observer, value);
-    }
-  }
-  error(errorValue) {
-    const observer = this._observer;
-    const { onError: onError4 } = observer;
-    if (typeof onError4 === "function") {
-      onError4.call(observer, errorValue);
-    }
-  }
-  complete() {
-    const observer = this._observer;
-    const { onCompleted: onCompleted2 } = observer;
-    if (typeof onCompleted2 === "function") {
-      onCompleted2.call(observer);
-    }
-  }
+TimeoutScheduler2.prototype.scheduleWithState = function scheduleWithState4(state, action) {
+  const self2 = this;
+  const id = setTimeout(function() {
+    action(self2, state);
+  }, this.delay);
+  return new TimerDisposable3(id);
 };
-var ClassicObservable = class _ClassicObservable extends BaseObservable2 {
-  subscribe(observerOrOnNext, onError4, onCompleted2) {
-    const observer = typeof observerOrOnNext === "object" && observerOrOnNext !== null ? new EsFromClassicObserver(observerOrOnNext) : {
-      next: observerOrOnNext,
-      error: onError4,
-      complete: onCompleted2
-    };
-    return new Subscription2(this._subscriber, observer);
+TimerDisposable3.prototype.dispose = function() {
+  if (this.disposed) {
+    return;
   }
-  static create(subscriber) {
-    const C = typeof this === "function" ? this : _ClassicObservable;
-    if (typeof subscriber !== "function") {
-      throw new TypeError("Function expected");
-    }
-    return new C((observer) => {
-      const cleanup = subscriber(observer);
-      if (typeof cleanup !== "object" || cleanup === null) {
-        return cleanup;
-      }
-      if (typeof cleanup.dispose === "function") {
-        return () => {
-          cleanup.dispose();
-        };
-      }
-      return { unsubscribe: cleanup.dispose };
-    });
-  }
+  clearTimeout(this.id);
+  this.disposed = true;
 };
-var classicObservable = { Observable: ClassicObservable };
-var Observable = classicObservable.Observable;
-
-// app/src/store/service-worker-source.js
-var ServiceWorkerSource = class {
-  constructor({ wake }) {
-    this._inflight = {};
-    this._id = 0;
-    this._active = 0;
-    this._timer;
-    const init = () => {
-      this._worker = navigator.serviceWorker.controller;
-      this._worker?.postMessage(JSON.stringify([-1, "hello mike"]));
-    };
-    if (!this._worker) {
-      init();
-    }
-    navigator.serviceWorker.addEventListener("message", (e) => {
-      if (e.data.startsWith("navigate:")) {
-        return;
-      }
-      if (!this._worker) {
-        init();
-      }
-      const { id, error: error3, value, done, hello } = JSON.parse(e.data);
-      if (hello) {
-        setTimeout(() => {
-          Object.values(this._inflight).forEach((stale) => stale("service worker restarted, canceled:", stale));
-        }, 800);
-      } else if (typeof this._inflight[id] === "function") {
-        this._inflight[id](error3, value, done);
-      } else {
-        console.log(e.data);
-      }
-    });
-    if (wake) {
-      this._waker = setInterval(() => {
-        this._worker?.postMessage(JSON.stringify([-1, "waky waky"]));
-      }, wake);
-    }
-  }
-  isActive() {
-    return this._active !== false;
-  }
-  get(paths) {
-    return this._getResponse(["get", paths]);
-  }
-  set(jsonGraphEnvelope) {
-    return this._getResponse(["set", jsonGraphEnvelope]);
-  }
-  call(callPath, args, pathSuffixes, paths) {
-    return this._getResponse(["call", callPath, args, pathSuffixes, paths]);
-  }
-  // Creates an observable stream that will send a request
-  // to a Model server, and retrieve the response.
-  // The request and response are correlated using a unique
-  // identifier which the client sends with the request and
-  // the server echoes back along with the response.
-  _getResponse(action) {
-    const id = this._id++;
-    if (action[1] !== "call" && action[1][0] !== "_sync") {
-      this._active = this._active ? this._active + 1 : 1;
-    }
-    return Observable.create((subscriber) => {
-      this._inflight[id] = (error3, value, done) => {
-        if (error3) {
-          console.error([id, ...action]);
-          subscriber.onError(error3);
-        } else if (done) {
-          subscriber.onCompleted();
-        } else {
-          subscriber.onNext(value);
-        }
-      };
-      this._worker.postMessage(JSON.stringify([id, ...action]));
-      return () => {
-        delete this._inflight[id];
-        if (action[1] !== "call" && action[1][0] !== "_sync") {
-          this._active--;
-          if (this._timer) {
-            clearTimeout(this._timer);
-          }
-          this._timer = setTimeout(() => {
-            this._timer = null;
-            if (this._active === 0) {
-              this._active = false;
-            }
-          }, 30);
-        }
-      };
-    });
-  }
-};
-var service_worker_source_default = ServiceWorkerSource;
-
-// app/src/store/data.js
-var _undefined = Symbol("undefined");
-var frameScheduler = class {
+var FrameScheduler = class {
   schedule(action) {
     let id = requestAnimationFrame(action);
     return {
@@ -6493,8 +6018,9 @@ var frameScheduler = class {
     };
   }
   scheduleWithState(state, action) {
+    const self2 = this;
     let id = requestAnimationFrame(() => {
-      action(this, state);
+      action(self2, state);
     });
     return {
       dispose: () => {
@@ -6506,11 +6032,22 @@ var frameScheduler = class {
     };
   }
 };
+
+// app/src/store/data.js
+var _undefined = Symbol("undefined");
+function getScheduler() {
+  if (typeof requestAnimationFrame !== "undefined") {
+    return FrameScheduler;
+  } else {
+    return TimeoutScheduler2;
+  }
+}
+var ontick = typeof requestAnimationFrame === "undefined" ? function(cb) {
+  return setTimeout(cb, 0);
+} : requestAnimationFrame;
 function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetries, cache, onChange = () => {
 }, onModelChange, errorSelector: errorSelector2, onAccess } = {}) {
-  if (typeof source === "undefined") {
-    source = new service_worker_source_default({ wake: 2e4 });
-  }
+  const subscribers = /* @__PURE__ */ new Set();
   let model = index({
     source: source || void 0,
     maxSize: maxSize || 5e5,
@@ -6519,8 +6056,8 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
     // todo 0 requires fix in falcor due to falsy check
     // _useServerPaths: true,
     cache,
-    scheduler: batched ? frameScheduler : void 0,
-    // this is the internal scheduler, default to immediate
+    scheduler: batched ? getScheduler() : void 0,
+    // this is the internal scheduler, default to timeout scheduler 1ms
     // beforeInvalidate: paths => {
     //   console.log('before invalidate does not work', paths)
     //   // if (invalidationHandler) {
@@ -6568,8 +6105,10 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       return error3;
     }
   }).treatErrorsAsValues();
+  source.model = model.withoutDataSource();
   if (batched) {
-    model = model.batch(new frameScheduler());
+    const scheduler = getScheduler();
+    model = scheduler ? model.batch(new scheduler()) : model.batch();
   }
   const boxedModel = model.boxValues();
   const cacheMap = /* @__PURE__ */ new Map();
@@ -6661,7 +6200,9 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
           falcorCacheVal = cacheVEnvelope?.$value ? { $type: "error", value: { message: "tried using value as reference", val: cacheVEnvelope?.$value } } : _undefined;
         }
       } else {
-        const falcorCacheRes = extractFromCache({ obj: adjustedModel._root.cache, path });
+        const falcorCacheRef = adjustedModel._root.cache;
+        const usePreCache = !falcorCacheRef?._session && cache;
+        const falcorCacheRes = extractFromCache({ obj: usePreCache ? cache : falcorCacheRef, path });
         falcorCacheVal = falcorCacheRes?.value === void 0 && falcorCacheRes?.$type === "atom" ? _undefined : falcorCacheRes.value;
       }
       let cacheVal;
@@ -6674,7 +6215,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       let key;
       if (!ticker) {
         ++latestTick;
-        ticker = requestAnimationFrame(() => {
+        ticker = ontick(() => {
           ++latestTick;
           ticker = null;
           if (cacheMap.size > 7e5) {
@@ -6824,9 +6365,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       } else if (delim === "$loading") {
         return loadingFirstValue;
       } else if (delim === "$not") {
-        return loadingFirstValue ? { toString: () => {
-          "";
-        } } : !value;
+        return loadingFirstValue ? "" : !value;
       } else {
         if (value?.$type === "atom") {
           console.warn("Missing data in ayu data store at:", path);
@@ -6856,17 +6395,15 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
         path = parentAtom.obj.$_absolutePath;
         newValue = setPathValue(parentAtom.obj.value, parentAtom.relPath, newValue);
       }
-      adjustedModel.setValue(path, newValue).then(() => {
-      }).catch((err) => console.error(err));
+      adjustedModel.setValue(path, newValue).then((res) => res);
       return true;
     },
     call: (path, args, _delim, _id) => {
-      return (subModel || model).call(path, args);
+      return (subModel || model).call(path, args, []).then((res) => res);
     },
     delims
   });
   const runQueue = /* @__PURE__ */ new Set();
-  const subscribers = /* @__PURE__ */ new Set();
   function update() {
     if (subscribers.size > 0) {
       const queueOpener = !runQueue.size;
@@ -6942,14 +6479,16 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
     }
   }
   init();
-  self.addEventListener("pageshow", (e) => {
-    if (e.persisted) {
-      console.log("bf cache resume, retriggering _sync init");
-      clearTimeout(timeout);
-      init();
-    }
-  });
-  return {
+  if (typeof self !== "undefined") {
+    self.addEventListener("pageshow", (e) => {
+      if (e.persisted) {
+        console.log("bf cache resume, retriggering _sync init");
+        clearTimeout(timeout);
+        init();
+      }
+    });
+  }
+  const dataStore = {
     deref: (paths) => {
       return paths.map((path) => {
         const subModel = model.deref({ "$__path": path });
@@ -6967,8 +6506,13 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
     set: () => {
     },
     falcor: model,
+    // falcorL: falcor,
     deps
   };
+  if (typeof window !== "undefined") {
+    window._ayu = dataStore;
+  }
+  return dataStore;
 }
 export {
   makeDataStore as default

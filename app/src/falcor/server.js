@@ -1,12 +1,13 @@
 /* eslint-disable functional/no-this-expression */
 /* eslint-disable functional/no-class */
-import { makeRouter, toFalcorRoutes } from './falcor-router.js'
+import { makeRouter, toFalcorRoutes } from './router.js'
 import { falcor } from '/_ayu/build/deps/falcor.js'
 import { extractFromCache } from '../store/helpers.js'
 
-class WorkerServer {
-  constructor (dataSource) {
-    this.dataSource = dataSource
+class Server {
+  constructor (model) {
+    this.dataSource = model.asDataSource()
+    this.model = model
   }
 
   execute (action) {
@@ -25,6 +26,7 @@ class WorkerServer {
         return this.dataSource.set(jsonGraphEnvelope)._toJSONG()
       case 'call':
         paths = action[5] || []
+        console.log({ callPath, args, pathSuffixes, paths })
         return this.dataSource.call(callPath, args, pathSuffixes, paths)._toJSONG()
     }
   }
@@ -33,13 +35,19 @@ class WorkerServer {
 // TODO: userId, additional dataSources
 export default function ({
   schema,
+  useAll,
+
+  cache,
+
   dbs,
-  session
+  session,
+  fetch
 }) {
-  const FalcorRouter = makeRouter(toFalcorRoutes(schema))
-  const routerInstance = new FalcorRouter({ dbs, session })
+  const FalcorRouter = makeRouter(toFalcorRoutes(schema, useAll))
+  const routerInstance = new FalcorRouter({ dbs, session, fetch })
 
   const serverModel = falcor({
+    cache,
     source: routerInstance,
     maxSize: 500000,
     collectRatio: 0.75,
@@ -49,6 +57,9 @@ export default function ({
     .boxValues()
 
   routerInstance.model = serverModel.withoutDataSource()
+
+
+  // TODO: move to class
   routerInstance.model.getPageKey = function (path, from) {
     const listCache = extractFromCache({ path, obj: this._root.cache })
 
@@ -60,9 +71,5 @@ export default function ({
     return { index: 0 }
   }
 
-  const dataSource = serverModel.asDataSource()
-
-  const workerServer = new WorkerServer(dataSource)
-
-  return workerServer
+  return new Server(serverModel)
 }

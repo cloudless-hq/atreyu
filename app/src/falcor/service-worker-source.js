@@ -2,7 +2,7 @@ import { Observable } from '/_ayu/build/deps/falcor-observable.js'
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {
-  constructor ({ wake }) {
+  constructor ({ wake, cache }) {
     this._inflight = {}
     this._id = 0 // Identifier used to correlate each Request to each response
     this._active = 0
@@ -10,10 +10,25 @@ class ServiceWorkerSource {
 
     const init = () => {
       this._worker = navigator.serviceWorker.controller
-      this._worker?.postMessage(JSON.stringify([-1, 'hello mike' ]))
+      this._worker?.postMessage(JSON.stringify([-1, 'hello mike']))
+
+      if (cache) {
+        this._worker?.postMessage(JSON.stringify({ cache }))
+      }
     }
     if (!this._worker) {
       init()
+    }
+
+    if (import.meta.hot) {
+      import.meta.hot.on('vite:beforeFullReload', async () => {
+        const reg = await navigator.serviceWorker.getRegistration()
+        // FIXME: maybe needs to wait for activated state event before reloading
+        // registration.active.onstatechange = e => {console.log(e)}
+        // registration.onupdatefound = () => {}
+        // throw 'aborting reload before sw update'
+        reg?.update()
+      })
     }
 
     navigator.serviceWorker.addEventListener('message', e => {

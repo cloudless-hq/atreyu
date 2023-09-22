@@ -55,7 +55,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
         // }
 
         if (ipfsMapResponse?.ok) { // && !loggedOut
-          cache.put(manifestName, ipfsMapResponse.clone())
+          event.waitUntil(cache.put(manifestName, ipfsMapResponse.clone()))
         } else {
           ipfsMapResponse = await cache.match(manifestName)
         }
@@ -134,7 +134,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
       // }
       const clone = response.clone()
       clone.headers.set('cache-status', 'sw-cache; hit; stored')
-      cache.put(hash, clone)
+      event.waitUntil(cache.put(hash, clone))
     }
 
     return response

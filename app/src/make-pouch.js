@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-restricted-imports
-import PouchDB from '../../build/deps/pouchdb.js'
+import PouchDB from '../build/deps/pouchdb.js'
 // import findPlugin from 'pouchdb-find'; PouchDB.plugin(findPlugin)
 // import req from '../lib/req.js'
 

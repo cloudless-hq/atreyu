@@ -2,6 +2,8 @@
 import { Observable } from '../../build/deps/falcor-observable.js' // @graphistry ?
 // eslint-disable-next-line no-restricted-imports
 import { Router } from '../../build/deps/falcor-router.js' // @graphistry ?
+import { addPathTags } from '../schema/helpers.js'
+import defaultPaths from '../schema/default-routes.js'
 
 import { urlLogger } from '../lib/url-logger.js'
 import * as systemHandlers from '../schema/falcor-handlers/index.js'
@@ -11,7 +13,7 @@ export function falcorTags (routes) {
   Object.keys(routes).forEach(key => {
     Object.keys(routes[key]).forEach(method => {
       const tags = routes[key][method].tags
-      routes[key][method].tags = tags ? tags.push('falcor') : ['falcor']
+      routes[key][method].tags = tags ? tags : ['falcor'] // FIXME: how to add to existing tags ? .push?.('falcor')
     })
   })
 
@@ -46,7 +48,7 @@ export function toFalcorRoutes (schema) {
     const handlers = {}
 
     Object.entries(handlerArgs).forEach(([handlerType, handlerConf]) => {
-      if (handlerConf.tags?.includes('falcor')) {
+      if (handlerConf.tags?.includes?.('falcor')) {
         if (!['get', 'set', 'call'].includes(handlerType)) {
           console.error('unsupported falcor handler type ' + handlerType)
         }
@@ -59,6 +61,7 @@ export function toFalcorRoutes (schema) {
           arguments[0].session = this.session
           arguments[0].Observable = this.Observable
           arguments[0].req = this.req
+          arguments[0].fetch = this.fetch
           arguments[0].model = this.model
           /* eslint-enable functional/no-this-expression */
 
@@ -70,12 +73,19 @@ export function toFalcorRoutes (schema) {
             const pathArg = arguments[0]
 
             const auoWrap = (paAr, res) => {
+              if (res.jsonGraph) {
+                return res
+              }
+              if (res?.length && res?.[0]?.path) {
+                return res
+              }
               if (['boolean', 'undefined', 'number', 'string'].includes(typeof res) || (!res.value && !res.path)) {
                 res = { value: { $type: 'atom', value: res } }
               }
               if (res.value !== undefined && !res.path) {
                 res.path = paAr.length ? [ ...paAr ] : [ paAr ]
               }
+
               return res
             }
 
@@ -104,9 +114,21 @@ export function toFalcorRoutes (schema) {
   return routes
 }
 
-export function makeRouter (dataRoutes) {
+export function makeRouter ({ dataRoutes, schema }) {
+  // TODO: gobally precompile schema on build time
+  if (!dataRoutes && schema) {
+    if (typeof schema === 'function') {
+      schema = schema({ defaultPaths, addPathTags })
+    } else if (schema) {
+      // (allow omission of tags fro falcor routes)
+      schema.paths = { ...defaultPaths, ...falcorTags(schema.paths) }
+    }
+
+    dataRoutes = toFalcorRoutes(schema)
+  }
+
   class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
-    constructor ({ session, dbs }) {
+    constructor ({ session, dbs, fetch: internalFetch }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
         debug: false,
@@ -175,6 +197,7 @@ export function makeRouter (dataRoutes) {
       this.session = session
       this.dbs = dbs
       this.req = req
+      this.fetch = internalFetch
       this.Observable = Observable
       /* eslint-enable functional/no-this-expression */
     }

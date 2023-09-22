@@ -1,5 +1,7 @@
-import makePouch from './make-pouch.js'
-import makeFalcorServer from './falcor-server.js'
+import makePouch from '../make-pouch.js'
+import { falcorTags } from '../falcor/router.js'
+import makeFalcorServer from '../falcor/server.js'
+// import serverSource from '../falcor/direct-source.js'
 import { escapeId } from '../lib/helpers.js'
 import { addPathTags } from '../schema/helpers.js'
 import defaultPaths from '../schema/default-routes.js'
@@ -20,7 +22,7 @@ export default function ({
   if (typeof schema === 'function') {
     schema = schema({ defaultPaths, addPathTags })
   } else if (schema) {
-    schema.paths = { ...defaultPaths, ...schema.paths }
+    schema.paths = { ...defaultPaths, ...falcorTags(schema.paths) }
   }
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor

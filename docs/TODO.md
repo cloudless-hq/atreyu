@@ -15,3 +15,39 @@
 - generic conflict view for db and doc (on app or admin level?)
 - make default environment global config in repo
 - ipfs file progress
+
+// evaluate new router and schema combination?
+// const schema = {
+//   rows: {
+//     length: {
+//       get: async () => {
+//         const allDocs = await store.getAll()
+//         return allDocs.length
+//       }
+//     },
+//     '[{ranges}]': {
+//       get: async () => {
+//         const allDocs = await store.getAll()
+//         return {
+//           jsonGraph: {
+//             rows: Object.keys(allDocs).map(id => ({ $ref: [ 'docs', id ] }))
+//           }
+//         }
+//       }
+//     }
+//   },
+//   docs: {
+//     '[{keys:ids}]': {
+//       get: async ({ ids }) => {
+//         const docs = await store.get(ids)
+//         return Object.values(docs).map(doc => ({ path: ['docs', doc.id], value: doc }))
+//         //
+//       }
+//     }
+//   },
+//   title: {
+//     get: () => {
+//         return 'Labelling'
+//     }
+//   }
+// }
