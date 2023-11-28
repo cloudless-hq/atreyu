@@ -1,6 +1,6 @@
 {
   "name": "atreyu",
-  "version": "0.9.54",
+  "version": "0.9.55",
   "scripts": {
     "build": "rollup -c ./rollup.config.mjs",
     "lint": "eslint '**/*.{js,svelte,ts}'"
