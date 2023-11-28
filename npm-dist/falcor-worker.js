@@ -23422,7 +23422,7 @@ function extractFromCache({ obj, path, idx = 0, root: root4 = obj, parentAtom, v
   }
   if (obj && obj.$type === "atom" && path.length - idx !== 0) {
     const step = path[idx];
-    if (obj.value === void 0) {
+    if (obj === null || obj.value === void 0) {
       return { value: void 0, parentAtom, $type: obj.$type };
     }
     return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root4, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
