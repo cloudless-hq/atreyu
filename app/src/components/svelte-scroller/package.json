@@ -20,7 +20,7 @@
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-svelte": "5.1.1",
     "sirv": "0.4.2",
-    "svelte": "3.16.4",
+    "svelte": "4.2.19",
     "tap-diff": "0.1.1",
     "tap-dot": "2.0.0",
     "tape-modern": "1.1.2"
