@@ -17,7 +17,7 @@
     "eslint": "6.7.2",
     "eslint-plugin-svelte3": "git+https://github.com/sveltejs/eslint-plugin-svelte3.git",
     "port-authority": "1.0.5",
-    "rollup": "1.27.9",
+    "rollup": "2.79.2",
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-svelte": "5.1.1",
