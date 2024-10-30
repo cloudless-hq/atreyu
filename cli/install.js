@@ -1,4 +1,4 @@
-import versions from './versions.json' assert { type: 'json' }
+import versions from './versions.json' with { type: 'json' }
 const { ayuVersion } = versions
 
 const denoHome = Deno.env.get('DENO_HOME') || Deno.env.get('HOME') + '/.deno'

@@ -1,6 +1,6 @@
 {
   "name": "convoi dev setup",
-  "image": "ghcr.io/cloudless-hq/atreyu:0.9.55",
+  "image": "ghcr.io/cloudless-hq/atreyu:0.9.57",
 
   "settings": {
     "deno.enable": true,

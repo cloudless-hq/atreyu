@@ -1,5 +1,5 @@
 // import { build, emptyDir } from 'https://deno.land/x/dnt/mod.ts'
-// import versions from './versions.json' assert { type: 'json' }
+// import versions from './versions.json' with { type: 'json' }
 // await emptyDir('./npmt')
 
 // await build({

@@ -1,6 +1,6 @@
 import { join, basename, green, yellow } from '../deps-deno.ts'
 import { execStream, exec } from './helpers.ts'
-import versions from './versions.json' assert { type: 'json' }
+import versions from './versions.json' with { type: 'json' }
 const { ipfsVersion } = versions
 
 // async function ipfsFetch (cmd, data) {

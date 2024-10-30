@@ -1,6 +1,6 @@
 {
   "name": "atreyu",
-  "version": "0.9.56",
+  "version": "0.9.57",
   "scripts": {
     "build": "rollup -c ./rollup.config.mjs",
     "build:npm": "deno run cli/build-npm.js",

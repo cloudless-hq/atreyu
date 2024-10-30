@@ -1,5 +1,5 @@
 {
-  "ayuVersion": "0.9.55",
+  "ayuVersion": "0.9.57",
   "ipfsVersion": "0.21.0",
-  "denoVersion": "1.36.2"
+  "denoVersion": "1.46.3"
 }
