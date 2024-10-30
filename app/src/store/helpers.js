@@ -5,7 +5,7 @@ export function extractFromCache ({ obj, path, idx = 0, root = obj, parentAtom, 
 
   if (obj && obj.$type === 'atom' && path.length - idx !== 0) {
     const step = path[idx]
-    if (obj === null || obj.value === undefined) {
+    if (obj.value === null || obj.value === undefined) {
       return { value: undefined, parentAtom, $type: obj.$type }
     }
     return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root, parentAtom: { obj, relPath: path.slice(idx)}, verbose })

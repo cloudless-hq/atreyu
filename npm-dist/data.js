@@ -5,7 +5,7 @@ function extractFromCache({ obj, path, idx = 0, root: root2 = obj, parentAtom, v
   }
   if (obj && obj.$type === "atom" && path.length - idx !== 0) {
     const step = path[idx];
-    if (obj === null || obj.value === void 0) {
+    if (obj.value === null || obj.value === void 0) {
       return { value: void 0, parentAtom, $type: obj.$type };
     }
     return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root2, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
@@ -105,7 +105,7 @@ function makeProxy({ from, get: get5, set: set4, call: call3, delims = ["$"], id
       ...errorHandlers,
       has(target, key) {
         if (key === Symbol.iterator) {
-          return;
+          return true;
         }
         if (key === "length") {
           return true;
@@ -6053,7 +6053,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
     maxSize: maxSize || 5e5,
     collectRatio: collectRatio || 0.75,
     maxRetries: maxRetries || 1,
-    // todo 0 requires fix in falcor due to falsy check
+    // FIXME: 0 requires fix in falcor due to broken falsy check
     // _useServerPaths: true,
     cache,
     scheduler: batched ? getScheduler() : void 0,
@@ -6068,6 +6068,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
     onChange: () => {
       update();
       onModelChange?.();
+      source?._onChange?.();
     },
     // comparator: (oldValEnv, newValEnv, path) => {
     //   if (oldValEnv === newValEnv) {
@@ -6105,7 +6106,20 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       return error3;
     }
   }).treatErrorsAsValues();
-  source.model = model.withoutDataSource();
+  if (source.router) {
+    source.router.model = model.withoutDataSource();
+    source.router.model.getPageKey = function(path, from) {
+      const listCache = extractFromCache({ path, obj: this._root.cache });
+      for (let index2 = from; index2 > 0; index2--) {
+        if (listCache.value?.[index2]?.$pageKey !== void 0) {
+          return { pageKey: listCache.value[index2].$pageKey, index: index2 };
+        }
+      }
+      return { index: 0 };
+    };
+  } else {
+    source.model = model.withoutDataSource();
+  }
   if (batched) {
     const scheduler = getScheduler();
     model = scheduler ? model.batch(new scheduler()) : model.batch();
@@ -6399,7 +6413,9 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       return true;
     },
     call: (path, args, _delim, _id) => {
-      return (subModel || model).call(path, args, []).then((res) => res);
+      return (subModel || model).call(path, args, []).then((res) => res).catch((error3) => {
+        error3;
+      });
     },
     delims
   });
@@ -6472,6 +6488,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       }, 5);
     }
   };
+  doSync();
   async function init() {
     const userId = await model.getValue(["_session", "userId"]);
     if (userId) {

@@ -1,16 +1,40 @@
-// import { getKvStore } from '/_kvs.js'
-// import { getWait } from './wait.js'
 // import log from './log.js'
 import { sleepRandom } from './helpers.js'
 
 // TODO: handle logout detection and service worker integration!!!
 // TODO: integrate base features with edge/lib/req.js
-export default async function req (url, { method, body, headers: headersArg = {}, raw: rawArg, retry = false, redirect = 'manual' } = {}) {
-  // TODO: ttl, cacheKey, cacheNs,
+
+const cacheMap = new Map()
+// TODO: copy this dedupe logic to falcor req dedupe too
+const pendingMap = new Map()
+
+export default async function req (urlArg, {
+  method,
+  body,
+  cache,
+  cacheKey,
+  params: paramsArg,
+  headers: headersArg = {},
+  raw: rawArg,
+  retry = false,
+  redirect = 'manual',
+  fetch: customFetch = fetch
+} = {}) {
+  // TODO: ttl
   // const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'
   }
+
+  paramsArg && Object.entries(paramsArg).forEach(([key, value]) => {
+    if (value=== undefined) {
+      delete paramsArg[key]
+    }
+  })
+
+  const params = paramsArg && new URLSearchParams(paramsArg)
+
+  const url = params ? urlArg + `?${params}` : urlArg
 
   const headers = new Headers(headersArg)
 
@@ -20,37 +44,45 @@ export default async function req (url, { method, body, headers: headersArg = {}
 
   headers.set('X-Requested-With', 'XMLHttpRequest')
 
-  if (body && headers.get('content-type') === 'application/json') {
+  if (body && headers.get('content-type').includes('application/json')) {
     body = JSON.stringify(body)
   }
 
   let res
   let kvs
-  // if (cacheNs) {
-  //   if (!cacheKey) {
-  //     cacheKey = url
-  //   }
+  if (cache) {
+    if (!cacheKey) {
+      cacheKey = url
+    }
 
-  //   kvs = getKvStore(cacheNs)
+    if (pendingMap.has(cacheKey)) {
+      await pendingMap.get(cacheKey)
+    }
 
-  //   // TODO: streams are faster for non binaries
-  //   const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other?
+    if (cacheMap.has(cacheKey)) {
+      const  {body: cachedBod, headers: cachedHead } = cacheMap.get(url)
+      cachedHead['cache-status'] = `edge-kv; hit`
+      res = new Response(cachedBod, { headers: cachedHead, ok: true, statusText: 'OK', status: 200, redirected: false })
+    }
 
-  //   if (kvRes?.value) {
-  //     kvRes.metadata.headers['cache-status'] = `edge-kv; hit${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}`
-  //     kvRes.metadata.ok = true
-  //     kvRes.metadata.statusText = 'OK'
-  //     kvRes.metadata.status = 200
-  //     kvRes.metadata.redirected = false
-  //     res = new Response(kvRes.value, kvRes.metadata)
-  //   }
-  // }
+    // ${kvRes.metadata.expiration ? '; ttl=' + (kvRes.metadata.expiration - Math.floor(Date.now() / 1000)) : ''}
+    //   kvs = getKvStore(cache)
+    //   // TODO: streams are faster for non binaries
+    //   const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other?
+    //   if (kvRes?.value) {
+    //     res = new Response(kvRes.value, kvRes.metadata)
+    //   }
+  }
 
   let retried
   const reqStart = Date.now()
+  let finishLoad = null
   const wasCached = !!res
   if (!wasCached) {
-    res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
+    const loadPromise = new Promise(resolve => { finishLoad = resolve })
+    pendingMap.set(url, loadPromise)
+
+    res = await customFetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
 
     // FIXME: do not retry redirects etc that are also not ok
     if (!res.ok && retry) {
@@ -66,24 +98,29 @@ export default async function req (url, { method, body, headers: headersArg = {}
         // FIXME: abort here
       }
       await sleepRandom()
-      res = await fetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
+      res = await customFetch(url, { method, body, headers, redirect }).catch(fetchError => ({ ok: false, error: fetchError }))
     }
 
-    // if (res.ok && cacheNs) {
-    //   waitUntil((async () => {
-    //     await kvs.put(cacheKey, await res.clone().arrayBuffer(), {
-    //       expirationTtl: ttl, // s
-    //       metadata: {
-    //         expiration: ttl ? (Math.floor(Date.now() / 1000) + ttl) : undefined,
-    //         headers:  {
-    //           'content-type': res.headers.get('content-type'),
-    //           'content-length': res.headers.get('content-length'),
-    //           'last-modified': res.headers.get('last-modified')
-    //         }
-    //       }
-    //     })
-    //   })())
-    // }
+    if (res.ok && cache) {
+      res.clone().arrayBuffer().then(body => {
+        cacheMap.set(cacheKey, { body,  headers:  {
+          'content-type': res.headers.get('content-type'),
+          'content-length': res.headers.get('content-length'),
+          'last-modified': res.headers.get('last-modified')
+        }})
+        finishLoad()
+        pendingMap.delete(cacheKey)
+      })
+      //   waitUntil((async () => {
+      //     await kvs.put(cacheKey, body, {
+      //       expirationTtl: ttl, // s
+      //       metadata: {
+      //         expiration: ttl ? (Math.floor(Date.now() / 1000) + ttl) : undefined,
+      //          headers
+      //       }
+      //     })
+      //   })())
+    }
   }
   const duration = (Date.now() - reqStart)
 
@@ -101,7 +138,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
     }
 
     text = await res.text()
-    if (res.headers.get('content-type') === 'application/json') {
+    if (res.headers.get('content-type').includes('application/json')) {
       json = JSON.parse(text)
     }
   }
@@ -146,3 +183,38 @@ export default async function req (url, { method, body, headers: headersArg = {}
     ...baseResponse
   }
 }
+
+function get (url, opts = {}) {
+  opts.method = 'GET'
+  return req(url, opts)
+}
+function del (url, opts = {}) {
+  opts.method = 'DELETE'
+  return req(url, opts)
+}
+ function put (url, opts = {}) {
+  opts.method = 'PUT'
+  return req(url, opts)
+}
+function post (url, opts = {}) {
+  opts.method = 'POST'
+  return req(url, opts)
+}
+function head (url, opts = {}) {
+  opts.method = 'HEAD'
+  return req(url, opts)
+}
+function options (url, opts = {}) {
+  opts.method = 'OPTIONS'
+  return req(url, opts)
+}
+function patch (url, opts = {}) {
+  opts.method = 'PATCH'
+  return req(url, opts)
+}
+function trace (url, opts = {}) {
+  opts.method = 'TRACE'
+  return req(url, opts)
+}
+
+export { get, del, put, post, head, options, patch, trace }

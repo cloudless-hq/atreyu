@@ -34,6 +34,9 @@
 # afraid to fall back to code for anything the config cannot express, as Workers are very fast
 # to execute!
 
+# Any capnp files imported here must be:
+# 1. embedded into workerd-meta.capnp
+# 2. added to `tryImportBulitin` in workerd.c++ (grep for '"/workerd/workerd.capnp"').
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("workerd::server::config");
 $Cxx.allowCancellation;
@@ -76,6 +79,11 @@ struct Config {
   extensions @3 :List(Extension);
   # Extensions provide capabilities to all workers. Extensions are usually prepared separately
   # and are late-linked with the app using this config field.
+
+  autogates @4 :List(Text);
+  # A list of gates which are enabled.
+  # These are used to gate features/changes in workerd and in our internal repo. See the equivalent
+  # config definition in our internal repo for more details.
 }
 
 # ========================================================================================
@@ -356,6 +364,19 @@ struct Worker {
       # workerd will forward AnalyticsEngineEvents to designated service in the body of HTTP requests
       # This binding is subject to change and requires the `--experimental` flag
 
+      hyperdrive :group {
+        designator @18 :ServiceDesignator;
+        database @19 :Text;
+        user @20 :Text;
+        password @21 :Text;
+        scheme @22 :Text;
+      }
+      # A binding for Hyperdrive. Allows workers to use Hyperdrive caching & pooling for Postgres
+      # databases.
+
+      unsafeEval @23 :Void;
+      # A simple binding that enables access to the UnsafeEval API.
+
       # TODO(someday): dispatch, other new features
     }
 
@@ -378,6 +399,7 @@ struct Worker {
         r2Admin @10 :Void;
         queue @11 :Void;
         analyticsEngine @12 : Void;
+        hyperdrive @13: Void;
       }
     }
 
@@ -520,6 +542,13 @@ struct Worker {
       #   anything. An object that hasn't stored anything will not consume any storage space on
       #   disk.
     }
+
+    preventEviction @3 :Bool;
+    # By default, Durable Objects are evicted after 10 seconds of inactivity, and expire 70 seconds
+    # after all clients have disconnected. Some applications may want to keep their Durable Objects
+    # pinned to memory forever, so we provide this flag to change the default behavior.
+    #
+    # Note that this is only supported in Workerd; production Durable Objects cannot toggle eviction.
   }
 
   durableObjectUniqueKeyModifier @8 :Text;
@@ -560,6 +589,9 @@ struct Worker {
 
   # TODO(someday): Support distributing objects across a cluster. At present, objects are always
   #   local to one instance of the runtime.
+
+  moduleFallback @13 :Text;
+
 }
 
 struct ExternalServer {
@@ -607,6 +639,13 @@ struct ExternalServer {
       certificateHost @4 :Text;
       # If present, expect the host to present a certificate authenticating it as this hostname.
       # If `certificateHost` is not provided, then the certificate is checked against `address`.
+    }
+
+    tcp :group {
+      # Connect to the server over raw TCP. Bindings to this service will only support the
+      # `connect()` method; `fetch()` will throw an exception.
+      tlsOptions @5 :TlsOptions;
+      certificateHost @6 :Text;
     }
 
     # TODO(someday): Cap'n Proto RPC

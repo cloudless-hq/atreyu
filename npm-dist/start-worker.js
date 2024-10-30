@@ -1,4 +1,13 @@
 // app/src/service-worker/start-worker.js
+function addWorker(body) {
+  return body.replace(
+    "%atreyu%",
+    `      <script>
+        ${startWorker.toString().replaceAll("\n", "\n               ")};
+        // startWorker({ reloadAfterInstall: true, workerPath: './service-worker.js', isModule: true });
+     <\/script>`
+  );
+}
 async function startWorker({ reloadAfterInstall, workerPath = "/build/service-worker.js", isModule } = {}) {
   if (!("navigator" in window) || !("serviceWorker" in navigator)) {
     return;
@@ -60,5 +69,6 @@ async function startWorker({ reloadAfterInstall, workerPath = "/build/service-wo
   }
 }
 export {
+  addWorker,
   startWorker as default
 };

@@ -12,6 +12,7 @@ export async function cloudflareDeploy ({
   ayuHash,
   resetKvs
 }) {
+  // TODO: evaluate https://www.pulumi.com/docs/reference/pkg/cloudflare/
   // const startTime = Date.now()
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')

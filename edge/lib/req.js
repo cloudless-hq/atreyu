@@ -12,6 +12,7 @@ const sleepRandom = () => {
   return sleep(ms)
 }
 
+// TODO: unify with client cache and rename cacheNS to cache, true is default ns, string sets custom ns
 export default async function req (url, { method, body, headers: headersArg = {}, params, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
   const { waitUntil, event } = getWait()
   if (!method) {

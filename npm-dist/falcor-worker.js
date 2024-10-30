@@ -10383,7 +10383,7 @@ var parseTree$1 = function parseTree(routes) {
 };
 function buildParseTree(node, routeObject, depth) {
   var route = routeObject.route;
-  var get7 = routeObject.get;
+  var get8 = routeObject.get;
   var set5 = routeObject.set;
   var call4 = routeObject.call;
   var el = route[depth];
@@ -10416,8 +10416,8 @@ function buildParseTree(node, routeObject, depth) {
         next[Keys$2.match] = matchObject;
       }
       matchObject.prettyRoute = routeObject.prettyRoute;
-      if (get7) {
-        matchObject.get = actionWrapper(route, get7);
+      if (get8) {
+        matchObject.get = actionWrapper(route, get8);
         matchObject.getId = routeObject.getId;
       }
       if (set5) {
@@ -10435,16 +10435,16 @@ function buildParseTree(node, routeObject, depth) {
 }
 function setHashOrThrowError(parseMap, routeObject) {
   var route = routeObject.route;
-  var get7 = routeObject.get;
+  var get8 = routeObject.get;
   var set5 = routeObject.set;
   var call4 = routeObject.call;
   getHashesFromRoute(route).map(function mapHashToString(hash) {
     return hash.join(",");
   }).forEach(function forEachRouteHash(hash) {
-    if (get7 && parseMap[hash + "get"] || set5 && parseMap[hash + "set"] || call4 && parseMap[hash + "call"]) {
+    if (get8 && parseMap[hash + "get"] || set5 && parseMap[hash + "set"] || call4 && parseMap[hash + "call"]) {
       throw new Error(errors$1.routeWithSamePrecedence + " " + prettifyRoute2(route));
     }
-    if (get7) {
+    if (get8) {
       parseMap[hash + "get"] = true;
     }
     if (set5) {
@@ -15717,7 +15717,7 @@ function requireGet() {
     return get_1;
   hasRequiredGet = 1;
   var runGetAction2 = requireRunGetAction();
-  var get7 = "get";
+  var get8 = "get";
   var recurseMatchAndExecute2 = requireRecurseMatchAndExecute();
   var normalizePathSets2 = requireNormalizePathSets();
   var materialize5 = requireMaterialize();
@@ -15751,7 +15751,7 @@ function requireGet() {
           router._matcher,
           action,
           normPS,
-          get7,
+          get8,
           router,
           jsongCache
         ).flatMap(function flatMapAfterRouterGet(details) {
@@ -17419,25 +17419,63 @@ function escapeId(baseString, doc) {
 }
 
 // app/src/lib/req.js
-async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, retry = false, redirect = "manual" } = {}) {
+var cacheMap = /* @__PURE__ */ new Map();
+var pendingMap = /* @__PURE__ */ new Map();
+async function req(urlArg, {
+  method,
+  body,
+  cache,
+  cacheKey,
+  params: paramsArg,
+  headers: headersArg = {},
+  raw: rawArg,
+  retry = false,
+  redirect = "manual",
+  fetch: customFetch = fetch
+} = {}) {
   if (!method) {
     method = body ? "POST" : "GET";
   }
+  paramsArg && Object.entries(paramsArg).forEach(([key, value]) => {
+    if (value === void 0) {
+      delete paramsArg[key];
+    }
+  });
+  const params = paramsArg && new URLSearchParams(paramsArg);
+  const url = params ? urlArg + `?${params}` : urlArg;
   const headers = new Headers(headersArg);
   if (body && !headers.get("content-type")) {
     headers.set("content-type", "application/json");
   }
   headers.set("X-Requested-With", "XMLHttpRequest");
-  if (body && headers.get("content-type") === "application/json") {
+  if (body && headers.get("content-type").includes("application/json")) {
     body = JSON.stringify(body);
   }
   let res;
   let kvs;
+  if (cache) {
+    if (!cacheKey) {
+      cacheKey = url;
+    }
+    if (pendingMap.has(cacheKey)) {
+      await pendingMap.get(cacheKey);
+    }
+    if (cacheMap.has(cacheKey)) {
+      const { body: cachedBod, headers: cachedHead } = cacheMap.get(url);
+      cachedHead["cache-status"] = `edge-kv; hit`;
+      res = new Response(cachedBod, { headers: cachedHead, ok: true, statusText: "OK", status: 200, redirected: false });
+    }
+  }
   let retried;
   const reqStart = Date.now();
+  let finishLoad = null;
   const wasCached = !!res;
   if (!wasCached) {
-    res = await fetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+    const loadPromise = new Promise((resolve) => {
+      finishLoad = resolve;
+    });
+    pendingMap.set(url, loadPromise);
+    res = await customFetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
     if (!res.ok && retry) {
       retried = {
         status: res.status,
@@ -17450,7 +17488,18 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
         self.session?.refresh();
       }
       await sleepRandom();
-      res = await fetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+      res = await customFetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+    }
+    if (res.ok && cache) {
+      res.clone().arrayBuffer().then((body2) => {
+        cacheMap.set(cacheKey, { body: body2, headers: {
+          "content-type": res.headers.get("content-type"),
+          "content-length": res.headers.get("content-length"),
+          "last-modified": res.headers.get("last-modified")
+        } });
+        finishLoad();
+        pendingMap.delete(cacheKey);
+      });
     }
   }
   const duration = Date.now() - reqStart;
@@ -17467,7 +17516,7 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
       resHeaders["cache-status"] = oldCacheStatus + "edge-kv; miss" + (kvs ? "; stored" : "");
     }
     text = await res.text();
-    if (res.headers.get("content-type") === "application/json") {
+    if (res.headers.get("content-type").includes("application/json")) {
       json = JSON.parse(text);
     }
   }
@@ -17491,16 +17540,50 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
     ...baseResponse
   };
 }
+function get3(url, opts = {}) {
+  opts.method = "GET";
+  return req(url, opts);
+}
+function del(url, opts = {}) {
+  opts.method = "DELETE";
+  return req(url, opts);
+}
+function put(url, opts = {}) {
+  opts.method = "PUT";
+  return req(url, opts);
+}
+function post(url, opts = {}) {
+  opts.method = "POST";
+  return req(url, opts);
+}
+function head3(url, opts = {}) {
+  opts.method = "HEAD";
+  return req(url, opts);
+}
+function patch(url, opts = {}) {
+  opts.method = "PATCH";
+  return req(url, opts);
+}
 
 // app/src/falcor/router.js
 function falcorTags(routes) {
   Object.keys(routes).forEach((key) => {
     Object.keys(routes[key]).forEach((method) => {
-      const tags = routes[key][method].tags;
-      routes[key][method].tags = tags ? tags : ["falcor"];
+      if (typeof routes[key][method] === "function") {
+        routes[key][method] = { handler: routes[key][method], tags: ["falcor"] };
+      } else {
+        const tags = routes[key][method].tags;
+        routes[key][method].tags = tags ? tags : ["falcor"];
+      }
     });
   });
   return routes;
+}
+function withFetch(fn, customFetch) {
+  return function(url, opts) {
+    opts.fetch = customFetch;
+    return fn(url, opts);
+  };
 }
 function maxRange(ranges) {
   let from2;
@@ -17532,10 +17615,20 @@ function toFalcorRoutes(schema) {
         handlers[handlerType] = function() {
           arguments[0].dbs = this.dbs;
           arguments[0].session = this.session;
+          arguments[0].ctx = this.ctx;
           arguments[0].Observable = this.Observable;
-          arguments[0].req = this.req;
-          arguments[0].fetch = this.fetch;
+          arguments[0].get = this.http_get;
+          arguments[0].del = this.http_del;
+          arguments[0].put = this.http_put;
+          arguments[0].post = this.http_post;
+          arguments[0].head = this.http_head;
+          arguments[0].patch = this.http_patch;
           arguments[0].model = this.model;
+          arguments[0].atom = this.model.constructor.atom;
+          arguments[0].ref = this.model.constructor.ref;
+          arguments[0].clientRef = (target) => ({ $type: "atom", $meta: "clientRef", value: target });
+          arguments[0].pathValue = this.model.constructor.pathValue;
+          arguments[0].error = this.model.constructor.error;
           arguments[0].maxRange = maxRange;
           let getRes = handler(...arguments);
           if (handlerType === "get") {
@@ -17549,6 +17642,9 @@ function toFalcorRoutes(schema) {
               }
               if (["boolean", "undefined", "number", "string"].includes(typeof res) || !res.value && !res.path) {
                 res = { value: { $type: "atom", value: res } };
+              }
+              if (res.$type) {
+                res = { value: res };
               }
               if (res.value !== void 0 && !res.path) {
                 res.path = paAr.length ? [...paAr] : [paAr];
@@ -17587,10 +17683,11 @@ function makeRouter({ dataRoutes, schema }) {
   }
   class AtreyuRouter extends Router$1.createClass(dataRoutes) {
     // eslint-disable-line functional/no-class
-    constructor({ session, dbs, fetch: internalFetch }) {
+    constructor({ session, dbs, fetch: internalFetch, debug, ctx = {} }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
-        debug: false,
+        debug,
+        // FIXME: route unhandled paths to error handler routeUnhandledPathsT!
         hooks: {
           pathError: (err) => {
             console.error(err);
@@ -17599,6 +17696,9 @@ function makeRouter({ dataRoutes, schema }) {
             console.error(err);
           },
           methodSummary: (e2) => {
+            if (!debug) {
+              return;
+            }
             const totalDuration = e2.end - e2.start;
             e2.routes?.forEach((route, i3) => {
               let batchMarker = "";
@@ -17646,10 +17746,26 @@ function makeRouter({ dataRoutes, schema }) {
         }
       });
       this.session = session;
+      this.ctx = ctx;
       this.dbs = dbs;
-      this.req = req;
-      this.fetch = internalFetch;
+      this.http_get = withFetch(get3, internalFetch);
+      this.http_del = withFetch(del, internalFetch);
+      this.http_put = withFetch(put, internalFetch);
+      this.http_post = withFetch(post, internalFetch);
+      this.http_head = withFetch(head3, internalFetch);
+      this.http_patch = withFetch(patch, internalFetch);
       this.Observable = Observable;
+      this._unhandled = {
+        call: (...args) => {
+          console.warn("Missing route for call: " + JSON.stringify(args));
+        },
+        set: (...args) => {
+          console.warn("Missing route for set: " + JSON.stringify(args));
+        },
+        get: (...args) => {
+          console.warn("Missing route for get: " + JSON.stringify(args));
+        }
+      };
     }
   }
   return AtreyuRouter;
@@ -17729,7 +17845,7 @@ var ModelRoot_1 = ModelRoot$1;
 function ModelDataSourceAdapter$1(model) {
   this._model = model._materialize().treatErrorsAsValues();
 }
-ModelDataSourceAdapter$1.prototype.get = function get3(pathSets) {
+ModelDataSourceAdapter$1.prototype.get = function get4(pathSets) {
   return this._model.get.apply(this._model, pathSets)._toJSONG();
 };
 ModelDataSourceAdapter$1.prototype.set = function set2(jsongResponse) {
@@ -19092,12 +19208,12 @@ function requirePromote() {
     if (object.$expires === EXPIRES_NEVER) {
       return;
     }
-    var head5 = root4.$_head;
-    if (!head5) {
+    var head6 = root4.$_head;
+    if (!head6) {
       root4.$_head = root4.$_tail = object;
       return;
     }
-    if (head5 === object) {
+    if (head6 === object) {
       return;
     }
     var prev = object.$_prev;
@@ -19110,8 +19226,8 @@ function requirePromote() {
     }
     object.$_prev = void 0;
     root4.$_head = object;
-    object.$_next = head5;
-    head5.$_prev = object;
+    object.$_next = head6;
+    head6.$_prev = object;
     if (object === root4.$_tail) {
       root4.$_tail = prev;
     }
@@ -20964,7 +21080,7 @@ var indexer$12 = function indexer3(tokenizer3, openingToken, state, out) {
 var TokenTypes2 = TokenTypes_12;
 var E2 = exceptions2;
 var indexer4 = indexer$12;
-var head$12 = function head3(tokenizer3) {
+var head$12 = function head4(tokenizer3) {
   var token = tokenizer3.next();
   var state = {};
   var out = [];
@@ -20999,10 +21115,10 @@ var head$12 = function head3(tokenizer3) {
   return out;
 };
 var Tokenizer2 = tokenizerExports2;
-var head4 = head$12;
+var head5 = head$12;
 var RoutedTokens2 = RoutedTokens$22;
 var parser4 = function parser5(string, extendedRules) {
-  return head4(new Tokenizer2(string, extendedRules));
+  return head5(new Tokenizer2(string, extendedRules));
 };
 var src$1 = parser4;
 parser4.fromPathsOrPathValues = function(paths, ext) {
@@ -21662,7 +21778,7 @@ function mergeInto(target, obj) {
 function defaultEnvelope(isJSONG2) {
   return isJSONG2 ? { jsonGraph: {}, paths: [] } : { json: {} };
 }
-var get$3 = function get4(walk, isJSONG2) {
+var get$3 = function get5(walk, isJSONG2) {
   return function innerGet(model, paths, seed) {
     var nextSeed = isJSONG2 ? seed : [{}];
     var valueNode = nextSeed[0];
@@ -22278,7 +22394,7 @@ var ModelResponse$3 = ModelResponse_1;
 var GET_VALID_INPUT$1 = validInput;
 var validateInput$2 = validateInput$3;
 var GetResponse$2 = GetResponse_1;
-var get$1 = function get5() {
+var get$1 = function get6() {
   var out = validateInput$2(arguments, GET_VALID_INPUT$1, "get");
   if (out !== true) {
     return new ModelResponse$3(function(o) {
@@ -23101,7 +23217,7 @@ var validateInput2 = validateInput$3;
 var noOp3 = function() {
 };
 var getCache2 = getCache$1;
-var get6 = get_12;
+var get7 = get_12;
 var GET_VALID_INPUT = validInput;
 var Model_1 = Model;
 Model.ref = jsong.ref;
@@ -23260,7 +23376,7 @@ Model.prototype.setCache = function modelSetCache(cacheOrJSONGraphEnvelope) {
       out = setCache(this, [{ json: cacheOrJSONGraphEnvelope }])[0];
     }
     if (out) {
-      get6.getWithPathsAsPathMap(this, out, []);
+      get7.getWithPathsAsPathMap(this, out, []);
     }
     this._path = boundPath;
   } else if (typeof cache === "undefined") {
@@ -23275,7 +23391,7 @@ Model.prototype.getCache = function _getCache() {
   }
   var result4 = [{}];
   var path = this._path;
-  get6.getWithPathsAsJSONGraph(this, paths, result4);
+  get7.getWithPathsAsJSONGraph(this, paths, result4);
   this._path = path;
   return result4[0].jsonGraph;
 };
@@ -23392,8 +23508,8 @@ Model.prototype._fromWhenceYouCame = function fromWhenceYouCame(allow) {
 };
 Model.prototype._getBoundValue = requireGetBoundValue();
 Model.prototype._getVersion = requireGetVersion();
-Model.prototype._getPathValuesAsPathMap = get6.getWithPathsAsPathMap;
-Model.prototype._getPathValuesAsJSONG = get6.getWithPathsAsJSONGraph;
+Model.prototype._getPathValuesAsPathMap = get7.getWithPathsAsPathMap;
+Model.prototype._getPathValuesAsJSONG = get7.getWithPathsAsJSONGraph;
 Model.prototype._setPathValues = requireSetPathValues();
 Model.prototype._setPathMaps = setPathMaps;
 Model.prototype._setJSONGs = setJSONGraphs$3;
@@ -23414,36 +23530,6 @@ falcor.keys = function getJSONKeys(json) {
 var lib3 = falcor;
 falcor.Model = Model_1;
 var index = /* @__PURE__ */ getDefaultExportFromCjs3(lib3);
-
-// app/src/store/helpers.js
-function extractFromCache({ obj, path, idx = 0, root: root4 = obj, parentAtom, verbose }) {
-  if (verbose) {
-    console.log({ obj, path, idx });
-  }
-  if (obj && obj.$type === "atom" && path.length - idx !== 0) {
-    const step = path[idx];
-    if (obj === null || obj.value === void 0) {
-      return { value: void 0, parentAtom, $type: obj.$type };
-    }
-    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root4, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
-  } else if (obj && obj.$type === "ref") {
-    const newPath = obj.value.concat(path.slice(idx));
-    return extractFromCache({ obj: root4, path: newPath, verbose });
-  } else if (path.length - idx === 0) {
-    if (obj && obj.$type === "error") {
-      return { value: void 0, parentAtom, $type: obj.$type };
-    } else if (obj && obj.$type) {
-      return { value: obj.value, parentAtom, $type: obj.$type };
-    } else {
-      return { value: obj, parentAtom };
-    }
-  } else if (obj === null || obj === void 0) {
-    return { value: obj, parentAtom };
-  } else {
-    const step = path[idx];
-    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root: root4, verbose });
-  }
-}
 
 // app/src/falcor/server.js
 var Server = class {
@@ -23489,15 +23575,6 @@ function server_default({
     maxRetries: 1
   }).batch().boxValues();
   routerInstance.model = serverModel.withoutDataSource();
-  routerInstance.model.getPageKey = function(path, from2) {
-    const listCache = extractFromCache({ path, obj: this._root.cache });
-    for (let index2 = from2; index2 > 0; index2--) {
-      if (listCache.value?.[index2]?.$pageKey !== void 0) {
-        return { pageKey: listCache.value[index2].$pageKey, index: index2 };
-      }
-    }
-    return { index: 0 };
-  };
   return new Server(serverModel);
 }
 

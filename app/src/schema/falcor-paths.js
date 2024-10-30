@@ -8,6 +8,7 @@
 // },
 // TODO migrate to box shorthand :  {$atom: somevalue}, {$ref: [1, 'b', 'd'}, {$error: 'error 1 occured'}
 
+// TODO: custom scalar/ schema format support + validation
 export default {
   '_sync': {
     call: {

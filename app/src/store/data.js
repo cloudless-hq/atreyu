@@ -13,6 +13,17 @@ function getScheduler () {
   }
 }
 
+// return promise after sync part of first functions
+// FIXME: $promise only needed for cold promise (or use c.then ?), for all other usecases we can detect await!!!
+// let c = { get then() {  console.log('sdf'); return (a) => {console.log(a, a(1), 'sdf'); return 2 }} }
+// undefined
+// await a
+// {}
+// await c
+// VM1210:1 sdf
+// VM1210:1 ƒ () { [native code] } undefined 'sdf'
+// 1
+
 const ontick = typeof requestAnimationFrame === 'undefined' ? function (cb) { return setTimeout(cb, 0) } : requestAnimationFrame
 
 export default function makeDataStore ({ source, batched = true, maxSize, collectRatio, maxRetries, cache, onChange = () => {}, onModelChange, errorSelector, onAccess } = {}) {
@@ -23,7 +34,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     source: source || undefined,
     maxSize: maxSize || 500000,
     collectRatio: collectRatio || 0.75,
-    maxRetries: maxRetries || 1, // todo 0 requires fix in falcor due to falsy check
+    maxRetries: maxRetries || 1, // FIXME: 0 requires fix in falcor due to broken falsy check
     // _useServerPaths: true,
     cache,
     scheduler: batched ? getScheduler() : undefined, // this is the internal scheduler, default to timeout scheduler 1ms
@@ -40,6 +51,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       // setTimeout(() => update(), 100)
       update()
       onModelChange?.()
+      source?._onChange?.()
     },
     // comparator: (oldValEnv, newValEnv, path) => {
     //   if (oldValEnv === newValEnv) {
@@ -75,14 +87,28 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
         console.error(path, error, c)
       }
       return error
-      // console.log('hasdfhfsdhfsdhdfs', error, path, c)
       // return error.$expires = -1000 * 60 * 2 // let errors expire in two minutes, bug: does not work
     }
   })
     .treatErrorsAsValues()
      // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
 
-  source.model = model.withoutDataSource()
+  if (source.router) {
+    source.router.model = model.withoutDataSource()
+    source.router.model.getPageKey = function (path, from) {
+      const listCache = extractFromCache({ path, obj: this._root.cache })
+
+      for (let index = from; index > 0; index--) {
+        if (listCache.value?.[index]?.$pageKey !== undefined) {
+          return { pageKey: listCache.value[index].$pageKey, index }
+        }
+      }
+      return { index: 0 }
+    }
+  } else {
+    source.model = model.withoutDataSource()
+  }
+
 
   if (batched) {
     const scheduler = getScheduler()
@@ -466,6 +492,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     call: (path, args, _delim, _id) => {
       return (subModel || model).call(path, args, [])
         .then(res => res)
+        .catch(error => {error})
     },
     delims
   })
@@ -547,6 +574,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       seq = data?._seq.value || seq
 
       // TODO: support invalidation and re-preloading by connecting to router
+      // FIXME: rename to onSync
       onChange({ data, model, _where: 'window' })
     } catch (err) {
       console.log(err)
@@ -560,8 +588,10 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       }, 5)
     }
   }
+  doSync()
 
   async function init () {
+    // TODO: move to support non cf access sessions, add syncDb or similar more clear key to check for if sync loop should be started
     const userId = await model.getValue(['_session', 'userId'])
     // FIXME: do not count init change event for triggering SSR model completion, add new onFirstUpdate, that excludes init call
     if (userId) {

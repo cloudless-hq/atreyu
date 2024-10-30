@@ -7,7 +7,7 @@ import { setContext, hasContext } from '../../build/deps/svelte-internal.js'
 
 export default function ({ onChange = () => {} } = {}) {
   if (hasContext('ayu')) {
-    console.warn('only set the ayu context in the svelte file of your app')
+    console.warn('only set the ayu context in the root svelte layout file of your app')
   }
 
   const data = makeDataStore({ onChange })

@@ -1189,7 +1189,7 @@ var parseTree$1 = function parseTree(routes) {
 };
 function buildParseTree(node, routeObject, depth) {
   var route = routeObject.route;
-  var get2 = routeObject.get;
+  var get3 = routeObject.get;
   var set2 = routeObject.set;
   var call2 = routeObject.call;
   var el = route[depth];
@@ -1222,8 +1222,8 @@ function buildParseTree(node, routeObject, depth) {
         next[Keys$2.match] = matchObject;
       }
       matchObject.prettyRoute = routeObject.prettyRoute;
-      if (get2) {
-        matchObject.get = actionWrapper(route, get2);
+      if (get3) {
+        matchObject.get = actionWrapper(route, get3);
         matchObject.getId = routeObject.getId;
       }
       if (set2) {
@@ -1241,16 +1241,16 @@ function buildParseTree(node, routeObject, depth) {
 }
 function setHashOrThrowError(parseMap, routeObject) {
   var route = routeObject.route;
-  var get2 = routeObject.get;
+  var get3 = routeObject.get;
   var set2 = routeObject.set;
   var call2 = routeObject.call;
   getHashesFromRoute(route).map(function mapHashToString(hash) {
     return hash.join(",");
   }).forEach(function forEachRouteHash(hash) {
-    if (get2 && parseMap[hash + "get"] || set2 && parseMap[hash + "set"] || call2 && parseMap[hash + "call"]) {
+    if (get3 && parseMap[hash + "get"] || set2 && parseMap[hash + "set"] || call2 && parseMap[hash + "call"]) {
       throw new Error(errors$1.routeWithSamePrecedence + " " + prettifyRoute2(route));
     }
-    if (get2) {
+    if (get3) {
       parseMap[hash + "get"] = true;
     }
     if (set2) {
@@ -6523,7 +6523,7 @@ function requireGet() {
     return get_1;
   hasRequiredGet = 1;
   var runGetAction2 = requireRunGetAction();
-  var get2 = "get";
+  var get3 = "get";
   var recurseMatchAndExecute2 = requireRecurseMatchAndExecute();
   var normalizePathSets2 = requireNormalizePathSets();
   var materialize2 = requireMaterialize();
@@ -6557,7 +6557,7 @@ function requireGet() {
           router._matcher,
           action,
           normPS,
-          get2,
+          get3,
           router,
           jsongCache
         ).flatMap(function flatMapAfterRouterGet(details) {
@@ -8206,25 +8206,63 @@ var sleepRandom = () => {
 };
 
 // app/src/lib/req.js
-async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, retry = false, redirect = "manual" } = {}) {
+var cacheMap = /* @__PURE__ */ new Map();
+var pendingMap = /* @__PURE__ */ new Map();
+async function req(urlArg, {
+  method,
+  body,
+  cache,
+  cacheKey,
+  params: paramsArg,
+  headers: headersArg = {},
+  raw: rawArg,
+  retry = false,
+  redirect = "manual",
+  fetch: customFetch = fetch
+} = {}) {
   if (!method) {
     method = body ? "POST" : "GET";
   }
+  paramsArg && Object.entries(paramsArg).forEach(([key, value]) => {
+    if (value === void 0) {
+      delete paramsArg[key];
+    }
+  });
+  const params = paramsArg && new URLSearchParams(paramsArg);
+  const url = params ? urlArg + `?${params}` : urlArg;
   const headers = new Headers(headersArg);
   if (body && !headers.get("content-type")) {
     headers.set("content-type", "application/json");
   }
   headers.set("X-Requested-With", "XMLHttpRequest");
-  if (body && headers.get("content-type") === "application/json") {
+  if (body && headers.get("content-type").includes("application/json")) {
     body = JSON.stringify(body);
   }
   let res;
   let kvs;
+  if (cache) {
+    if (!cacheKey) {
+      cacheKey = url;
+    }
+    if (pendingMap.has(cacheKey)) {
+      await pendingMap.get(cacheKey);
+    }
+    if (cacheMap.has(cacheKey)) {
+      const { body: cachedBod, headers: cachedHead } = cacheMap.get(url);
+      cachedHead["cache-status"] = `edge-kv; hit`;
+      res = new Response(cachedBod, { headers: cachedHead, ok: true, statusText: "OK", status: 200, redirected: false });
+    }
+  }
   let retried;
   const reqStart = Date.now();
+  let finishLoad = null;
   const wasCached = !!res;
   if (!wasCached) {
-    res = await fetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+    const loadPromise = new Promise((resolve) => {
+      finishLoad = resolve;
+    });
+    pendingMap.set(url, loadPromise);
+    res = await customFetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
     if (!res.ok && retry) {
       retried = {
         status: res.status,
@@ -8237,7 +8275,18 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
         self.session?.refresh();
       }
       await sleepRandom();
-      res = await fetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+      res = await customFetch(url, { method, body, headers, redirect }).catch((fetchError) => ({ ok: false, error: fetchError }));
+    }
+    if (res.ok && cache) {
+      res.clone().arrayBuffer().then((body2) => {
+        cacheMap.set(cacheKey, { body: body2, headers: {
+          "content-type": res.headers.get("content-type"),
+          "content-length": res.headers.get("content-length"),
+          "last-modified": res.headers.get("last-modified")
+        } });
+        finishLoad();
+        pendingMap.delete(cacheKey);
+      });
     }
   }
   const duration = Date.now() - reqStart;
@@ -8254,7 +8303,7 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
       resHeaders["cache-status"] = oldCacheStatus + "edge-kv; miss" + (kvs ? "; stored" : "");
     }
     text = await res.text();
-    if (res.headers.get("content-type") === "application/json") {
+    if (res.headers.get("content-type").includes("application/json")) {
       json = JSON.parse(text);
     }
   }
@@ -8278,16 +8327,50 @@ async function req(url, { method, body, headers: headersArg = {}, raw: rawArg, r
     ...baseResponse
   };
 }
+function get2(url, opts = {}) {
+  opts.method = "GET";
+  return req(url, opts);
+}
+function del(url, opts = {}) {
+  opts.method = "DELETE";
+  return req(url, opts);
+}
+function put(url, opts = {}) {
+  opts.method = "PUT";
+  return req(url, opts);
+}
+function post(url, opts = {}) {
+  opts.method = "POST";
+  return req(url, opts);
+}
+function head3(url, opts = {}) {
+  opts.method = "HEAD";
+  return req(url, opts);
+}
+function patch(url, opts = {}) {
+  opts.method = "PATCH";
+  return req(url, opts);
+}
 
 // app/src/falcor/router.js
 function falcorTags(routes) {
   Object.keys(routes).forEach((key) => {
     Object.keys(routes[key]).forEach((method) => {
-      const tags = routes[key][method].tags;
-      routes[key][method].tags = tags ? tags : ["falcor"];
+      if (typeof routes[key][method] === "function") {
+        routes[key][method] = { handler: routes[key][method], tags: ["falcor"] };
+      } else {
+        const tags = routes[key][method].tags;
+        routes[key][method].tags = tags ? tags : ["falcor"];
+      }
     });
   });
   return routes;
+}
+function withFetch(fn, customFetch) {
+  return function(url, opts) {
+    opts.fetch = customFetch;
+    return fn(url, opts);
+  };
 }
 function maxRange(ranges) {
   let from2;
@@ -8319,10 +8402,20 @@ function toFalcorRoutes(schema) {
         handlers[handlerType] = function() {
           arguments[0].dbs = this.dbs;
           arguments[0].session = this.session;
+          arguments[0].ctx = this.ctx;
           arguments[0].Observable = this.Observable;
-          arguments[0].req = this.req;
-          arguments[0].fetch = this.fetch;
+          arguments[0].get = this.http_get;
+          arguments[0].del = this.http_del;
+          arguments[0].put = this.http_put;
+          arguments[0].post = this.http_post;
+          arguments[0].head = this.http_head;
+          arguments[0].patch = this.http_patch;
           arguments[0].model = this.model;
+          arguments[0].atom = this.model.constructor.atom;
+          arguments[0].ref = this.model.constructor.ref;
+          arguments[0].clientRef = (target) => ({ $type: "atom", $meta: "clientRef", value: target });
+          arguments[0].pathValue = this.model.constructor.pathValue;
+          arguments[0].error = this.model.constructor.error;
           arguments[0].maxRange = maxRange;
           let getRes = handler(...arguments);
           if (handlerType === "get") {
@@ -8336,6 +8429,9 @@ function toFalcorRoutes(schema) {
               }
               if (["boolean", "undefined", "number", "string"].includes(typeof res) || !res.value && !res.path) {
                 res = { value: { $type: "atom", value: res } };
+              }
+              if (res.$type) {
+                res = { value: res };
               }
               if (res.value !== void 0 && !res.path) {
                 res.path = paAr.length ? [...paAr] : [paAr];
@@ -8374,10 +8470,11 @@ function makeRouter({ dataRoutes, schema }) {
   }
   class AtreyuRouter extends Router$1.createClass(dataRoutes) {
     // eslint-disable-line functional/no-class
-    constructor({ session, dbs, fetch: internalFetch }) {
+    constructor({ session, dbs, fetch: internalFetch, debug, ctx = {} }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
-        debug: false,
+        debug,
+        // FIXME: route unhandled paths to error handler routeUnhandledPathsT!
         hooks: {
           pathError: (err) => {
             console.error(err);
@@ -8386,6 +8483,9 @@ function makeRouter({ dataRoutes, schema }) {
             console.error(err);
           },
           methodSummary: (e2) => {
+            if (!debug) {
+              return;
+            }
             const totalDuration = e2.end - e2.start;
             e2.routes?.forEach((route, i2) => {
               let batchMarker = "";
@@ -8433,10 +8533,26 @@ function makeRouter({ dataRoutes, schema }) {
         }
       });
       this.session = session;
+      this.ctx = ctx;
       this.dbs = dbs;
-      this.req = req;
-      this.fetch = internalFetch;
+      this.http_get = withFetch(get2, internalFetch);
+      this.http_del = withFetch(del, internalFetch);
+      this.http_put = withFetch(put, internalFetch);
+      this.http_post = withFetch(post, internalFetch);
+      this.http_head = withFetch(head3, internalFetch);
+      this.http_patch = withFetch(patch, internalFetch);
       this.Observable = Observable;
+      this._unhandled = {
+        call: (...args) => {
+          console.warn("Missing route for call: " + JSON.stringify(args));
+        },
+        set: (...args) => {
+          console.warn("Missing route for set: " + JSON.stringify(args));
+        },
+        get: (...args) => {
+          console.warn("Missing route for get: " + JSON.stringify(args));
+        }
+      };
     }
   }
   return AtreyuRouter;

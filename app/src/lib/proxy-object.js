@@ -59,7 +59,7 @@ function makeProxy ({ from, get, set, call, delims = ['$'], id }) {
       has (target, key) {
         if (key === Symbol.iterator) {
           // console.log('iterables not supported yet, plase use array operations')
-          return
+          return true // required for sveltes iteration check but will error if you try to use iterator!
         }
         if (key === 'length') {
           return true

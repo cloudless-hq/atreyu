@@ -7,17 +7,28 @@ import defaultPaths from '../schema/default-routes.js'
 
 import { urlLogger } from '../lib/url-logger.js'
 import * as systemHandlers from '../schema/falcor-handlers/index.js'
-import req from '../lib/req.js'
+import { get, del, put, post, head, patch } from '../lib/req.js'
 
 export function falcorTags (routes) {
   Object.keys(routes).forEach(key => {
     Object.keys(routes[key]).forEach(method => {
-      const tags = routes[key][method].tags
-      routes[key][method].tags = tags ? tags : ['falcor'] // FIXME: how to add to existing tags ? .push?.('falcor')
+      if (typeof routes[key][method] === 'function') {
+        routes[key][method] = { handler: routes[key][method], tags: ['falcor'] }
+      } else {
+        const tags = routes[key][method].tags
+        routes[key][method].tags = tags ? tags : ['falcor'] // FIXME: how to best add to existing tags ? .push?.('falcor')
+      }
     })
   })
 
   return routes
+}
+
+function withFetch (fn, customFetch) {
+  return function (url, opts) {
+    opts.fetch = customFetch
+    return fn(url, opts)
+  }
 }
 
 function maxRange (ranges) {
@@ -59,10 +70,23 @@ export function toFalcorRoutes (schema) {
           /* eslint-disable functional/no-this-expression */
           arguments[0].dbs = this.dbs
           arguments[0].session = this.session
+          arguments[0].ctx = this.ctx
           arguments[0].Observable = this.Observable
-          arguments[0].req = this.req
-          arguments[0].fetch = this.fetch
+
+          arguments[0].get = this.http_get
+          arguments[0].del = this.http_del
+          arguments[0].put = this.http_put
+          arguments[0].post = this.http_post
+          arguments[0].head = this.http_head
+          arguments[0].patch = this.http_patch
+
           arguments[0].model = this.model
+
+          arguments[0].atom = this.model.constructor.atom
+          arguments[0].ref = this.model.constructor.ref
+          arguments[0].clientRef = (target) => ({ $type: 'atom', $meta: 'clientRef', value: target })
+          arguments[0].pathValue = this.model.constructor.pathValue
+          arguments[0].error = this.model.constructor.error
           /* eslint-enable functional/no-this-expression */
 
           arguments[0].maxRange = maxRange
@@ -81,6 +105,9 @@ export function toFalcorRoutes (schema) {
               }
               if (['boolean', 'undefined', 'number', 'string'].includes(typeof res) || (!res.value && !res.path)) {
                 res = { value: { $type: 'atom', value: res } }
+              }
+              if (res.$type) {
+                res = { value: res }
               }
               if (res.value !== undefined && !res.path) {
                 res.path = paAr.length ? [ ...paAr ] : [ paAr ]
@@ -120,18 +147,20 @@ export function makeRouter ({ dataRoutes, schema }) {
     if (typeof schema === 'function') {
       schema = schema({ defaultPaths, addPathTags })
     } else if (schema) {
-      // (allow omission of tags fro falcor routes)
+      // (allow omission of tags for falcor routes)
       schema.paths = { ...defaultPaths, ...falcorTags(schema.paths) }
     }
 
     dataRoutes = toFalcorRoutes(schema)
   }
 
+  // TODO: precompile and reuse dataRoutes!
   class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
-    constructor ({ session, dbs, fetch: internalFetch }) {
+    constructor ({ session, dbs, fetch: internalFetch, debug, ctx = {} }) {
       super({
         // FIXME: check why debug flag and path errors dont work!
-        debug: false,
+        debug,
+        // FIXME: route unhandled paths to error handler routeUnhandledPathsT!
         hooks: {
           pathError: err => {
             console.error(err)
@@ -140,6 +169,11 @@ export function makeRouter ({ dataRoutes, schema }) {
             console.error(err)
           },
           methodSummary: e => {
+            // console.log(e)
+            if (!debug) {
+              // logging is quite expensive
+              return
+            }
             const totalDuration = e.end - e.start
 
             e.routes?.forEach((route, i) => {
@@ -175,6 +209,8 @@ export function makeRouter ({ dataRoutes, schema }) {
             })
 
             const reqPaths = [...(e.pathSets || []), ...(e.callPath ? [e.callPath] : []) , ...(e.jsonGraphEnvelope?.paths || [])]
+
+            // FIXME: remove me for fallback observable
             if (reqPaths.length > (e.routes?.length || 0)) {
               // console.log(e, reqPaths)
 
@@ -195,10 +231,29 @@ export function makeRouter ({ dataRoutes, schema }) {
 
       /* eslint-disable functional/no-this-expression */
       this.session = session
+      this.ctx = ctx
       this.dbs = dbs
-      this.req = req
-      this.fetch = internalFetch
+
+      this.http_get = withFetch(get, internalFetch)
+      this.http_del = withFetch(del, internalFetch)
+      this.http_put = withFetch(put, internalFetch)
+      this.http_post = withFetch(post, internalFetch)
+      this.http_head = withFetch(head, internalFetch)
+      this.http_patch = withFetch(patch, internalFetch)
+
       this.Observable = Observable
+
+      this._unhandled = {
+        call: (...args) => {
+          console.warn('Missing route for call: ' + JSON.stringify(args))
+        },
+        set: (...args) => {
+          console.warn('Missing route for set: ' + JSON.stringify(args))
+        },
+        get: (...args) => {
+          console.warn('Missing route for get: ' + JSON.stringify(args))
+        }
+      }
       /* eslint-enable functional/no-this-expression */
     }
   }

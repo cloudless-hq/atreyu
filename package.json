@@ -1,8 +1,10 @@
 {
   "name": "atreyu",
-  "version": "0.9.55",
+  "version": "0.9.56",
   "scripts": {
     "build": "rollup -c ./rollup.config.mjs",
+    "build:npm": "deno run cli/build-npm.js",
+    "publish:npm": "npm publish",
     "lint": "eslint '**/*.{js,svelte,ts}'"
   },
   "type": "module",

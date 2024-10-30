@@ -51,3 +51,15 @@
 //     }
 //   }
 // }
+
+- error and loader boundaries/ suspense
+
+    <Suspense fallback={<Loading />}>
+        <Albums artistId={artist.id} />
+    </Suspense>
+- context vs export const data for getting ayu
+- server router falcor vs client side
+- wrangler vs workerd vs sveltekit and how to acces cloudflare only features / runtime
+- keypass and offline first apps?
+- atreyu use routing info clientside to terminate path reqs instead of ending in $
+- Compile routes to getters/setters instead proxy if they exist?
