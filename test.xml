@@ -1,0 +1,21 @@
+  <?xml version="1.0" encoding="UTF-8"?>
+  <external_stories type="array">
+   <external_story>
+    <external_id>foo</external_id>
+    <name>More power to shields</name>
+    <description ></description >
+    <requested_by>James Kirk</requested_by>
+    <created_at type="datetime">2008/12/10 00:00:00 UTC</created_at>
+    <story_type>feature</story_type>
+    <estimate type="integer">3</estimate>
+   </external_story>
+   <external_story>
+    <external_id>bar</external_id>
+    <name>I am story 2</name>
+    <description >I am a description</description >
+    <requested_by>I am the reporter</requested_by>
+    <created_at type="datetime">2009/12/10 00:00:00 UTC</created_at>
+    <story_type>bug</story_type>
+    <estimate type="integer">2</estimate>
+   </external_story>
+  </external_stories>
