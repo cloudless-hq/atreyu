@@ -50,7 +50,6 @@ With this focus we can exclude a few features of mainstream frameworks that add 
 - integrated persistence, caching, sync and databinding with live updates
 - app-like explicit update system
 
-
 ## Stack
 - svelte
 - windicss
