@@ -18,4 +18,14 @@
     <story_type>bug</story_type>
     <estimate type="integer">2</estimate>
    </external_story>
+
+   <external_story>
+    <external_id>foobar</external_id>
+    <name>Great new story from github</name>
+    <description > bla blub</description >
+    <requested_by>Jan J John</requested_by>
+    <created_at type="datetime">2008/12/10 00:00:00 UTC</created_at>
+    <story_type>bug</story_type>
+    <estimate type="integer">0</estimate>
+   </external_story>
   </external_stories>
