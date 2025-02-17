@@ -1,6 +1,6 @@
 {
   "name": "atreyu",
-  "version": "0.9.57",
+  "version": "0.9.70",
   "scripts": {
     "update-local": "pnpm build && ayudev --env=prod --once",
     "build": "rollup -c ./rollup.config.mjs",
