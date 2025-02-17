@@ -36,7 +36,7 @@ Run (if you also want to use a standard release use -n ayudev to have both clis 
 TODO: new local cli installation with deno run --reload cli/install.js
 
 ```bash
-deno install --allow-hrtime --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,npx,`which deno`,yarn --no-check --prompt --unstable -n ayu -f ./cli/mod.js
+deno install --allow-read --allow-env=DENO_DIR,HOME,ESBUILD_BINARY_PATH --allow-net=127.0.0.1:5001,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org --allow-write="$TMPDIR","$HOME"/.atreyu,./,"$DENO_DIR" --allow-run=ipfs,npx,`which deno`,yarn --no-check --prompt --unstable -n ayu -f ./cli/mod.js
 
 
 after initial exacution add the allow run path for the esbuild binary for example "$HOME"/Library/Caches/esbuild/bin/esbuild-darwin-arm64@0.13.3

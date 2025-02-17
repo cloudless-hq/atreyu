@@ -1,7 +1,7 @@
 import ipfsHandler from './handlers/ipfs.js'
 import proxyHandler from './handlers/proxy.js'
 
-import makePouch from '../falcor/make-pouch.js'
+import makePouch from '../make-pouch.js'
 import makeFalcorServer from '../falcor/server.js'
 import { escapeId } from '../lib/helpers.js'
 import { parse, match } from '../lib/routing.js'

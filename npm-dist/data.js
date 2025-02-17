@@ -6106,7 +6106,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       return error3;
     }
   }).treatErrorsAsValues();
-  if (source.router) {
+  if (source?.router) {
     source.router.model = model.withoutDataSource();
     source.router.model.getPageKey = function(path, from) {
       const listCache = extractFromCache({ path, obj: this._root.cache });
@@ -6117,7 +6117,7 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       }
       return { index: 0 };
     };
-  } else {
+  } else if (source) {
     source.model = model.withoutDataSource();
   }
   if (batched) {

@@ -93,7 +93,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
     .treatErrorsAsValues()
      // the batch scheduler default to timeout(1) we use the same frame scheduling as internal
 
-  if (source.router) {
+  if (source?.router) {
     source.router.model = model.withoutDataSource()
     source.router.model.getPageKey = function (path, from) {
       const listCache = extractFromCache({ path, obj: this._root.cache })
@@ -105,7 +105,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       }
       return { index: 0 }
     }
-  } else {
+  } else if (source) {
     source.model = model.withoutDataSource()
   }
 

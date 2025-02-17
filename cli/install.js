@@ -8,11 +8,11 @@ export function install (newAyuVersion, localOverride, repoOverride) {
   const permissions = [
     '--allow-read=./,\`command -v deno\`,$DENO_DIR/',
     '--allow-env=HOME,DENO_DIR,DENO_HOME,ESBUILD_BINARY_PATH',
-    '--allow-hrtime',
     '--allow-net=atreyu.dev,127.0.0.1:5001,127.0.0.1:8080,localhost,api.cloudflare.com,api.pinata.cloud,registry.npmjs.org,deno.land',
     '--allow-run=kill,workerd,yarn,pnpm,ipfs,\`command -v deno\`,"$HOME"/Library/Caches/esbuild/bin/@esbuild-darwin-arm64@0.19.1,"$HOME"/Library/Caches/esbuild/bin/@esbuild-darwin-arm64@0.19.1',
     `--allow-write="$TMPDIR","$DENO_DIR"/,"$HOME"/${repoOverride || '.atreyu'},./`,
     '--no-check',
+    '--allow-import',
     '--unstable'
   ]
 

@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-case-declarations no-inner-declarations
+// deno-lint-ignore-file
 import {
   parse,
   join,
@@ -11,6 +11,8 @@ import {
   red,
   globToRegExp
 } from '../deps-deno.ts'
+
+import versions from './versions.json' with { type: 'json' }
 
 import { update } from './update.ts'
 import { printHelp } from './help.js'
@@ -26,7 +28,6 @@ import { exec, execStream } from './helpers.ts'
 import { watch } from './watcher.ts'
 import { workerdSetup } from './workerd.js'
 
-import versions from './versions.json' assert { type: 'json' }
 import defaultPaths from '../app/src/schema/default-routes.js'
 import ignore from './ignores.js'
 
@@ -160,7 +161,7 @@ async function loadServices ({ appFolder }) {
   }
 
   if (!schema) {
-    console.warn('  could not load schema, falling back to default') // verbose schemaImports, console.log(maybeSchema)
+    console.warn('  using default schema') // verbose schemaImports, console.log(maybeSchema)
 
     schema = {
       paths: {
