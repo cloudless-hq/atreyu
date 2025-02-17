@@ -4,7 +4,8 @@ import callIn from './call_in'
 import smsOut from './sms_out'
 import callUpdt from './call_updt'
 
-export default function ({ req, finish, parsedBody, event, stats }) {
+export default aync function ({ req, finish, event, stats }) {
+  const { parsedBody } = await req.parsedBody
   if (parsedBody.password) {
     if (parsedBody.password !== IVR_PASSWORD || parsedBody.username !== IVR_USER) {
       return finish(new Response(JSON.stringify({error: 'invalid_request'}),

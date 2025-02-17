@@ -567,7 +567,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
 
   let seq
   let timeout
-  const doSync = async () => {
+  let doSync = async () => {
     try {
       // TODO: full support for long running observable subscriptions to avoid this loop
       const data = (await boxedModel.call(['_sync'], [seq]))?.json
@@ -578,6 +578,10 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       onChange({ data, model, _where: 'window' })
     } catch (err) {
       console.log(err)
+      // disable sync loop on missing sync function in falcor model
+      if (err.message === 'function does not exist') {
+        doSync = () => {}
+      }
     } finally {
       if (timeout) {
         clearTimeout(timeout)
@@ -588,7 +592,7 @@ export default function makeDataStore ({ source, batched = true, maxSize, collec
       }, 5)
     }
   }
-  doSync()
+  // doSync()
 
   async function init () {
     // TODO: move to support non cf access sessions, add syncDb or similar more clear key to check for if sync loop should be started

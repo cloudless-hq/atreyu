@@ -26,7 +26,7 @@ class Server {
         return this.dataSource.set(jsonGraphEnvelope)._toJSONG()
       case 'call':
         paths = action[5] || []
-        console.log({ callPath, args, pathSuffixes, paths })
+        // console.log({ callPath, args, pathSuffixes, paths })
         return this.dataSource.call(callPath, args, pathSuffixes, paths)._toJSONG()
     }
   }
@@ -41,10 +41,11 @@ export default function ({
 
   dbs,
   session,
-  fetch
+  fetch,
+  debug
 }) {
-  const FalcorRouter = makeRouter(toFalcorRoutes(schema, useAll))
-  const routerInstance = new FalcorRouter({ dbs, session, fetch })
+  const FalcorRouter = makeRouter({ dataRoutes: toFalcorRoutes(schema, useAll) })
+  const routerInstance = new FalcorRouter({ dbs, session, fetch, debug })
 
   const serverModel = falcor({
     cache,

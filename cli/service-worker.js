@@ -47,26 +47,28 @@ export default async function ({ appFolder, batch, buildRes, clean, info } = {})
     // keepNames: true,
     platform: 'browser',
     outfile: `${appFolderAbs}/build/service-worker.js`
-  }).catch(e => { console.error(e) })
+  }).catch(err => { console.error(err); return { error: err} })
 
-  parseMetafile(metafile, info)
+  if (metafile) {
+    parseMetafile(metafile, info)
 
-  newBuildRes.files[projectPath] = {
-    emits: [
-      `app/build/service-worker.js`,
-      `app/build/service-worker.js.map`
-    ],
-    newEmits: [
-      `app/build/service-worker.js`,
-      `app/build/service-worker.js.map`
-    ],
-    deps: Object.keys(metafile.inputs).map(path => {
-      if (path.includes('/atreyu/')) {
-        return '/atreyu/' + path.split('/atreyu/')[1]
-      } else {
-        return path
-      }
-    })
+    newBuildRes.files[projectPath] = {
+      emits: [
+        `app/build/service-worker.js`,
+        `app/build/service-worker.js.map`
+      ],
+      newEmits: [
+        `app/build/service-worker.js`,
+        `app/build/service-worker.js.map`
+      ],
+      deps: Object.keys(metafile.inputs).map(path => {
+        if (path.includes('/atreyu/')) {
+          return '/atreyu/' + path.split('/atreyu/')[1]
+        } else {
+          return path
+        }
+      })
+    }
   }
 
   // console.log(`    ${green('emitted:')} app/build/service-worker.js`)

@@ -3,7 +3,9 @@ import fulfillments from './fulfillments'
 import toFacebook from './facebook_out'
 // import intrans from 'transformer/dialog-ui/dialogflow_in.js'
 
-reqHandler(async ({ parsedBody = {}, event, req }) => {
+reqHandler(async ({ event, req }) => {
+  // const { parsedBody } = await req.parsedBody
+
   let response = {}
 
   if (toChange) {

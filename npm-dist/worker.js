@@ -106,7 +106,10 @@ async function ipfs_default({ url, origUrl, event, ipfsGateway = "/" }) {
     contentTypeOverride = "font/woff2";
   } else if (path.endsWith(".png")) {
     contentTypeOverride = "image/png";
+  } else if (path.endsWith('.svg')) {
+    contentType = 'image/svg+xml'
   }
+
   if (cache.then) {
     await cache;
   }
@@ -208,7 +211,7 @@ async function proxy_default({ req: req2, _key, event }) {
       console.error(req2.url.href, res);
     } else {
       const newHeaders = new Headers(res.headers);
-      newHeaders.append("Content-Security-Policy-Report-Only", "default-src https:; report-to /__csp_report");
+       //  newHeaders.append("Content-Security-Policy-Report-Only", "default-src https:; report-to /__csp_report");
       return new Response(res.body, {
         status: res.status,
         statusText: res.statusText,

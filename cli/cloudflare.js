@@ -85,7 +85,8 @@ export async function cloudflareDeploy ({
     }
   })
   if (!cloudflareZoneId) {
-    console.warn('no zone found for project folder, using the default zone for the cf token. to disable this behaviour use --no-fallback-zone')
+    cloudflareZoneId = zones[0].id
+    console.warn(`no zone found for project folder, using the default zone ${zones[0].name} for the cf token. to disable this behaviour use --no-fallback-zone`)
   }
 
   // TODO: remove env vars that are removed
@@ -207,6 +208,8 @@ export async function cloudflareDeploy ({
     console.error('  ATTENTION, only 1000 cf kv pin hash keys max supported in prerelease!')
     return
   }
+
+  // FIXME: add ipfs service binding!
 
   // TODO: batch to max parallel
   const blobCTypes = ['image/png', 'image/jpeg', 'font/ttf', 'font/woff2', 'application/octet-stream']

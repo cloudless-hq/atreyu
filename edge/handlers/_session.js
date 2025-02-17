@@ -24,6 +24,8 @@ const {
   'workerd'
 ])
 
+const authHeaders = { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}` }
+
 const local = (typeof self !== 'undefined' && !!self.Deno) || workerd
 
 // function setCookie (name, value, days) {
@@ -58,13 +60,18 @@ export default async function ({ req, stats, app }) {
   }
 
   if (req.url.search.startsWith('?logout')) { // req.method === 'delete' for deletion session doc?
-    const headers = { 'Cache-Control': 'must-revalidate' }
+    const headers = { 'Cache-Control': 'must-revalidate' };
+
+    let continueParam = ''
+    if (req.query.continue && req.query.continue !== '/' && req.query.continue !== 'null' && req.query.continue !== 'undefined') {
+      continueParam = '?continue=' + encodeURIComponent(req.query.continue)
+    }
 
     if (jwtPayload.dev_mock) {
-      headers['Location'] = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
+      headers['Location'] = `/_ayu/accounts/${continueParam}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly'
     } else if (jwtPayload.email) {
-      const base = `/_ayu/accounts/${req.query.continue ? '?continue=' + encodeURIComponent(req.query.continue) : ''}`
+      const base = `/_ayu/accounts/${continueParam}`
       headers['Location'] = `/cdn-cgi/access/logout?returnTo=${encodeURIComponent(req.url.origin + base)}`
       headers['Set-Cookie'] = 'CF_Authorization=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly'
       headers['Set-Cookie'] = 'AYU_SESSION_ID=deleted; Path=/_api; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly'
@@ -106,6 +113,12 @@ export default async function ({ req, stats, app }) {
 
   const cf = { ...req.raw.cf, tlsClientAuth: undefined, tlsExportedAuthenticator: undefined, tlsCipher: undefined, clientTcpRtt: undefined, edgeRequestKeepAliveStatus: undefined, requestPriority: undefined, clientAcceptEncoding: undefined, tlsVersion: undefined, httpProtocol: undefined }
 
+  const email = jwtPayload.email || local && req.query.email
+  const appDbName =  email && 'ayu_app_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
+  // const orgDbName = org ? 'ayu_org_' + (env === 'prod' ? escapeId(org) : escapeId(env + '__' + org)) : null
+  const userDbName = email && 'ayu_user_' + (env === 'prod' ? escapeId(email) : escapeId(env + '__' + email))
+  const userSettingsId = email && 'lanes:settings_' + escapeId(email)
+
   if (req.url.search.startsWith('?login')) {
     if (!jwtPayload.email && !req.query?.email) {
       return new Response('forbidden', { status: 403 })
@@ -118,6 +131,8 @@ export default async function ({ req, stats, app }) {
     const newSession = {
       email: local ? req.query.email : jwtPayload.email,
       useSessionId: local ? req.query.sessionId : curSessionId,
+      userDbName,
+      userSettingsId,
 
       // TODO: validate org and setup user/org association
       org: req.query.org,
@@ -130,7 +145,7 @@ export default async function ({ req, stats, app }) {
 
     let newSessionId
     if (couchHost) {
-      newSessionId = await ensureSession(newSession)
+      newSessionId = await ensureSession(newSession, { appDbName })
     } else {
       newSessionId = 'ephemeral:' + crypto.randomUUID()
     }
@@ -180,6 +195,9 @@ export default async function ({ req, stats, app }) {
     appName: app.appName,
     appHash: folderHash,
 
+    userDbName,
+    userSettingsId,
+
     sessionId: curSessionId,
 
     // roles: [],
@@ -196,14 +214,12 @@ export default async function ({ req, stats, app }) {
   })
 }
 
-async function ensureSession ({ useSessionId, email, org, sessionName, app, cf, browserName }) {
-  const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
-
+async function ensureSession ({ userSettingsId, useSessionId, email, org, sessionName, app, cf, browserName, userDbName }) { // , { appDbName }
   let newSessionDoc
 
   if (useSessionId) {
-    const { json: existingSessionDoc } = await doReq(`${couchHost}/${dbName}/${useSessionId}`, {
-      headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}
+    const { json: existingSessionDoc } = await doReq(`${couchHost}/${userDbName}/${useSessionId}`, {
+      headers: authHeaders
     })
     if (existingSessionDoc) {
       // TODO: error if any value changed or doc is unavailable, validation
@@ -212,7 +228,95 @@ async function ensureSession ({ useSessionId, email, org, sessionName, app, cf, 
   }
 
   if (!newSessionDoc) {
-    const { json: { update_seq }} = await doReq(`${couchHost}/${dbName}`, {headers:{'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}})
+    let { json: { error, update_seq } } = await doReq(`${couchHost}/${userDbName}`, { headers: authHeaders })
+      
+    // Create new user with session
+    if (error === 'not_found') {
+      // generate integer user id
+      const lanesUserId = Date.now() + Math.floor(Math.random() * 10000)
+
+      // users db is currently only used to enforcy unique usernames
+      const userRes = await doReq(`${couchHost}` + '/_users', {
+        method: 'POST',
+        body: {
+          _id: 'org.couchdb.user:' + lanesUserId,
+          name: `${lanesUserId}`,
+          userDbName,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          userSettingsId,
+          // "password": "apple"
+          roles: [],
+          type: "user"
+        },
+        headers: authHeaders
+      })
+
+      // just crash and let user try again
+      if (!userRes?.json?.ok) {
+        throw new Error('errror reserving user id')
+      }
+
+      await doReq(`${couchHost}/${userDbName}`, {
+        method: 'PUT',
+        headers: authHeaders
+      })
+  
+      await doReq(`${couchHost}/${userDbName}` + '/_security', {
+        method: 'PUT',
+        body: {
+          admins: {
+            names: [],
+            roles: []
+          },
+          members: {
+            names: [], // lanesUserId
+            roles: []
+          }
+        },
+        headers: authHeaders
+      })
+
+      // TODO use couch username conversion Buffer.from(prefixedHexName.replace('userdb-', ''), 'hex').toString('utf8')
+      // 'userdb-' + Buffer.from(name).toString('hex');
+      const username = email.split('@')[0]
+
+      // split username by any non-word character
+      const wordParts = username.split(/\W+/)
+      let initials
+      if (wordParts.length > 1) {
+        initials = (wordParts[0].slice(0, 1) + wordParts[1].slice(0, 1)).toUpperCase()
+      } else {
+        initials = username.slice(0, 2).toUpperCase()
+      }
+
+      await doReq(`${couchHost}/${userDbName}` + '/_bulk_docs', {
+        method: 'POST',
+        body: {
+          docs: [
+            {
+                _id: userSettingsId,
+                lanesUserId, // FIXME username is global unique per user
+                username,
+                name: username, // TODO: ask later? or ask at onboarding! + make unique on org level?
+                initials,
+                created_at: Date.now(),
+                updated_at: Date.now(),
+                time_zone: {
+                  olson_name: "Europe/Helsinki", // TODO: send with onboarding name form data from client!
+                  offset: "+02:00"
+                }
+            }
+          ]
+        },
+        headers: authHeaders
+      })
+      
+      // FIXME: setup replication from app db
+      
+     const retryRes = await doReq(`${couchHost}/${userDbName}`, { headers: authHeaders })
+     update_seq = retryRes.json.update_seq
+    }
 
     newSessionDoc = {
       _id: 'system:' + crypto.randomUUID(),
@@ -234,7 +338,7 @@ async function ensureSession ({ useSessionId, email, org, sessionName, app, cf, 
   newSessionDoc.lastLogin = Date.now()
   newSessionDoc.loginCount++
 
-  await doReq(`${couchHost}/${dbName}/${newSessionDoc._id}`, {
+  await doReq(`${couchHost}/${userDbName}/${newSessionDoc._id}`, {
     method: 'PUT',
     body: newSessionDoc,
     headers: {

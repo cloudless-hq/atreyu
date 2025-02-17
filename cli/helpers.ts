@@ -74,25 +74,48 @@ export async function exec (cmd: string[], silent: boolean, verbose: boolean) {
     console.log(cmd.join(' '))
   }
 
-  const proc = Deno.run({
-    cmd,
-    stdout: 'piped',
-    stderr: 'piped'
+  const cc =[...cmd]
+  const command = new Deno.Command(cc.shift()!, {
+    args: cc,
+    // stdin: "piped",
+    // stdout: "piped",
   })
+  // const child = command.spawn()
 
-  const { code } = await proc.status()
+
+  const { code, stdout, stderr } = await command.output()
+
+  // console.log(child.stdout)
+
+  // child.stdout.pipeTo(target)
+  
+  // child.stdin.close();
+  // const status = await child.status;
+  // console.log(status);
+
+
+  // const proc = Deno.run({
+  //   cmd,
+  //   stdout: 'piped',
+  //   stderr: 'piped'
+  // })
+  // console.log('proc', proc)
+
+  // const { code } = await proc.status()
+
+  // console.log('code 2', code)
 
   if (code !== 0) {
-    const rawError = await proc.stderrOutput()
-    const errorString = new TextDecoder().decode(rawError)
+    // const rawError = await proc.stderrOutput()
+    const errorString = new TextDecoder().decode(stderr) // new TextDecoder().decode(rawError)
     if (!silent) {
       console.error('exec error: ', errorString, cmd)
     }
   }
 
-  const rawOutput = await proc.output()
-  const outStr = new TextDecoder().decode(rawOutput)
-  await proc.close()
+  // const rawOutput = await proc.output()
+  const outStr = new TextDecoder().decode(stdout) //new TextDecoder().decode(rawOutput)
+  // await proc.close()
 
   return outStr
 }

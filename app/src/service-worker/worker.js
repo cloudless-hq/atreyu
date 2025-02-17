@@ -17,7 +17,8 @@ export default function ({
   onChange,
   clientDbSeeds,
   proxiedDomains,
-  handlers: appHandlers
+  handlers: appHandlers,
+  debug
 } = {}) {
   if (dataSources) {
     console.warn('Additional data sources not implemented yet.')
@@ -31,6 +32,8 @@ export default function ({
 
   // we use an asynchronous updating object reference to do async initialisation in a synchronous function, this is not really nice practice, but is currently the most performant way to start the service worker without big refactor
   // TODO: clean recreatino of falcor and all session dependent modules
+
+  self.proxyHandler = proxyHandler
 
   self.session = {
     loaded: false,
@@ -96,7 +99,8 @@ export default function ({
 
           // (pouchdb prefix already ayu_)
           const clientDbName = escapeId(newSession.userId + '__' + newSession.env + '__' + newSession.appName + ( newSession.org ? '__' + newSession.org : '__'))
-          const serverDbName = 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
+          const serverDbName = newSession.userDbName
+          // TODO: support user and org dbs 'ayu_' + (newSession.env === 'prod' ? escapeId(newSession.appName) : escapeId(newSession.env + '__' + newSession.appName))
 
           self.session.dbs = await makePouch({
             clientDbSeeds,
@@ -108,7 +112,7 @@ export default function ({
           })
 
           // console.log('making falcor server')
-          self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession })
+          self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession, debug })
 
           if (newSession.userId && !self.session.loaded) {
             redirectOtherClients = 'continue'
@@ -246,6 +250,11 @@ export default function ({
     if (!pending[clientId]) {
       pending[clientId] = {}
     }
+    
+    // if (data[1].startsWith('hello mike')) {
+    //   console.log('client hello, refreshing asset cache')
+    //   self.updating = true
+    // }
 
     if (reqId === -1) {
       // ignore hello message and heartbeat
@@ -308,6 +317,7 @@ export default function ({
     try {
       // TODO: handle forced login routes for fetch, currently all window fetches are public, only service worker can do authenticated subrequests and expose via falcor
       const url = new URL(event.request.url)
+      // TODO: add bodyparser etc. unify with edge entry
       const req = {
         raw: event.request,
         method: event.request.method,
@@ -323,6 +333,9 @@ export default function ({
       if (!(['http:', 'https:']).includes(url.protocol)) {
         console.info('bypassing: ' + url.href)
         return
+      }
+      if (url.pathname === '/_api/_session' && req.query?.login !== undefined) {
+        self.session.clear()
       }
       if (matched?.operationId === '_bypass') {
         // console.info('bypassing: ' + url.href)
@@ -343,7 +356,7 @@ export default function ({
       if (url.pathname === '/_api/_logout') {
         self.session.logout()
         return event.respondWith(new Response('OK'))
-      }
+      } 
 
       // TODO: support registration.scope and non hash based client side routing
       // if (routes.includes(url.pathname)) {
@@ -359,6 +372,7 @@ export default function ({
       // }
       let handlerRes
       if (matched?.operationId === '_ipfs') {
+        // FIXME: consistent req object for all handlers
         handlerRes = ipfsHandler({ event, url: rewrite(new URL(event.request.url)), origUrl: url })
       } else if (matched?.operationId === '_proxy') {
         // if (
@@ -372,7 +386,19 @@ export default function ({
 
         return event.respondWith(proxyHandler({ event, req }))
       } else if (matched?.operationId) {
-        handlerRes = appHandlers[matched.operationId]({ event, req })
+        const worker = appHandlers[matched.operationId]
+        if (!worker) {
+          throw new Error('no registered service worker handler found for ' + matched.operationId)
+        }
+
+        // TODO: workaround placeholder, move all handlers to module syntax
+        self.ipfsHandler = {
+          fetch (subUrl) {
+            return ipfsHandler({ event, url: rewrite(new URL(subUrl)), origUrl: subUrl })
+          }
+        }
+
+        handlerRes = worker.fetch?.(event.request, self, { event, stats: {}, app: {}, req, waitUntil: event.waitUntil }) || worker({ stats: {}, app: {},  event, req, waitUntil: event.waitUntil })
       } else if (matched?.handler) {
         handlerRes = matched.handler({ event, req })
       }

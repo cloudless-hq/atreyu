@@ -169,7 +169,10 @@ export default {
       contentType = 'application/typescript'
     } else if (path.endsWith('.css')) {
       contentType = 'text/css'
+    } else if (path.endsWith('.svg')) {
+      contentType = 'image/svg+xml'
     }
+
     
     if (disableCache) {
       // TODO: But now that HTTP/1.1-conformant servers are widely deployed, there's no reason to ever use that max-age=0-and-must-revalidate combination — you should instead just use no-cache

@@ -6471,13 +6471,17 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
   }
   let seq;
   let timeout;
-  const doSync = async () => {
+  let doSync = async () => {
     try {
       const data = (await boxedModel.call(["_sync"], [seq]))?.json;
       seq = data?._seq.value || seq;
       onChange({ data, model, _where: "window" });
     } catch (err) {
       console.log(err);
+      if (err.message === "function does not exist") {
+        doSync = () => {
+        };
+      }
     } finally {
       if (timeout) {
         clearTimeout(timeout);
@@ -6488,7 +6492,6 @@ function makeDataStore({ source, batched = true, maxSize, collectRatio, maxRetri
       }, 5);
     }
   };
-  doSync();
   async function init() {
     const userId = await model.getValue(["_session", "userId"]);
     if (userId) {

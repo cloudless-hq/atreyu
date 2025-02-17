@@ -261,6 +261,8 @@ export async function add ({
 
     ayuHash = hashRes.headers.get('x-ipfs-path').replace('/ipfs/', '')
   } else {
+    // console.log(ipfsApi, await fetch(ipfsApi, { method: 'GET' }).catch(error => {console.log(error)}))
+
     const ayuRs = await fetch(ipfsApi + '/api/v0/files/stat?arg=/apps/atreyu', { method: 'POST' }).catch(error => {error})
     const { Hash } = await ayuRs.json()
     ayuHash = Hash

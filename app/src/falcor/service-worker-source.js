@@ -2,7 +2,7 @@ import { Observable } from '/_ayu/build/deps/falcor-observable.js'
 
 /* eslint-disable functional/no-this-expression, functional/no-class */
 class ServiceWorkerSource {
-  constructor ({ wake, cache }) {
+  constructor ({ wake = 20_000, cache } = {}) {
     this._inflight = {}
     this._id = 0 // Identifier used to correlate each Request to each response
     this._active = 0
@@ -106,7 +106,7 @@ class ServiceWorkerSource {
 
       // FIXME: hanlde error case here to enable trace debugging where request originates console.error([id, ...action])
 
-      this._worker.postMessage(JSON.stringify([id, ...action]))
+      this._worker?.postMessage(JSON.stringify([id, ...action]))
 
       return () => {
         delete this._inflight[id]

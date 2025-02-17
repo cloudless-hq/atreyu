@@ -256,23 +256,29 @@ export default {
     },
     set: {
       handler: async ({ _docs, dbs, session }) => {
-        const result = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
-          if (!value.changes) {
-            value.changes = []
+        console.log('set docs', _docs)
+        const result = await dbs.pouch.bulkDocs(Object.entries(_docs).map(([key, { value }]) => {
+          // FIXME: opt in to generic changes or namespacing?
+          // if (!value.changes) {
+          //   value.changes = []
+          // }
+          
+          if (!value._id) {
+            value._id = key
           }
 
-          if (value.changes.length > 12) {
-            value.changes.splice(2, value.changes.length - 4)
-            value.changes.push({ userId: session.userId, action: 'aggregated', date: Date.now() })
-          }
+          // if (value.changes.length > 12) {
+          //   value.changes.splice(2, value.changes.length - 4)
+          //   value.changes.push({ userId: session.userId, action: 'aggregated', date: Date.now() })
+          // }
 
-          if (value.deleted) {
-            value.changes.push({ userId: session.userId, action: 'deleted', date: Date.now() })
-          } else if (!value._rev) {
-            value.changes.push({ userId: session.userId, action: 'created', date: Date.now() })
-          } else {
-            value.changes.push({ userId: session.userId, action: 'updated', date: Date.now() })
-          }
+          // if (value.deleted) {
+          //   value.changes.push({ userId: session.userId, action: 'deleted', date: Date.now() })
+          // } else if (!value._rev) {
+          //   value.changes.push({ userId: session.userId, action: 'created', date: Date.now() })
+          // } else {
+          //   value.changes.push({ userId: session.userId, action: 'updated', date: Date.now() })
+          // }
 
           return value
         }))

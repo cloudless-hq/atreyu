@@ -39,7 +39,6 @@ import ignore from './ignores.js'
 // TODO: install check versions
 // TODO: remove docs js cdns dependency
 
-
 const {
   _,
   appFolder = 'app',
@@ -284,7 +283,7 @@ async function doStart () {
 
   // FIXME: localhost requires sudo but 0.0.0.0 works? add port support
   execStream({
-    cmd: [ 'workerd', 'serve', '--verbose', '--experimental',
+    cmd: [ 'pnpm', '--package=workerd@1.20241112.0', '--silent', 'dlx', 'workerd', 'serve', '--verbose', '--experimental',
       ...(devMode ? ['--watch', '--inspector-addr=localhost:9229'] : []),
       workerdConfPath
     ],
@@ -548,7 +547,7 @@ const tasks = {
 
   publish: async () => {
     console.log('  🚀 Starting Build for publish: "' + buildString() + '"')
-    const services = await loadservices({ appFolder })
+    const services = await loadServices({ appFolder })
 
     if (!noStart) {
       await doStart()

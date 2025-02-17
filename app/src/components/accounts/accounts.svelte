@@ -77,8 +77,9 @@
 <style>
   .userswitcher {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     position: absolute;
+    flex-direction: column;
   }
   /* .usercontainer{
     flex: 1 1 306px;

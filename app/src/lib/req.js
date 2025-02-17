@@ -44,7 +44,7 @@ export default async function req (urlArg, {
 
   headers.set('X-Requested-With', 'XMLHttpRequest')
 
-  if (body && headers.get('content-type').includes('application/json')) {
+  if (body && typeof body !== 'string' && headers.get('content-type').includes('application/json')) {
     body = JSON.stringify(body)
   }
 

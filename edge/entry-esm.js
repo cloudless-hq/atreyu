@@ -1,6 +1,7 @@
 import log from './lib/log.js'
 import { bodyParser } from './lib/http.js'
 // import apm from './apm.js'
+// import rew from './lib/req.js'
 
 import handler from '/_handler.js'
 import paramsValidation from '/_validation.js'
@@ -55,7 +56,10 @@ export default {
       method: request.method,
       headers: Object.fromEntries(request.headers.entries()),
       query: Object.fromEntries(url.searchParams.entries()),
-      url
+      url,
+      parsedBody () {
+        return request.body ? bodyParser(request, { clone: true }) : {}
+      }
     }
 
     if (req.headers['content-length']) {
@@ -67,7 +71,10 @@ export default {
 
     const traceId = req.headers.traceparent || Math.round(Math.random() * 10000000000000)
 
+    // FIXME: move this to lib again!!!!
     async function doReq (reqUrl, { method, body, headers: headersArg = {}, params, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
+      console.warn('doReq is outdated and uses inlined entry-esm version')
+      
       if (!method) {
         method = body ? 'POST' : 'GET'
       }
@@ -230,25 +237,29 @@ export default {
     }
 
     try {
-      const { parsedBody, text } = request.body ? await bodyParser(request, { clone: true }) : {}
-
       if (paramsValidation) {
         if (!paramsValidation({ headers: req.headers })) {
           return new Response(JSON.stringify(paramsValidation.errors), { status: 400, headers: { 'content-type': 'application/json' }})
         }
       }
 
-      const response = await handler.fetch(request, env, { waitUntil, passThroughOnException, app, parsedBody, text, stats, req, doReq })
+      const response = await handler.fetch(request, env, { waitUntil, passThroughOnException, app, stats, req, doReq })
+
+      const res = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      })
       const duration = (Date.now() - fetchStart)
 
-      context.waitUntil(Promise.resolve())
+      res.headers.set('server-timing', response.headers.get('server-timing') + ', edge;dur=' + duration)
+
       // waitUntil(log({ req, response, stats, body: text, duration, traceId, envConf: env }))
       //   Promise.all(
       //   ...toWait,
       // )) //.then(toWait = [])
 
-      //  FIXME: requests have immutable headers res.headers.set('server-timing', 'edge;dur=' + duration)
-      return response
+      return res
     } catch (ex) {
       // waitUntil(apm(ex, request))
       console.error(ex)

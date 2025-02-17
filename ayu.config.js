@@ -12,3 +12,6 @@ export const runConf = {
 }
 
 export const extraAppEntryPoints = [ 'app/src/accounts-main.js' ]
+
+
+// FIXME: exclude example and docs folders from ayu build!

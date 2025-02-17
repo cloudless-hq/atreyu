@@ -9,11 +9,17 @@ export default [
   '**/build/**',
   '**/*.svelte.ssr.js',
   '.gitignore',
+  '.sl',
+  '.sl/**',
   '**/.devcontainer/**',
   'README.md',
   '**/*.svelte.css',
   '**/.github/**',
   '**/*.map',
   '**/ipfs-map.json',
-  '**/*.bundle.js'
+  '**/*.bundle.js',
+  '.watchman*',
+  
+  // FIXME: configuratble!!
+  '**/resources/**'
 ]

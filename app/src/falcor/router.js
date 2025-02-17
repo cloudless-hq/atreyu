@@ -154,6 +154,8 @@ export function makeRouter ({ dataRoutes, schema }) {
     dataRoutes = toFalcorRoutes(schema)
   }
 
+  // FIXME: why is logging not working?!
+
   // TODO: precompile and reuse dataRoutes!
   class AtreyuRouter extends Router.createClass(dataRoutes) { // eslint-disable-line functional/no-class
     constructor ({ session, dbs, fetch: internalFetch, debug, ctx = {} }) {

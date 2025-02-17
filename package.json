@@ -2,6 +2,7 @@
   "name": "atreyu",
   "version": "0.9.57",
   "scripts": {
+    "update-local": "pnpm build && ayudev --env=prod --once",
     "build": "rollup -c ./rollup.config.mjs",
     "build:npm": "deno run cli/build-npm.js",
     "publish:npm": "npm publish",
@@ -43,6 +44,8 @@
     "svelte": "4.2.0",
     "typescript": "5.1.6",
     "uuid": "9.0.0",
-    "vuvuzela": "1.0.3"
+    "vuvuzela": "1.0.3",
+    "miniflare": "3.20241106.0",
+    "workerd": "1.20241112.0"
   }
 }

@@ -72,7 +72,7 @@ export default async function ({ req, _key, event }) {
       const newHeaders = new Headers(res.headers)
 
       // TODO: reconsiliate with existing header
-      newHeaders.append('Content-Security-Policy-Report-Only', 'default-src https:; report-to /__csp_report')
+      // newHeaders.append('Content-Security-Policy-Report-Only', 'default-src https:; report-to /__csp_report')
 
       return new Response(res.body, {
         status: res.status,

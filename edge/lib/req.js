@@ -49,6 +49,8 @@ export default async function req (url, { method, body, headers: headersArg = {}
 
     kvs = getKvStore(cacheNs)
 
+    console.log(url, kvs, headers.get('cache-control'))
+
     if (headers.get('cache-control') !== 'no-cache') {
       // TODO: streams are faster for non binaries
       const kvRes = await kvs.getWithMetadata(cacheKey, { type: 'arrayBuffer', cacheTtl: 604800 }) //  1 week, TODO ttl for other? remember if the key needs to be changed this needs to be reduced and then increased again!
@@ -92,8 +94,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
     // }
 
     if (res.ok && cacheNs) {
-      waitUntil((async () => {
-        await kvs.put(cacheKey, await res.clone().arrayBuffer(), {
+      waitUntil(kvs.put(cacheKey, await res.clone().arrayBuffer(), {
           expirationTtl: ttl, // s
           metadata: {
             expiration: ttl ? (Math.floor(Date.now() / 1000) + ttl) : undefined,
@@ -103,8 +104,7 @@ export default async function req (url, { method, body, headers: headersArg = {}
               'last-modified': res.headers.get('last-modified')
             }
           }
-        })
-      })())
+        }))
     }
   }
   const duration = (Date.now() - reqStart)

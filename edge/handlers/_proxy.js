@@ -2,6 +2,14 @@ import doReq from '../lib/req.js'
 import { getEnv } from '/_env.js'
 import { escapeId } from '/_ayu/src/lib/helpers.js'
 import { setCookieParser, renderSetCookieString } from '../lib/http.js'
+import { getKvStore } from '../lib/kvs.js';
+
+// TODO: auto pattern generation by merging path docs!
+
+//TODO: fix udpating last seen and client side filter only after timestamp X
+
+// TODO: client side flag with updating settings doc in worker
+const refresh = false
 
 // TODO: needs different domain from main?!
 const data = {}
@@ -9,25 +17,69 @@ function getCookie (name, cookieString = '') {
   const v = cookieString.match('(^|;) ?' + name + '=([^;]*)(;|$)')
   return v ? v[2] : null
 }
-const { _couchKey, _couchSecret, couchHost, env, appName } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'appName'])
+const { _couchKey, _couchSecret, couchHost, env, appName, resourceFolder } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'appName', 'resourceFolder'])
 
 const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
+const kvs = getKvStore('resources')
+
 const urlPatternConf = {
-  'cookidoo.:lang': [
-    '/recipes/recipe/:lang/:recipeId',
-    '/search/:lang',
-    '/foundation/:lang'
-  ],
-  'assets.tmecosys.com': [
-    '/image/upload/:format/img/recipe/ras/Assets/:assetId/Derivates/:derivateName',
-    '/image/upload/:format/img/collection/ras/Assets/:assetId/Derivates/:derivateName',
-    '/image/upload/:format/cdn/contentful/:id1/:id2/:filename',
-    '/video/upload/:id/:format/v1/videos/:hir1/:hir2/:filename'
+  'cookidoo.:lang': ['/recipes/recipe/:lang/:recipeId'],
+  'cdn.mxpnl.com': [
+    '/libs/mixpanel*'
   ]
 }
 
-const patterns = Object.entries(urlPatternConf).flatMap(([hostname, pathPatterns]) => pathPatterns.map(pathname => new URLPattern({ pathname, hostname })))
+const patterns = Object.entries(urlPatternConf).flatMap(([hostname, pathPatterns]) => pathPatterns.sort((a, b) => {  
+  let aNumStar = a.split('*').length - 1
+  let bNumStar = b.split('*').length - 1
+
+  let aNumDash = a.split(':').length - 1
+  let bNumDash = b.split(':').length - 1
+
+
+  let aPrio = a.length + (bNumStar * 10) + (bNumDash * 5)
+  let bPrio = b.length + (aNumStar * 10) + (aNumDash * 5)
+
+  return bPrio - aPrio
+}).map(pathnamePattern => {
+  return new URLPattern({ pathname: pathnamePattern, hostname })
+}))
+
+const digest = async (data) => {
+    const algorithm = "SHA-256"
+    return  Array.prototype.map
+    .call(
+      new Uint8Array(
+        await crypto.subtle.digest(algorithm, data) // new TextEncoder().encode()
+      ),
+      (x) => ("0" + x.toString(16)).slice(-2)
+    )
+    .join("");
+  }
+ 
+  function getContentType (pathname) {
+    let contentType
+      if (pathname.endsWith('.js')) {
+        contentType = 'application/javascript'
+      } else if (pathname.endsWith('.css')) {
+        contentType = 'text/css'
+      } else if (pathname.endsWith('.ttf')) {
+        contentType = 'font/ttf'
+      } else if (pathname.endsWith('.woff')) {
+        contentType = 'font/woff'
+      } else if (pathname.endsWith('.woff2')) {
+        contentType = 'font/woff2'
+      } else if (pathname.endsWith('.png')) {
+        contentType = 'image/png'
+      } else if (pathname.endsWith('.svg')) {
+        contentType = 'image/svg+xml'
+      } else if (pathname.endsWith('.html')) {
+        contentType = 'text/html; charset=utf-8'
+      }
+
+      return contentType
+  }
 
 // const doc = {
 //     route: 'domain/path*',
@@ -141,7 +193,7 @@ async function commit (doc) {
     return
   }
   locked[doc._id] = true
-  const currentEdits = edits[doc._id]
+  // const currentEdits = edits[doc._id]
   delete edits[doc._id]
 
   // console.log('\ncommit ' + doc.pathname)
@@ -192,7 +244,8 @@ async function loadSettings () {
   settingsLocked = false
   return json
 }
-export default async function ({ req, text, waitUntil }) {
+export default async function ({ req, waitUntil}) {
+  // const { text } = await req.parseBody()
   const origUrl = new URL(req.url.href)
 
   if (req.url.pathname === '/__ayu_refresh') {
@@ -204,8 +257,8 @@ export default async function ({ req, text, waitUntil }) {
     settings = await loadSettings()
   }
 
-  const cookieBindings = settings.cookieBindings
-  if (!cookieBindings[settings.hostname]) {
+  const cookieBindings = settings?.cookieBindings
+  if (!cookieBindings[settings?.hostname]) {
     cookieBindings[settings.hostname] = {}
   }
 
@@ -263,8 +316,8 @@ export default async function ({ req, text, waitUntil }) {
       headers: { 'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`}
     })
 
-    const favReqs = rows.map(({ key: [ _primaryHost, hostname ], value: { jsCookies, httpCookies, firstSeen, reqHeaders } }) => {
-      data[hostname] = { httpCookies, jsCookies, firstSeen, reqHeaders, paths: {}, favicon: data[hostname]?.favicon }
+    const favReqs = rows.map(({ key: [ _primaryHost, hostname ], value: { jsCookies, httpCookies, firstSeen, lastSeen, reqHeaders } }) => {
+      data[hostname] = { httpCookies, jsCookies, firstSeen, lastSeen, reqHeaders, paths: {}, favicon: data[hostname]?.favicon }
 
       if (hostname === settings.hostname) {
         data[hostname].primaryHost = true
@@ -354,6 +407,7 @@ export default async function ({ req, text, waitUntil }) {
   for (const pattern of patterns) {
     const result = pattern.exec(req.url.href)
     if (result) {
+      console.log({result})
       match = { pattern, result }
       break
     }
@@ -386,8 +440,10 @@ export default async function ({ req, text, waitUntil }) {
       httpCookies: {},
       methods: [],
       statuses: [],
-      firstSeen: Date.now()
-      // lastSeen: Date.now()
+      firstSeen: Date.now(),
+      lastSeen: Date.now(),
+      blocked: false,
+      pathPattern: !!match
     })
     // doc.reqs = []
 
@@ -548,6 +604,98 @@ export default async function ({ req, text, waitUntil }) {
 
   // TODO: headers already stripped to minimum if they come from KV store
 
+  // console.log({doc})
+  if (doc.blocked || settings?.domainSettings[req.url.hostname]?.blocked) {
+    return new Response('Blocked', { status: 404 })
+  }
+
+  const suffixParts =  req.url.pathname.split('.')
+  const ending = suffixParts.length > 1 ? suffixParts.at(-1) : ''
+  const forceEnding = ending === '' ? 'html' : ''  // ((res.headers.get('content-length') === 'text/html' && 
+
+  const cacheKey = 'snapshot:' + btoa(req.url.href) + '_' + Date.now() + '.' + ending
+  const cacheKeyLatest = 'snapshot:' + btoa(req.url.href) + '_latest.' + ending
+
+  const isLocked = doc.locked || settings?.domainSettings[req.url.hostname]?.locked
+
+  if (isLocked && req.method === 'GET') {
+    const lockedResult = await kvs.get(cacheKeyLatest, { type: 'arrayBuffer' })
+    
+    if (lockedResult) {
+      // FIXME: move to library and use proper header cache setup here
+      const contentTypeOverride = getContentType(req.url.pathname)
+
+      // etag: "719a0e6b5fe1b1445decfcbb6a57ade7", headeers
+      return new Response(lockedResult, { headers: { 'content-type': contentTypeOverride, 'cache-status': 'lock cache hit', 'cache-control': 'public,max-age=86400' } })
+    }
+  }
+
+  const devPath = doc.pathname + (forceEnding ? '.' + forceEnding : '')
+  
+  if (!refresh && req.method === 'GET' && (doc.devmode || settings?.domainSettings[req.url.hostname]?.devmode)) {
+    const devLockPath = (ending ? doc.pathname.split('.').slice(0, -1).join('.') : doc.pathname) + '__dev.' + (ending || forceEnding)
+
+    const contentTypeOverride = getContentType('.' + (ending || forceEnding))
+
+    let devOverride = await resourceFolder.fetch('http://dummy' + devLockPath, { method: 'GET' })
+
+    if (devPath.endsWith('.html') && devOverride.ok) {
+      const { raw: origRes, error, ok } = await doReq(href, {
+        redirect: forwarded === 'external' ? 'follow' : 'manual',
+        method: req.method,
+        body: req.raw.body, // text,
+        headers: cleanReqHeaders,
+        raw: true
+      })
+
+      if (origRes.ok && !error) {
+        let csrfToken
+        
+        await (new HTMLRewriter({ html: false })
+          .on('meta[name="csrf-token"]', {
+            element(element) {
+             csrfToken = element.getAttribute('content')
+            },
+          })
+          // .on('*', {
+          //   text(text) {
+          //     //  const script = element.getAttribute('content')
+
+          //     buffer += text.text
+              
+          //     if (text.lastInTextNode) {
+          //       // console.log(buffer)
+          //       buffer = ''
+          //     } else {
+          //       // text.remove()
+          //       console.log('script', text.text)
+          //     }
+          //   },
+          // })
+          .transform(origRes.clone()))
+          
+          const origText = await origRes.text()
+
+          if (!origText.includes('/eb3075d364e01fb6e5cc-next.js')) {
+          //   throw new Error('hash changed')
+            console.error('js hash changed!!!!!!')
+          }
+
+          const sessionNonce = origText.match(/"session_nonce"\:?\W"([^"]+)"/)?.[1]
+
+          const replacedBody = (await devOverride.text()).replace('{csrfToken}', csrfToken).replace('{sessionNonce}', sessionNonce)
+
+        return new Response(replacedBody, { headers: { 'content-type': contentTypeOverride, 'cache-status': 'dev override with html rewriting hit', 'cache-control': 'no-cache, no-store' } })
+      }
+    } else if (!devOverride.ok) { 
+      devOverride = await resourceFolder.fetch('http://dummy' + devPath, { method: 'GET' })
+    }
+
+    if (devOverride.ok) {
+      return new Response(devOverride.body, { headers: { 'content-type': contentTypeOverride, 'cache-status': 'dev override hit', 'cache-control': 'no-cache, no-store' } })
+    }
+  }
+
   const { raw: res, error, ok } = await doReq(href, {
     redirect: forwarded === 'external' ? 'follow' : 'manual',
     method: req.method,
@@ -555,8 +703,26 @@ export default async function ({ req, text, waitUntil }) {
     headers: cleanReqHeaders,
     raw: true
   })
+
   if (!res || error) {
     console.error('req error:', error, req.raw)
+  }
+
+  // FIXME: query params!!! ?notification_types=:all&date_format=millis", html support
+  if (req.method === 'GET' && (doc.devmode || settings?.domainSettings[req.url.hostname]?.devmode)) {
+    const arrayBuf = await res.clone().arrayBuffer()
+    // const hash = await digest(arrayBuf)
+    
+    waitUntil(resourceFolder.fetch('http://dummy' + devPath, { method: 'PUT', body: arrayBuf }).catch(console.error))
+  }
+
+  if (res.status === 200 && (doc.snapshot || settings?.domainSettings[req.url.hostname]?.snapshot)) {
+    const arrayBuf = await res.clone().arrayBuffer()
+    const hash = await digest(arrayBuf)
+    console.log({ cacheKey, hash })
+
+    waitUntil(kvs.put(cacheKey, arrayBuf))
+    waitUntil(kvs.put(cacheKeyLatest, arrayBuf))
   }
 
   if (!doc.methods.includes(req.method)) {
@@ -798,6 +964,7 @@ ${settings.inject || ''}`
 
     // FIXME!
     waitUntil(commit(doc))
+    
     return new Response(replacements(userReplacements(body)).replace('<head>', `<head>${inject}`), {
       status: res.status,
       statusText: res.statusText,
@@ -814,6 +981,7 @@ ${settings.inject || ''}`
     }
 
     waitUntil(commit(doc))
+    
     return new Response(hasBody ? replacements(body) : null, {
       status: res.status,
       statusText: res.statusText,
@@ -828,6 +996,7 @@ ${settings.inject || ''}`
   })
 
   waitUntil(commit(doc))
+  
   return ress
 }
 

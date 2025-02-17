@@ -1,5 +1,5 @@
 // TODO: warn Observable handlers cannot be async functions themselves
-// TODO: filter out changes of own set/ call operations
+// TODO: filter out changes of own set/ call operations ?
 
 let changes
 function doSync (dbs, since, Observable, _model) {
@@ -34,7 +34,7 @@ function doSync (dbs, since, Observable, _model) {
     let catchupFeed = false
     let usedFeed
     if (!changes) {
-      // console.log('creating pouch _sync changes feed', since)
+      console.log('creating pouch _sync changes feed', since)
       changes = dbs.pouch.changes({
         since: since || 'now',
         live: true,
@@ -42,15 +42,19 @@ function doSync (dbs, since, Observable, _model) {
         include_docs: true
       })
 
-      dbs.pouch.info().then(info => {
-        changes.lastSeq = info.update_seq
-      })
+      if (since !== undefined) {
+        changes.lastSeq = since
+      }
+
+      // dbs.pouch.info().then(info => {
+      //   changes.lastSeq = info.update_seq
+      // })
       usedFeed = changes
     } else {
-      if (since !== undefined && changes.lastSeq > since) {
+      if (since !== undefined && since !== null && changes.lastSeq > since) {
         // TODO: catchup feed should be oneshot ?
         catchupFeed = true
-        console.log('creating pouch _sync catchup feed', since, changes.lastSeq)
+        console.log('creating pouch _sync catchup feed for later client', since, changes.lastSeq)
         usedFeed = dbs.pouch.changes({
           since: since,
           live: true,
@@ -63,6 +67,7 @@ function doSync (dbs, since, Observable, _model) {
     }
 
     const complListener = _info => {
+      console.log("completeing change observable")
       subscriber.onCompleted()
     }
 
@@ -113,7 +118,7 @@ function doSync (dbs, since, Observable, _model) {
 
       schedule(() => {
         if (!subscriber.isStopped) {
-          subscriber.onCompleted()
+          complListener()
         }
       })
     }
@@ -127,6 +132,7 @@ function doSync (dbs, since, Observable, _model) {
       // console.log('cleaning change listeners')
       if (catchupFeed) {
         // TODO: cancel changes when no active requests for a while,
+        console.log('killing catchup feed')
         usedFeed.cancel()
       }
 

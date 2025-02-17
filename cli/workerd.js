@@ -29,13 +29,28 @@ export function workerdSetup ({
   const serviceRefs = []
 
   const customKvNamespaces = []
+  const devMounts = []
 
   if (!config.kv_namespaces) {
     config.kv_namespaces = ['ipfs']
   }
+
   const bindings = Object.entries(config).flatMap(([key, value]) => {
     if (['appPath', 'defaultEnv', 'repo'].includes(key)) {
       return []
+    }
+
+    if (key === 'devMounts') {
+      return Object.entries(value).map(([name, path]) => {
+        devMounts.push({
+          name: name,
+          path
+        })
+        return {
+          name: name,
+          type: 'dev_mount'
+        }
+      })
     }
 
     if (!key.startsWith('__')) {
@@ -67,15 +82,17 @@ export function workerdSetup ({
 
     return []
   })
-    .filter(binding => binding.text || binding.type === 'kv_namespace')
+    .filter(binding => binding.text || binding.type === 'kv_namespace' || binding.type === 'dev_mount')
     .map(binding => {
       if (binding.text) {
         return `(name = "${binding.name}", text = "${escape(binding.text)}")`
+      } else if (binding.type === 'dev_mount') {
+        return `(name = "${binding.name}", service = "${binding.name}")`
       } else {
         return `(name = "${binding.name}", kvNamespace = "${binding.name}")`
       }
     })
-    .join(',\n        ')
+    .join(',\n        ') + `,\n        (name = "ipfsHandler", service = "${appPrefix}___ipfs")`
 
   const serviceDefs = Object.entries(services).map(([workerName, { codePath, routes }]) => {
     const cfWorkerName = appPrefix + '__' + workerName
@@ -125,6 +142,7 @@ export function workerdSetup ({
   })
 
   const customKvNamespaceBindings = customKvNamespaces.map(name => `( name = "${name}", disk = (path = "${envDir}/kv-store/${name}", writable = true))`).join(',\n    ')
+  const devMountBindings = devMounts.map(({name, path} )=> `( name = "${name}", disk = (path = "${path}", writable = true))`).join(',\n    ')
 
   const capnp = `using Workerd = import "/workerd/workerd.capnp";
 ${serviceRefs.map(({ name, capName }) => `using ${capName} = import "${appPrefix}/${name.replace(appPrefix + '__', '')}.capnp";`).join('\n')}
@@ -147,6 +165,8 @@ const config :Workerd.Config = (
     ( name = "kvStore", disk = (path = "${envDir}/kv-store", writable = true)),
 
     ${customKvNamespaceBindings ? customKvNamespaceBindings + ',' : ''}
+
+    ${devMountBindings ? devMountBindings + ',' : ''}
 
     ${serviceRefs.map(({ capName }) => capName + '.Service').join(',\n    ')},
 

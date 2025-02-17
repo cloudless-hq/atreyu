@@ -36,7 +36,7 @@ export async function loadConfig (envFlag, cmd, appName, repo, buildName, ayuVer
 
   // remove all other env overrides from the main config
   for (const key in conf) {
-    if (typeof conf[key] === 'object' && key !== 'kv_namespaces') {
+    if (typeof conf[key] === 'object' && key !== 'kv_namespaces' && key !== 'devMounts') {
       delete conf[key]
     }
   }

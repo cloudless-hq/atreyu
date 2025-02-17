@@ -4,10 +4,19 @@ export default {
   fetch (request, env, context) {
     if (!workerRoutes) {
       workerRoutes = Object.entries(JSON.parse(env.routes))
-        .sort(([patternA], [patternB]) => patternB.length - patternA.length)
+        .sort(([a], [b]) => {
+          const aNumStar = (a.match(/\*/g) || []).length
+          const bNumStar = (b.match(/\*/g) || []).length
+    
+          const aNumDash = (a.match(/\:/g) || []).length
+          const bNumDash = (b.match(/\:/g) || []).length
+    
+          const aPrio = a.length + (bNumStar * 10) + (bNumDash * 5)
+          const bPrio = b.length + (aNumStar * 10) + (aNumDash * 5)
+    
+          return bPrio - aPrio
+        })
         .map(([pattern, workerName]) => [workerName, new URLPattern({ pathname: pattern })])
-
-      console.log({ workerRoutes })
     }
 
     if (!cfData) {
@@ -43,7 +52,9 @@ export default {
     if (env[workerName]?.fetch) {
       return env[workerName].fetch(request, { cf: cfData })
     } else {
-      return new Response(JSON.stringify({ workerRoutes, workerName, url, cfData: cfData || {}, appKey, appName }), {headers: {'content-type': 'application/json'}})
+      return new Response(JSON.stringify({ workerRoutes, workerName, url, cfData: cfData || {}, appKey, appName }), {
+        headers: { 'content-type': 'application/json' }
+      })
       // event.respondWith(fetch(event.request))
     }
   }

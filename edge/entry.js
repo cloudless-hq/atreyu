@@ -52,7 +52,10 @@ addEventListener('fetch', event => {
     method: event.request.method,
     headers: Object.fromEntries(event.request.headers.entries()),
     query: Object.fromEntries(url.searchParams.entries()),
-    url
+    url,
+    parsedBody () {
+      return event.request.body ? bodyParser(event.request, { clone: true }) : {}
+    }
   }
 
   if (req.headers['content-length']) {
@@ -67,9 +70,9 @@ addEventListener('fetch', event => {
   event._traceId = traceId
   event._stats = stats
 
-  event.respondWith((async () => {
+  event.respondWith((() => {
     try {
-      const { parsedBody, text } = event.request.body ? await bodyParser(event.request, { clone: true }) : {}
+      // FIXME: unused text json and formdata will lead to unneeded parsing and cloning!!!!
 
       if (paramsValidation) {
         if (!paramsValidation({ headers: req.headers })) {
@@ -79,20 +82,21 @@ addEventListener('fetch', event => {
 
       // TODO move req parsed data to req object props for fetch instead of adding it other way round to raw
       return (
-        worker.fetch?.(event.request, self, { waitUntil, stats, app, req, parsedBody, text })
-        || worker({ stats, app, req, parsedBody, text, event, waitUntil })
+        worker.fetch?.(event.request, self, { waitUntil, stats, app, req })
+        || worker({ stats, app, req, event, waitUntil })
       )
         .then(response => {
           const duration = (Date.now() - fetchStart)
-          waitUntil(log({ req, response, stats, body: text, duration, traceId }))
-          // try {
-          //   // FIXME: requests have immutable headers
-          //   response.headers.set('server-timing', 'edge;dur=' + duration)
-          // } catch (_e) {
-          //   // console.log('header immutable', response, req.url.href)
-          // }
+          waitUntil(log({ req, response, stats, duration, traceId })) // body: text,
+         
+          const res = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers
+          })
+          res.headers.set('server-timing', response.headers.get('server-timing') + ', edge;dur=' + duration)
 
-          return response
+          return res
         })
     } catch (ex) {
       // waitUntil(apm(ex, event.request))

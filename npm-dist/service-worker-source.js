@@ -421,7 +421,7 @@ var Observable = classicObservable.Observable;
 
 // app/src/falcor/service-worker-source.js
 var ServiceWorkerSource = class {
-  constructor({ wake, cache }) {
+  constructor({ wake = 2e4, cache } = {}) {
     this._inflight = {};
     this._id = 0;
     this._active = 0;

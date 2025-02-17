@@ -1297,6 +1297,7 @@
         "npm:falcor@2.3.2",
         "npm:immediate@3.3.0",
         "npm:lodash@4.17.21",
+        "npm:miniflare@3.20241106.0",
         "npm:rollup-plugin-node-polyfills@0.2.1",
         "npm:rollup@3.27.2",
         "npm:route-parser@0.0.5",
@@ -1304,7 +1305,8 @@
         "npm:svelte@4.2.0",
         "npm:typescript@5.1.6",
         "npm:uuid@9.0.0",
-        "npm:vuvuzela@1.0.3"
+        "npm:vuvuzela@1.0.3",
+        "npm:workerd@1.20241112.0"
       ]
     }
   }

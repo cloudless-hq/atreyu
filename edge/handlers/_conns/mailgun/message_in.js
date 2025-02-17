@@ -1,6 +1,7 @@
 // import { idEscape } from '../../../couchdb/helpers'
 
-export default ({ parsedBody = {}, stats, event }) => {
+export default ({ stats, event }) => {
+  const parsedBody = event.request.parsedBody
   let content = []
   if (parsedBody['body-html'] && parsedBody['body-html'].length > 0) {
     content.push({

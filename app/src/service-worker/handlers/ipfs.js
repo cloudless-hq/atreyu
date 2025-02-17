@@ -31,6 +31,8 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
     contentTypeOverride = 'font/woff2'
   } else if (path.endsWith('.png')) {
     contentTypeOverride = 'image/png'
+  } else if (path.endsWith('.svg')) {
+    contentTypeOverride = 'image/svg+xml'
   }
 
   if (cache.then) {
@@ -90,7 +92,7 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
     scope: 'ipfs',
     method: event.request.method,
     url: url.pathname + url.search + url.hash,
-    origUrl: origUrl.pathname + origUrl.search + origUrl.hash,
+    origUrl: origUrl ? (origUrl.pathname + origUrl.search + origUrl.hash) : null,
     cached: !!match
   })
 

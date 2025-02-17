@@ -5,8 +5,11 @@
 // import { authHeaders } from './helpers.js'
 // await authHeaders({ userId }) // req.headers
 
+// FIXME: unused text json and formdata will lead to unneeded parsing and cloning!!!!
+
+// FIXME: this only works for global trusted org dbs in admin party
 export default {
-  fetch (_, { _couchKey, _couchSecret, couchHost }, { req, text }) {
+  fetch (_, { _couchKey, _couchSecret, couchHost }, { req }) {
     // TODO: use our own fauxton release instead of cloudant one
     // import handleFauxton from './fauxton'
     // if (req.url.pathname === '/_utils') {
@@ -22,6 +25,7 @@ export default {
     //   return sessionHandler({ req, stats, app, parsedBody })
     // }
 
+    // FIXME: !!!! this is a security issue, we should not allow any path to be proxied
     const href = couchHost + req.url.pathname.replace('/_api/_couch', '') + req.url.search
 
     // if (req.url.pathname.includes('/_changes')) {
@@ -40,7 +44,7 @@ export default {
     return fetch(href, {
       method: req.method,
       // redirect: 'error', error not supported, manual?
-      body: text, // TODO: req.raw?.body ?
+      body: req.raw.body,
       headers: {
         ...req.headers,
         'Authorization': `Basic ${btoa(_couchKey + ':' + _couchSecret)}`

@@ -49,7 +49,22 @@ export default async function ({
   let initResolver
   let inited
 
-  await pouch.bulkDocs([ { _id: '_local/ayu', sessionId }, ...(clientDbSeeds || []) ]).catch(() => {})
+  await pouch.bulkDocs([ { _id: '_local/ayu', sessionId }, ...(clientDbSeeds.map(seedDoc => {
+    // {
+    //   _id: "_design/lanes",
+    //   options: {
+    //     partitioned: false,
+    //   },
+    //   views: {
+    //     links: { map: fun, reduce: fun
+    if (seedDoc.views) {
+      seedDoc.views = Object.entries(seedDoc.views).reduce((acc, [name, { map, reduce, ...rest }]) => {
+        acc[name] = { map: map?.toString(), reduce: reduce?.toString(), ...rest }
+        return acc
+      }, {})
+    }
+    return seedDoc
+  }) || []) ]).catch(() => {})
 
   if (hasCouch) {
     couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
@@ -199,10 +214,14 @@ export default async function ({
       console.warn('missing session doc start seq, fallback to fullsync', sessionDoc)
     }
 
+    // FIXME: batching sync out not working
     sync = PouchDB.sync(pouch, couch, {
       live: true,
       sse: true,
-      skipInitialBatch: true, // TODO: setup depending on time since last login?
+
+      // FIXME: document why and what!
+      skipInitialBatch: true, // TODO: setup depending on time since last login? 
+     
       retry: true,
       heartbeat: 2500,
       batch_size: 50,
@@ -229,6 +248,7 @@ export default async function ({
       },
       push: {
         filter: (doc, _opts) => {
+          // console.log(doc)
           if (doc._conflicts) {
             console.warn(doc._conflicts)
           }
@@ -271,7 +291,8 @@ export default async function ({
         initResolver?.()
         initResolver = null
       })
-      .on('active', ({ direction }) => {
+      .on('active', ( { direction }) => {
+        // console.log({direction})
         if (direction === 'push') {
           // TODO: add timeout?
           activePush = new Promise((resolve) => { pushResolver = resolve })

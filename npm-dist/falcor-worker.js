@@ -8977,7 +8977,15 @@ async function make_pouch_default({
   const hasCouch = !sessionId.startsWith("ephemeral:");
   let initResolver;
   let inited;
-  await pouch.bulkDocs([{ _id: "_local/ayu", sessionId }, ...clientDbSeeds || []]).catch(() => {
+  await pouch.bulkDocs([{ _id: "_local/ayu", sessionId }, ...clientDbSeeds.map((seedDoc) => {
+    if (seedDoc.views) {
+      seedDoc.views = Object.entries(seedDoc.views).reduce((acc, [name, { map: map2, reduce: reduce2, ...rest }]) => {
+        acc[name] = { map: map2?.toString(), reduce: reduce2?.toString(), ...rest };
+        return acc;
+      }, {});
+    }
+    return seedDoc;
+  }) || []]).catch(() => {
   });
   if (hasCouch) {
     couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
@@ -9096,8 +9104,9 @@ async function make_pouch_default({
     sync3 = PouchDB.sync(pouch, couch, {
       live: true,
       sse: true,
+      // FIXME: document why and what!
       skipInitialBatch: true,
-      // TODO: setup depending on time since last login?
+      // TODO: setup depending on time since last login? 
       retry: true,
       heartbeat: 2500,
       batch_size: 50,
@@ -9661,13 +9670,13 @@ var Keys$6 = {
   match: prefix + "match"
 };
 var Keys_1 = Keys$6;
-var isArray$4 = Array.isArray;
+var isArray$6 = Array.isArray;
 var convertPathKeyTo$3 = function convertPathKeyTo(onRange3, onKey2) {
   return function converter(keySet) {
     var isKeySet = typeof keySet === "object";
     var out = [];
     if (isKeySet) {
-      if (isArray$4(keySet)) {
+      if (isArray$6(keySet)) {
         var reducer2 = null;
         keySet.forEach(function(key) {
           if (typeof key === "object") {
@@ -9755,7 +9764,7 @@ var Keys$5 = Keys_1;
 var convertPathKeyToRange = convertPathKeyToRange$1;
 var convertPathKeyToIntegers = convertPathKeyToIntegers$1;
 var convertPathKeyToKeys = convertPathKeyToKeys$1;
-var isArray$3 = Array.isArray;
+var isArray$5 = Array.isArray;
 var convertPathToRoute$1 = function convertPathToRoute(path, route) {
   var matched = [];
   for (var i3 = 0, len2 = route.length; i3 < len2; ++i3) {
@@ -9780,7 +9789,7 @@ var convertPathToRoute$1 = function convertPathToRoute(path, route) {
         matched[virt.name] = matched[matched.length - 1];
       }
     } else {
-      if (isArray$3(route[i3]) && !isArray$3(path[i3])) {
+      if (isArray$5(route[i3]) && !isArray$5(path[i3])) {
         matched[matched.length] = [path[i3]];
       } else {
         matched[matched.length] = path[i3];
@@ -9807,13 +9816,13 @@ var slice$1 = function slice(args, index2) {
 var convertPathToRoute2 = convertPathToRoute$1;
 var isPathValue = isPathValue$1;
 var slice2 = slice$1;
-var isArray$2 = Array.isArray;
+var isArray$4 = Array.isArray;
 function createNamedVariables(route, action) {
   return function innerCreateNamedVariables(matchedPath) {
     var convertedArguments;
     var len2 = -1;
     var restOfArgs = slice2(arguments, 1);
-    var isJSONObject = !isArray$2(matchedPath);
+    var isJSONObject = !isArray$4(matchedPath);
     if (isJSONObject) {
       restOfArgs = [];
       convertedArguments = matchedPath;
@@ -10341,7 +10350,7 @@ var exceptions = {
   routeWithSamePrecedence: "Two routes cannot have the same precedence or path.",
   circularReference: "There appears to be a circular reference, maximum reference following exceeded."
 };
-function cloneArray$2(arr, index2) {
+function cloneArray$5(arr, index2) {
   var a3 = [];
   var len2 = arr.length;
   for (var i3 = index2 || 0; i3 < len2; i3++) {
@@ -10349,14 +10358,14 @@ function cloneArray$2(arr, index2) {
   }
   return a3;
 }
-var cloneArray_1$1 = cloneArray$2;
+var cloneArray_1$1 = cloneArray$5;
 var Keys$2 = Keys_1;
 var actionWrapper = actionWrapper$1;
 var pathSyntax = src;
 var convertTypes2 = convertTypes$1;
 var prettifyRoute2 = prettifyRoute$1;
-var errors$1 = exceptions;
-var cloneArray$1 = cloneArray_1$1;
+var errors$2 = exceptions;
+var cloneArray$4 = cloneArray_1$1;
 var ROUTE_ID = -3;
 var parseTree$1 = function parseTree(routes) {
   var pTree = {};
@@ -10442,7 +10451,7 @@ function setHashOrThrowError(parseMap, routeObject) {
     return hash.join(",");
   }).forEach(function forEachRouteHash(hash) {
     if (get8 && parseMap[hash + "get"] || set5 && parseMap[hash + "set"] || call4 && parseMap[hash + "call"]) {
-      throw new Error(errors$1.routeWithSamePrecedence + " " + prettifyRoute2(route));
+      throw new Error(errors$2.routeWithSamePrecedence + " " + prettifyRoute2(route));
     }
     if (get8) {
       parseMap[hash + "get"] = true;
@@ -10501,7 +10510,7 @@ function getHashesFromRoute(route, depth, hashes, hash) {
     if (depth + 1 !== route.length) {
       getHashesFromRoute(route, depth + 1, hashes, hash);
     } else {
-      hashes.push(cloneArray$1(hash));
+      hashes.push(cloneArray$4(hash));
     }
   } while (isArray4 && ++idx < length);
   return hashes;
@@ -10513,668 +10522,550 @@ var Precedence$1 = {
   keys: 1
 };
 var Precedence_1 = Precedence$1;
-var iterateKeySet$1;
-var hasRequiredIterateKeySet;
-function requireIterateKeySet() {
-  if (hasRequiredIterateKeySet)
-    return iterateKeySet$1;
-  hasRequiredIterateKeySet = 1;
-  var isArray4 = Array.isArray;
-  iterateKeySet$1 = function iterateKeySet4(keySet, note) {
-    if (note.isArray === void 0) {
-      initializeNote2(keySet, note);
-    }
-    if (note.isArray) {
-      var nextValue;
-      do {
-        if (note.loaded && note.rangeOffset > note.to) {
-          ++note.arrayOffset;
-          note.loaded = false;
-        }
-        var idx = note.arrayOffset, length = keySet.length;
-        if (idx >= length) {
-          note.done = true;
-          break;
-        }
-        var el = keySet[note.arrayOffset];
-        var type = typeof el;
-        if (type === "object") {
-          if (!note.loaded) {
-            initializeRange2(el, note);
-          }
-          if (note.empty) {
-            continue;
-          }
-          nextValue = note.rangeOffset++;
-        } else {
-          ++note.arrayOffset;
-          nextValue = el;
-        }
-      } while (nextValue === void 0);
-      return nextValue;
-    } else if (note.isObject) {
-      if (!note.loaded) {
-        initializeRange2(keySet, note);
-      }
-      if (note.rangeOffset > note.to) {
-        note.done = true;
-        return void 0;
-      }
-      return note.rangeOffset++;
-    } else {
-      note.done = true;
-      return keySet;
-    }
-  };
-  function initializeRange2(key, memo) {
-    var from2 = memo.from = key.from || 0;
-    var to = memo.to = key.to || (typeof key.length === "number" && memo.from + key.length - 1 || 0);
-    memo.rangeOffset = memo.from;
-    memo.loaded = true;
-    if (from2 > to) {
-      memo.empty = true;
-    }
+var isArray$3 = Array.isArray;
+var iterateKeySet$4 = function iterateKeySet(keySet, note) {
+  if (note.isArray === void 0) {
+    initializeNote(keySet, note);
   }
-  function initializeNote2(key, note) {
-    note.done = false;
-    var isObject4 = note.isObject = !!(key && typeof key === "object");
-    note.isArray = isObject4 && isArray4(key);
-    note.arrayOffset = 0;
-  }
-  return iterateKeySet$1;
-}
-var toTree;
-var hasRequiredToTree;
-function requireToTree() {
-  if (hasRequiredToTree)
-    return toTree;
-  hasRequiredToTree = 1;
-  var iterateKeySet4 = requireIterateKeySet();
-  toTree = function toTree4(paths) {
-    return paths.reduce(function(acc, path) {
-      innerToTree2(acc, path, 0);
-      return acc;
-    }, {});
-  };
-  function innerToTree2(seed, path, depth) {
-    var keySet = path[depth];
-    var iteratorNote = {};
-    var key;
-    var nextDepth = depth + 1;
-    key = iterateKeySet4(keySet, iteratorNote);
+  if (note.isArray) {
+    var nextValue;
     do {
-      var next = seed[key];
-      if (!next) {
-        if (nextDepth === path.length) {
-          seed[key] = null;
-        } else {
-          next = seed[key] = {};
-        }
+      if (note.loaded && note.rangeOffset > note.to) {
+        ++note.arrayOffset;
+        note.loaded = false;
       }
-      if (nextDepth < path.length) {
-        innerToTree2(next, path, nextDepth);
-      }
-      if (!iteratorNote.done) {
-        key = iterateKeySet4(keySet, iteratorNote);
-      }
-    } while (!iteratorNote.done);
-  }
-  return toTree;
-}
-var hasIntersection$1;
-var hasRequiredHasIntersection$1;
-function requireHasIntersection$1() {
-  if (hasRequiredHasIntersection$1)
-    return hasIntersection$1;
-  hasRequiredHasIntersection$1 = 1;
-  var iterateKeySet4 = requireIterateKeySet();
-  hasIntersection$1 = function hasIntersection4(tree, path, depth) {
-    var current = tree;
-    var intersects = true;
-    for (; intersects && depth < path.length; ++depth) {
-      var key = path[depth];
-      var keyType = typeof key;
-      if (key && keyType === "object") {
-        var note = {};
-        var innerKey = iterateKeySet4(key, note);
-        var nextDepth = depth + 1;
-        do {
-          var next = current[innerKey];
-          intersects = next !== void 0;
-          if (intersects) {
-            intersects = hasIntersection4(next, path, nextDepth);
-          }
-          innerKey = iterateKeySet4(key, note);
-        } while (intersects && !note.done);
+      var idx = note.arrayOffset, length = keySet.length;
+      if (idx >= length) {
+        note.done = true;
         break;
       }
-      current = current[key];
-      intersects = current !== void 0;
-    }
-    return intersects;
-  };
-  return hasIntersection$1;
-}
-var pathsComplementFromTree;
-var hasRequiredPathsComplementFromTree;
-function requirePathsComplementFromTree() {
-  if (hasRequiredPathsComplementFromTree)
-    return pathsComplementFromTree;
-  hasRequiredPathsComplementFromTree = 1;
-  var hasIntersection4 = requireHasIntersection$1();
-  pathsComplementFromTree = function pathsComplementFromTree4(paths, tree) {
-    var out = [];
-    var outLength = -1;
-    for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
-      if (!hasIntersection4(tree, paths[i3], 0)) {
-        out[++outLength] = paths[i3];
-      }
-    }
-    return out;
-  };
-  return pathsComplementFromTree;
-}
-var pathsComplementFromLengthTree;
-var hasRequiredPathsComplementFromLengthTree;
-function requirePathsComplementFromLengthTree() {
-  if (hasRequiredPathsComplementFromLengthTree)
-    return pathsComplementFromLengthTree;
-  hasRequiredPathsComplementFromLengthTree = 1;
-  var hasIntersection4 = requireHasIntersection$1();
-  pathsComplementFromLengthTree = function pathsComplementFromLengthTree4(paths, tree) {
-    var out = [];
-    var outLength = -1;
-    for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
-      var path = paths[i3];
-      if (!hasIntersection4(tree[path.length], path, 0)) {
-        out[++outLength] = path;
-      }
-    }
-    return out;
-  };
-  return pathsComplementFromLengthTree;
-}
-var toPaths = { exports: {} };
-var hasRequiredToPaths;
-function requireToPaths() {
-  if (hasRequiredToPaths)
-    return toPaths.exports;
-  hasRequiredToPaths = 1;
-  var isArray4 = Array.isArray;
-  var typeOfObject2 = "object";
-  var typeOfString = "string";
-  var typeOfNumber2 = "number";
-  var MAX_SAFE_INTEGER2 = 9007199254740991;
-  var MAX_SAFE_INTEGER_DIGITS = 16;
-  var MIN_SAFE_INTEGER_DIGITS = 17;
-  var abs2 = Math.abs;
-  var safeNumberRegEx = /^(0|(\-?[1-9][0-9]*))$/;
-  toPaths.exports = function toPaths4(lengths) {
-    var pathmap;
-    var allPaths = [];
-    var allPathsLength = 0;
-    for (var length in lengths) {
-      if (isSafeNumber(length) && isObject4(pathmap = lengths[length])) {
-        var paths = collapsePathMap2(pathmap, 0, parseInt(length, 10)).sets;
-        var pathsIndex = -1;
-        var pathsCount = paths.length;
-        while (++pathsIndex < pathsCount) {
-          allPaths[allPathsLength++] = collapsePathSetIndexes2(paths[pathsIndex]);
+      var el = keySet[note.arrayOffset];
+      var type = typeof el;
+      if (type === "object") {
+        if (!note.loaded) {
+          initializeRange(el, note);
         }
-      }
-    }
-    return allPaths;
-  };
-  function isObject4(value) {
-    return value !== null && typeof value === typeOfObject2;
-  }
-  function collapsePathMap2(pathmap, depth, length) {
-    var key;
-    var code = getHashCode2(String(depth));
-    var subs = /* @__PURE__ */ Object.create(null);
-    var codes = [];
-    var codesIndex = -1;
-    var codesCount = 0;
-    var pathsets = [];
-    var pathsetsCount = 0;
-    var subPath, subCode, subKeys, subKeysIndex, subKeysCount, subSets, subSetsIndex, subSetsCount, pathset, pathsetIndex, pathsetCount, firstSubKey, pathsetClone;
-    subKeys = [];
-    subKeysIndex = -1;
-    if (depth < length - 1) {
-      subKeysCount = getSortedKeys(pathmap, subKeys);
-      while (++subKeysIndex < subKeysCount) {
-        key = subKeys[subKeysIndex];
-        subPath = collapsePathMap2(pathmap[key], depth + 1, length);
-        subCode = subPath.code;
-        if (subs[subCode]) {
-          subPath = subs[subCode];
-        } else {
-          codes[codesCount++] = subCode;
-          subPath = subs[subCode] = {
-            keys: [],
-            sets: subPath.sets
-          };
+        if (note.empty) {
+          continue;
         }
-        code = getHashCode2(code + key + subCode);
-        isSafeNumber(key) && subPath.keys.push(parseInt(key, 10)) || subPath.keys.push(key);
-      }
-      while (++codesIndex < codesCount) {
-        key = codes[codesIndex];
-        subPath = subs[key];
-        subKeys = subPath.keys;
-        subKeysCount = subKeys.length;
-        if (subKeysCount > 0) {
-          subSets = subPath.sets;
-          subSetsIndex = -1;
-          subSetsCount = subSets.length;
-          firstSubKey = subKeys[0];
-          while (++subSetsIndex < subSetsCount) {
-            pathset = subSets[subSetsIndex];
-            pathsetIndex = -1;
-            pathsetCount = pathset.length;
-            pathsetClone = new Array(pathsetCount + 1);
-            pathsetClone[0] = subKeysCount > 1 && subKeys || firstSubKey;
-            while (++pathsetIndex < pathsetCount) {
-              pathsetClone[pathsetIndex + 1] = pathset[pathsetIndex];
-            }
-            pathsets[pathsetsCount++] = pathsetClone;
-          }
-        }
-      }
-    } else {
-      subKeysCount = getSortedKeys(pathmap, subKeys);
-      if (subKeysCount > 1) {
-        pathsets[pathsetsCount++] = [subKeys];
+        nextValue = note.rangeOffset++;
       } else {
-        pathsets[pathsetsCount++] = subKeys;
+        ++note.arrayOffset;
+        nextValue = el;
       }
-      while (++subKeysIndex < subKeysCount) {
-        code = getHashCode2(code + subKeys[subKeysIndex]);
-      }
+    } while (nextValue === void 0);
+    return nextValue;
+  } else if (note.isObject) {
+    if (!note.loaded) {
+      initializeRange(keySet, note);
     }
-    return {
-      code,
-      sets: pathsets
-    };
+    if (note.rangeOffset > note.to) {
+      note.done = true;
+      return void 0;
+    }
+    return note.rangeOffset++;
+  } else {
+    note.done = true;
+    return keySet;
   }
-  function collapsePathSetIndexes2(pathset) {
-    var keysetIndex = -1;
-    var keysetCount = pathset.length;
-    while (++keysetIndex < keysetCount) {
-      var keyset = pathset[keysetIndex];
-      if (isArray4(keyset)) {
-        pathset[keysetIndex] = collapseIndex2(keyset);
-      }
-    }
-    return pathset;
+};
+function initializeRange(key, memo) {
+  var from2 = memo.from = key.from || 0;
+  var to = memo.to = key.to || (typeof key.length === "number" && memo.from + key.length - 1 || 0);
+  memo.rangeOffset = memo.from;
+  memo.loaded = true;
+  if (from2 > to) {
+    memo.empty = true;
   }
-  function collapseIndex2(keyset) {
-    var keyIndex = -1;
-    var keyCount = keyset.length - 1;
-    var isSparseRange = keyCount > 0;
-    while (++keyIndex <= keyCount) {
-      var key = keyset[keyIndex];
-      if (!isSafeNumber(key)) {
-        isSparseRange = false;
-        break;
+}
+function initializeNote(key, note) {
+  note.done = false;
+  var isObject4 = note.isObject = !!(key && typeof key === "object");
+  note.isArray = isObject4 && isArray$3(key);
+  note.arrayOffset = 0;
+}
+var iterateKeySet$3 = iterateKeySet$4;
+var toTree$1 = function toTree(paths) {
+  return paths.reduce(function(acc, path) {
+    innerToTree(acc, path, 0);
+    return acc;
+  }, {});
+};
+function innerToTree(seed, path, depth) {
+  var keySet = path[depth];
+  var iteratorNote = {};
+  var key;
+  var nextDepth = depth + 1;
+  key = iterateKeySet$3(keySet, iteratorNote);
+  do {
+    var next = seed[key];
+    if (!next) {
+      if (nextDepth === path.length) {
+        seed[key] = null;
+      } else {
+        next = seed[key] = {};
       }
-      keyset[keyIndex] = parseInt(key, 10);
     }
-    if (isSparseRange === true) {
-      keyset.sort(sortListAscending2);
-      var from2 = keyset[0];
-      var to = keyset[keyCount];
-      if (to - from2 <= keyCount) {
-        return {
-          from: from2,
-          to
+    if (nextDepth < path.length) {
+      innerToTree(next, path, nextDepth);
+    }
+    if (!iteratorNote.done) {
+      key = iterateKeySet$3(keySet, iteratorNote);
+    }
+  } while (!iteratorNote.done);
+}
+var iterateKeySet$2 = iterateKeySet$4;
+var hasIntersection$3 = function hasIntersection(tree, path, depth) {
+  var current = tree;
+  var intersects = true;
+  for (; intersects && depth < path.length; ++depth) {
+    var key = path[depth];
+    var keyType = typeof key;
+    if (key && keyType === "object") {
+      var note = {};
+      var innerKey = iterateKeySet$2(key, note);
+      var nextDepth = depth + 1;
+      do {
+        var next = current[innerKey];
+        intersects = next !== void 0;
+        if (intersects) {
+          intersects = hasIntersection(next, path, nextDepth);
+        }
+        innerKey = iterateKeySet$2(key, note);
+      } while (intersects && !note.done);
+      break;
+    }
+    current = current[key];
+    intersects = current !== void 0;
+  }
+  return intersects;
+};
+var hasIntersection$2 = hasIntersection$3;
+var pathsComplementFromTree = function pathsComplementFromTree2(paths, tree) {
+  var out = [];
+  var outLength = -1;
+  for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
+    if (!hasIntersection$2(tree, paths[i3], 0)) {
+      out[++outLength] = paths[i3];
+    }
+  }
+  return out;
+};
+var hasIntersection$1 = hasIntersection$3;
+var pathsComplementFromLengthTree = function pathsComplementFromLengthTree2(paths, tree) {
+  var out = [];
+  var outLength = -1;
+  for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
+    var path = paths[i3];
+    if (!hasIntersection$1(tree[path.length], path, 0)) {
+      out[++outLength] = path;
+    }
+  }
+  return out;
+};
+var toPaths$1 = { exports: {} };
+var isArray$2 = Array.isArray;
+var typeOfObject = "object";
+var typeOfString = "string";
+var typeOfNumber = "number";
+var MAX_SAFE_INTEGER = 9007199254740991;
+var MAX_SAFE_INTEGER_DIGITS = 16;
+var MIN_SAFE_INTEGER_DIGITS = 17;
+var abs = Math.abs;
+var safeNumberRegEx = /^(0|(\-?[1-9][0-9]*))$/;
+toPaths$1.exports = function toPaths(lengths) {
+  var pathmap;
+  var allPaths = [];
+  var allPathsLength = 0;
+  for (var length in lengths) {
+    if (isSafeNumber(length) && isObject$1(pathmap = lengths[length])) {
+      var paths = collapsePathMap(pathmap, 0, parseInt(length, 10)).sets;
+      var pathsIndex = -1;
+      var pathsCount = paths.length;
+      while (++pathsIndex < pathsCount) {
+        allPaths[allPathsLength++] = collapsePathSetIndexes(paths[pathsIndex]);
+      }
+    }
+  }
+  return allPaths;
+};
+function isObject$1(value) {
+  return value !== null && typeof value === typeOfObject;
+}
+function collapsePathMap(pathmap, depth, length) {
+  var key;
+  var code = getHashCode(String(depth));
+  var subs = /* @__PURE__ */ Object.create(null);
+  var codes = [];
+  var codesIndex = -1;
+  var codesCount = 0;
+  var pathsets = [];
+  var pathsetsCount = 0;
+  var subPath, subCode, subKeys, subKeysIndex, subKeysCount, subSets, subSetsIndex, subSetsCount, pathset, pathsetIndex, pathsetCount, firstSubKey, pathsetClone;
+  subKeys = [];
+  subKeysIndex = -1;
+  if (depth < length - 1) {
+    subKeysCount = getSortedKeys(pathmap, subKeys);
+    while (++subKeysIndex < subKeysCount) {
+      key = subKeys[subKeysIndex];
+      subPath = collapsePathMap(pathmap[key], depth + 1, length);
+      subCode = subPath.code;
+      if (subs[subCode]) {
+        subPath = subs[subCode];
+      } else {
+        codes[codesCount++] = subCode;
+        subPath = subs[subCode] = {
+          keys: [],
+          sets: subPath.sets
         };
       }
+      code = getHashCode(code + key + subCode);
+      isSafeNumber(key) && subPath.keys.push(parseInt(key, 10)) || subPath.keys.push(key);
     }
-    return keyset;
-  }
-  function sortListAscending2(a3, b) {
-    return a3 - b;
-  }
-  function getSortedKeys(map2, keys2, sort) {
-    var len2 = 0;
-    for (var key in map2) {
-      keys2[len2++] = key;
-    }
-    if (len2 > 1) {
-      keys2.sort(sort);
-    }
-    return len2;
-  }
-  function getHashCode2(key) {
-    var code = 5381;
-    var index2 = -1;
-    var count = key.length;
-    while (++index2 < count) {
-      code = (code << 5) + code + key.charCodeAt(index2);
-    }
-    return String(code);
-  }
-  function isSafeNumber(val) {
-    var num = val;
-    var type = typeof val;
-    if (type === typeOfString) {
-      var length = val.length;
-      if (length === 0 || length > MIN_SAFE_INTEGER_DIGITS) {
-        return false;
+    while (++codesIndex < codesCount) {
+      key = codes[codesIndex];
+      subPath = subs[key];
+      subKeys = subPath.keys;
+      subKeysCount = subKeys.length;
+      if (subKeysCount > 0) {
+        subSets = subPath.sets;
+        subSetsIndex = -1;
+        subSetsCount = subSets.length;
+        firstSubKey = subKeys[0];
+        while (++subSetsIndex < subSetsCount) {
+          pathset = subSets[subSetsIndex];
+          pathsetIndex = -1;
+          pathsetCount = pathset.length;
+          pathsetClone = new Array(pathsetCount + 1);
+          pathsetClone[0] = subKeysCount > 1 && subKeys || firstSubKey;
+          while (++pathsetIndex < pathsetCount) {
+            pathsetClone[pathsetIndex + 1] = pathset[pathsetIndex];
+          }
+          pathsets[pathsetsCount++] = pathsetClone;
+        }
       }
-      if (!safeNumberRegEx.test(val)) {
-        return false;
-      }
-      if (length < MAX_SAFE_INTEGER_DIGITS) {
-        return true;
-      }
-      num = +val;
-    } else if (type !== typeOfNumber2) {
+    }
+  } else {
+    subKeysCount = getSortedKeys(pathmap, subKeys);
+    if (subKeysCount > 1) {
+      pathsets[pathsetsCount++] = [subKeys];
+    } else {
+      pathsets[pathsetsCount++] = subKeys;
+    }
+    while (++subKeysIndex < subKeysCount) {
+      code = getHashCode(code + subKeys[subKeysIndex]);
+    }
+  }
+  return {
+    code,
+    sets: pathsets
+  };
+}
+function collapsePathSetIndexes(pathset) {
+  var keysetIndex = -1;
+  var keysetCount = pathset.length;
+  while (++keysetIndex < keysetCount) {
+    var keyset = pathset[keysetIndex];
+    if (isArray$2(keyset)) {
+      pathset[keysetIndex] = collapseIndex(keyset);
+    }
+  }
+  return pathset;
+}
+function collapseIndex(keyset) {
+  var keyIndex = -1;
+  var keyCount = keyset.length - 1;
+  var isSparseRange = keyCount > 0;
+  while (++keyIndex <= keyCount) {
+    var key = keyset[keyIndex];
+    if (!isSafeNumber(key)) {
+      isSparseRange = false;
+      break;
+    }
+    keyset[keyIndex] = parseInt(key, 10);
+  }
+  if (isSparseRange === true) {
+    keyset.sort(sortListAscending);
+    var from2 = keyset[0];
+    var to = keyset[keyCount];
+    if (to - from2 <= keyCount) {
+      return {
+        from: from2,
+        to
+      };
+    }
+  }
+  return keyset;
+}
+function sortListAscending(a3, b) {
+  return a3 - b;
+}
+function getSortedKeys(map2, keys2, sort) {
+  var len2 = 0;
+  for (var key in map2) {
+    keys2[len2++] = key;
+  }
+  if (len2 > 1) {
+    keys2.sort(sort);
+  }
+  return len2;
+}
+function getHashCode(key) {
+  var code = 5381;
+  var index2 = -1;
+  var count = key.length;
+  while (++index2 < count) {
+    code = (code << 5) + code + key.charCodeAt(index2);
+  }
+  return String(code);
+}
+function isSafeNumber(val) {
+  var num = val;
+  var type = typeof val;
+  if (type === typeOfString) {
+    var length = val.length;
+    if (length === 0 || length > MIN_SAFE_INTEGER_DIGITS) {
       return false;
     }
-    return num % 1 === 0 && abs2(num) <= MAX_SAFE_INTEGER2;
+    if (!safeNumberRegEx.test(val)) {
+      return false;
+    }
+    if (length < MAX_SAFE_INTEGER_DIGITS) {
+      return true;
+    }
+    num = +val;
+  } else if (type !== typeOfNumber) {
+    return false;
   }
-  toPaths.exports._isSafeNumber = isSafeNumber;
-  return toPaths.exports;
+  return num % 1 === 0 && abs(num) <= MAX_SAFE_INTEGER;
 }
-var collapse$1;
-var hasRequiredCollapse;
-function requireCollapse() {
-  if (hasRequiredCollapse)
-    return collapse$1;
-  hasRequiredCollapse = 1;
-  var toPaths4 = requireToPaths();
-  var toTree4 = requireToTree();
-  collapse$1 = function collapse4(paths) {
-    var collapseMap = paths.reduce(function(acc, path) {
-      var len2 = path.length;
-      if (!acc[len2]) {
-        acc[len2] = [];
-      }
-      acc[len2].push(path);
-      return acc;
-    }, {});
-    Object.keys(collapseMap).forEach(function(collapseKey) {
-      collapseMap[collapseKey] = toTree4(collapseMap[collapseKey]);
-    });
-    return toPaths4(collapseMap);
-  };
-  return collapse$1;
-}
-var cloneArray_1;
-var hasRequiredCloneArray;
-function requireCloneArray() {
-  if (hasRequiredCloneArray)
-    return cloneArray_1;
-  hasRequiredCloneArray = 1;
-  function cloneArray3(arr, index2) {
-    var a3 = [];
-    var len2 = arr.length;
-    for (var i3 = index2 || 0; i3 < len2; i3++) {
-      a3[i3] = arr[i3];
+toPaths$1.exports._isSafeNumber = isSafeNumber;
+var toPathsExports = toPaths$1.exports;
+var toPaths2 = toPathsExports;
+var toTree2 = toTree$1;
+var collapse$1 = function collapse(paths) {
+  var collapseMap = paths.reduce(function(acc, path) {
+    var len2 = path.length;
+    if (!acc[len2]) {
+      acc[len2] = [];
     }
-    return a3;
+    acc[len2].push(path);
+    return acc;
+  }, {});
+  Object.keys(collapseMap).forEach(function(collapseKey) {
+    collapseMap[collapseKey] = toTree2(collapseMap[collapseKey]);
+  });
+  return toPaths2(collapseMap);
+};
+function cloneArray$3(arr, index2) {
+  var a3 = [];
+  var len2 = arr.length;
+  for (var i3 = index2 || 0; i3 < len2; i3++) {
+    a3[i3] = arr[i3];
   }
-  cloneArray_1 = cloneArray3;
-  return cloneArray_1;
+  return a3;
 }
-var catAndSlice$1;
-var hasRequiredCatAndSlice$1;
-function requireCatAndSlice$1() {
-  if (hasRequiredCatAndSlice$1)
-    return catAndSlice$1;
-  hasRequiredCatAndSlice$1 = 1;
-  catAndSlice$1 = function catAndSlice4(a3, b, slice3) {
-    var next = [], i3, j, len2;
-    for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
-      next[i3] = a3[i3];
-    }
-    for (j = slice3 || 0, len2 = b.length; j < len2; ++j, ++i3) {
-      next[i3] = b[j];
-    }
-    return next;
-  };
-  return catAndSlice$1;
-}
-var types$1;
-var hasRequiredTypes$1;
-function requireTypes$1() {
-  if (hasRequiredTypes$1)
-    return types$1;
-  hasRequiredTypes$1 = 1;
-  types$1 = {
-    $ref: "ref",
-    $atom: "atom",
-    $error: "error"
-  };
-  return types$1;
-}
-var errors;
-var hasRequiredErrors;
-function requireErrors() {
-  if (hasRequiredErrors)
-    return errors;
-  hasRequiredErrors = 1;
-  errors = {
-    innerReferences: "References with inner references are not allowed.",
-    circularReference: "There appears to be a circular reference, maximum reference following exceeded."
-  };
-  return errors;
-}
-var followReference$1;
-var hasRequiredFollowReference$1;
-function requireFollowReference$1() {
-  if (hasRequiredFollowReference$1)
-    return followReference$1;
-  hasRequiredFollowReference$1 = 1;
-  var cloneArray3 = requireCloneArray();
-  var $ref2 = requireTypes$1().$ref;
-  var errors3 = requireErrors();
-  followReference$1 = function followReference3(cacheRoot, ref3, maxRefFollow) {
-    var current = cacheRoot;
-    var refPath = ref3;
-    var depth = -1;
-    var length = refPath.length;
-    var key, next, type;
-    var referenceCount = 0;
-    while (++depth < length) {
-      key = refPath[depth];
-      next = current[key];
-      type = next && next.$type;
-      if (!next || type && type !== $ref2) {
-        current = next;
-        break;
-      }
-      if (type && type === $ref2 && depth + 1 < length) {
-        var err = new Error(errors3.innerReferences);
-        err.throwToNext = true;
-        throw err;
-      }
-      if (depth + 1 === length) {
-        if (type === $ref2) {
-          depth = -1;
-          refPath = next.value;
-          length = refPath.length;
-          next = cacheRoot;
-          referenceCount++;
-        }
-        if (referenceCount > maxRefFollow) {
-          throw new Error(errors3.circularReference);
-        }
-      }
+var cloneArray_1 = cloneArray$3;
+var catAndSlice$2 = function catAndSlice(a3, b, slice3) {
+  var next = [], i3, j, len2;
+  for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
+    next[i3] = a3[i3];
+  }
+  for (j = slice3 || 0, len2 = b.length; j < len2; ++j, ++i3) {
+    next[i3] = b[j];
+  }
+  return next;
+};
+var types$1 = {
+  $ref: "ref",
+  $atom: "atom",
+  $error: "error"
+};
+var errors$1 = {
+  innerReferences: "References with inner references are not allowed.",
+  circularReference: "There appears to be a circular reference, maximum reference following exceeded."
+};
+var cloneArray$2 = cloneArray_1;
+var $ref$1 = types$1.$ref;
+var errors = errors$1;
+var followReference$2 = function followReference(cacheRoot, ref3, maxRefFollow) {
+  var current = cacheRoot;
+  var refPath = ref3;
+  var depth = -1;
+  var length = refPath.length;
+  var key, next, type;
+  var referenceCount = 0;
+  while (++depth < length) {
+    key = refPath[depth];
+    next = current[key];
+    type = next && next.$type;
+    if (!next || type && type !== $ref$1) {
       current = next;
+      break;
     }
-    return [current, cloneArray3(refPath)];
-  };
-  return followReference$1;
-}
-var optimizePathSets$1;
-var hasRequiredOptimizePathSets$1;
-function requireOptimizePathSets$1() {
-  if (hasRequiredOptimizePathSets$1)
-    return optimizePathSets$1;
-  hasRequiredOptimizePathSets$1 = 1;
-  var iterateKeySet4 = requireIterateKeySet();
-  var cloneArray3 = requireCloneArray();
-  var catAndSlice4 = requireCatAndSlice$1();
-  var $types = requireTypes$1();
-  var $ref2 = $types.$ref;
-  var followReference3 = requireFollowReference$1();
-  optimizePathSets$1 = function optimizePathSets4(cache, paths, maxRefFollow) {
-    var optimized = [];
-    paths.forEach(function(p) {
-      optimizePathSet2(cache, cache, p, 0, optimized, [], maxRefFollow);
-    });
-    return optimized;
-  };
-  function optimizePathSet2(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
-    if (cache === void 0) {
-      out[out.length] = catAndSlice4(optimizedPath, pathSet, depth);
-      return;
+    if (type && type === $ref$1 && depth + 1 < length) {
+      var err = new Error(errors.innerReferences);
+      err.throwToNext = true;
+      throw err;
     }
-    if (cache === null || cache.$type && cache.$type !== $ref2 || typeof cache !== "object") {
-      return;
-    }
-    if (cache.$type === $ref2 && depth === pathSet.length) {
-      return;
-    }
-    var keySet = pathSet[depth];
-    var isKeySet = typeof keySet === "object";
-    var nextDepth = depth + 1;
-    var iteratorNote = false;
-    var key = keySet;
-    if (isKeySet) {
-      iteratorNote = {};
-      key = iterateKeySet4(keySet, iteratorNote);
-    }
-    var next, nextOptimized;
-    do {
-      next = cache[key];
-      var optimizedPathLength = optimizedPath.length;
-      if (key !== null) {
-        optimizedPath[optimizedPathLength] = key;
+    if (depth + 1 === length) {
+      if (type === $ref$1) {
+        depth = -1;
+        refPath = next.value;
+        length = refPath.length;
+        next = cacheRoot;
+        referenceCount++;
       }
-      if (next && next.$type === $ref2 && nextDepth < pathSet.length) {
-        var refResults = followReference3(cacheRoot, next.value, maxRefFollow);
-        next = refResults[0];
-        nextOptimized = cloneArray3(refResults[1]);
-      } else {
-        nextOptimized = optimizedPath;
+      if (referenceCount > maxRefFollow) {
+        throw new Error(errors.circularReference);
       }
-      optimizePathSet2(
-        next,
-        cacheRoot,
-        pathSet,
-        nextDepth,
-        out,
-        nextOptimized,
-        maxRefFollow
-      );
-      optimizedPath.length = optimizedPathLength;
-      if (iteratorNote && !iteratorNote.done) {
-        key = iterateKeySet4(keySet, iteratorNote);
-      }
-    } while (iteratorNote && !iteratorNote.done);
+    }
+    current = next;
   }
-  return optimizePathSets$1;
-}
-var pathCount;
-var hasRequiredPathCount;
-function requirePathCount() {
-  if (hasRequiredPathCount)
-    return pathCount;
-  hasRequiredPathCount = 1;
-  function getRangeOrKeySize2(rangeOrKey) {
-    if (rangeOrKey == null) {
-      return 1;
-    } else if (Array.isArray(rangeOrKey)) {
-      throw new Error("Unexpected Array found in keySet: " + JSON.stringify(rangeOrKey));
-    } else if (typeof rangeOrKey === "object") {
-      return getRangeSize2(rangeOrKey);
+  return [current, cloneArray$2(refPath)];
+};
+var iterateKeySet$1 = iterateKeySet$4;
+var cloneArray$1 = cloneArray_1;
+var catAndSlice$1 = catAndSlice$2;
+var $types = types$1;
+var $ref = $types.$ref;
+var followReference$1 = followReference$2;
+var optimizePathSets$1 = function optimizePathSets(cache, paths, maxRefFollow) {
+  var optimized = [];
+  paths.forEach(function(p) {
+    optimizePathSet(cache, cache, p, 0, optimized, [], maxRefFollow);
+  });
+  return optimized;
+};
+function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+  if (cache === void 0) {
+    out[out.length] = catAndSlice$1(optimizedPath, pathSet, depth);
+    return;
+  }
+  if (cache === null || cache.$type && cache.$type !== $ref || typeof cache !== "object") {
+    return;
+  }
+  if (cache.$type === $ref && depth === pathSet.length) {
+    return;
+  }
+  var keySet = pathSet[depth];
+  var isKeySet = typeof keySet === "object";
+  var nextDepth = depth + 1;
+  var iteratorNote = false;
+  var key = keySet;
+  if (isKeySet) {
+    iteratorNote = {};
+    key = iterateKeySet$1(keySet, iteratorNote);
+  }
+  var next, nextOptimized;
+  do {
+    next = cache[key];
+    var optimizedPathLength = optimizedPath.length;
+    if (key !== null) {
+      optimizedPath[optimizedPathLength] = key;
+    }
+    if (next && next.$type === $ref && nextDepth < pathSet.length) {
+      var refResults = followReference$1(cacheRoot, next.value, maxRefFollow);
+      next = refResults[0];
+      nextOptimized = cloneArray$1(refResults[1]);
     } else {
-      return 1;
+      nextOptimized = optimizedPath;
     }
+    optimizePathSet(
+      next,
+      cacheRoot,
+      pathSet,
+      nextDepth,
+      out,
+      nextOptimized,
+      maxRefFollow
+    );
+    optimizedPath.length = optimizedPathLength;
+    if (iteratorNote && !iteratorNote.done) {
+      key = iterateKeySet$1(keySet, iteratorNote);
+    }
+  } while (iteratorNote && !iteratorNote.done);
+}
+function getRangeOrKeySize(rangeOrKey) {
+  if (rangeOrKey == null) {
+    return 1;
+  } else if (Array.isArray(rangeOrKey)) {
+    throw new Error("Unexpected Array found in keySet: " + JSON.stringify(rangeOrKey));
+  } else if (typeof rangeOrKey === "object") {
+    return getRangeSize(rangeOrKey);
+  } else {
+    return 1;
   }
-  function getRangeSize2(range5) {
-    var to = range5.to;
-    var length = range5.length;
-    if (to != null) {
-      if (isNaN(to) || parseInt(to, 10) !== to) {
-        throw new Error("Invalid range, 'to' is not an integer: " + JSON.stringify(range5));
-      }
-      var from2 = range5.from || 0;
-      if (isNaN(from2) || parseInt(from2, 10) !== from2) {
-        throw new Error("Invalid range, 'from' is not an integer: " + JSON.stringify(range5));
-      }
-      if (from2 <= to) {
-        return to - from2 + 1;
-      } else {
-        return 0;
-      }
-    } else if (length != null) {
-      if (isNaN(length) || parseInt(length, 10) !== length) {
-        throw new Error("Invalid range, 'length' is not an integer: " + JSON.stringify(range5));
-      } else {
-        return length;
-      }
+}
+function getRangeSize(range5) {
+  var to = range5.to;
+  var length = range5.length;
+  if (to != null) {
+    if (isNaN(to) || parseInt(to, 10) !== to) {
+      throw new Error("Invalid range, 'to' is not an integer: " + JSON.stringify(range5));
+    }
+    var from2 = range5.from || 0;
+    if (isNaN(from2) || parseInt(from2, 10) !== from2) {
+      throw new Error("Invalid range, 'from' is not an integer: " + JSON.stringify(range5));
+    }
+    if (from2 <= to) {
+      return to - from2 + 1;
     } else {
-      throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range5));
+      return 0;
     }
+  } else if (length != null) {
+    if (isNaN(length) || parseInt(length, 10) !== length) {
+      throw new Error("Invalid range, 'length' is not an integer: " + JSON.stringify(range5));
+    } else {
+      return length;
+    }
+  } else {
+    throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range5));
   }
-  function getPathCount2(pathSet) {
-    if (pathSet.length === 0) {
-      throw new Error("All paths must have length larger than zero.");
-    }
-    var numPaths = 1;
-    for (var i3 = 0; i3 < pathSet.length; i3++) {
-      var segment = pathSet[i3];
-      if (Array.isArray(segment)) {
-        var numKeys = 0;
-        for (var j = 0; j < segment.length; j++) {
-          var keySet = segment[j];
-          numKeys += getRangeOrKeySize2(keySet);
-        }
-        numPaths *= numKeys;
-      } else {
-        numPaths *= getRangeOrKeySize2(segment);
+}
+function getPathCount(pathSet) {
+  if (pathSet.length === 0) {
+    throw new Error("All paths must have length larger than zero.");
+  }
+  var numPaths = 1;
+  for (var i3 = 0; i3 < pathSet.length; i3++) {
+    var segment = pathSet[i3];
+    if (Array.isArray(segment)) {
+      var numKeys = 0;
+      for (var j = 0; j < segment.length; j++) {
+        var keySet = segment[j];
+        numKeys += getRangeOrKeySize(keySet);
       }
+      numPaths *= numKeys;
+    } else {
+      numPaths *= getRangeOrKeySize(segment);
     }
-    return numPaths;
   }
-  pathCount = getPathCount2;
-  return pathCount;
+  return numPaths;
 }
-var lib2;
-var hasRequiredLib;
-function requireLib() {
-  if (hasRequiredLib)
-    return lib2;
-  hasRequiredLib = 1;
-  lib2 = {
-    iterateKeySet: requireIterateKeySet(),
-    toTree: requireToTree(),
-    pathsComplementFromTree: requirePathsComplementFromTree(),
-    pathsComplementFromLengthTree: requirePathsComplementFromLengthTree(),
-    hasIntersection: requireHasIntersection$1(),
-    toPaths: requireToPaths(),
-    collapse: requireCollapse(),
-    optimizePathSets: requireOptimizePathSets$1(),
-    pathCount: requirePathCount()
-  };
-  return lib2;
-}
-var iterateKeySet = requireLib().iterateKeySet;
+var pathCount = getPathCount;
+var lib2 = {
+  iterateKeySet: iterateKeySet$4,
+  toTree: toTree$1,
+  pathsComplementFromTree,
+  pathsComplementFromLengthTree,
+  hasIntersection: hasIntersection$3,
+  toPaths: toPathsExports,
+  collapse: collapse$1,
+  optimizePathSets: optimizePathSets$1,
+  pathCount
+};
+var iterateKeySet2 = lib2.iterateKeySet;
 var specific = function specificMatcher(keySet, currentNode) {
   var iteratorNote = {};
   var nexts = [];
-  var key = iterateKeySet(keySet, iteratorNote);
+  var key = iterateKeySet2(keySet, iteratorNote);
   do {
     if (currentNode[key]) {
       nexts[nexts.length] = key;
     }
     if (!iteratorNote.done) {
-      key = iterateKeySet(keySet, iteratorNote);
+      key = iterateKeySet2(keySet, iteratorNote);
     }
   } while (!iteratorNote.done);
   return nexts;
@@ -11221,8 +11112,8 @@ var Precedence = Precedence_1;
 var cloneArray = cloneArray_1$1;
 var specificMatcher2 = specific;
 var pluckIntegers2 = pluckIntergers;
-var pathUtils = requireLib();
-var collapse = pathUtils.collapse;
+var pathUtils = lib2;
+var collapse2 = pathUtils.collapse;
 var isRoutedToken2 = isRoutedToken$1;
 var CallNotFoundError = requireCallNotFoundError();
 var intTypes = [{
@@ -11264,7 +11155,7 @@ var matcher$1 = function matcher(rst) {
         collapsedMatched.push(reducedMatch[0]);
         return;
       }
-      var collapsedResults = collapse(
+      var collapsedResults = collapse2(
         reducedMatch.map(function(x) {
           return x.requested;
         })
@@ -11439,10 +11330,10 @@ function requireIsObject() {
   if (hasRequiredIsObject)
     return isObject;
   hasRequiredIsObject = 1;
-  function isObject$12(x) {
+  function isObject$13(x) {
     return x != null && typeof x === "object";
   }
-  isObject.isObject = isObject$12;
+  isObject.isObject = isObject$13;
   return isObject;
 }
 var tryCatch2 = {};
@@ -14858,13 +14749,13 @@ function requireStrip() {
   };
   return strip;
 }
-var catAndSlice;
+var catAndSlice2;
 var hasRequiredCatAndSlice;
 function requireCatAndSlice() {
   if (hasRequiredCatAndSlice)
-    return catAndSlice;
+    return catAndSlice2;
   hasRequiredCatAndSlice = 1;
-  catAndSlice = function catAndSlice4(a3, b, slice3) {
+  catAndSlice2 = function catAndSlice5(a3, b, slice3) {
     var next = [], i3, j, len2;
     for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
       next[i3] = a3[i3];
@@ -14874,7 +14765,7 @@ function requireCatAndSlice() {
     }
     return next;
   };
-  return catAndSlice;
+  return catAndSlice2;
 }
 var stripPath;
 var hasRequiredStripPath;
@@ -14883,7 +14774,7 @@ function requireStripPath() {
     return stripPath;
   hasRequiredStripPath = 1;
   var strip2 = requireStrip();
-  var catAndSlice4 = requireCatAndSlice();
+  var catAndSlice5 = requireCatAndSlice();
   stripPath = function stripPath2(matchedPath, virtualPath) {
     var relativeComplement = [];
     var exactMatch = [];
@@ -14898,7 +14789,7 @@ function requireStripPath() {
       if (hasComplement) {
         var flattendIC = innerComplement.length === 1 ? innerComplement[0] : innerComplement;
         current[i3] = flattendIC;
-        relativeComplement[relativeComplement.length] = catAndSlice4(current, matchedPath, i3 + 1);
+        relativeComplement[relativeComplement.length] = catAndSlice5(current, matchedPath, i3 + 1);
       }
       exactMatch[i3] = innerMatch;
       current[i3] = innerMatch;
@@ -14958,21 +14849,21 @@ function requireHasAtomIntersection() {
   }
   return hasAtomIntersection;
 }
-var hasIntersection;
+var hasIntersection2;
 var hasRequiredHasIntersection;
 function requireHasIntersection() {
   if (hasRequiredHasIntersection)
-    return hasIntersection;
+    return hasIntersection2;
   hasRequiredHasIntersection = 1;
   var hasAtomIntersection2 = requireHasAtomIntersection();
-  hasIntersection = function hasIntersection4(matchedPath, virtualPath) {
+  hasIntersection2 = function hasIntersection5(matchedPath, virtualPath) {
     var intersection = true;
     for (var i3 = 0, len2 = virtualPath.length; i3 < len2 && intersection; ++i3) {
       intersection = hasAtomIntersection2(matchedPath[i3], virtualPath[i3]);
     }
     return intersection;
   };
-  return hasIntersection;
+  return hasIntersection2;
 }
 var getExecutableMatches;
 var hasRequiredGetExecutableMatches;
@@ -14980,10 +14871,10 @@ function requireGetExecutableMatches() {
   if (hasRequiredGetExecutableMatches)
     return getExecutableMatches;
   hasRequiredGetExecutableMatches = 1;
-  var pathUtils3 = requireLib();
-  var collapse4 = pathUtils3.collapse;
+  var pathUtils3 = lib2;
+  var collapse5 = pathUtils3.collapse;
   var stripPath2 = requireStripPath();
-  var hasIntersection4 = requireHasIntersection();
+  var hasIntersection5 = requireHasIntersection();
   getExecutableMatches = function getExecutableMatches2(matches, pathSet) {
     var remainingPaths = pathSet;
     var matchAndPaths = [];
@@ -14996,11 +14887,11 @@ function requireGetExecutableMatches() {
       var match3 = matches[i3];
       remainingPaths = [];
       if (i3 > 0) {
-        availablePaths = collapse4(availablePaths);
+        availablePaths = collapse5(availablePaths);
       }
       for (var j = 0; j < availablePaths.length; ++j) {
         var path = availablePaths[j];
-        if (hasIntersection4(path, match3.virtual)) {
+        if (hasIntersection5(path, match3.virtual)) {
           var stripResults = stripPath2(path, match3.virtual);
           matchAndPaths[matchAndPaths.length] = {
             path: stripResults[0],
@@ -15069,16 +14960,16 @@ function requireTypes() {
   };
   return types2;
 }
-var followReference;
+var followReference2;
 var hasRequiredFollowReference;
 function requireFollowReference() {
   if (hasRequiredFollowReference)
-    return followReference;
+    return followReference2;
   hasRequiredFollowReference = 1;
   var cloneArray3 = cloneArray_1$1;
-  var $ref2 = requireTypes().$ref;
+  var $ref3 = requireTypes().$ref;
   var errors3 = exceptions;
-  followReference = function followReference3(cacheRoot, ref3, maxRefFollow) {
+  followReference2 = function followReference4(cacheRoot, ref3, maxRefFollow) {
     var current = cacheRoot;
     var refPath = ref3;
     var depth = -1;
@@ -15089,17 +14980,17 @@ function requireFollowReference() {
       key = refPath[depth];
       next = current[key];
       type = next && next.$type;
-      if (!next || type && type !== $ref2) {
+      if (!next || type && type !== $ref3) {
         current = next;
         break;
       }
-      if (type && type === $ref2 && depth + 1 < length) {
+      if (type && type === $ref3 && depth + 1 < length) {
         var err = new Error(errors3.innerReferences);
         err.throwToNext = true;
         throw err;
       }
       if (depth + 1 === length) {
-        if (type === $ref2) {
+        if (type === $ref3) {
           depth = -1;
           refPath = next.value;
           length = refPath.length;
@@ -15114,57 +15005,57 @@ function requireFollowReference() {
     }
     return [current, cloneArray3(refPath)];
   };
-  return followReference;
+  return followReference2;
 }
-var optimizePathSets;
+var optimizePathSets2;
 var hasRequiredOptimizePathSets;
 function requireOptimizePathSets() {
   if (hasRequiredOptimizePathSets)
-    return optimizePathSets;
+    return optimizePathSets2;
   hasRequiredOptimizePathSets = 1;
-  var iterateKeySet4 = requireLib().iterateKeySet;
+  var iterateKeySet5 = lib2.iterateKeySet;
   var cloneArray3 = cloneArray_1$1;
-  var catAndSlice4 = requireCatAndSlice();
-  var $types = requireTypes();
-  var $ref2 = $types.$ref;
-  var followReference3 = requireFollowReference();
-  optimizePathSets = function optimizePathSets4(cache, paths, maxRefFollow) {
+  var catAndSlice5 = requireCatAndSlice();
+  var $types2 = requireTypes();
+  var $ref3 = $types2.$ref;
+  var followReference4 = requireFollowReference();
+  optimizePathSets2 = function optimizePathSets5(cache, paths, maxRefFollow) {
     var optimized = [];
     paths.forEach(function(p) {
-      optimizePathSet2(cache, cache, p, 0, optimized, [], maxRefFollow);
+      optimizePathSet3(cache, cache, p, 0, optimized, [], maxRefFollow);
     });
     return optimized;
   };
-  function optimizePathSet2(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+  function optimizePathSet3(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
     if (cache === void 0) {
-      out[out.length] = catAndSlice4(optimizedPath, pathSet, depth);
+      out[out.length] = catAndSlice5(optimizedPath, pathSet, depth);
       return;
     }
-    if (cache === null || cache.$type && cache.$type !== $ref2 || typeof cache !== "object") {
+    if (cache === null || cache.$type && cache.$type !== $ref3 || typeof cache !== "object") {
       return;
     }
-    if (cache.$type === $ref2 && depth === pathSet.length) {
+    if (cache.$type === $ref3 && depth === pathSet.length) {
       return;
     }
     var keySet = pathSet[depth];
     var nextDepth = depth + 1;
     var iteratorNote = {};
     var key, next, nextOptimized;
-    key = iterateKeySet4(keySet, iteratorNote);
+    key = iterateKeySet5(keySet, iteratorNote);
     do {
       next = cache[key];
       var optimizedPathLength = optimizedPath.length;
       if (key !== null) {
         optimizedPath[optimizedPathLength] = key;
       }
-      if (next && next.$type === $ref2 && nextDepth < pathSet.length) {
-        var refResults = followReference3(cacheRoot, next.value, maxRefFollow);
+      if (next && next.$type === $ref3 && nextDepth < pathSet.length) {
+        var refResults = followReference4(cacheRoot, next.value, maxRefFollow);
         next = refResults[0];
         nextOptimized = cloneArray3(refResults[1]);
       } else {
         nextOptimized = optimizedPath;
       }
-      optimizePathSet2(
+      optimizePathSet3(
         next,
         cacheRoot,
         pathSet,
@@ -15175,11 +15066,11 @@ function requireOptimizePathSets() {
       );
       optimizedPath.length = optimizedPathLength;
       if (!iteratorNote.done) {
-        key = iterateKeySet4(keySet, iteratorNote);
+        key = iterateKeySet5(keySet, iteratorNote);
       }
     } while (!iteratorNote.done);
   }
-  return optimizePathSets;
+  return optimizePathSets2;
 }
 var clone2;
 var hasRequiredClone;
@@ -15204,13 +15095,13 @@ function requireJsongMerge() {
   if (hasRequiredJsongMerge)
     return jsongMerge;
   hasRequiredJsongMerge = 1;
-  var iterateKeySet4 = requireLib().iterateKeySet;
+  var iterateKeySet5 = lib2.iterateKeySet;
   var types3 = requireTypes();
-  var $ref2 = types3.$ref;
+  var $ref3 = types3.$ref;
   var $error2 = types3.$error;
   var clone5 = requireClone();
   var cloneArray3 = cloneArray_1$1;
-  var catAndSlice4 = requireCatAndSlice();
+  var catAndSlice5 = requireCatAndSlice();
   jsongMerge = function jsongMerge2(cache, jsongEnv, routerInstance) {
     var paths = jsongEnv.paths;
     var j = jsongEnv.jsonGraph;
@@ -15249,7 +15140,7 @@ function requireJsongMerge() {
       if (message && message.$type === $error2) {
         config.router._pathErrorHook({ path, value: message });
       }
-      if (message && message.$type === $ref2) {
+      if (message && message.$type === $ref3) {
         var references = config.references;
         references.push({
           path: cloneArray3(requestedPath),
@@ -15267,7 +15158,7 @@ function requireJsongMerge() {
     var outerKey = path[depth];
     var iteratorNote = {};
     var key;
-    key = iterateKeySet4(outerKey, iteratorNote);
+    key = iterateKeySet5(outerKey, iteratorNote);
     do {
       var cacheRes = cache[key];
       var messageRes = message[key];
@@ -15281,9 +15172,9 @@ function requireJsongMerge() {
           cacheRes = cache[key] = {};
         }
         var nextIgnoreCount = ignoreCount;
-        if (messageRes && messageRes.$type === $ref2 && depth < path.length - 1) {
+        if (messageRes && messageRes.$type === $ref3 && depth < path.length - 1) {
           nextDepth = 0;
-          nextPath = catAndSlice4(messageRes.value, path, depth + 1);
+          nextPath = catAndSlice5(messageRes.value, path, depth + 1);
           cache[key] = clone5(messageRes);
           nextIgnoreCount = messageRes.value.length;
           messageRes = messageRoot;
@@ -15304,7 +15195,7 @@ function requireJsongMerge() {
       if (updateRequestedPath) {
         requestedPath.length = requestIdx;
       }
-      key = iterateKeySet4(outerKey, iteratorNote);
+      key = iterateKeySet5(outerKey, iteratorNote);
     } while (!iteratorNote.done);
   }
   return jsongMerge;
@@ -15317,8 +15208,8 @@ function requirePathValueMerge() {
   hasRequiredPathValueMerge = 1;
   var clone5 = requireClone();
   var types3 = requireTypes();
-  var $ref2 = types3.$ref;
-  var iterateKeySet4 = requireLib().iterateKeySet;
+  var $ref3 = types3.$ref;
+  var iterateKeySet5 = lib2.iterateKeySet;
   pathValueMerge = function pathValueMerge2(cache, pathValue2) {
     var refs = [];
     var values = [];
@@ -15327,7 +15218,7 @@ function requirePathValueMerge() {
     if (pathValue2.invalidated === true) {
       invalidations.push({ path: pathValue2.path });
       valueType = false;
-    } else if (pathValue2.value !== null && pathValue2.value.$type === $ref2) {
+    } else if (pathValue2.value !== null && pathValue2.value.$type === $ref3) {
       refs.push({
         path: pathValue2.path,
         value: pathValue2.value.value
@@ -15353,7 +15244,7 @@ function requirePathValueMerge() {
       outerKey = path[i3];
       if (outerKey && typeof outerKey === "object") {
         iteratorNote = {};
-        key = iterateKeySet4(outerKey, iteratorNote);
+        key = iterateKeySet5(outerKey, iteratorNote);
       } else {
         key = outerKey;
         iteratorNote = false;
@@ -15372,7 +15263,7 @@ function requirePathValueMerge() {
             }
           );
           if (!iteratorNote.done) {
-            key = iterateKeySet4(outerKey, iteratorNote);
+            key = iterateKeySet5(outerKey, iteratorNote);
           }
         } else {
           curr = next;
@@ -15384,12 +15275,12 @@ function requirePathValueMerge() {
     }
     outerKey = path[i3];
     iteratorNote = {};
-    key = iterateKeySet4(outerKey, iteratorNote);
+    key = iterateKeySet5(outerKey, iteratorNote);
     do {
       cloned = clone5(pathValue2.value);
       curr[key] = cloned;
       if (!iteratorNote.done) {
-        key = iterateKeySet4(outerKey, iteratorNote);
+        key = iterateKeySet5(outerKey, iteratorNote);
       }
     } while (!iteratorNote.done);
   }
@@ -15471,9 +15362,9 @@ function requireRecurseMatchAndExecute() {
   var Rx = requireRouterRx();
   var Observable3 = Rx.Observable;
   var runByPrecedence2 = requireRunByPrecedence();
-  var pathUtils3 = requireLib();
-  var collapse4 = pathUtils3.collapse;
-  var optimizePathSets4 = requireOptimizePathSets();
+  var pathUtils3 = lib2;
+  var collapse5 = pathUtils3.collapse;
+  var optimizePathSets5 = requireOptimizePathSets();
   var mCGRI = requireMergeCacheAndGatherRefsAndInvalidations();
   var isArray4 = Array.isArray;
   recurseMatchAndExecute = function recurseMatchAndExecute2(match3, actionRunner, paths, method, routerInstance, jsongCache) {
@@ -15543,13 +15434,13 @@ function requireRecurseMatchAndExecute() {
             unhandledPaths = unhandledPaths.concat(message.unhandledPaths);
           }
         });
-        pathsToExpand = optimizePathSets4(
+        pathsToExpand = optimizePathSets5(
           jsongCache,
           pathsToExpand,
           routerInstance.maxRefFollow
         );
         if (pathsToExpand.length) {
-          pathsToExpand = collapse4(pathsToExpand);
+          pathsToExpand = collapse5(pathsToExpand);
         }
         return Observable3.from(pathsToExpand);
       }).defaultIfEmpty([]);
@@ -15610,12 +15501,12 @@ function requireMaterialize() {
     return materialize;
   hasRequiredMaterialize = 1;
   var pathValueMerge2 = requirePathValueMerge();
-  var optimizePathSets4 = requireOptimizePathSets();
+  var optimizePathSets5 = requireOptimizePathSets();
   var $atom2 = requireTypes().$atom;
   materialize = function materializeMissing(router, paths, jsongEnv) {
     var jsonGraph = jsongEnv.jsonGraph;
     var materializedAtom = { $type: $atom2 };
-    optimizePathSets4(jsonGraph, paths, router.maxRefFollow).forEach(function(optMissingPath) {
+    optimizePathSets5(jsonGraph, paths, router.maxRefFollow).forEach(function(optMissingPath) {
       pathValueMerge2(jsonGraph, {
         path: optMissingPath,
         value: materializedAtom
@@ -15647,7 +15538,7 @@ function requireGetPathsCount() {
   if (hasRequiredGetPathsCount)
     return getPathsCount_1;
   hasRequiredGetPathsCount = 1;
-  var falcorPathUtils2 = requireLib();
+  var falcorPathUtils2 = lib2;
   function getPathsCount(pathSets) {
     return pathSets.reduce(function(numPaths, pathSet) {
       return numPaths + falcorPathUtils2.pathCount(pathSet);
@@ -15810,7 +15701,7 @@ function requireSpreadPaths() {
   if (hasRequiredSpreadPaths)
     return spreadPaths;
   hasRequiredSpreadPaths = 1;
-  var iterateKeySet4 = requireLib().iterateKeySet;
+  var iterateKeySet5 = lib2.iterateKeySet;
   var cloneArray3 = cloneArray_1$1;
   spreadPaths = function spreadPaths2(paths) {
     var allPaths = [];
@@ -15832,12 +15723,12 @@ function requireSpreadPaths() {
       return;
     }
     var iteratorNote = {};
-    var innerKey = iterateKeySet4(key, iteratorNote);
+    var innerKey = iterateKeySet5(key, iteratorNote);
     do {
       currentPath[depth] = innerKey;
       _spread(pathSet, depth + 1, out, currentPath);
       currentPath.length = depth;
-      innerKey = iterateKeySet4(key, iteratorNote);
+      innerKey = iterateKeySet5(key, iteratorNote);
     } while (!iteratorNote.done);
   }
   return spreadPaths;
@@ -15866,8 +15757,8 @@ function requireRunSetAction() {
   var spreadPaths2 = requireSpreadPaths();
   var getValue4 = requireGetValue();
   var jsongMerge2 = requireJsongMerge();
-  var optimizePathSets4 = requireOptimizePathSets();
-  var hasIntersection4 = requireHasIntersection();
+  var optimizePathSets5 = requireOptimizePathSets();
+  var hasIntersection5 = requireHasIntersection();
   var pathValueMerge2 = requirePathValueMerge();
   var Observable3 = requireRouterRx().Observable;
   runSetAction_1 = function outerRunSetAction(routerInstance, modelContext, jsongCache, methodSummary) {
@@ -15889,7 +15780,7 @@ function requireRunSetAction() {
       var paths = spreadPaths2(jsongMessage.paths);
       var optimizedPathsAndPaths = paths.map(function(path) {
         return [
-          optimizePathSets4(
+          optimizePathSets5(
             jsongCache,
             [path],
             routerInstance.maxRefFollow
@@ -15897,7 +15788,7 @@ function requireRunSetAction() {
           path
         ];
       }).filter(function(optimizedAndPath) {
-        return optimizedAndPath[0] && hasIntersection4(optimizedAndPath[0], match3.virtual);
+        return optimizedAndPath[0] && hasIntersection5(optimizedAndPath[0], match3.virtual);
       });
       var optimizedPaths = optimizedPathsAndPaths.map(function(opp) {
         return opp[0];
@@ -15995,12 +15886,12 @@ function requireSet() {
   var Observable3 = requireRouterRx().Observable;
   var spreadPaths2 = requireSpreadPaths();
   var pathValueMerge2 = requirePathValueMerge();
-  var optimizePathSets4 = requireOptimizePathSets();
+  var optimizePathSets5 = requireOptimizePathSets();
   var hasIntersectionWithTree2 = requireHasIntersectionWithTree();
   var getValue4 = requireGetValue();
   var normalizePathSets2 = requireNormalizePathSets();
-  var pathUtils3 = requireLib();
-  var collapse4 = pathUtils3.collapse;
+  var pathUtils3 = lib2;
+  var collapse5 = pathUtils3.collapse;
   var mCGRI = requireMergeCacheAndGatherRefsAndInvalidations();
   var MaxPathsExceededError = requireMaxPathsExceededError();
   var getPathsCount = requireGetPathsCount();
@@ -16049,7 +15940,7 @@ function requireSet() {
               // full path
               path,
               // optimized path
-              optimizePathSets4(
+              optimizePathSets5(
                 details.jsonGraph,
                 [path],
                 router.maxRefFollow
@@ -16059,11 +15950,11 @@ function requireSet() {
             return x[1];
           }).map(function(pathAndOPath) {
             var oPath = pathAndOPath[1];
-            var hasIntersection4 = hasIntersectionWithTree2(
+            var hasIntersection5 = hasIntersectionWithTree2(
               oPath,
               unhandledPathsTree
             );
-            if (hasIntersection4) {
+            if (hasIntersection5) {
               var value = getValue4(
                 jsonGraph.jsonGraph,
                 pathAndOPath[0]
@@ -16081,7 +15972,7 @@ function requireSet() {
             pathValueMerge2(acc, pathValue2);
             return acc;
           }, jsonGraphFragment);
-          jsonGraphEnvelope.paths = collapse4(
+          jsonGraphEnvelope.paths = collapse5(
             pathIntersection.map(function(pV) {
               return pV.path;
             })
@@ -16352,8 +16243,8 @@ function requireCall() {
   var normalizePathSets2 = requireNormalizePathSets();
   var CallNotFoundError2 = requireCallNotFoundError();
   var materialize5 = requireMaterialize();
-  var pathUtils3 = requireLib();
-  var collapse4 = pathUtils3.collapse;
+  var pathUtils3 = lib2;
+  var collapse5 = pathUtils3.collapse;
   var Observable3 = requireRouterRx().Observable;
   var MaxPathsExceededError = requireMaxPathsExceededError();
   var getPathsCount = requireGetPathsCount();
@@ -16405,7 +16296,7 @@ function requireCall() {
             jsonGraph: jsongResult.jsonGraph
           };
           if (reportedPaths.length) {
-            jsongEnv.paths = collapse4(reportedPaths);
+            jsongEnv.paths = collapse5(reportedPaths);
           } else {
             jsongEnv.paths = [];
             jsongEnv.jsonGraph = {};
@@ -16797,20 +16688,10 @@ var falcor_paths_default = {
     },
     set: {
       handler: async ({ _docs, dbs, session }) => {
-        const result4 = await dbs.pouch.bulkDocs(Object.values(_docs).map(({ value }) => {
-          if (!value.changes) {
-            value.changes = [];
-          }
-          if (value.changes.length > 12) {
-            value.changes.splice(2, value.changes.length - 4);
-            value.changes.push({ userId: session.userId, action: "aggregated", date: Date.now() });
-          }
-          if (value.deleted) {
-            value.changes.push({ userId: session.userId, action: "deleted", date: Date.now() });
-          } else if (!value._rev) {
-            value.changes.push({ userId: session.userId, action: "created", date: Date.now() });
-          } else {
-            value.changes.push({ userId: session.userId, action: "updated", date: Date.now() });
+        console.log("set docs", _docs);
+        const result4 = await dbs.pouch.bulkDocs(Object.entries(_docs).map(([key, { value }]) => {
+          if (!value._id) {
+            value._id = key;
           }
           return value;
         }));
@@ -17014,20 +16895,21 @@ function doSync(dbs, since, Observable3, _model) {
     let catchupFeed = false;
     let usedFeed;
     if (!changes2) {
+      console.log("creating pouch _sync changes feed", since);
       changes2 = dbs.pouch.changes({
         since: since || "now",
         live: true,
         timeout: false,
         include_docs: true
       });
-      dbs.pouch.info().then((info2) => {
-        changes2.lastSeq = info2.update_seq;
-      });
+      if (since !== void 0) {
+        changes2.lastSeq = since;
+      }
       usedFeed = changes2;
     } else {
-      if (since !== void 0 && changes2.lastSeq > since) {
+      if (since !== void 0 && since !== null && changes2.lastSeq > since) {
         catchupFeed = true;
-        console.log("creating pouch _sync catchup feed", since, changes2.lastSeq);
+        console.log("creating pouch _sync catchup feed for later client", since, changes2.lastSeq);
         usedFeed = dbs.pouch.changes({
           since,
           live: true,
@@ -17039,6 +16921,7 @@ function doSync(dbs, since, Observable3, _model) {
       }
     }
     const complListener = (_info) => {
+      console.log("completeing change observable");
       subscriber.onCompleted();
     };
     const errListener = (err) => {
@@ -17077,7 +16960,7 @@ function doSync(dbs, since, Observable3, _model) {
       subscriber.onNext(jsonGE);
       schedule3(() => {
         if (!subscriber.isStopped) {
-          subscriber.onCompleted();
+          complListener();
         }
       });
     };
@@ -17086,6 +16969,7 @@ function doSync(dbs, since, Observable3, _model) {
     usedFeed.on("complete", complListener);
     return () => {
       if (catchupFeed) {
+        console.log("killing catchup feed");
         usedFeed.cancel();
       }
       usedFeed.removeListener("change", changeListener);
@@ -17922,9 +17806,9 @@ var expireNode$5 = function expireNode(node, expired, lru) {
   return node;
 };
 var isArray$9 = Array.isArray;
-var iterateKeySet$7 = function iterateKeySet2(keySet, note) {
+var iterateKeySet$7 = function iterateKeySet3(keySet, note) {
   if (note.isArray === void 0) {
-    initializeNote(keySet, note);
+    initializeNote2(keySet, note);
   }
   if (note.isArray) {
     var nextValue;
@@ -17941,7 +17825,7 @@ var iterateKeySet$7 = function iterateKeySet2(keySet, note) {
       var el = keySet[note.arrayOffset];
       if (el !== null && typeof el === "object") {
         if (!note.loaded) {
-          initializeRange(el, note);
+          initializeRange2(el, note);
         }
         if (note.empty) {
           continue;
@@ -17955,7 +17839,7 @@ var iterateKeySet$7 = function iterateKeySet2(keySet, note) {
     return nextValue;
   } else if (note.isObject) {
     if (!note.loaded) {
-      initializeRange(keySet, note);
+      initializeRange2(keySet, note);
     }
     if (note.rangeOffset > note.to) {
       note.done = true;
@@ -17971,7 +17855,7 @@ var iterateKeySet$7 = function iterateKeySet2(keySet, note) {
     return void 0;
   }
 };
-function initializeRange(key, memo) {
+function initializeRange2(key, memo) {
   var from2 = memo.from = key.from || 0;
   var to = memo.to = key.to || (typeof key.length === "number" && memo.from + key.length - 1 || 0);
   memo.rangeOffset = memo.from;
@@ -17980,21 +17864,21 @@ function initializeRange(key, memo) {
     memo.empty = true;
   }
 }
-function initializeNote(key, note) {
+function initializeNote2(key, note) {
   note.done = false;
   var isObject4 = note.isObject = !!(key && typeof key === "object");
   note.isArray = isObject4 && isArray$9(key);
   note.arrayOffset = 0;
 }
 var iterateKeySet$6 = iterateKeySet$7;
-var toTree$2 = function toTree2(paths) {
+var toTree$2 = function toTree3(paths) {
   return paths.reduce(__reducer, {});
 };
 function __reducer(acc, path) {
-  innerToTree(acc, path, 0);
+  innerToTree2(acc, path, 0);
   return acc;
 }
-function innerToTree(seed, path, depth) {
+function innerToTree2(seed, path, depth) {
   var keySet = path[depth];
   var iteratorNote = {};
   var key;
@@ -18010,13 +17894,13 @@ function innerToTree(seed, path, depth) {
       }
     }
     if (nextDepth < path.length) {
-      innerToTree(next, path, nextDepth);
+      innerToTree2(next, path, nextDepth);
     }
     key = iterateKeySet$6(keySet, iteratorNote);
   }
 }
 var iterateKeySet$5 = iterateKeySet$7;
-var hasIntersection$2 = function hasIntersection2(tree, path, depth) {
+var hasIntersection$22 = function hasIntersection3(tree, path, depth) {
   var current = tree;
   var intersects = true;
   for (; intersects && depth < path.length; ++depth) {
@@ -18030,7 +17914,7 @@ var hasIntersection$2 = function hasIntersection2(tree, path, depth) {
         var next = current[innerKey];
         intersects = next !== void 0;
         if (intersects) {
-          intersects = hasIntersection2(next, path, nextDepth);
+          intersects = hasIntersection3(next, path, nextDepth);
         }
         innerKey = iterateKeySet$5(key, note);
       } while (intersects && !note.done);
@@ -18041,8 +17925,8 @@ var hasIntersection$2 = function hasIntersection2(tree, path, depth) {
   }
   return intersects;
 };
-var hasIntersection$12 = hasIntersection$2;
-var pathsComplementFromTree2 = function pathsComplementFromTree3(paths, tree) {
+var hasIntersection$12 = hasIntersection$22;
+var pathsComplementFromTree3 = function pathsComplementFromTree4(paths, tree) {
   var out = [];
   var outLength = -1;
   for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
@@ -18052,13 +17936,13 @@ var pathsComplementFromTree2 = function pathsComplementFromTree3(paths, tree) {
   }
   return out;
 };
-var hasIntersection3 = hasIntersection$2;
-var pathsComplementFromLengthTree2 = function pathsComplementFromLengthTree3(paths, tree) {
+var hasIntersection4 = hasIntersection$22;
+var pathsComplementFromLengthTree3 = function pathsComplementFromLengthTree4(paths, tree) {
   var out = [];
   var outLength = -1;
   for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
     var path = paths[i3];
-    if (!hasIntersection3(tree[path.length], path, 0)) {
+    if (!hasIntersection4(tree[path.length], path, 0)) {
       out[++outLength] = path;
     }
   }
@@ -18106,10 +17990,10 @@ jsonKey.isJsonKey = isJsonKey;
 jsonKey.maybeJsonKey = maybeJsonKey;
 var toPaths$2 = { exports: {} };
 var integerKey = {};
-var MAX_SAFE_INTEGER = 9007199254740991;
-var abs = Math.abs;
+var MAX_SAFE_INTEGER2 = 9007199254740991;
+var abs2 = Math.abs;
 var isSafeInteger = Number.isSafeInteger || function isSafeInteger2(num) {
-  return typeof num === "number" && num % 1 === 0 && abs(num) <= MAX_SAFE_INTEGER;
+  return typeof num === "number" && num % 1 === 0 && abs2(num) <= MAX_SAFE_INTEGER2;
 };
 function maybeIntegerKey$1(val) {
   if (typeof val === "string") {
@@ -18133,30 +18017,30 @@ integerKey.maybeIntegerKey = maybeIntegerKey$1;
 var maybeIntegerKey = integerKey.maybeIntegerKey;
 var isIntegerKey = integerKey.isIntegerKey;
 var isArray$8 = Array.isArray;
-var typeOfObject = "object";
-var typeOfNumber = "number";
-toPaths$2.exports = function toPaths2(lengths) {
+var typeOfObject2 = "object";
+var typeOfNumber2 = "number";
+toPaths$2.exports = function toPaths3(lengths) {
   var pathmap;
   var allPaths = [];
   for (var length in lengths) {
     var num = maybeIntegerKey(length);
-    if (typeof num === typeOfNumber && isObject$d(pathmap = lengths[length])) {
-      var paths = collapsePathMap(pathmap, 0, num).sets;
+    if (typeof num === typeOfNumber2 && isObject$d(pathmap = lengths[length])) {
+      var paths = collapsePathMap2(pathmap, 0, num).sets;
       var pathsIndex = -1;
       var pathsCount = paths.length;
       while (++pathsIndex < pathsCount) {
-        allPaths.push(collapsePathSetIndexes(paths[pathsIndex]));
+        allPaths.push(collapsePathSetIndexes2(paths[pathsIndex]));
       }
     }
   }
   return allPaths;
 };
 function isObject$d(value) {
-  return value !== null && typeof value === typeOfObject;
+  return value !== null && typeof value === typeOfObject2;
 }
-function collapsePathMap(pathmap, depth, length) {
+function collapsePathMap2(pathmap, depth, length) {
   var key;
-  var code = getHashCode(String(depth));
+  var code = getHashCode2(String(depth));
   var subs = /* @__PURE__ */ Object.create(null);
   var codes = [];
   var codesIndex = -1;
@@ -18170,7 +18054,7 @@ function collapsePathMap(pathmap, depth, length) {
     subKeysCount = getKeys$1(pathmap, subKeys);
     while (++subKeysIndex < subKeysCount) {
       key = subKeys[subKeysIndex];
-      subPath = collapsePathMap(pathmap[key], depth + 1, length);
+      subPath = collapsePathMap2(pathmap[key], depth + 1, length);
       subCode = subPath.code;
       if (subs[subCode]) {
         subPath = subs[subCode];
@@ -18181,9 +18065,9 @@ function collapsePathMap(pathmap, depth, length) {
           sets: subPath.sets
         };
       }
-      code = getHashCode(code + key + subCode);
+      code = getHashCode2(code + key + subCode);
       var num = maybeIntegerKey(key);
-      subPath.keys.push(typeof num === typeOfNumber ? num : key);
+      subPath.keys.push(typeof num === typeOfNumber2 ? num : key);
     }
     while (++codesIndex < codesCount) {
       key = codes[codesIndex];
@@ -18216,7 +18100,7 @@ function collapsePathMap(pathmap, depth, length) {
       pathsets[pathsetsCount++] = subKeys;
     }
     while (++subKeysIndex < subKeysCount) {
-      code = getHashCode(code + subKeys[subKeysIndex]);
+      code = getHashCode2(code + subKeys[subKeysIndex]);
     }
   }
   return {
@@ -18224,18 +18108,18 @@ function collapsePathMap(pathmap, depth, length) {
     sets: pathsets
   };
 }
-function collapsePathSetIndexes(pathset) {
+function collapsePathSetIndexes2(pathset) {
   var keysetIndex = -1;
   var keysetCount = pathset.length;
   while (++keysetIndex < keysetCount) {
     var keyset = pathset[keysetIndex];
     if (isArray$8(keyset)) {
-      pathset[keysetIndex] = collapseIndex(keyset);
+      pathset[keysetIndex] = collapseIndex2(keyset);
     }
   }
   return pathset;
 }
-function collapseIndex(keyset) {
+function collapseIndex2(keyset) {
   var keyIndex = -1;
   var keyCount = keyset.length - 1;
   var isSparseRange = keyCount > 0;
@@ -18248,7 +18132,7 @@ function collapseIndex(keyset) {
     keyset[keyIndex] = parseInt(key, 10);
   }
   if (isSparseRange === true) {
-    keyset.sort(sortListAscending);
+    keyset.sort(sortListAscending2);
     var from2 = keyset[0];
     var to = keyset[keyCount];
     if (to - from2 <= keyCount) {
@@ -18260,7 +18144,7 @@ function collapseIndex(keyset) {
   }
   return keyset;
 }
-function sortListAscending(a3, b) {
+function sortListAscending2(a3, b) {
   return a3 - b;
 }
 function getKeys$1(map2, keys2, sort) {
@@ -18270,7 +18154,7 @@ function getKeys$1(map2, keys2, sort) {
   }
   return len2;
 }
-function getHashCode(key) {
+function getHashCode2(key) {
   var code = 5381;
   var index2 = -1;
   var count = key.length;
@@ -18280,10 +18164,10 @@ function getHashCode(key) {
   return String(code);
 }
 toPaths$2.exports._isSafeNumber = isIntegerKey;
-var toPathsExports = toPaths$2.exports;
-var toPaths$1 = toPathsExports;
-var toTree$1 = toTree$2;
-var collapse2 = function collapse3(paths) {
+var toPathsExports2 = toPaths$2.exports;
+var toPaths$12 = toPathsExports2;
+var toTree$12 = toTree$2;
+var collapse3 = function collapse4(paths) {
   var collapseMap = paths.reduce(function(acc, path) {
     var len2 = path.length;
     if (!acc[len2]) {
@@ -18293,16 +18177,16 @@ var collapse2 = function collapse3(paths) {
     return acc;
   }, {});
   Object.keys(collapseMap).forEach(function(collapseKey) {
-    collapseMap[collapseKey] = toTree$1(collapseMap[collapseKey]);
+    collapseMap[collapseKey] = toTree$12(collapseMap[collapseKey]);
   });
-  return toPaths$1(collapseMap);
+  return toPaths$12(collapseMap);
 };
 var errors$12 = {
   innerReferences: "References with inner references are not allowed.",
   circularReference: "There appears to be a circular reference, maximum reference following exceeded."
 };
 var errors2 = errors$12;
-function followReference$2(cacheRoot, ref3, maxRefFollow) {
+function followReference$22(cacheRoot, ref3, maxRefFollow) {
   if (typeof maxRefFollow === "undefined") {
     maxRefFollow = 5;
   }
@@ -18334,7 +18218,7 @@ function followReference$2(cacheRoot, ref3, maxRefFollow) {
   }
   return { node, refPath };
 }
-var followReference_1$1 = followReference$2;
+var followReference_1$1 = followReference$22;
 function cloneArray$12(arr, index2) {
   var a3 = [];
   var len2 = arr.length;
@@ -18344,7 +18228,7 @@ function cloneArray$12(arr, index2) {
   return a3;
 }
 var cloneArray_12 = cloneArray$12;
-var catAndSlice$12 = function catAndSlice2(a3, b, slice3) {
+var catAndSlice$12 = function catAndSlice3(a3, b, slice3) {
   var next = [], i3, j, len2;
   for (i3 = 0, len2 = a3.length; i3 < len2; ++i3) {
     next[i3] = a3[i3];
@@ -18354,26 +18238,26 @@ var catAndSlice$12 = function catAndSlice2(a3, b, slice3) {
   }
   return next;
 };
-var iterateKeySet$4 = iterateKeySet$7;
+var iterateKeySet$42 = iterateKeySet$7;
 var cloneArray2 = cloneArray_12;
-var catAndSlice3 = catAndSlice$12;
+var catAndSlice4 = catAndSlice$12;
 var followReference$12 = followReference_1$1;
-var optimizePathSets2 = function optimizePathSets3(cache, paths, maxRefFollow) {
+var optimizePathSets3 = function optimizePathSets4(cache, paths, maxRefFollow) {
   if (typeof maxRefFollow === "undefined") {
     maxRefFollow = 5;
   }
   var optimized = [];
   for (var i3 = 0, len2 = paths.length; i3 < len2; ++i3) {
-    var error3 = optimizePathSet(cache, cache, paths[i3], 0, optimized, [], maxRefFollow);
+    var error3 = optimizePathSet2(cache, cache, paths[i3], 0, optimized, [], maxRefFollow);
     if (error3) {
       return { error: error3 };
     }
   }
   return { paths: optimized };
 };
-function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
+function optimizePathSet2(cache, cacheRoot, pathSet, depth, out, optimizedPath, maxRefFollow) {
   if (cache === void 0) {
-    out[out.length] = catAndSlice3(optimizedPath, pathSet, depth);
+    out[out.length] = catAndSlice4(optimizedPath, pathSet, depth);
     return;
   }
   if (cache === null || cache.$type && cache.$type !== "ref" || typeof cache !== "object") {
@@ -18389,7 +18273,7 @@ function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, m
   var key = keySet;
   if (isKeySet) {
     iteratorNote = {};
-    key = iterateKeySet$4(keySet, iteratorNote);
+    key = iterateKeySet$42(keySet, iteratorNote);
   }
   var next, nextOptimized;
   do {
@@ -18406,7 +18290,7 @@ function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, m
     } else {
       nextOptimized = optimizedPath;
     }
-    var error3 = optimizePathSet(
+    var error3 = optimizePathSet2(
       next,
       cacheRoot,
       pathSet,
@@ -18420,22 +18304,22 @@ function optimizePathSet(cache, cacheRoot, pathSet, depth, out, optimizedPath, m
     }
     optimizedPath.length = optimizedPathLength;
     if (iteratorNote && !iteratorNote.done) {
-      key = iterateKeySet$4(keySet, iteratorNote);
+      key = iterateKeySet$42(keySet, iteratorNote);
     }
   } while (iteratorNote && !iteratorNote.done);
 }
-function getRangeOrKeySize(rangeOrKey) {
+function getRangeOrKeySize2(rangeOrKey) {
   if (rangeOrKey == null) {
     return 1;
   } else if (Array.isArray(rangeOrKey)) {
     throw new Error("Unexpected Array found in keySet: " + JSON.stringify(rangeOrKey));
   } else if (typeof rangeOrKey === "object") {
-    return getRangeSize(rangeOrKey);
+    return getRangeSize2(rangeOrKey);
   } else {
     return 1;
   }
 }
-function getRangeSize(range5) {
+function getRangeSize2(range5) {
   var to = range5.to;
   var length = range5.length;
   if (to != null) {
@@ -18461,7 +18345,7 @@ function getRangeSize(range5) {
     throw new Error("Invalid range, expected 'to' or 'length': " + JSON.stringify(range5));
   }
 }
-function getPathCount(pathSet) {
+function getPathCount2(pathSet) {
   if (pathSet.length === 0) {
     throw new Error("All paths must have length larger than zero.");
   }
@@ -18472,16 +18356,16 @@ function getPathCount(pathSet) {
       var numKeys = 0;
       for (var j = 0; j < segment.length; j++) {
         var keySet = segment[j];
-        numKeys += getRangeOrKeySize(keySet);
+        numKeys += getRangeOrKeySize2(keySet);
       }
       numPaths *= numKeys;
     } else {
-      numPaths *= getRangeOrKeySize(segment);
+      numPaths *= getRangeOrKeySize2(segment);
     }
   }
   return numPaths;
 }
-var pathCount2 = getPathCount;
+var pathCount2 = getPathCount2;
 var _escape = function escape(str) {
   return "_" + str;
 };
@@ -18492,7 +18376,7 @@ var _unescape = function unescape2(str) {
     throw SyntaxError('Expected "_".');
   }
 };
-var iterateKeySet$3 = iterateKeySet$7;
+var iterateKeySet$32 = iterateKeySet$7;
 var materialize2 = function materialize3(pathSet, value) {
   return pathSet.reduceRight(function materializeInner(acc, keySet) {
     var branch = {};
@@ -18501,10 +18385,10 @@ var materialize2 = function materialize3(pathSet, value) {
       return branch;
     }
     var iteratorNote = {};
-    var key = iterateKeySet$3(keySet, iteratorNote);
+    var key = iterateKeySet$32(keySet, iteratorNote);
     while (!iteratorNote.done) {
       branch[key] = acc;
-      key = iterateKeySet$3(keySet, iteratorNote);
+      key = iterateKeySet$32(keySet, iteratorNote);
     }
     return branch;
   }, value);
@@ -18512,18 +18396,18 @@ var materialize2 = function materialize3(pathSet, value) {
 var lib$1 = {
   iterateKeySet: iterateKeySet$7,
   toTree: toTree$2,
-  pathsComplementFromTree: pathsComplementFromTree2,
-  pathsComplementFromLengthTree: pathsComplementFromLengthTree2,
+  pathsComplementFromTree: pathsComplementFromTree3,
+  pathsComplementFromLengthTree: pathsComplementFromLengthTree3,
   toJsonKey: jsonKey.toJsonKey,
   isJsonKey: jsonKey.isJsonKey,
   maybeJsonKey: jsonKey.maybeJsonKey,
-  hasIntersection: hasIntersection$2,
-  toPaths: toPathsExports,
+  hasIntersection: hasIntersection$22,
+  toPaths: toPathsExports2,
   isIntegerKey: integerKey.isIntegerKey,
   maybeIntegerKey: integerKey.maybeIntegerKey,
-  collapse: collapse2,
+  collapse: collapse3,
   followReference: followReference_1$1,
-  optimizePathSets: optimizePathSets2,
+  optimizePathSets: optimizePathSets3,
   pathCount: pathCount2,
   escape: _escape,
   unescape: _unescape,
@@ -18589,7 +18473,7 @@ var now = now$3;
 var expiresNow = expiresNow$1;
 var atomSize = 50;
 var clone$3 = clone$4;
-var isArray$6 = Array.isArray;
+var isArray$62 = Array.isArray;
 var getSize$5 = getSize$6;
 var getExpires = getExpires$1;
 var atomType = requireAtom();
@@ -18622,7 +18506,7 @@ var wrapNode$2 = function wrapNode(nodeArg, typeArg, value) {
   } else if (size == null || size <= 0) {
     switch (typeof value) {
       case "object":
-        if (isArray$6(value)) {
+        if (isArray$62(value)) {
           size = atomSize + value.length;
         } else {
           size = atomSize + 1;
@@ -18952,7 +18836,7 @@ var isExpired$5 = isAlreadyExpired;
 var isFunction$2 = isFunction$5;
 var isPrimitive$3 = isPrimitive$4;
 var expireNode$3 = expireNode$5;
-var iterateKeySet$2 = lib$1.iterateKeySet;
+var iterateKeySet$22 = lib$1.iterateKeySet;
 var incrementVersion$2 = incrementVersionExports;
 var mergeJSONGraphNode2 = mergeJSONGraphNode$1;
 var NullInPathError$1 = NullInPathError_1;
@@ -19011,7 +18895,7 @@ function setJSONGraphPathSet(path, depth, root4, parent, node, messageRoot, mess
   var note = {};
   var branch = depth < path.length - 1;
   var keySet = path[depth];
-  var key = iterateKeySet$2(keySet, note);
+  var key = iterateKeySet$22(keySet, note);
   var optimizedIndex = optimizedPath.index;
   do {
     requestedPath.depth = depth;
@@ -19065,7 +18949,7 @@ function setJSONGraphPathSet(path, depth, root4, parent, node, messageRoot, mess
         optimizedPaths.push(optimizedPath.slice(0, optimizedPath.index));
       }
     }
-    key = iterateKeySet$2(keySet, note);
+    key = iterateKeySet$22(keySet, note);
     if (note.done) {
       break;
     }
@@ -19372,9 +19256,9 @@ function requireFollowReference2() {
   var createHardlink3 = createHardlink$2;
   var onValue3 = onValue$2;
   var isExpired3 = requireIsExpired();
-  var $ref2 = ref;
+  var $ref3 = ref;
   var promote2 = requirePromote();
-  function followReference3(model, root4, nodeArg, referenceContainerArg, referenceArg, seed, isJSONG2) {
+  function followReference4(model, root4, nodeArg, referenceContainerArg, referenceArg, seed, isJSONG2) {
     var node = nodeArg;
     var reference = referenceArg;
     var referenceContainer = referenceContainerArg;
@@ -19406,7 +19290,7 @@ function requireFollowReference2() {
           if (!referenceContainer.$_context) {
             createHardlink3(referenceContainer, next);
           }
-          if (type === $ref2) {
+          if (type === $ref3) {
             if (isJSONG2) {
               onValue3(
                 model,
@@ -19445,7 +19329,7 @@ function requireFollowReference2() {
     }
     return [node, reference, referenceContainer];
   }
-  followReference_1 = followReference3;
+  followReference_1 = followReference4;
   return followReference_1;
 }
 var getValueSync;
@@ -19454,11 +19338,11 @@ function requireGetValueSync() {
   if (hasRequiredGetValueSync)
     return getValueSync;
   hasRequiredGetValueSync = 1;
-  var followReference3 = requireFollowReference2();
+  var followReference4 = requireFollowReference2();
   var clone5 = requireClone2();
   var isExpired3 = requireIsExpired();
   var promote2 = requirePromote();
-  var $ref2 = ref;
+  var $ref3 = ref;
   var $atom2 = requireAtom();
   var $error2 = error;
   getValueSync = function getValueSync2(model, simplePath, noClone) {
@@ -19490,13 +19374,13 @@ function requireGetValueSync() {
         break;
       }
       if (depth < len2) {
-        if (type === $ref2) {
+        if (type === $ref3) {
           if (isExpired3(next)) {
             expired = true;
             out = void 0;
             break;
           }
-          ref3 = followReference3(model, root4, root4, next, next.value);
+          ref3 = followReference4(model, root4, root4, next, next.value);
           refNode = ref3[0];
           if (!refNode) {
             out = void 0;
@@ -19691,13 +19575,13 @@ function requireSetPathValues() {
     return setPathValues$2;
   hasRequiredSetPathValues = 1;
   var createHardlink3 = createHardlink$2;
-  var $ref2 = ref;
+  var $ref3 = ref;
   var getBoundValue2 = requireGetBoundValue();
   var isExpired3 = isExpired$7;
   var isFunction4 = isFunction$5;
   var isPrimitive3 = isPrimitive$4;
   var expireNode3 = expireNode$5;
-  var iterateKeySet4 = lib$1.iterateKeySet;
+  var iterateKeySet5 = lib$1.iterateKeySet;
   var incrementVersion3 = incrementVersionExports;
   var mergeValueOrInsertBranch3 = mergeValueOrInsertBranch$1;
   var NullInPathError2 = NullInPathError_1;
@@ -19752,7 +19636,7 @@ function requireSetPathValues() {
     var note = {};
     var branch = depth < path.length - 1;
     var keySet = path[depth];
-    var key = iterateKeySet4(keySet, note);
+    var key = iterateKeySet5(keySet, note);
     var optimizedIndex = optimizedPath.index;
     do {
       requestedPath.depth = depth;
@@ -19802,7 +19686,7 @@ function requireSetPathValues() {
           optimizedPaths.push(optimizedPath.slice(0, optimizedPath.index));
         }
       }
-      key = iterateKeySet4(keySet, note);
+      key = iterateKeySet5(keySet, note);
       if (note.done) {
         break;
       }
@@ -19865,7 +19749,7 @@ function requireSetPathValues() {
   }
   function setNode2(root4, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2, replacedPaths) {
     var type = node.$type;
-    while (type === $ref2) {
+    while (type === $ref3) {
       var results = setReference2(
         value,
         root4,
@@ -20120,8 +20004,8 @@ function arrayConcatElement(a1, element) {
 }
 var complementExports = complement$1.exports;
 var pathUtils2 = lib$1;
-var toTree3 = pathUtils2.toTree;
-var toPaths3 = pathUtils2.toPaths;
+var toTree4 = pathUtils2.toTree;
+var toPaths4 = pathUtils2.toPaths;
 var InvalidSourceError$4 = InvalidSourceError_1;
 var flushGetRequest$1 = function flushGetRequest(request, pathSetArrayBatch, callback) {
   if (request._count === 0) {
@@ -20152,11 +20036,11 @@ var flushGetRequest$1 = function flushGetRequest(request, pathSetArrayBatch, cal
     var pathMapIdx = 0, pathMapLen = pathMapKeys.length;
     for (; pathMapIdx < pathMapLen; ++pathMapIdx) {
       var pathMapKey = pathMapKeys[pathMapIdx];
-      pathMap[pathMapKey] = toTree3(pathMap[pathMapKey]);
+      pathMap[pathMapKey] = toTree4(pathMap[pathMapKey]);
     }
   }
   if (model._enablePathCollapse) {
-    requestPaths = toPaths3(request._pathMap);
+    requestPaths = toPaths4(request._pathMap);
   } else if (pathSetArrayBatch.length === 1) {
     requestPaths = pathSetArrayBatch[0];
   } else {
@@ -21206,10 +21090,10 @@ CallResponse$1.prototype._subscribe = function _subscribe(observer) {
   });
 };
 var CallResponse_1 = CallResponse$1;
-var isArray$5 = Array.isArray;
+var isArray$52 = Array.isArray;
 var isObject$4 = isObject$f;
 var isPathValue$3 = function isPathValue2(pathValue2) {
-  return isObject$4(pathValue2) && (isArray$5(pathValue2.path) || typeof pathValue2.path === "string");
+  return isObject$4(pathValue2) && (isArray$52(pathValue2.path) || typeof pathValue2.path === "string");
 };
 var isObject$3 = isObject$f;
 var isJSONEnvelope$4 = function isJSONEnvelope(envelope) {
@@ -21359,11 +21243,11 @@ var isJSONGraphEnvelope$3 = function isJSONGraphEnvelope(envelope) {
 };
 var createHardlink2 = createHardlink$2;
 var __prefix = reservedPrefix$1;
-var $ref$1 = ref;
+var $ref$12 = ref;
 var getBoundValue = requireGetBoundValue();
 var isArray$22 = Array.isArray;
 var hasOwn = hasOwn_1;
-var isObject$1 = isObject$f;
+var isObject$12 = isObject$f;
 var isExpired$2 = isExpired$7;
 var isFunction3 = isFunction$5;
 var isPrimitive$1 = isPrimitive$4;
@@ -21424,7 +21308,7 @@ function setPathMap(pathMap, depth, root4, parent, node, requestedPaths, optimiz
     do {
       var key = keys2[keyIndex];
       var child = pathMap[key];
-      var branch = isObject$1(child) && !child.$type;
+      var branch = isObject$12(child) && !child.$type;
       requestedPath.depth = depth;
       var results = setNode(
         root4,
@@ -21532,7 +21416,7 @@ function setReference(value, root4, node, requestedPath, optimizedPath, version3
 }
 function setNode(root4, parent, node, key, value, branch, reference, requestedPath, optimizedPath, version3, expired, lru, comparator2, errorSelector2) {
   var type = node.$type;
-  while (type === $ref$1) {
+  while (type === $ref$12) {
     var results = setReference(
       value,
       root4,
@@ -21583,7 +21467,7 @@ function setNode(root4, parent, node, key, value, branch, reference, requestedPa
   return [node, parent];
 }
 function getKeys(pathMap) {
-  if (isObject$1(pathMap) && !pathMap.$type) {
+  if (isObject$12(pathMap) && !pathMap.$type) {
     var keys2 = [];
     var itr = 0;
     if (isArray$22(pathMap)) {
@@ -22009,12 +21893,12 @@ var onValueType$1 = function onValueType(model, node, path, depth, seed, outerRe
     );
   }
 };
-var followReference2 = requireFollowReference2();
+var followReference3 = requireFollowReference2();
 var onValueType2 = onValueType$1;
 var onValue2 = onValue$2;
 var isExpired2 = requireIsExpired();
-var iterateKeySet3 = lib$1.iterateKeySet;
-var $ref = ref;
+var iterateKeySet4 = lib$1.iterateKeySet;
+var $ref2 = ref;
 var promote = requirePromote();
 var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerResults, branchInfo, requestedPath, optimizedPathArg, optimizedLength, isJSONG2, fromReferenceArg, referenceContainerArg) {
   var fromReference = fromReferenceArg;
@@ -22043,7 +21927,7 @@ var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerR
   var key = keySet;
   if (isKeySet) {
     iteratorNote = {};
-    key = iterateKeySet3(keySet, iteratorNote);
+    key = iterateKeySet4(keySet, iteratorNote);
   }
   var allowFromWhenceYouCame = model._allowFromWhenceYouCame;
   var optimizedLengthPlus1 = optimizedLength + 1;
@@ -22064,7 +21948,7 @@ var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerR
         isJSONG2
       );
       if (iteratorNote && !iteratorNote.done) {
-        key = iterateKeySet3(keySet, iteratorNote);
+        key = iterateKeySet4(keySet, iteratorNote);
       }
       continue;
     }
@@ -22077,7 +21961,7 @@ var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerR
     if (next) {
       var nType = next.$type;
       var value = nType && next.value || next;
-      if (nextDepth < path.length && nType && nType === $ref && !isExpired2(next)) {
+      if (nextDepth < path.length && nType && nType === $ref2 && !isExpired2(next)) {
         promote(model._root, next);
         if (isJSONG2) {
           onValue2(
@@ -22093,7 +21977,7 @@ var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerR
             isJSONG2
           );
         }
-        var ref3 = followReference2(
+        var ref3 = followReference3(
           model,
           root4,
           root4,
@@ -22146,7 +22030,7 @@ var walkPath$1 = function walkPath(model, root4, curr, path, depth, seed, outerR
       referenceContainer
     );
     if (iteratorNote && !iteratorNote.done) {
-      key = iterateKeySet3(keySet, iteratorNote);
+      key = iterateKeySet4(keySet, iteratorNote);
     }
   } while (iteratorNote && !iteratorNote.done);
 };
@@ -22689,7 +22573,7 @@ function requireDeref() {
   var InvalidDerefInputError = requireInvalidDerefInputError();
   var getCachePosition2 = requireGetCachePosition();
   var CONTAINER_DOES_NOT_EXIST = "e";
-  var $ref2 = ref;
+  var $ref3 = ref;
   deref = function deref2(boundJSONArg) {
     var absolutePath = boundJSONArg && boundJSONArg.$__path;
     var refPath = boundJSONArg && boundJSONArg.$__refPath;
@@ -22700,7 +22584,7 @@ function requireDeref() {
       if (toReference) {
         validContainer = false;
         referenceContainer = getCachePosition2(this, toReference);
-        if (refPath && referenceContainer && referenceContainer.$type === $ref2) {
+        if (refPath && referenceContainer && referenceContainer.$type === $ref3) {
           var containerPath = referenceContainer.value;
           var i3 = 0;
           var len2 = refPath.length;
@@ -22944,7 +22828,7 @@ function requireInvalidatePathSets() {
     return invalidatePathSets;
   hasRequiredInvalidatePathSets = 1;
   var __ref2 = requireRef();
-  var $ref2 = ref;
+  var $ref3 = ref;
   var getBoundValue2 = requireGetBoundValue();
   var promote2 = requirePromote();
   var getSize4 = getSize$6;
@@ -22952,7 +22836,7 @@ function requireInvalidatePathSets() {
   var isFunction4 = isFunction$5;
   var isPrimitive3 = isPrimitive$4;
   var expireNode3 = expireNode$5;
-  var iterateKeySet4 = lib$1.iterateKeySet;
+  var iterateKeySet5 = lib$1.iterateKeySet;
   var incrementVersion3 = incrementVersionExports;
   var updateNodeAncestors3 = updateNodeAncestors$3;
   var removeNodeAndDescendants2 = requireRemoveNodeAndDescendants();
@@ -22982,7 +22866,7 @@ function requireInvalidatePathSets() {
     var note = {};
     var branch = depth < path.length - 1;
     var keySet = path[depth];
-    var key = iterateKeySet4(keySet, note);
+    var key = iterateKeySet5(keySet, note);
     do {
       var results = invalidateNode(root4, parent, node, key, branch, expired, lru);
       var nextNode = results[0];
@@ -23003,7 +22887,7 @@ function requireInvalidatePathSets() {
           updateNodeAncestors3(nextParent, getSize4(nextNode), lru, version3);
         }
       }
-      key = iterateKeySet4(keySet, note);
+      key = iterateKeySet5(keySet, note);
     } while (!note.done);
   }
   function invalidateReference(root4, node, expired, lru) {
@@ -23044,7 +22928,7 @@ function requireInvalidatePathSets() {
   }
   function invalidateNode(root4, parent, node, key, branch, expired, lru) {
     var type = node.$type;
-    while (type === $ref2) {
+    while (type === $ref3) {
       var results = invalidateReference(root4, node, expired, lru);
       node = results[0];
       if (isPrimitive3(node)) {
@@ -23078,7 +22962,7 @@ function requireInvalidatePathMaps() {
   hasRequiredInvalidatePathMaps = 1;
   var createHardlink3 = createHardlink$2;
   var __prefix2 = reservedPrefix$1;
-  var $ref2 = ref;
+  var $ref3 = ref;
   var getBoundValue2 = requireGetBoundValue();
   var promote2 = requirePromote();
   var getSize4 = getSize$6;
@@ -23168,7 +23052,7 @@ function requireInvalidatePathMaps() {
   }
   function invalidateNode(root4, parent, node, key, branch, expired, lru) {
     var type = node.$type;
-    while (type === $ref2) {
+    while (type === $ref3) {
       var results = invalidateReference(root4, node, expired, lru);
       node = results[0];
       if (isPrimitive3(node)) {
@@ -23531,6 +23415,36 @@ var lib3 = falcor;
 falcor.Model = Model_1;
 var index = /* @__PURE__ */ getDefaultExportFromCjs3(lib3);
 
+// app/src/store/helpers.js
+function extractFromCache({ obj, path, idx = 0, root: root4 = obj, parentAtom, verbose }) {
+  if (verbose) {
+    console.log({ obj, path, idx });
+  }
+  if (obj && obj.$type === "atom" && path.length - idx !== 0) {
+    const step = path[idx];
+    if (obj.value === null || obj.value === void 0) {
+      return { value: void 0, parentAtom, $type: obj.$type };
+    }
+    return extractFromCache({ obj: obj.value[step], path, idx: idx + 1, root: root4, parentAtom: { obj, relPath: path.slice(idx) }, verbose });
+  } else if (obj && obj.$type === "ref") {
+    const newPath = obj.value.concat(path.slice(idx));
+    return extractFromCache({ obj: root4, path: newPath, verbose });
+  } else if (path.length - idx === 0) {
+    if (obj && obj.$type === "error") {
+      return { value: void 0, parentAtom, $type: obj.$type };
+    } else if (obj && obj.$type) {
+      return { value: obj.value, parentAtom, $type: obj.$type };
+    } else {
+      return { value: obj, parentAtom };
+    }
+  } else if (obj === null || obj === void 0) {
+    return { value: obj, parentAtom };
+  } else {
+    const step = path[idx];
+    return extractFromCache({ obj: obj[step], path, idx: idx + 1, root: root4, verbose });
+  }
+}
+
 // app/src/falcor/server.js
 var Server = class {
   constructor(model) {
@@ -23552,7 +23466,6 @@ var Server = class {
         return this.dataSource.set(jsonGraphEnvelope)._toJSONG();
       case "call":
         paths = action[5] || [];
-        console.log({ callPath, args, pathSuffixes, paths });
         return this.dataSource.call(callPath, args, pathSuffixes, paths)._toJSONG();
     }
   }
@@ -23563,10 +23476,11 @@ function server_default({
   cache,
   dbs,
   session,
-  fetch: fetch2
+  fetch: fetch2,
+  debug
 }) {
-  const FalcorRouter = makeRouter(toFalcorRoutes(schema, useAll));
-  const routerInstance = new FalcorRouter({ dbs, session, fetch: fetch2 });
+  const FalcorRouter = makeRouter({ dataRoutes: toFalcorRoutes(schema, useAll) });
+  const routerInstance = new FalcorRouter({ dbs, session, fetch: fetch2, debug });
   const serverModel = index({
     cache,
     source: routerInstance,
@@ -23575,6 +23489,15 @@ function server_default({
     maxRetries: 1
   }).batch().boxValues();
   routerInstance.model = serverModel.withoutDataSource();
+  routerInstance.model.getPageKey = function(path, from2) {
+    const listCache = extractFromCache({ path, obj: this._root.cache });
+    for (let index2 = from2; index2 > 0; index2--) {
+      if (listCache.value?.[index2]?.$pageKey !== void 0) {
+        return { pageKey: listCache.value[index2].$pageKey, index: index2 };
+      }
+    }
+    return { index: 0 };
+  };
   return new Server(serverModel);
 }
 
