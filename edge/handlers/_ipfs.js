@@ -14,7 +14,7 @@ export default {
     let disableCache = false
 
     const pinName = env === 'prod' ? appName : appName + '_' + env
-    let kvPrefix = req.url.pathname.startsWith('/_ayu') ? 'ayu:' : pinName + ':'
+    let kvPrefix = req.url.pathname.startsWith('/_ayu') ? 'atreyu:' : pinName + ':'
 
     let ipfsMap
     let reqHash
@@ -63,7 +63,7 @@ export default {
           // get ipfsmap, get hash
           const folderHash = ipfsPathParts[0]
           if (folderHash === app.ayuHash) {
-            kvPrefix = 'ayu:'
+            kvPrefix = 'atreyu:'
             appHash = app.ayuHash
             path = path.replace(`/ipfs/${folderHash}`, '')
           } else if (folderHash === app.Hash) {
@@ -126,7 +126,7 @@ export default {
         }
 
         if (!path.endsWith('/ipfs-map.json')) {
-          // TODO: we can also 304 uncahnged ipfs maps + need to poll for hash update in ayu updater
+          // TODO: we can also 304 unchanged ipfs maps + need to poll for hash update in ayu updater
           if (ipfsMap[path] === existingHash) {
             return (new Response(null, { status: 304, statusText: 'Not Modified', 'cache-status': 'browser-cache; hit' }))
           } else {

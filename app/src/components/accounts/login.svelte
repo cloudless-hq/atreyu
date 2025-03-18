@@ -9,12 +9,14 @@
   const askEmail = location.hostname.endsWith('localhost')
   let isIncognito
   onMount(async () => {
-    if (userData) {
+    if (userData || !askEmail) {
+      // we dont ask for session name or org in the current operation mode, but if we ask for email anyways we can use this for testing
       login()
+      return
       // document.loginForm.submit()
     }
     if ('storage' in navigator && 'estimate' in navigator.storage) {
-      const {usage, quota} = await navigator.storage.estimate?.()
+      const { usage, quota } = await navigator.storage.estimate?.()
 
       if(quota < 1200000000){
         isIncognito = true
@@ -22,8 +24,8 @@
     }
   })
 
-  let sideWidth = '440'
-  let contentMin
+  // let sideWidth = '440'
+  // let contentMin
 
   let saveToDevice = true
 
@@ -44,9 +46,19 @@
 
   function login () {
     const loginData = { email }
+
+    const sParams = new URLSearchParams(location.search)
+
+    // if org is passed from parent component use it, otherwise check and use the url params
     if (org) {
       loginData.org = org
+    } else {
+      const orgName = sParams.get('orgName')
+      if (orgName) {
+        loginData.org = orgName
+      }
     }
+
     if (isIncognito) {
       loginData.isIncognito = isIncognito
     }
@@ -56,9 +68,20 @@
     if (sessionName) {
       loginData.sessionName = sessionName
     }
-    const cont = (new URLSearchParams(location.search)).get('continue')
+
+    const cont = sParams.get('continue')
     if (cont) {
       loginData.continue = cont
+    }
+
+    const projectName = sParams.get('projectName')
+    if (projectName) {
+      loginData.projectName = projectName
+    }
+
+    const startDemoProject = sParams.get('startDemoProject')
+    if (startDemoProject) {
+      loginData.startDemoProject = startDemoProject
     }
 
     let searchParams = new URLSearchParams(loginData)

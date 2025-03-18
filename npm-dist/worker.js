@@ -9386,11 +9386,11 @@ async function make_pouch_default({
         let updateReplications = false;
         if (sessionDoc.replications) {
           if (sessionDoc.replications.pull !== sync2.pull.replicationId) {
-            console.error("pull replication id cahnged", sessionDoc, sync2.pull);
+            console.error("pull replication id changed", sessionDoc, sync2.pull);
             updateReplications = true;
           }
           if (sessionDoc.replications.push !== sync2.push.replicationId) {
-            console.error("push replication id cahnged", sessionDoc, sync2.push);
+            console.error("push replication id changed", sessionDoc, sync2.push);
             updateReplications = true;
           }
         }

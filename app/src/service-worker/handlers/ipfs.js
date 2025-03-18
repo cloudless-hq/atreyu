@@ -33,6 +33,8 @@ export default async function ({ url, origUrl, event, ipfsGateway = '/'}) {
     contentTypeOverride = 'image/png'
   } else if (path.endsWith('.svg')) {
     contentTypeOverride = 'image/svg+xml'
+  } else if (path.endsWith('.html')) {
+    contentTypeOverride = 'text/html; charset=utf-8'
   }
 
   if (cache.then) {

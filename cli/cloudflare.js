@@ -14,6 +14,11 @@ export async function cloudflareDeploy ({
 }) {
   // TODO: evaluate https://www.pulumi.com/docs/reference/pkg/cloudflare/
   // const startTime = Date.now()
+
+  // migrate to all es module worker
+  // TOO: implement binding selector to select workers a binding should apply to
+  // TODO: implement default single worker bundling with optional split by selector
+  // both select custom tags
   if (!config.__cloudflareToken) {
     console.warn('  🛑 missing cloudflare token in secrets.js file at __cloudflareToken')
     return
@@ -288,7 +293,10 @@ export async function cloudflareDeploy ({
   const appPrefix = `${appName.replaceAll('.', '__').toLowerCase()}__`
 
   const toSetRoutes = {}
-  const workerCreations = Object.entries(services).map(async ([workerName, {codePath, routes}]) => {
+
+  // Cloudflare bug: workers cannot be created in parallel, so we have to wait for each worker to be created
+  // const workerCreations = 
+  for (const [workerName, {codePath, routes}] of Object.entries(services)) { // .map(async ([workerName, {codePath, routes}]) => {
     const cfWorkerName = appPrefix + workerName
 
     routes.forEach((route) => {
@@ -306,7 +314,7 @@ export async function cloudflareDeploy ({
     // }
 
     const scriptPath = codePath.replace(atreyuPath, projectPath).replace('/handlers/', '/build/').replace('/index', '')
-    const scriptData = Deno.readTextFileSync(scriptPath)
+    const scriptData = await Deno.readTextFile(scriptPath)
 
     // TODO: support manual added bindings wihtout removing: { "name":"____managed_externally","type":"inherit"}
     config['env'] = env
@@ -359,6 +367,24 @@ export async function cloudflareDeploy ({
     })
       .filter(binding => binding.text || binding.namespace_id)
 
+    // TODO: make this general and handle things like no ipfs worker
+    bindings.push({
+      "environment": env,
+      "name": "ipfsHandler",
+      "service": `${appPrefix}_ipfs`,
+      "type": "service"
+    })
+
+    if (workerName !== 'setup') {
+          // FIXME: this is ugly and only works for apps with setup handler
+      bindings.push({
+        "environment": env,
+        "name": "_setup",
+        "service": `${appPrefix}setup`,
+        "type": "service"
+      })
+    }
+
     const bindingsData = JSON.stringify({
       body_part: 'script',
       bindings
@@ -392,10 +418,19 @@ ${scriptData}
     } else {
       console.log('    ❌ failed creating worker: ' + cfWorkerName, res)
     }
-  })
 
-  console.log(`  starting deployment of ${workerCreations.length} workers...`)
-  await Promise.all(workerCreations)
+    await new Promise(resolve => {
+      setTimeout(resolve, 200)
+    })
+  }
+  //)
+
+  // console.log(`  starting deployment of ${workerCreations.length} workers...`)
+  // await Promise.all(workerCreations)
+  // let i = 0
+  // for await (const promise of workerCreations) {
+  //   console.log(await promise, i++)
+  // }
 
   const pathDeletions = []
   curRoutes.forEach(route => {
@@ -433,7 +468,6 @@ ${scriptData}
       .catch(err => console.error(err))
   }))
 
-
   // TODO: support worker domains
   // /workers/domains/records
   // Request Method: PUT
@@ -457,6 +491,7 @@ ${scriptData}
       body: JSON.stringify(newDns)
     })
   }))
+  
   // TODO: dns and worker deletions
   // TODO: curSubdomains
   // TODO: pattern = "*${domain}/cdn-cgi/access/logout", enabled = false ?
