@@ -28,7 +28,7 @@ export async function couchUpdt ({
     'Content-Type': 'application/json'
   }
 
-  const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
+  const dbName = 'ayu_app_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
   const _id = `system:ayu_settings`
 
@@ -85,7 +85,7 @@ export async function couchUpdt ({
     }
 
     let dbSeeds = []
-    // TODO: handle updates
+    // TODO: handle updates + migrations!!!
     if (createDb) {
       try {
         dbSeeds = [...dbDefaultSeeds]
@@ -94,7 +94,24 @@ export async function couchUpdt ({
 
         if (appSeeds?.default) {
           console.log(`  seeding ${appSeeds.default.length} application docs to database`)
-          dbSeeds = dbSeeds.concat(appSeeds.default)
+          dbSeeds = dbSeeds.concat(
+            appSeeds.default.map(seedDoc => {
+              if (seedDoc.views) {
+                seedDoc.views = Object.entries(seedDoc.views).reduce((acc, [name, { map, reduce, ...rest }]) => {
+                  acc[name] = { map: map?.toString(), reduce: reduce?.toString(), ...rest }
+                  return acc
+                }, {})
+              }
+          
+              if (seedDoc.filters) {
+                seedDoc.filters = Object.entries(seedDoc.filters).reduce((acc, [name, filterFun]) => {
+                  acc[name] = filterFun?.toString()
+                  return acc
+                }, {})
+              }
+              return seedDoc
+            })
+          )
         }
         // const currentVersions = await (await fetch(`${couchHost}/${dbName}/_bulk_docs`, { body: <ids>, headers })).json()
         // console.log(currentVersions)

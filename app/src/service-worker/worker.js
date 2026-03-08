@@ -12,13 +12,13 @@ import defaultPaths from '../schema/default-routes.js'
 // TODO: support addtional dataSources
 export default function ({
   dbConf = {},
-  dataSources,
-  schema,
+  dataSources = null,
+  schema = null,
   onChange,
   clientDbSeeds,
   proxiedDomains,
   handlers: appHandlers,
-  debug
+  debug = false
 } = {}) {
   if (dataSources) {
     console.warn('Additional data sources not implemented yet.')
@@ -112,7 +112,12 @@ export default function ({
           })
 
           // console.log('making falcor server')
-          self.session.falcorServer = makeFalcorServer({ dbs: self.session.dbs, schema, session: newSession, debug })
+          self.session.falcorServer = makeFalcorServer({ 
+            dbs: self.session.dbs, 
+            schema,
+            session: newSession, 
+            debug
+          })
 
           if (newSession.userId && !self.session.loaded) {
             redirectOtherClients = 'continue'
@@ -137,7 +142,7 @@ export default function ({
               }
             } else {
               let cont = ''
-              if (url.pathname.length > 1 || url.hash || url.search > 0) {
+              if (url.pathname.length > 1 || url.hash || url.search.length > 0) {
                 if (query.get('continue')) {
                   cont = `continue=${query.get('continue')}`
                 } else {
@@ -145,10 +150,10 @@ export default function ({
                 }
               }
               if (!url.pathname.startsWith('/_ayu/accounts') && !url.pathname.startsWith('/_api/_session?login')) {
-                const url = `/_ayu/accounts/?${cont}` // `/_api/_session?login${cont}`
-                console.log('redirecting client', url, newSession, client)
+                const newPath = url.hostname.endsWith('localhost') ? `/_ayu/accounts/?${cont}` : `/_api/_session?login${cont}`
+                console.log('redirecting client', newPath, newSession, client)
 
-                client.postMessage('navigate:' + url)
+                client.postMessage('navigate:' + newPath)
                 return waitForNavigation(client)
                 // after safari support: client.navigate().catch(err => console.error(err))
               }

@@ -2,7 +2,6 @@ import { getKvStore } from '/_kvs.js'
 import { getWait } from './wait.js'
 import log from './log.js'
 
-
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 // min, max are inclusive
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1) + min)
@@ -12,8 +11,26 @@ const sleepRandom = () => {
   return sleep(ms)
 }
 
+
 // TODO: unify with client cache and rename cacheNS to cache, true is default ns, string sets custom ns
-export default async function req (url, { method, body, headers: headersArg = {}, params, ttl, cacheKey, cacheNs, raw: rawArg, redirect = 'manual' } = {}) {
+
+/**
+ * Makes an HTTP request with optional caching functionality
+ * 
+ * @param {string} url - The request URL
+ * @param {Object} options - Request options
+ * @param {string} [options.method=''] - The HTTP method (defaults to 'GET' or 'POST' based on body presence)
+ * @param {any} [options.body=null] - The request body data
+ * @param {Object} [options.headers={}] - Request headers
+ * @param {Object} [options.params=null] - URL parameters to append
+ * @param {number} [options.ttl=null] - Cache time-to-live in seconds
+ * @param {string} [options.cacheKey=null] - Custom cache key
+ * @param {string} [options.cacheNs=null] - Cache namespace
+ * @param {boolean} [options.raw=null] - Return raw response
+ * @param {string} [options.redirect='manual'] - Redirect behavior
+ * @returns {Promise<Object>} Response object with status, headers, and parsed body
+ */
+export default async function req (url, { method = '', body = null, headers: headersArg = {}, params = null, ttl = null, cacheKey = null, cacheNs = null, raw: rawArg = false, redirect = 'manual' } = {}) {
   const { waitUntil, event } = getWait()
   if (!method) {
     method = body ? 'POST' : 'GET'

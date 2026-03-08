@@ -38,6 +38,8 @@ const stats = {
   app
 }
 
+// console.log('worker', stats.workerId, worker, 'started')
+
 addEventListener('fetch', event => {
   const fetchStart = Date.now()
 

@@ -35,7 +35,7 @@ export function workerdSetup ({
     config.kv_namespaces = ['ipfs']
   }
 
-  const bindings = Object.entries(config).flatMap(([key, value]) => {
+  let bindings = Object.entries(config).flatMap(([key, value]) => {
     if (['appPath', 'defaultEnv', 'repo'].includes(key)) {
       return []
     }
@@ -93,6 +93,13 @@ export function workerdSetup ({
       }
     })
     .join(',\n        ') + `,\n        (name = "ipfsHandler", service = "${appPrefix}___ipfs")`
+
+  // FIXME: this is ugly
+  if (Object.values(services).find(({routes}) => { 
+    return routes[0] === '/_api/_setup'
+  })) {
+    bindings += `,\n        (name = "_setup", service = "${appPrefix}__setup")`
+  } 
 
   const serviceDefs = Object.entries(services).map(([workerName, { codePath, routes }]) => {
     const cfWorkerName = appPrefix + '__' + workerName

@@ -19,7 +19,7 @@ function getCookie (name, cookieString = '') {
 }
 const { _couchKey, _couchSecret, couchHost, env, appName, resourceFolder } = getEnv(['_couchKey', '_couchSecret', 'couchHost', 'env', 'appName', 'resourceFolder'])
 
-const dbName = 'ayu_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
+const dbName = 'ayu_app_' + (env === 'prod' ? escapeId(appName) : escapeId(env + '__' + appName))
 
 const kvs = getKvStore('resources')
 

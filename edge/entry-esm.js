@@ -23,6 +23,8 @@ const stats = {
 
 let toWait = []
 
+// console.log('worker', stats.workerId, handler, 'started')
+
 export default {
   async fetch (request, env, context) {
     const {

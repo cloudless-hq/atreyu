@@ -14,6 +14,7 @@ async function rateRetryFetch (url, opts, awaitable, count = 1) {
     await activePush
   }
 
+  // @ts-ignore -- fix pouch type error
   const res = await PouchDB.fetch(url, opts)
 
   if (res.status === 429 && count < 4) {
@@ -34,9 +35,12 @@ export default async function ({
   sessionId,
   preload
 }) {
+  // @ts-ignore -- fix pouch type error
   PouchDB.prefix = '_ayu_'
   // PouchDB.plugin({ bulkDocs: function () { return { self:this, args: arguments }; }})
   // PouchDB.plugin({ test: function () { return { self:this, args: arguments }; }})
+
+  // @ts-ignore -- fix pouch type error
   const pouch = new PouchDB(clientDbName, { revs_limit: 200, auto_compaction: true, deterministic_revs: true })
   let couch
   let sync
@@ -63,10 +67,18 @@ export default async function ({
         return acc
       }, {})
     }
+
+    if (seedDoc.filters) {
+      seedDoc.filters = Object.entries(seedDoc.filters).reduce((acc, [name, filterFun]) => {
+        acc[name] = filterFun?.toString()
+        return acc
+      }, {})
+    }
     return seedDoc
   }) || []) ]).catch(() => {})
 
   if (hasCouch) {
+    // @ts-ignore -- check if pouch type error or type error here?
     couch = new PouchDB(`${location.origin}/_api/_couch/${serverDbName}`, {
       fetch: async (url, opts) => {
         opts.redirect = 'error'
@@ -96,7 +108,7 @@ export default async function ({
         if (idSuffix) {
           const checkpointDocId = '_local/' + decodeURIComponent(idSuffix)
           // console.log(opts.method, {checkpointDocId, checkpointCache})
-          if (checkpointDocId === sync.pull.replicationId || checkpointDocId === sync.push.replicationId) {
+          if (checkpointDocId === sync?.pull?.replicationId || checkpointDocId === sync?.push?.replicationId) {
             checkpointReqKey = checkpointDocId
 
             if (opts.method === 'GET' || !opts.method) {
@@ -114,6 +126,7 @@ export default async function ({
 
         return rateRetryFetch(url, opts, awaitable).then(async res => {
           if (res.status === 401 || res.redirected || res.type === 'opaqueredirect') {
+            // @ts-ignore -- add type setup for global session object or better move to better object handling and encapsulation
             self.session?.refresh()
           }
 
@@ -194,27 +207,45 @@ export default async function ({
         })
       }
 
-      return includeDocs ? docs : true
+      return docs
     }
 
     const [ sessionDoc ] = await pullDocs([sessionId], { includeDocs: true }) // await couch.get(sessionId)
 
-    if (!sessionDoc.replications) {
-      if (preload?.length > 0) {
+    // first db is user db by convention, further dbs are org dbs for org user belongs to
+    const replicationConf = sessionDoc.dbs.find(db => db.dbName === serverDbName)
+
+    // on first pull, replicate the preloads
+    if (!replicationConf.pull) {
+      if (preload?.length > 0 || typeof preload === 'function') { // TODO: prefix support and functions?
         // TODO: handle updates
         // Use batch instead
         console.log('preloading docs to new pouch...', preload)
-        await PouchDB.replicate(couch, pouch, { doc_ids: preload })
+        
+        if (typeof preload === 'string' || typeof preload === 'function') {
+          // @ts-ignore -- fix pouch type error
+          await PouchDB.replicate(couch, pouch, { filter: preload }).catch(err => {
+            console.error('preload error', err)
+            throw err
+          })
+        } else {
+          // @ts-ignore -- fix pouch type error
+          await PouchDB.replicate(couch, pouch, { doc_ids: preload }).catch(err => {
+            console.error('preload error', err)
+            throw err
+          })
+        }
       }
 
       inited = new Promise((resolve) => { initResolver = resolve })
     }
 
-    if (!sessionDoc.startSeq) {
+    if (!replicationConf.startSeq) {
       console.warn('missing session doc start seq, fallback to fullsync', sessionDoc)
     }
 
     // FIXME: batching sync out not working
+    // @ts-ignore -- fix pouch type error
     sync = PouchDB.sync(pouch, couch, {
       live: true,
       sse: true,
@@ -227,7 +258,7 @@ export default async function ({
       batch_size: 50,
       conflicts: true, // TODO
       pull: {
-        since: sessionDoc.startSeq,
+        since: replicationConf.startSeq,
         filter: (doc, _opts) => {
           if (doc._conflicts) {
             console.warn(doc._conflicts)
@@ -301,32 +332,36 @@ export default async function ({
         init?.()
       })
 
+    /**
+     * Internal initialization function that updates replication IDs in the session document.
+     * This function sets itself to null after execution to ensure it only runs once.
+     * @type {(()=>Promise<void>)|null}
+    */
     let init = async () => {
       init = null
       // console.log('initting changes session doc')
       if (sync.pull.replicationId && sync.push.replicationId) {
         let updateReplications = false
-        if (sessionDoc.replications) {
-          if (sessionDoc.replications.pull !== sync.pull.replicationId) {
-            console.error('pull replication id cahnged', sessionDoc, sync.pull)
-            // TODO: remove old doc
-            updateReplications = true
-          }
-          if (sessionDoc.replications.push !== sync.push.replicationId) {
-            console.error('push replication id cahnged', sessionDoc, sync.push)
-            // TODO: remove old doc
-            updateReplications = true
-          }
+        if (replicationConf.pull !== sync.pull.replicationId) {
+          // console.error('pull replication id changed', sessionDoc, sync.pull)
+          // TODO: remove old doc
+          updateReplications = true
         }
 
-        if (!sessionDoc.replications || updateReplications) {
-          // console.log('writing replications to session...')
-          sessionDoc.replications = {
-            pull: sync.pull.replicationId,
-            push: sync.push.replicationId
-          }
-          await pouch.put(sessionDoc)
+        if (replicationConf.push !== sync.push.replicationId) {
+          // console.error('push replication id changed', sessionDoc, sync.push)
+          // TODO: remove old doc
+          updateReplications = true
         }
+
+        if (!replicationConf.pull || updateReplications) {
+          replicationConf.pull = sync.pull.replicationId
+        }
+
+        if (!replicationConf.push || updateReplications) {
+          replicationConf.push = sync.push.replicationId
+        }
+        await pouch.put(sessionDoc)
       }
     }
 
