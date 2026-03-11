@@ -27,7 +27,7 @@
     "@rollup/plugin-replace": "5.0.2",
     "@typescript-eslint/eslint-plugin": "6.2.1",
     "@typescript-eslint/parser": "6.2.1",
-    "eslint": "8.46.0",
+    "eslint": "9.26.0",
     "eslint-plugin-functional": "6.0.0",
     "eslint-plugin-svelte": "2.32.4",
     "events": "3.3.0",
