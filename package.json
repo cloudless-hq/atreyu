@@ -36,7 +36,7 @@
     "falcor-path-utils": "0.7.5",
     "falcor-router": "0.8.3",
     "immediate": "3.3.0",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "rollup": "3.27.2",
     "rollup-plugin-node-polyfills": "0.2.1",
     "route-parser": "0.0.5",
